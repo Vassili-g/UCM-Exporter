@@ -22,7 +22,7 @@ const COURBES = {
   light: [0.975, 0.950, 0.905, 0.845, 0.760, 0.670, 0.585, 0.500, 0.420, 0.340, 0.270],
   dark: [0.180, 0.225, 0.275, 0.330, 0.400, 0.490, 0.580, 0.670, 0.760, 0.850, 0.930],
 };
-const PROFILS = { subtle: 0.45, vivid: 0.95 };
+const PROFILS = { soft: 0.45, vivid: 0.95 };
 const LC = COURBES.light[0];
 const LS = COURBES.light[COURBES.light.length - 1];
 
@@ -157,7 +157,7 @@ for (const [nom, seuil, a, b] of PAIRES) {
     }
     ligne.push(tronquer(minimum));
   }
-  console.log(`  ${nom.padEnd(30)} seuil ${seuil}  subtle ${ligne[0]}  vivid ${ligne[1]}  arrondi ${ecartArrondi.toFixed(2)}`);
+  console.log(`  ${nom.padEnd(30)} seuil ${seuil}  soft ${ligne[0]}  vivid ${ligne[1]}  arrondi ${ecartArrondi.toFixed(2)}`);
 }
 
 console.log('\n## Cinq couleurs de référence\n');

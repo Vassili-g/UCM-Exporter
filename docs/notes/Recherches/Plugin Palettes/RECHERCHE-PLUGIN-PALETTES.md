@@ -4,7 +4,7 @@ UCM Palettes est un plugin Figma qui fabrique des palettes de couleur selon la
 recette de [l'architecture
 multi-marques](../Archi%20Tokens%20Multi-marques/ARCHITECTURE-FINALE-MULTIMARQUES.md),
 et les dessine dans le fichier Figma. Une palette part d'une couleur de
-référence et produit quatre rampes de onze crans : `subtle` et `vivid`, en clair
+référence et produit quatre rampes de onze crans : `soft` et `vivid`, en clair
 et en sombre. La planche dessinée montre, pour chaque cran, son hexa, ses
 valeurs OKLCH, ses contrastes, le seuil qu'il tient et les rôles qu'un câblage
 proposé lui confie.
@@ -48,7 +48,7 @@ critique](./REVUE-CRITIQUE-PLUGIN-PALETTES.md).
 | Couleur de référence | L'hexa que le designer saisit. Elle ne change jamais ; la palette se construit autour d'elle |
 | Rampe | Onze crans, de 50 à 950, pour un profil et un mode |
 | Cran | Une couleur de la rampe, désignée par son numéro |
-| Profil | `subtle` ou `vivid` : la part de la vivacité maximale que l'écran affiche, 0,45 ou 0,95 par défaut |
+| Profil | `soft` ou `vivid` : la part de la vivacité maximale que l'écran affiche, 0,45 ou 0,95 par défaut |
 | Mode | `light` ou `dark` : la courbe de clarté employée |
 | Dérive de teinte | La rotation de teinte, en degrés, entre la couleur de référence et chaque bout de la rampe |
 | Fond de référence | L'hexa contre lequel se mesurent les contrastes d'un mode |
@@ -71,7 +71,7 @@ critique](./REVUE-CRITIQUE-PLUGIN-PALETTES.md).
 | D9 | Les rôles s'affichent comme un câblage proposé, vérifié | Le designer voit quel cran sert à quoi et si la promesse tient ; rien n'est câblé dans le fichier |
 | D10 | La recette rangée dans le fichier Figma fait autorité ; le JSON exporté en est une copie | Un import de JSON est un geste explicite, précédé de l'écart |
 | D11 | Les couleurs produites sont des hexas sRGB à 8 bits par canal | Chaque contraste et chaque distance se calcule sur l'hexa, jamais sur le flottant |
-| D12 | Les profils se nomment `subtle` et `vivid` | L'architecture dit `soft` ; l'alignement se fera avec l'option des variables |
+| D12 | Les profils se nomment `soft` et `vivid`, comme dans l'architecture | La recette, le moteur et la planche emploient ces deux noms. Aucune recette n'était rangée quand le nom a changé : la lecture n'a pas de migration pour `subtle` |
 | D13 | Une partie commune aux deux plugins est extraite dans un paquet privé, après la planche, quand les deux plugins existent | D'ici là, le plugin Palettes part de copies des scripts d'UCM Exporter. L'extraction ne change ni le DOM ni les styles calculés de l'interface d'UCM Exporter |
 | D14 | Tous les textes destinés au designer sont dans un seul module de l'interface | Les textes provisoires se remplacent d'un geste quand le mainteneur les a validés |
 | D15 | Une palette s'identifie par `p-` suivi de huit chiffres hexadécimaux, tirés au hasard par l'interface | Le moteur reste sans hasard : il reçoit l'identifiant |
@@ -84,9 +84,9 @@ paramètre de la recette.
 | # | Question | Défaut implémenté | Où se change le choix |
 |---|---|---|---|
 | Q1 | Courbes de clarté | Celles de l'architecture | Recette, `courbes` |
-| Q2 | Parts de chroma | 0,45 `subtle`, 0,95 `vivid` | Recette, `profils` |
+| Q2 | Parts de chroma | 0,45 `soft`, 0,95 `vivid` | Recette, `profils` |
 | Q3 | Seuil de confusion entre profils | 0,02 en distance Oklab | Recette, `seuils` |
-| Q4 | Gamut de fabrication | sRGB | Recette, `gamut` ; Display P3 n'est pas implémenté |
+| Q4 | Gamut de fabrication | sRGB, tranché par l'architecture, qui écarte Display P3 | Recette, `gamut`, qui n'accepte que `srgb` |
 | Q5 | Fonds de référence | `#F7F7F7` en clair, `#121212` en sombre : le gris de clarté 0,975 et 0,18 | Recette, `fonds` |
 | Q6 | Profil visé par le câblage proposé | `vivid` pour les rôles qui visent un cran | Recette, `cablage` |
 | Q7 | Dérive d'une palette nouvelle | Préréglage Tailwind | Réglage de la palette |
@@ -208,7 +208,7 @@ normaliser(h) = ((h mod 360) + 360) mod 360
 - `[MOT-15]` Une dérive se borne à `[-90, 90]` degrés. Une dérive positive
   tourne dans le sens des teintes croissantes : du bleu vers le violet, du
   jaune vers le vert.
-- `[MOT-16]` Chaque profil a sa propre dérive. Par défaut, `subtle` et `vivid`
+- `[MOT-16]` Chaque profil a sa propre dérive. Par défaut, `soft` et `vivid`
   partagent la même ([section 12](#12-léditeur-de-dérive)).
 - `[MOT-17]` La couleur de référence ne se recalcule jamais. Elle n'est pas un
   cran : elle s'affiche à part, et la rampe passe par sa teinte à sa clarté.
@@ -345,7 +345,7 @@ Deux outils qui la lisent produisent les mêmes hexas.
 | `formatVersion` | Entier positif, version de la forme de la recette | Fichier |
 | `crans` | `[50, 100, …, 950]` | Toutes les rampes |
 | `courbes` | `light` et `dark`, une clarté par cran | Toutes les rampes |
-| `profils` | `subtle` et `vivid`, une part de chroma chacun | Toutes les palettes, sauf surcharge |
+| `profils` | `soft` et `vivid`, une part de chroma chacun | Toutes les palettes, sauf surcharge |
 | `gamut` | `"srgb"` | Fichier |
 | `fonds` | `light` et `dark`, un hexa chacun | Contrastes et rôles |
 | `seuils` | `texte` 4,5 ; `nonTexte` 3 ; `profilsConfondus` 0,02 ; `palettesProches` 0,05 ; `chromaGrise` 0,03 | Vérifications |
@@ -365,9 +365,9 @@ Une palette porte :
 | `id` | `p-` suivi de huit chiffres hexadécimaux minuscules, tirés au hasard par l'interface à la création, jamais dérivé du nom |
 | `nom` | Texte libre, facultatif. Absent, la palette s'affiche sous son hexa de référence |
 | `reference` | L'hexa de la couleur de référence |
-| `derive.lien` | `true` quand `subtle` et `vivid` partagent la même dérive |
-| `derive.subtle`, `derive.vivid` | `clair` et `sombre` en degrés, et `origine` : `tailwind`, `constante` ou `libre` |
-| `parts` | Facultatif : `subtle` et `vivid`, une part de chroma chacun, qui remplace celle de la recette, et `origine` : `designer` ou `grise` (`[ENT-09]`) |
+| `derive.lien` | `true` quand `soft` et `vivid` partagent la même dérive |
+| `derive.soft`, `derive.vivid` | `clair` et `sombre` en degrés, et `origine` : `tailwind`, `constante` ou `libre` |
+| `parts` | Facultatif : `soft` et `vivid`, une part de chroma chacun, qui remplace celle de la recette, et `origine` : `designer` ou `grise` (`[ENT-09]`) |
 | `cablage` | Facultatif : les rôles que cette palette relie ailleurs que le câblage commun |
 
 Une cible de rôle s'écrit `{ "profil": "vivid", "cran": 700 }`,
@@ -384,7 +384,7 @@ Une cible de rôle s'écrit `{ "profil": "vivid", "cran": 700 }`,
     "light": [0.975, 0.95, 0.905, 0.845, 0.76, 0.67, 0.585, 0.5, 0.42, 0.34, 0.27],
     "dark": [0.18, 0.225, 0.275, 0.33, 0.4, 0.49, 0.58, 0.67, 0.76, 0.85, 0.93]
   },
-  "profils": { "subtle": { "part": 0.45 }, "vivid": { "part": 0.95 } },
+  "profils": { "soft": { "part": 0.45 }, "vivid": { "part": 0.95 } },
   "gamut": "srgb",
   "fonds": { "light": "#F7F7F7", "dark": "#121212" },
   "seuils": {
@@ -408,7 +408,7 @@ Une cible de rôle s'écrit `{ "profil": "vivid", "cran": 700 }`,
       "reference": "#1E6FD9",
       "derive": {
         "lien": true,
-        "subtle": { "clair": -7.53, "sombre": 5.11, "origine": "tailwind" },
+        "soft": { "clair": -7.53, "sombre": 5.11, "origine": "tailwind" },
         "vivid": { "clair": -7.53, "sombre": 5.11, "origine": "tailwind" }
       }
     },
@@ -417,7 +417,7 @@ Une cible de rôle s'écrit `{ "profil": "vivid", "cran": 700 }`,
       "reference": "#F2A900",
       "derive": {
         "lien": false,
-        "subtle": { "clair": 10.69, "sombre": -28.94, "origine": "tailwind" },
+        "soft": { "clair": 10.69, "sombre": -28.94, "origine": "tailwind" },
         "vivid": { "clair": 6, "sombre": -35, "origine": "libre" }
       }
     }
@@ -448,12 +448,17 @@ dix-sept paires.
 - `[REC-05]` Une validation de forme précède tout emploi : crans croissants,
   deux courbes de même longueur que `crans`, courbe claire décroissante, courbe
   sombre croissante, clartés dans `[0, 1]`, parts dans `[0, 1]` avec
-  `subtle ≤ vivid` dans la recette et après les parts propres de chaque
+  `soft ≤ vivid` dans la recette et après les parts propres de chaque
   palette, dérives dans `[-90, 90]`, seuils strictement positifs, hexas valides,
   identifiants uniques, cibles de rôle qui désignent un cran existant. `derives`
   compte au moins deux paires, aux noms uniques, aux teintes dans `[0, 360)`, et
   leurs teintes claires sont distinctes : deux teintes claires égales annulent
-  le dénominateur de l'interpolation de `dériveTailwind`.
+  le dénominateur de l'interpolation de `dériveTailwind`. Une clé que la
+  version courante ne connaît pas est refusée, `planche` comprise. Une palette
+  aux profils liés porte deux dérives identiques ; chaque origine est l'une de
+  celles que la section 7.1 énumère ; un identifiant a la forme `p-` et huit
+  chiffres hexadécimaux. La validation rend tous ses refus, chacun avec sa
+  règle et le chemin du champ, et ne rédige aucune phrase.
 - `[REC-06]` La recette se range automatiquement à la fin de chaque geste :
   relâcher une poignée, valider un champ, créer, dupliquer, réordonner ou
   supprimer une palette. Elle ne se range jamais pendant un glisser. Après
@@ -569,14 +574,14 @@ présenter et à comparer des palettes côte à côte.
 │ Bleu          recette v1 · empreinte 3fa2c91e · sRGB · 28/28 promesses   │
 │ Dessiné par UCM Palettes. Ce cadre est remplacé à chaque dessin.         │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ Référence  [■ #1E6FD9]   dérive subtle et vivid : clair −7,5° sombre +5,1°│
+│ Référence  [■ #1E6FD9]   dérive soft et vivid : clair −7,5° sombre +5,1°│
 ├──────────────────────────────────────────────────────────────────────────┤
 │ Light     fond de référence #F7F7F7                                      │
-│  subtle   [50][100][200][300][400][500][600][700][800][900][950]         │
+│  soft   [50][100][200][300][400][500][600][700][800][900][950]         │
 │  vivid    [50]...                                                        │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ Dark      fond de référence #121212, section peinte de ce fond           │
-│  subtle   [50]...                                                        │
+│  soft   [50]...                                                        │
 │  vivid    [50]...                                                        │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ Rôles     light                        │ dark                            │
@@ -633,7 +638,7 @@ présenter et à comparer des palettes côte à côte.
   retrouver chaque couleur dans le panneau des calques, et sert de clé à
   l'option de la [section 17](#17-option-ultérieure--créer-les-variables).
 - `[PLA-15]` Une carte où les deux profils se confondent porte la mention
-  « ≈ subtle » ou « ≈ vivid », sur tous les crans. L'alerte « Profils
+  « ≈ soft » ou « ≈ vivid », sur tous les crans. L'alerte « Profils
   confondus » ne porte que sur les crans que le câblage vise
   ([section 11.3](#113-alertes)).
 - `[PLA-16]` Le texte de la carte est sélectionnable et copiable : un hexa se
@@ -776,9 +781,12 @@ Une palette compte 28 paires : quatorze par mode.
 - `[VER-06]` Une promesse manquée nomme la paire, le contraste obtenu, le seuil,
   et le cran de la même rampe qui la tiendrait. Le membre qui vise un cran
   bouge, le premier si les deux en visent un : pour les paires 5 à 7, le
-  premier membre vise le fond, et `solid` bouge. Le cran proposé tient toutes
-  les paires du rôle. Il se cherche par distance croissante au cran courant, et
-  à égalité le plus contrasté l'emporte.
+  premier membre vise le fond, et `solid` bouge. Si le premier ne trouve aucun
+  cran, le second bouge : `surface` au cran 400 ne laisse aucun cran de `text`
+  tenir la paire 2, et c'est `surface` qui revient au 200. Le cran proposé tient
+  toutes les paires du rôle, dans les deux modes, puisque le câblage leur est
+  commun. Il se cherche par distance croissante au cran courant, et à égalité
+  le plus contrasté l'emporte.
 - `[VER-07]` Une promesse manquée n'empêche pas le dessin. Elle s'affiche au
   premier rang, et le verdict de la palette devient « {n} promesses
   manquées ».
@@ -787,10 +795,10 @@ Une palette compte 28 paires : quatorze par mode.
 
 | Alerte | Mesure | Seuil | Portée |
 |---|---|---|---|
-| Profils confondus | ΔEok entre `subtle` et `vivid`, même cran et même mode, sur les crans que le câblage vise, états `+1` et `+2` compris | `profilsConfondus` | chaque palette, sauf parts `grise` (`[ENT-09]`) |
+| Profils confondus | ΔEok entre `soft` et `vivid`, même cran et même mode, sur les crans que le câblage vise, états `+1` et `+2` compris | `profilsConfondus` | chaque palette, sauf parts `grise` (`[ENT-09]`) |
 | Palettes proches | ΔEok moyen sur les crans 500, 600 et 700 de `vivid`, en clair | `palettesProches` | chaque paire de palettes de la recette |
 | Couleur presque grise | chroma de la référence | `chromaGrise` | chaque palette |
-| Référence plus terne que `subtle` | part de chroma de la référence inférieure à la part de `subtle` | sans seuil | chaque palette |
+| Référence plus terne que `soft` | part de chroma de la référence inférieure à la part de `soft` | sans seuil | chaque palette |
 | Référence hors de la rampe | clarté de la référence hors de `[Ls, Lc]` | sans seuil | chaque palette |
 | Fond hors de la courbe | [section 8.2](#82-les-fonds-de-référence) | sans seuil | chaque fond |
 
@@ -830,7 +838,7 @@ par défaut sur une ligne : le préréglage, les deux angles et le bouton
 manquées sous le pli, contre `[VER-07]`.
 
 ```text
-┌ Dérive de teinte ─────────────────── Préréglage [Tailwind ▾]  🔗 subtle = vivid ┐
+┌ Dérive de teinte ─────────────────── Préréglage [Tailwind ▾]  🔗 soft = vivid ┐
 │ +30° ┤                                                                        │
 │      │                                                                        │
 │   0° ┼━━━━━━━━━━━━━━━━━━━━━━━━━━━━◆━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●            │
@@ -864,7 +872,7 @@ manquées sous le pli, contre `[VER-07]`.
 - `[DER-04]` Sous le graphe, une bande de teintes : chaque cran peint à sa
   teinte, à la chroma de `vivid` en clair. Sous la bande, la rampe du profil et
   du mode affichés dans l'aperçu. Les deux se mettent à jour pendant le geste.
-- `[DER-05]` Quand `subtle` et `vivid` ont des dérives distinctes, le graphe
+- `[DER-05]` Quand `soft` et `vivid` ont des dérives distinctes, le graphe
   trace deux courbes de deux couleurs de trait et de deux motifs, plein et
   tireté, pour rester lisibles sans la couleur. Chaque poignée porte l'initiale
   de son profil.
@@ -890,9 +898,9 @@ manquées sous le pli, contre `[VER-07]`.
   dérives à 0) et affiche « Libre » dès qu'une valeur s'écarte du préréglage
   choisi. Choisir un préréglage remplace les deux dérives du profil affiché,
   ou des deux profils quand ils sont liés.
-- `[DER-12]` Le bouton de lien « subtle = vivid » est actif par défaut. Le
+- `[DER-12]` Le bouton de lien « soft = vivid » est actif par défaut. Le
   désactiver copie la dérive courante dans les deux profils, puis un sélecteur
-  choisit le profil dont on règle les poignées. Le réactiver aligne `subtle` sur
+  choisit le profil dont on règle les poignées. Le réactiver aligne `soft` sur
   `vivid`, après confirmation si leurs valeurs diffèrent.
 - `[DER-13]` Tout changement se lit dans l'aperçu en moins d'une image
   (`[MOT-13]`). Il se range au relâchement de la poignée ou à la validation du
@@ -933,12 +941,12 @@ Onglet Palettes, une palette ouverte :
 │ [Bleu ▾] [+]                  2 promesses manquées [Dessiner] │
 ├──────────────────────────────────────────────────────────────┤
 │ Référence [■ #1E6FD9]  Nom [Bleu        ]                     │
-│ part 0,89 · entre subtle 0,45 et vivid 0,95 · proche du 600   │
+│ part 0,89 · entre soft 0,45 et vivid 0,95 · proche du 600   │
 ├──────────────────────────────────────────────────────────────┤
 │ Dérive  Tailwind · clair −7,5° · sombre +5,1°      [Régler]   │
 ├──────────────────────────────────────────────────────────────┤
 │ [Light | Dark]                                                │
-│  subtle  ▪▪▪▪▪▪▪▪▪▪▪                                          │
+│  soft  ▪▪▪▪▪▪▪▪▪▪▪                                          │
 │  vivid   ▪▪▪▪▪▪▪▪▪▪▪                                          │
 │  survol d'une pastille : nom, hexa, contrastes, rôles          │
 ├──────────────────────────────────────────────────────────────┤

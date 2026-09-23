@@ -97,6 +97,7 @@ devenu vrai avec le test qui le tient, CONTRIBUTING.md pour une commande. Le lot
 | D-B | Quand extraire le socle commun | Après la planche, quand les deux plugins existent. D'ici là, le plugin Palettes part de copies des scripts d'UCM Exporter | D13, [ARC-09], §15 |
 | D-C | Abscisse du graphe de dérive | Le rang du cran, onze positions régulières. La courbe devient une ligne brisée qui passe par la dérive de chaque cran | [DER-01], [DER-16] |
 | D-D | Moment où la recette se range dans le fichier | Automatiquement, à la fin de chaque geste : relâcher une poignée, valider un champ, créer ou supprimer une palette. Jamais pendant un glisser | [REC-06], [DER-13] |
+| D12 | Nom des deux profils | `soft` et `vivid`, comme l'architecture. Renommés au lot 2, avant qu'une recette soit rangée dans un fichier : aucune migration de lecture. Après la première recette rangée, un renommage demandera une migration | D12, et chaque mention des profils |
 
 Raison de D-A : `tests/versionSuitLeContenu.test.mjs` exige qu'un contenu
 modifié sous `packages/kit` monte la version du kit. La CLI et l'adaptateur
@@ -139,7 +140,7 @@ code.
 | E3 | Angles et parts n'ont pas de précision rangée : le préréglage rend -7,52689 | Un angle se range au centième de degré, une part au millième, au moment où il est posé. L'arrondi est symétrique en signe. Le préréglage rend la valeur arrondie ; « Libre » compare des valeurs arrondies. Arrondir change un cran sur 44 pour `#1E6FD9` : le second jeu de vecteurs §6.8 se recalcule avec le moteur |
 | E4 | [ENT-06] : la clarté de `#121212` vaut 0,1822, au-dessus de 0,18 ; le fond sombre par défaut déclencherait l'alerte | Comparer la clarté du fond à la valeur de la courbe, avec une tolérance de 0,005 |
 | E5 | [VER-06] ne dit pas quel membre de la paire bouge ; pour les paires 5 à 7, le premier membre vise le fond | Le membre qui vise un cran bouge, le premier si les deux en visent un. Le cran proposé tient toutes les paires du rôle ; recherche par distance croissante au cran courant, à égalité vers le plus contrasté |
-| E6 | [REC-05] laisse passer des recettes qui cassent le moteur | Ajouter : courbes dans `[0, 1]` ; seuils strictement positifs ; `derives` a au moins deux paires, des noms uniques, des teintes dans `[0, 360)` et des teintes claires distinctes (sinon division par zéro) ; `subtle ≤ vivid` après les parts propres d'une palette |
+| E6 | [REC-05] laisse passer des recettes qui cassent le moteur | Ajouter : courbes dans `[0, 1]` ; seuils strictement positifs ; `derives` a au moins deux paires, des noms uniques, des teintes dans `[0, 360)` et des teintes claires distinctes (sinon division par zéro) ; `soft ≤ vivid` après les parts propres d'une palette |
 | E7 | [VER-05] écrit « 950 » en dur, alors que `crans` change par import | « Au-delà du dernier cran de `crans` » |
 | E8 | [MOT-22] : `Math.floor(x * 100) / 100` rend 4,34 pour 4,35 ; `mesurer-recette.mjs` arrondit par `toFixed` et affiche 5,77 là où la spécification tronque à 5,76, à raison | La troncature passe par la représentation décimale à dix chiffres, et le script tronque aussi. Un test vérifie que l'affichage et le verdict concordent |
 | E9 | [REC-02] : le sandbox n'a pas `TextEncoder` | `FNV-1a` porte sur les octets UTF-8, produits par un encodeur écrit dans le moteur. Ni `Intl`, ni `toLocaleString` : la virgule décimale s'écrit par le moteur |
@@ -250,21 +251,21 @@ Critère : vecteurs et propriétés verts ; loi de pureté vue rouge ; médiane
 Spécification : [section 7](./RECHERCHE-PLUGIN-PALETTES.md#7-la-recette),
 [section 11](./RECHERCHE-PLUGIN-PALETTES.md#11-les-vérifications). Même paquet.
 
-- [ ] **L2.1** `promesses.ts` : câblage résolu par palette et par mode, les
+- [x] **L2.1** `promesses.ts` : câblage résolu par palette et par mode, les
   quatorze paires de §11.2, [VER-03] à [VER-07], E5 et E7.
-- [ ] **L2.2** `alertes.ts` : table de §11.3, [VER-08], [MOT-18], [ENT-06] avec
+- [x] **L2.2** `alertes.ts` : table de §11.3, [VER-08], [MOT-18], [ENT-06] avec
   E4, défauts D-E, D-F, D-G.
-- [ ] **L2.3** Sévérités de §11.4 et ordre de tri, en fonction pure.
-- [ ] **L2.4** `recette.ts` : forme de §7.1 sans `planche` (E1), recette par
+- [x] **L2.3** Sévérités de §11.4 et ordre de tri, en fonction pure.
+- [x] **L2.4** `recette.ts` : forme de §7.1 sans `planche` (E1), recette par
   défaut, classement [REC-03], validation [REC-05] complétée par E6, parts
   `origine: "grise"` de D-G. La migration n'a aucun cas tant que
   `formatVersion` vaut 1 ; son test pose une version 0 fictive.
-- [ ] **L2.5** `empreinte.ts` : JSON canonique, encodeur UTF-8, `FNV-1a` 32
+- [x] **L2.5** `empreinte.ts` : JSON canonique, encodeur UTF-8, `FNV-1a` 32
   bits ([REC-02], E9).
-- [ ] **L2.6** Tests : chaque paire vue tenir et échouer ; chaque alerte vue
+- [x] **L2.6** Tests : chaque paire vue tenir et échouer ; chaque alerte vue
   sonner et se taire ; chaque règle de validation vue refuser, avec son
   message ; empreinte stable à l'ordre des clés près.
-- [ ] **L2.7** Écrire `TEXTES-A-VALIDER.md` dans ce dossier : pour chaque
+- [x] **L2.7** Écrire `TEXTES-A-VALIDER.md` dans ce dossier : pour chaque
   message de §11 et chaque refus de validation, deux rédactions côte à côte,
   en trois parties (où, quoi, geste), selon `rediger-diagnostics-ucm`. Ouvre
   M2.
@@ -394,7 +395,7 @@ avec D-C, E20 et E21.
 - [ ] **L5.6** Champs et réglettes liés au graphe, virgule et point acceptés
   ([DER-08]).
 - [ ] **L5.7** Clavier et accessibilité d'E20 ; [DER-09] corrigé.
-- [ ] **L5.8** Préréglage et lien `subtle = vivid` ([DER-11], [DER-12]),
+- [ ] **L5.8** Préréglage et lien `soft = vivid` ([DER-11], [DER-12]),
   confirmation quand les valeurs diffèrent.
 - [ ] **L5.9** Annulation d'E21 ; rangement au relâchement (D-D).
 - [ ] **L5.10** Bornes [DER-14] à [DER-16].
@@ -561,3 +562,12 @@ dossier « Archi Tokens Multi-marques », cinq fichiers n'étaient pas suivis
 style passé sur ces fichiers, sans faute.
 
 Réponse du mainteneur : tout commiter. Traité par `bcc4f27`.
+
+### M2 : textes destinés au designer
+
+Question : une rédaction par message, parmi les deux proposées, ou une
+rédaction du mainteneur. Préparé :
+[TEXTES-A-VALIDER.md](./TEXTES-A-VALIDER.md), qui couvre les promesses, les
+alertes, la notice, les trois bloquants et les vingt-quatre refus de
+validation, et se termine par deux questions sur les messages sans geste
+franc. D'ici la réponse, l'interface emploie la rédaction A.

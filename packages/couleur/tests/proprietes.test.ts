@@ -60,11 +60,11 @@ test('[MOT-12] un cran clair et un cran sombre de même clarté rendent le même
     const rampes = fabriquerPalette({
       reference,
       courbes: COURBES,
-      parts: { subtle: 0.45, vivid: 0.95 },
-      derives: { subtle: derive, vivid: derive },
+      parts: { soft: 0.45, vivid: 0.95 },
+      derives: { soft: derive, vivid: derive },
       gamut: 'srgb',
     });
-    for (const profil of ['subtle', 'vivid'] as const) {
+    for (const profil of ['soft', 'vivid'] as const) {
       for (const [clair, sombre] of paires) {
         assert.equal(
           rampes[profil].light[clair].hexa,

@@ -14,10 +14,10 @@ import {
 } from './conversions';
 import { plafond, type Gamut } from './plafond';
 
-export type Profil = 'subtle' | 'vivid';
+export type Profil = 'soft' | 'vivid';
 export type Mode = 'light' | 'dark';
 
-export const PROFILS: readonly Profil[] = ['subtle', 'vivid'];
+export const PROFILS: readonly Profil[] = ['soft', 'vivid'];
 export const MODES: readonly Mode[] = ['light', 'dark'];
 
 /** Une dérive de teinte, en degrés signés, à chaque bout de la rampe (section 6.4). */
@@ -134,7 +134,7 @@ export function fabriquerRampe(parametres: ParametresRampe): Cran[] {
 
 /** Une part de chroma par profil. */
 export interface Parts {
-  readonly subtle: number;
+  readonly soft: number;
   readonly vivid: number;
 }
 
@@ -143,7 +143,7 @@ export interface Parts {
  * sinon celles de la recette.
  */
 export function partsEffectives(recette: Parts, propres?: Parts): Parts {
-  return propres ? { subtle: propres.subtle, vivid: propres.vivid } : recette;
+  return propres ? { soft: propres.soft, vivid: propres.vivid } : recette;
 }
 
 /** Ce qu'une palette demande pour produire ses quatre rampes. */
@@ -151,11 +151,11 @@ export interface EntreesPalette {
   readonly reference: Rgb8;
   readonly courbes: Courbes;
   readonly parts: Parts;
-  readonly derives: { readonly subtle: Derive; readonly vivid: Derive };
+  readonly derives: { readonly soft: Derive; readonly vivid: Derive };
   readonly gamut: Gamut;
 }
 
-/** Les quatre rampes d'une palette : `subtle` et `vivid`, en clair et en sombre. */
+/** Les quatre rampes d'une palette : `soft` et `vivid`, en clair et en sombre. */
 export type Rampes = { readonly [P in Profil]: { readonly [M in Mode]: Cran[] } };
 
 /**
@@ -175,7 +175,7 @@ export function fabriquerPalette(entrees: EntreesPalette): Rampes {
       gamut: entrees.gamut,
     });
   return {
-    subtle: { light: rampe('subtle', 'light'), dark: rampe('subtle', 'dark') },
+    soft: { light: rampe('soft', 'light'), dark: rampe('soft', 'dark') },
     vivid: { light: rampe('vivid', 'light'), dark: rampe('vivid', 'dark') },
   };
 }

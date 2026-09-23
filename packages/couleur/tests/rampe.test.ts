@@ -62,18 +62,18 @@ test('[MOT-16] chaque profil suit sa propre dérive', () => {
   const rampes = fabriquerPalette({
     reference: lireHexa('#1E6FD9')!,
     courbes: COURBES,
-    parts: { subtle: 0.95, vivid: 0.95 },
-    derives: { subtle: { clair: 0, sombre: 0 }, vivid: { clair: -40, sombre: 40 } },
+    parts: { soft: 0.95, vivid: 0.95 },
+    derives: { soft: { clair: 0, sombre: 0 }, vivid: { clair: -40, sombre: 40 } },
     gamut: 'srgb',
   });
-  assert.notEqual(rampes.subtle.light[0].hexa, rampes.vivid.light[0].hexa);
-  assert.notEqual(rampes.subtle.light[10].hexa, rampes.vivid.light[10].hexa);
+  assert.notEqual(rampes.soft.light[0].hexa, rampes.vivid.light[0].hexa);
+  assert.notEqual(rampes.soft.light[10].hexa, rampes.vivid.light[10].hexa);
 });
 
 test('parts propres : une palette qui en porte remplace celles de la recette', () => {
-  const recette = { subtle: 0.45, vivid: 0.95 };
+  const recette = { soft: 0.45, vivid: 0.95 };
   assert.deepEqual(partsEffectives(recette), recette);
-  assert.deepEqual(partsEffectives(recette, { subtle: 0.2, vivid: 0.2 }), { subtle: 0.2, vivid: 0.2 });
+  assert.deepEqual(partsEffectives(recette, { soft: 0.2, vivid: 0.2 }), { soft: 0.2, vivid: 0.2 });
 });
 
 test('[MOT-27] l’arrondi est symétrique en signe, et un zéro reste positif', () => {

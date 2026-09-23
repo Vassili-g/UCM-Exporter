@@ -43,7 +43,7 @@ dérive, arrondies à l'hexa. La mesure a rejoué six paires de rôles sur les
 dix-sept dérives de Tailwind, dans les deux modes, avant et après arrondi à 8
 bits par canal :
 
-| Paire | Seuil | Minimum `subtle` | Minimum `vivid` | Écart max dû à l'arrondi |
+| Paire | Seuil | Minimum `soft` | Minimum `vivid` | Écart max dû à l'arrondi |
 |---|---|---|---|---|
 | texte 700 sur fond de page | 4,5 | 5,44 | 5,30 | 0,06 |
 | texte 700 sur surface 100 | 4,5 | 5,10 | 5,03 | 0,03 |
@@ -64,8 +64,8 @@ Cinq couleurs de référence, lues en OKLCH :
 
 | Hexa | Clarté | Chroma | Part du plafond | Cran le plus proche | Conséquence |
 |---|---|---|---|---|---|
-| `#1E6FD9` | 0,555 | 0,179 | 0,89 | 600 | entre `subtle` et `vivid` |
-| `#5B6B7A` | 0,520 | 0,031 | 0,23 | 700 | plus terne que `subtle` à 0,45 : la rampe sera plus vive que la référence |
+| `#1E6FD9` | 0,555 | 0,179 | 0,89 | 600 | entre `soft` et `vivid` |
+| `#5B6B7A` | 0,520 | 0,031 | 0,23 | 700 | plus terne que `soft` à 0,45 : la rampe sera plus vive que la référence |
 | `#FFD400` | 0,881 | 0,181 | 1,00 | 200 | au plafond : `vivid` à 0,95 est un peu plus terne |
 | `#0B1F4B` | 0,254 | 0,086 | 0,66 | 950 | plus sombre que le cran 950 : sa teinte se lit hors de la rampe |
 | `#E4007C` | 0,596 | 0,242 | 1,00 | 600 | au plafond |
@@ -144,7 +144,7 @@ par son profil et son cran, `vivid.700`
 
 La recette fixe la clarté par la courbe et la chroma par la part du profil.
 L'hexa ne transmet donc que sa teinte. La mesure ci-dessus montre l'effet :
-`#5B6B7A`, une couleur presque grise, reçoit une rampe `subtle` deux fois plus
+`#5B6B7A`, une couleur presque grise, reçoit une rampe `soft` deux fois plus
 vive qu'elle.
 
 Correction : l'aperçu affiche la part de chroma de la référence à côté de
@@ -223,5 +223,7 @@ spécification les laisse en paramètres :
 - les deux courbes de clarté et les parts de chroma. L'architecture les a
   choisies en comparant des rampes à l'écran, sans calcul qui les impose ; elles
   restent à ajuster sur des palettes réelles ;
-- sRGB ou Display P3 comme gamut de fabrication ;
 - le câblage définitif des rôles, que le plugin propose sans l'imposer.
+
+Le gamut de fabrication, laissé ouvert par la première version, est tranché
+par l'architecture : sRGB, Display P3 écarté.

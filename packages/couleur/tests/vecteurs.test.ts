@@ -30,7 +30,7 @@ const COURBES: Courbes = {
   light: [0.975, 0.95, 0.905, 0.845, 0.76, 0.67, 0.585, 0.5, 0.42, 0.34, 0.27],
   dark: [0.18, 0.225, 0.275, 0.33, 0.4, 0.49, 0.58, 0.67, 0.76, 0.85, 0.93],
 };
-const PARTS = { subtle: 0.45, vivid: 0.95 };
+const PARTS = { soft: 0.45, vivid: 0.95 };
 const hexa = (texte: string) => lireHexa(texte)!;
 
 test('vecteur : #FFFFFF a une clarté 1 et une chroma sous 1e-4', () => {
@@ -84,7 +84,7 @@ function paletteTailwind(texte: string) {
     reference,
     courbes: COURBES,
     parts: PARTS,
-    derives: { subtle: derive, vivid: derive },
+    derives: { soft: derive, vivid: derive },
     gamut: 'srgb',
   });
 }
