@@ -20,25 +20,32 @@ import type { Contract } from '@ucm-kit/core/format';
 export type ContratLu = Pick<Contract, 'props' | 'stateModel'>;
 
 /**
- * Le contrat réduit aux propriétés que le composant sélectionné déclare
- * lui-même.
+ * Le contrat réduit à la surface du composant sélectionné : ce qu'il déclare
+ * lui-même, et ce qu'une pièce interne lui prête.
  *
- * La surface publiée fusionne celle d'un wrapper interne élu par
- * `findWrapperReference`. Ce wrapper n'est une coquille de mise en page que
- * tant qu'aucun vrai composant enfant n'est éligible : un enfant sans règles
- * n'est pas une dépendance, donc rien ne l'écarte de l'élection, et ses
- * propriétés entrent dans le contrat du parent. Les poser en règles ferait
- * documenter au designer l'API du voisin, sous le nom du parent.
+ * La surface publiée fusionne celle d'un wrapper élu par
+ * `findWrapperReference`, et deux choses très différentes passent par là. Une
+ * pièce interne, que Figma ne publie pas, n'existe que dans ce composant :
+ * personne ne l'instanciera seule, elle n'aura donc jamais de règles à elle, et
+ * ses propriétés sont celles du parent, à documenter ici. Un composant à part
+ * entière, lui, n'est élu que faute d'être reconnu comme dépendance, ce qui
+ * demande un conteneur de règles : poser ses propriétés ferait documenter au
+ * designer l'API du voisin, sous le nom du parent, et elles s'en iront du
+ * contrat dès que ce voisin aura ses règles.
+ *
+ * L'appelant fait le tri, seul à voir l'arbre Figma ; cette fonction reçoit la
+ * surface déjà tranchée. L'ordre du contrat est gardé, et une propriété remontée
+ * retrouve donc la place qu'elle occupe dans la surface publiée.
  *
  * `stateModel` n'est pas filtré : son axe vient des variants du composant
  * sélectionné, jamais d'un wrapper.
  */
 export function restreindreAuParent(
   contrat: ContratLu,
-  clesDuParent: ReadonlySet<string>,
+  surfaceDuParent: ReadonlySet<string>,
 ): ContratLu {
   const props = Object.fromEntries(
-    Object.entries(contrat.props ?? {}).filter(([cle]) => clesDuParent.has(cle)),
+    Object.entries(contrat.props ?? {}).filter(([cle]) => surfaceDuParent.has(cle)),
   );
   return { props, stateModel: contrat.stateModel };
 }

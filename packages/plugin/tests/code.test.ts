@@ -15,6 +15,7 @@ import * as sources from '../src/template/sources';
 import * as modele from '../src/template/modele';
 import * as termes from '../src/forges/termes';
 import type { ReleveDeSource } from '../src/contract/extractRules';
+import type { ModeleDeRegles } from '../src/template/modele';
 import type { PluginMessage, UiRequest } from '../src/messages';
 
 const source = ts.transpileModule(readFileSync(join(__dirname, '../src/code.ts'), 'utf8'), {
@@ -49,10 +50,14 @@ const instanceDe = (id: string, set: ReturnType<typeof setDe>) => ({
 
 const setBouton = setDe('Button', { size: {}, label: {} });
 const setIcone = setDe('Icon', { iconName: {} });
+// Un point en tête : Figma ne publie pas ce composant, qui n'est donc qu'une
+// pièce interne du parent, jamais une dépendance à documenter à part.
+const setInterne = setDe('.pieceInterne', { taille: {} });
 const enfantsImbriques = [
   instanceDe('btn-1', setBouton),
   instanceDe('btn-2', setBouton),
   instanceDe('ico-1', setIcone),
+  instanceDe('int-1', setInterne),
 ];
 const globalFigma = globalThis as unknown as { figma?: unknown };
 const figmaInitial = globalFigma.figma;
@@ -63,7 +68,7 @@ function ouvrir() {
   const evenements = new Map<string, () => void>();
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
-  const appels = { analyses: 0, ecritures: 0, oublisDIndex: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[], relevesDeProps: [] as string[][] };
+  const appels = { analyses: 0, ecritures: 0, oublisDIndex: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[], relevesDeProps: [] as string[][], modeles: [] as ModeleDeRegles[] };
   const exporte = { traiter: async () => resultat('tokens.json') };
   /** Ce que la résolution des maîtres rend au clic ; le test le choisit. */
   const resolution = { traiter: async (): Promise<{ sources: unknown; refus: string | null }> => ({ sources: { maitre: {}, aRemplir: null, sections: new Map(), regles: new Map(), separateur: null }, refus: null }) };
@@ -129,7 +134,13 @@ function ouvrir() {
     },
     './template/sources': { ...sources, resoudreLesSources: async () => resolution.traiter() },
     './template/modele': modele,
-    './template/ecriture': { creerLesRegles: async () => { appels.ecritures += 1; return creation.traiter(); } },
+    './template/ecriture': {
+      creerLesRegles: async (_composant: unknown, modelePose: ModeleDeRegles) => {
+        appels.ecritures += 1;
+        appels.modeles.push(modelePose);
+        return creation.traiter();
+      },
+    },
     './contract/exportComponent': { default: handler, getSelectedComponent: () => runtime.currentPage.selection[0] },
     './tokens/exportTokens': { default: handler, annonceDuFormat: () => null, etatDesTokensDuFichier: async () => { appels.collections += 1; return resumeDesTokens.traiter(); } },
     './forges/forge': { ErreurDeForge: Error },
@@ -1275,6 +1286,60 @@ test('une propriété qu’aucun imbriqué ne revendique est nommée quand même
   assert.equal(points.length, 1);
   assert.match(points[0].impact, /un composant imbriqué que le plugin n’a pas su nommer/);
   assert.equal(points[0].nodeIds, undefined);
+});
+
+/** Les cibles `@prop` du modèle posé, dans l'ordre où le template les écrit. */
+function ciblesPosees(h: ReturnType<typeof ouvrir>): string[] {
+  const modelePose = h.appels.modeles.at(-1);
+  return (modelePose?.sections ?? [])
+    .flatMap((section) => section.elements)
+    .flatMap((element) => (element.genre === 'regle' && element.cible ? [element.cible] : []));
+}
+
+test('les propriétés d’une pièce interne sont documentées par le parent, sans point', async () => {
+  // Une pièce interne n'est pas publiée par Figma : aucun designer ne
+  // l'instanciera seule, elle n'aura jamais de règles à elle, et le contrat du
+  // parent porte ses propriétés comme les siennes. Les règles doivent en dire
+  // autant.
+  const h = ouvrir();
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    content: JSON.stringify({
+      props: {
+        severity: { type: 'enum', values: ['info'] },
+        taille: { type: 'enum', values: ['small', 'medium'] },
+      },
+    }),
+  });
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(ciblesPosees(h), ['severity.info', 'taille.small', 'taille.medium']);
+  assert.deepEqual(h.messages.filter((message) => message.type === 'diagnostic'), []);
+});
+
+test('une pièce interne et un composant sans règles se distinguent dans la même création', async () => {
+  // Les deux entrent dans le contrat par le même chemin. Seul celui qui peut
+  // porter ses propres règles donne un point ; l'autre est documenté ici.
+  const h = ouvrir();
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    content: JSON.stringify({
+      props: {
+        severity: { type: 'enum', values: ['info'] },
+        size: { type: 'enum', values: ['small'] },
+        taille: { type: 'enum', values: ['medium'] },
+      },
+    }),
+  });
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(ciblesPosees(h), ['severity.info', 'taille.medium']);
+  const points = h.messages.filter((message) => message.type === 'diagnostic');
+  assert.deepEqual(points.map((point) => point.titre), [
+    'Règles de « Exemple » : Une propriété n’est pas documentée, « size ».',
+  ]);
 });
 
 test('un template qui documente tout ne rend aucun point', async () => {

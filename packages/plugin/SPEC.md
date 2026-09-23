@@ -912,6 +912,22 @@ Ce que la création n'écrit pas est une décision : les calques `content` et
 bien qu'une règle fraîchement posée ne documente rien tant que le designer ne
 l'a pas rédigée, et que l'analyse le dit.
 
+**Quelles propriétés publiées reçoivent une règle.** Le contrat d'un composant
+porte aussi la surface d'un wrapper élu (voir
+[FORMAT.md, section 3](../../docs/format/FORMAT.md#3-layout)), et le template ne
+les traite pas toutes de la même façon.
+
+| Origine de la propriété | Règle posée | Pourquoi |
+|---|---|---|
+| Le composant sélectionné la déclare | oui | c'est son API |
+| Une pièce interne la déclare (nom commençant par `.` ou `_`) | oui | Figma ne publie pas ce composant : personne ne l'instanciera seule, elle n'aura jamais de règles à elle, et le parent porte ses propriétés pour de bon |
+| Un composant à part entière la déclare | non, et un point rouge la nomme | il n'a été absorbé que faute d'un conteneur de règles qui en fasse une dépendance ; ses propriétés quitteront le contrat du parent dès qu'il aura les siennes |
+| Aucun imbriqué ne la revendique | non, et un point rouge la nomme | le plugin n'a pas su nommer son porteur, et la taire ferait croire à un template complet |
+
+Le nom sert de critère parce qu'aucune lecture ne fait mieux :
+`getPublishStatusAsync` dit tout le monde non publié sur une bibliothèque qui ne
+l'a jamais été, et le vrai défaut passerait alors sous silence.
+
 L'écriture vit dans un seul fichier, `src/template/ecriture.ts`, atteint par
 une seule porte, la demande `creer-regles`. `loiDuDocumentIntact.test.ts`
 l'exclut nommément de son balayage et refuse à tout autre fichier du moteur

@@ -39,11 +39,12 @@ test('le modèle pose une @usage, une @prop par valeur groupée par axe, une @bo
   assert.equal(nombreDeRegles(modele), 8);
 });
 
-test('les propriétés venues d’un enfant élu wrapper ne sont pas documentées', () => {
+test('les propriétés venues d’un composant à part entière élu wrapper ne sont pas documentées', () => {
   // Un Alert qui contient un Button sans règles : le Button n'est pas une
   // dépendance, rien ne l'écarte de l'élection du wrapper, et ses propriétés
   // entrent dans le contrat de l'Alert. Les poser ferait documenter l'API du
-  // Button sous le nom de l'Alert.
+  // Button sous le nom de l'Alert. Une pièce interne, elle, entre dans la
+  // surface que l'appelant passe ici.
   const contratAbsorbe: ContratLu = {
     props: {
       severity: { type: 'enum', values: ['info', 'error'] },

@@ -941,7 +941,8 @@ async function publier(genre: ArtifactKind, operation: number): Promise<void> {
  * de la création, c'est Ctrl+Z, qui la défait d'un coup.
  */
 /**
- * Les clés publiques que le composant sélectionné déclare lui-même.
+ * Les clés publiques que le composant sélectionné déclare lui-même. Ce qu'une
+ * pièce interne lui prête s'y ajoute plus tard, à l'appel.
  *
  * Elles se lisent sur la même source et par la même fonction que la surface
  * publiée : un axe que la couche sémantique renomme porte donc ici la clé
@@ -972,15 +973,33 @@ function enumerer(mots: readonly string[]): string {
   return `${cites.slice(0, -1).join(', ')} et ${cites[cites.length - 1]}`;
 }
 
-/**
- * Le point rouge des propriétés que le template ne documente pas.
- *
- * Elles entrent dans le contrat par l'élection du wrapper, faute d'un enfant
- * reconnu comme dépendance. Les taire ferait croire à un template complet,
- * alors que le contrat publié décrira ces propriétés sans un mot d'usage.
- */
 /** Un composant imbriqué, les propriétés qu'il porte et ses instances. */
-type PorteurEcarte = { nom: string | null; cles: string[]; nodeIds: string[] };
+type PorteurDeProps = {
+  nom: string | null;
+  /** Vrai d'une pièce interne, que Figma ne publie pas. */
+  interne: boolean;
+  cles: string[];
+  nodeIds: string[];
+};
+
+/**
+ * Vrai d'un composant que Figma ne publie pas dans la bibliothèque.
+ *
+ * Figma retient de la bibliothèque tout composant dont le nom commence par un
+ * point ou un tiret bas, et le design system s'en sert pour ses pièces
+ * internes : un wrapper de dimensions, une coquille de mise en page. Personne
+ * ne peut en poser une instance seule, donc aucune n'aura jamais de contrat ni
+ * de règles à elle, et ses propriétés appartiennent au composant qui l'abrite.
+ *
+ * Le nom, plutôt que `getPublishStatusAsync` : sur une bibliothèque jamais
+ * publiée, ou sur une copie de travail, l'API dit tout le monde non publié, et
+ * le vrai défaut (un composant à part entière absorbé faute de règles) passerait
+ * alors sous silence.
+ */
+function estUnePieceInterne(nom: string): boolean {
+  const premier = nom.trimStart().charAt(0);
+  return premier === '.' || premier === '_';
+}
 
 /**
  * Le composant nommé dont une instance est une occurrence : son component set
@@ -994,21 +1013,30 @@ function porteurDeLInstance(main: ComponentNode): ComponentNode | ComponentSetNo
 }
 
 /**
- * Les propriétés écartées, groupées par le composant imbriqué qui les déclare.
+ * Les propriétés que le contrat publie sans que le parent les déclare,
+ * groupées par le composant imbriqué qui les déclare.
  *
- * La recherche ne quitte pas le composant sélectionné, et ne part que sur le
- * chemin d'erreur. Les clés se comparent après `extractContractPropertyModel`,
- * comme celles du parent : un axe renommé par la couche sémantique porte des
- * deux côtés sa clé publiée.
+ * Elles entrent dans le contrat par l'élection du wrapper, qui fusionne dans la
+ * surface du parent celle d'un composant interne. Deux cas s'y présentent sous
+ * la même forme, et leur porteur les sépare : une pièce interne prête ses
+ * propriétés au parent pour de bon, un composant à part entière ne les prête
+ * que le temps qu'il lui manque ses règles.
+ *
+ * La recherche ne quitte pas le composant sélectionné, et ne part que s'il y a
+ * quelque chose à classer. Les clés se comparent après
+ * `extractContractPropertyModel`, comme celles du parent : un axe renommé par la
+ * couche sémantique porte des deux côtés sa clé publiée.
  *
  * Une propriété qu'aucun imbriqué ne revendique forme un dernier groupe sans
- * nom : la nommer quand même vaut mieux que la taire.
+ * nom : la nommer quand même vaut mieux que la taire. Rien ne dit qu'elle vient
+ * d'une pièce interne, donc elle reste à documenter ailleurs.
  */
-async function porteursDesPropsEcartees(
+async function porteursDesPropsHorsDuParent(
   composant: ComponentNode | ComponentSetNode,
-  ecartees: readonly string[],
-): Promise<PorteurEcarte[]> {
-  const restantes = new Set(ecartees);
+  horsDuParent: readonly string[],
+): Promise<PorteurDeProps[]> {
+  if (horsDuParent.length === 0) return [];
+  const restantes = new Set(horsDuParent);
   const parPorteur = new Map<string, { porteur: ComponentNode | ComponentSetNode; nodeIds: string[] }>();
   const instances = composant.findAll((node) => node.type === 'INSTANCE') as InstanceNode[];
   for (const instance of instances) {
@@ -1020,7 +1048,7 @@ async function porteursDesPropsEcartees(
     else parPorteur.set(porteur.id, { porteur, nodeIds: [instance.id] });
   }
 
-  const groupes: PorteurEcarte[] = [];
+  const groupes: PorteurDeProps[] = [];
   for (const { porteur, nodeIds } of parPorteur.values()) {
     if (restantes.size === 0) break;
     let declarees: string[] = [];
@@ -1033,9 +1061,11 @@ async function porteursDesPropsEcartees(
     const cles = declarees.filter((cle) => restantes.has(cle));
     if (cles.length === 0) continue;
     for (const cle of cles) restantes.delete(cle);
-    groupes.push({ nom: porteur.name, cles, nodeIds });
+    groupes.push({ nom: porteur.name, interne: estUnePieceInterne(porteur.name), cles, nodeIds });
   }
-  if (restantes.size > 0) groupes.push({ nom: null, cles: [...restantes], nodeIds: [] });
+  if (restantes.size > 0) {
+    groupes.push({ nom: null, interne: false, cles: [...restantes], nodeIds: [] });
+  }
   return groupes;
 }
 
@@ -1043,18 +1073,21 @@ async function porteursDesPropsEcartees(
  * Les points rouges des propriétés que le template ne documente pas, un par
  * composant imbriqué qui les porte.
  *
+ * Seul un composant capable de porter ses propres règles arrive ici : la pièce
+ * interne n'en aura jamais, et le template la documente au lieu de la signaler.
+ * Les taire toutes ferait croire à un template complet, alors que le contrat
+ * publié décrirait ces propriétés sans un mot d'usage.
+ *
  * Un point par composant plutôt qu'une liste unique : le geste qu'il demande
  * vise un composant, et dix composants donneraient dix gestes noyés dans une
  * seule phrase.
  */
-async function signalerLesPropsEcartees(
-  composant: ComponentNode | ComponentSetNode,
-  ecartees: readonly string[],
+function signalerLesPropsEcartees(
+  parent: string,
+  ecartes: readonly PorteurDeProps[],
   provenance: Partial<Provenance>,
-): Promise<void> {
-  if (ecartees.length === 0) return;
-  const parent = composant.name;
-  for (const { nom, cles, nodeIds } of await porteursDesPropsEcartees(composant, ecartees)) {
+): void {
+  for (const { nom, cles, nodeIds } of ecartes) {
     const uneSeule = cles.length === 1;
     const sujet = uneSeule ? 'Une propriété' : `${cles.length} propriétés`;
     const verbe = uneSeule ? 'n’est pas documentée' : 'ne sont pas documentées';
@@ -1105,10 +1138,18 @@ async function creerRegles(operation: number): Promise<void> {
     const analyse = await handleExportComponent(annoncer);
     const contrat = JSON.parse(analyse.content) as ContratLu;
     const clesDuParent = clesDeclareesPar(composant);
-    const propre = clesDuParent ? restreindreAuParent(contrat, clesDuParent) : contrat;
+    // Ce que le contrat publie sans que le parent le déclare vient d'un
+    // composant imbriqué. Son porteur dit s'il revient au parent : une pièce
+    // interne lui prête ses propriétés pour de bon, un composant à part entière
+    // reprendra les siennes dès qu'il aura ses règles.
+    const horsDuParent = clesDuParent
+      ? Object.keys(contrat.props ?? {}).filter((cle) => !clesDuParent.has(cle))
+      : [];
+    const porteurs = await porteursDesPropsHorsDuParent(composant, horsDuParent);
+    const remontees = porteurs.filter(({ interne }) => interne).flatMap(({ cles }) => cles);
+    const surface = clesDuParent ? new Set([...clesDuParent, ...remontees]) : null;
+    const propre = surface ? restreindreAuParent(contrat, surface) : contrat;
     const modele = modeleDeRegles(composant.name, propre);
-    const ecartees = Object.keys(contrat.props ?? {})
-      .filter((cle) => !(cle in (propre.props ?? {})));
 
     const resultat = await creerLesRegles(composant, modele, sources, annoncer);
     // Le conteneur posé déclare le composant comme dépendance UCM. L'index
@@ -1126,7 +1167,11 @@ async function creerRegles(operation: number): Promise<void> {
     );
     // Après le statut : la création a réussi, et ce point dit ce qu'elle laisse
     // au designer plutôt que ce qu'elle a raté.
-    await signalerLesPropsEcartees(composant, ecartees, provenance);
+    signalerLesPropsEcartees(
+      composant.name,
+      porteurs.filter(({ interne }) => !interne),
+      provenance,
+    );
   } catch (erreur) {
     const message = erreur instanceof Error ? erreur.message : ECHEC_GENERIQUE;
     postStatus('error', message, provenance);

@@ -527,6 +527,13 @@ Référence : [phase 7](PLAN-TEMPLATE-REGLES.md#phase-7-recette-dans-figma).
       le navigateur.
 - [ ] Consigner les résultats dans le compte rendu. Un écart ouvre une tâche
       de correction avec son test de régression, avant le lot 8.
+- [x] **Correction 7.1** : une pièce interne ne demande plus ses propres
+      règles. Le point rouge visait un composant que Figma ne publie pas, et
+      dont le parent porte les propriétés pour de bon. Deux tests de régression
+      dans `tests/code.test.ts` : les propriétés d'une pièce interne sont
+      documentées par le parent sans point, et une pièce interne se distingue
+      d'un composant sans règles dans la même création. Constat dans le
+      [compte rendu](#7-recette-dans-figma-1).
 
 ## 8. Kit Community
 
@@ -1228,3 +1235,39 @@ suit fait disparaître le bouton sans effacer la note du succès.
 **Demande au mainteneur.** Jouer les huit épreuves et transmettre, pour chacune,
 le résultat et ce que l'écran affichait. Un écart ouvre une tâche de correction
 avec son test de régression, avant le lot 8.
+
+#### Correction 7.1 : la pièce interne n'a pas de règles à elle
+
+**L'écart.** Sur le composant du corpus qui porte un wrapper de dimensions, la
+création a posé ses règles puis rendu un point rouge : quatre propriétés non
+documentées, qui appartiennent au wrapper, avec pour geste de créer les règles
+de ce wrapper. Ce geste n'a pas de sens. Le nom du wrapper commence par un
+point, donc Figma ne le publie pas ; aucun designer ne peut en poser une
+instance seule, aucun contrat ne le décrira jamais, et le conteneur de règles
+rédigé à la main pour le parent documente déjà ses quatre propriétés. La
+[prémisse 4 du plan](PLAN-TEMPLATE-REGLES.md#1-ce-que-la-recherche-change-au-plan)
+l'avait mesuré : un template bâti sur les seules définitions du component set
+perdait 6 des 17 règles rédigées.
+
+**Ce qui l'a causé.** `restreindreAuParent` est entrée par le défaut inverse :
+un Alert qui contient un Button sans règles publiait l'API du Button comme la
+sienne. Les deux cas arrivent par le même chemin, l'élection du wrapper, et le
+correctif d'alors les a traités comme un seul.
+
+**Le critère.** Le porteur des propriétés tranche. Un nom qui commence par un
+point ou un tiret bas est une pièce interne : Figma la retient de la
+bibliothèque, elle n'aura jamais de règles à elle, et ses propriétés reviennent
+au parent, qui les documente. Tout autre porteur garde son point rouge, car il
+peut recevoir un conteneur de règles, et ses propriétés quitteront alors le
+contrat du parent. `getPublishStatusAsync` aurait été plus direct et vaut moins :
+sur une bibliothèque jamais publiée, elle dit tout le monde non publié, et le
+défaut d'origine redeviendrait muet.
+
+**Vu rouge avant d'être cru.** Les deux tests de régression échouaient sur les
+cibles du modèle posé, `taille.small` et `taille.medium` absentes. Le banc de
+`code.test.ts` garde maintenant le modèle que `creerLesRegles` reçoit, ce qui
+permet d'affirmer ce que le template documente et non seulement ce qu'il tait.
+
+Ce que la correction ne touche pas : le contrat publié, qui portait déjà ces
+propriétés et continue de les porter ; le point rouge du composant à part
+entière, que ses tests tiennent inchangé ; l'axe d'états, jamais filtré.
