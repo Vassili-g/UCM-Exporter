@@ -301,13 +301,13 @@ reproductibles.
 
 ### 8b : feuille de style, composants et en-tête
 
-- [ ] **L8.4** `socle.css` et règles propres à chaque plugin ; le build
+- [x] **L8.4** `socle.css` et règles propres à chaque plugin ; le build
   concatène plusieurs feuilles dans un ordre écrit. `Button`, `Onglets`,
   `Interrupteur`, `ResizeGrip` avec sa fonction d'envoi en paramètre. L'en-tête
   et sa bascule vers la configuration, par le bouton en forme d'engrenage (D-L) ;
   ce que l'en-tête affiche reste à chaque plugin.
-- [ ] **L8.5** La loi des styles lit toutes les feuilles et le socle.
-- [ ] **L8.6** Relevé après, comparaison. Commit.
+- [x] **L8.5** La loi des styles lit toutes les feuilles et le socle.
+- [x] **L8.6** Relevé après, comparaison. Commit.
 
 ### 8c : galerie et tests communs
 

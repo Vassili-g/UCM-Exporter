@@ -14,7 +14,7 @@ import type { SettingsInput, SettingsValidation } from '../../config';
 import type { EtatDeCarte, ResumeDepot } from '../../connexion';
 import { AIDE_SANS_FORGE, TERMES, avecMajuscule } from '../../forges/termes';
 import type { DepotPublic } from '../../messages';
-import { createButton } from './Button';
+import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
 type NomDeChamp = keyof SettingsInput;
 

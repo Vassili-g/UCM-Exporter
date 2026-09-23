@@ -1,7 +1,7 @@
 
 /** Coquille commune d'une commande : sujet, actions, note et compte rendu. */
-import type { BoutonUi, VarianteBouton } from './Button';
-import { createButton } from './Button';
+import type { BoutonUi, VarianteBouton } from 'ucm-plugin-socle/src/ui/Button';
+import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 import type { CompteRenduUi } from './CompteRendu';
 import { createCompteRendu } from './CompteRendu';
 

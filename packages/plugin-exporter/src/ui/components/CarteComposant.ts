@@ -3,7 +3,7 @@
 import type { Cible } from '../../cible';
 import type { PluginMessage } from '../../messages';
 import type { Offre } from '../../template/sources';
-import { createButton } from './Button';
+import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 import type { CarteCommandeUi, OptionsCarteConcrete } from './CarteCommande';
 import { createCarteCommande } from './CarteCommande';
 

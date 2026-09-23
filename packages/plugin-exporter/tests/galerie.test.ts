@@ -245,13 +245,15 @@ test('un état GitLab n’affiche aucun mot de GitHub, et un autre état aucun m
   assert.deepEqual(fautes, []);
 });
 
-test('le décalque sert toutes les variables de thème que styles.css demande', () => {
+test('le décalque sert toutes les variables de thème que les feuilles demandent', () => {
+  // Les rôles de couleur sont dans la feuille du socle, placée avant styles.css.
+  const feuilles = fs.readFileSync(require_.resolve('ucm-plugin-socle/socle.css'), 'utf8') + lire('src/ui/styles.css');
   const demandees = new Set(
-    [...lire('src/ui/styles.css').matchAll(/var\(\s*(--figma-color-[\w-]+)/g)].map(
+    [...feuilles.matchAll(/var\(\s*(--figma-color-[\w-]+)/g)].map(
       (trouve) => trouve[1],
     ),
   );
-  assert.ok(demandees.size > 0, 'aucune variable de thème trouvée dans styles.css');
+  assert.ok(demandees.size > 0, 'aucune variable de thème trouvée dans les feuilles');
 
   const decalque = lire('galerie/theme-figma.css');
   for (const selecteur of [':root', '.figma-dark']) {

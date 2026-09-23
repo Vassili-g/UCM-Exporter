@@ -7,11 +7,12 @@ import type { PluginMessage, Provenance } from '../messages';
 import type { CarteCommandeUi } from './components/CarteCommande';
 import type { PageEnTete } from './components/Header';
 import { createHeader } from './components/Header';
+import { montrerConfiguration, montrerTravail, type ElementsDeBascule } from 'ucm-plugin-socle/src/ui/EnTete';
 import { createConfigurationPage } from './components/ConfigurationPage';
 import type { OngletConfiguration } from './components/ConfigurationPage';
 import { createCarteComposant } from './components/CarteComposant';
 import { createCarteTokens } from './components/CarteTokens';
-import { createResizeGrip } from './components/ResizeGrip';
+import { createResizeGrip } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 import { versSandbox } from './pont';
 
 /**
@@ -69,21 +70,20 @@ const PAGES: Record<'export' | 'configuration', PageEnTete> = {
  */
 function showConfiguration(onglet: OngletConfiguration = configurationPage.ongletActif()) {
   configurationPage.ouvrirOnglet(onglet);
-  exportPage.hidden = true;
+  montrerConfiguration(bascule());
   // Le statut de la carte du dépôt actif remplace la pastille sur cette page.
   header.connection.hidden = true;
-  configPage.hidden = false;
-  header.settingsButton.hidden = true;
-  header.backButton.hidden = false;
   header.setPage(PAGES.configuration);
 }
 
+/** Les éléments que la bascule du socle montre ou masque. */
+function bascule(): ElementsDeBascule {
+  return { travail: exportPage, configuration: configPage, settingsButton: header.settingsButton, backButton: header.backButton };
+}
+
 function showExports() {
-  configPage.hidden = true;
-  exportPage.hidden = false;
+  montrerTravail(bascule());
   header.connection.hidden = false;
-  header.settingsButton.hidden = false;
-  header.backButton.hidden = true;
   header.setPage(PAGES.export);
 }
 
@@ -180,7 +180,7 @@ const footer = document.createElement('footer');
 footer.className = 'app-footer';
 footer.hidden = true;
 
-app.append(header.element, exportPage, configPage, footer, createResizeGrip());
+app.append(header.element, exportPage, configPage, footer, createResizeGrip(versSandbox));
 versSandbox({ type: 'ui-ready' });
 
 onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {

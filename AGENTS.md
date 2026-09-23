@@ -201,6 +201,8 @@ packages/plugin-socle/   ce que les plugins partagent : ucm-plugin-socle, privé
   build/manifest.cjs       le manifest de distribution
   build/run-tests.cjs      le découvreur de tests, que chaque plugin appelle
   src/fenetre.ts           la taille bornée de la fenêtre, rangée dans clientStorage
+  src/ui/socle.css         échelle de texte, trame, rôles de couleur et replis sombres, avant la feuille de chaque plugin
+  src/ui/                  bouton, onglets, interrupteur, poignée de redimensionnement, engrenage et bascule de l'en-tête
   tests/                   le build, le manifest et la fenêtre, pour des bornes quelconques
 
 docs/                    la documentation classée par sujet

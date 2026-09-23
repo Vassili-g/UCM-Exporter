@@ -6,7 +6,7 @@
  * existantes sans refermer une carte dépliée ni remplacer une saisie en cours.
  */
 import type { PluginMessage, ReglagesPublics } from '../../messages';
-import { createButton } from './Button';
+import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 import { createCarteDepot } from './CarteDepot';
 import type { CarteDepotUi } from './CarteDepot';
 import { versSandbox } from '../pont';

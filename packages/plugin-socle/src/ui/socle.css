@@ -1,0 +1,460 @@
+
+/*
+ * Le socle graphique de l'interface des plugins UCM. Chaque plugin ajoute ses
+ * règles propres dans une feuille que le build place après celle-ci.
+ *
+ * Trois choses vivent ici et nulle part ailleurs : l'échelle de texte, la trame
+ * d'espacement, et le rôle de chaque couleur. Une valeur écrite en dur dans une
+ * règle est un quatrième domicile pour une décision déjà prise — c'est ainsi
+ * qu'on se retrouvait avec `gap: 12px`, `gap: 10px`, `padding: 9px 10px` et
+ * quatre hauteurs de contrôle pour trois rôles.
+ *
+ * La hiérarchie que ce socle sert — ce qui décide, ce sur quoi on agit, ce qui
+ * informe — est écrite dans CONTRIBUTING.md, « Interface du plugin ». Elle fait
+ * autorité : une règle d'ici qui la contredit a tort.
+ */
+:root {
+  color-scheme: light dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+
+  /*
+   * Trois crans de texte, et pas un de plus. 11 px est la base de l'interface de
+   * Figma ; le plugin était à 12 px et paraissait plus gros que son hôte, tout
+   * en redescendant localement à 11 px à deux endroits. Les interlignes sont
+   * des multiples de 4, comme la trame.
+   */
+  font-size: 11px;
+  --corps: 11px;
+  --corps-interligne: 16px;
+  --libelle: 12px;
+  --libelle-interligne: 16px;
+  --titre: 15px;
+  --titre-interligne: 20px;
+
+  /*
+   * Une variable par rôle d'espacement, jamais une valeur par endroit.
+   * Quatre rôles, quatre valeurs, toutes prises dans la trame de 4.
+   */
+  --espace-page: 16px;
+  --espace-bloc: 12px;
+  --espace-controle: 8px;
+  --espace-serre: 4px;
+
+  /* Deux hauteurs de contrôle. Une action se clique, un outil s'atteint. */
+  --hauteur-action: 32px;
+  --hauteur-secondaire: 24px;
+
+  --rayon: 6px;
+
+  /*
+   * Un seul endroit par rôle de couleur, et le repli avec lui.
+   *
+   * Les replis étaient écrits pour le thème clair et répétés à chaque règle :
+   * `#fff`, `#f5f5f5`, `#fff1d6`. Si l'hôte ne servait pas la variable Figma
+   * correspondante, cette valeur claire s'appliquait EN THÈME SOMBRE, et le
+   * texte devenait illisible — d'autant plus sûrement que personne ne l'aurait
+   * vu : les replis ne servent que hors de Figma, là où justement on ne regarde
+   * pas.
+   *
+   * La correction n'est pas de choisir des couleurs qui tiendraient dans les
+   * deux thèmes — il n'y en a pas —, c'est de donner au repli le même thème
+   * qu'à la variable. `figma-dark` est la classe que Figma pose sur `html`
+   * quand `themeColors: true` est demandé : le bloc ci-dessous redéclare les
+   * mêmes rôles avec un repli SOMBRE. Si cette classe manquait, le repli clair
+   * s'appliquerait comme aujourd'hui : ce socle ne peut donc pas faire pire.
+   *
+   * `prefers-color-scheme` n'est délibérément PAS employé : il dit le thème du
+   * système, pas celui de Figma, et un éditeur clair sur un système sombre
+   * recevrait alors des replis sombres.
+   */
+  --fond: var(--figma-color-bg, #ffffff);
+  --fond-survol: var(--figma-color-bg-hover, #f5f5f5);
+  --fond-bloc: var(--figma-color-bg-secondary, #f5f5f5);
+  --fond-note: var(--figma-color-bg-tertiary, #ebebeb);
+  --fond-marque: var(--figma-color-bg-brand, #0d99ff);
+  --fond-marque-survol: var(--figma-color-bg-brand-hover, #007be5);
+  --fond-avertissement: var(--figma-color-bg-warning-tertiary, #fff1d6);
+  --fond-danger: var(--figma-color-bg-danger-tertiary, #ffe0db);
+  --bordure: var(--figma-color-border, #e6e6e6);
+  --bordure-marque: var(--figma-color-border-brand-strong, #0d99ff);
+  /*
+   * La bordure d'une carte dépôt visée, au survol comme au focus. Seul rôle de
+   * couleur à n'être relié à aucune variable Figma : la carte dépôt se distingue
+   * par un gris neutre, et la relier au thème la ferait bleuir dans les fichiers
+   * où l'hôte sert sa couleur de marque. Même valeur dans les deux thèmes, parce
+   * qu'elle se voit sur le fond clair comme sur le fond sombre.
+   */
+  --bordure-visee: #666666;
+  --texte: var(--figma-color-text, #1e1e1e);
+  --texte-second: var(--figma-color-text-secondary, #6b6b6b);
+  --texte-marque: var(--figma-color-text-brand, #007be5);
+  --texte-danger: var(--figma-color-text-danger, #dc3412);
+  --texte-succes: var(--figma-color-text-success, #168b52);
+  --texte-avertissement: var(--figma-color-text-warning, #a55b00);
+  --texte-sur-marque: var(--figma-color-text-onbrand, #ffffff);
+}
+
+.figma-dark {
+  --fond: var(--figma-color-bg, #2c2c2c);
+  --fond-survol: var(--figma-color-bg-hover, #383838);
+  --fond-bloc: var(--figma-color-bg-secondary, #383838);
+  --fond-note: var(--figma-color-bg-tertiary, #4d4d4d);
+  --fond-marque: var(--figma-color-bg-brand, #0d99ff);
+  --fond-marque-survol: var(--figma-color-bg-brand-hover, #3ab0ff);
+  --fond-avertissement: var(--figma-color-bg-warning-tertiary, #4a3a10);
+  --fond-danger: var(--figma-color-bg-danger-tertiary, #4d1f17);
+  --bordure: var(--figma-color-border, #444444);
+  --bordure-marque: var(--figma-color-border-brand-strong, #0d99ff);
+  /* Redéclaré à l'identique : le rôle existe dans les deux thèmes, ou l'un des
+   * deux tomberait sur celui de l'autre sans que rien ne le dise. */
+  --bordure-visee: #666666;
+  --texte: var(--figma-color-text, #ffffff);
+  --texte-second: var(--figma-color-text-secondary, #b3b3b3);
+  --texte-marque: var(--figma-color-text-brand, #7cc4f8);
+  --texte-danger: var(--figma-color-text-danger, #ffafa3);
+  --texte-succes: var(--figma-color-text-success, #85e0a3);
+  --texte-avertissement: var(--figma-color-text-warning, #ffc470);
+  --texte-sur-marque: var(--figma-color-text-onbrand, #ffffff);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font-size: var(--corps);
+  line-height: var(--corps-interligne);
+}
+
+/*
+ * Stabilité de l'UI : la barre verticale est réservée en permanence, qu'il y ait
+ * du dépassement ou non. Ainsi son apparition/disparition (selon la longueur du
+ * message d'état) ne décale plus l'interface. `scrollbar-gutter` pour les
+ * navigateurs modernes, `overflow-y: scroll` en filet de sécurité.
+ */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/*
+ * La stabilité vient de la PLACE des blocs, jamais d'une hauteur réservée à
+ * vide : la fenêtre est haute d'un écran, et le pied de page est poussé en bas
+ * par ce qui reste. Sa position ne dépend donc plus de la longueur du journal.
+ */
+.container {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  gap: var(--espace-bloc);
+  padding: var(--espace-page);
+}
+
+.page-stack {
+  display: grid;
+  gap: var(--espace-bloc);
+}
+
+/*
+ * Le titre du produit se lit avant l'état de connexion, et l'outil de
+ * navigation garde un seul emplacement quelle que soit la page. La pastille
+ * était empilée au-dessus du titre : l'état se lisait donc en premier, alors
+ * qu'il n'est que le rang 3.
+ */
+.header {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.header-topline {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+.page-title {
+  font-size: var(--titre);
+  font-weight: 600;
+  line-height: var(--titre-interligne);
+}
+
+.subtitle,
+.field-help {
+  color: var(--texte-second);
+  line-height: var(--corps-interligne);
+}
+
+/* L'outil de navigation est un contrôle secondaire : 24 px, une seule fois. */
+.icon-button,
+.header-back-button {
+  display: inline-flex;
+  height: var(--hauteur-secondaire);
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+  color: var(--texte);
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 120ms ease;
+}
+
+.icon-button {
+  width: var(--hauteur-secondaire);
+  padding: 0;
+}
+
+.icon-button svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+
+.icon-button:hover,
+.header-back-button:hover {
+  background: var(--fond-survol);
+}
+
+.btn {
+  display: inline-flex;
+  min-height: var(--hauteur-action);
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-controle);
+
+  /* Le libellé dit l'action entière : dans 380 px il peut passer
+     sur deux lignes, et le bouton grandit au lieu de rogner son texte. */
+  padding: var(--espace-serre) var(--espace-bloc);
+  border: 1px solid transparent;
+  border-radius: var(--rayon);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--fond-marque);
+  color: var(--texte-sur-marque);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--fond-marque-survol);
+}
+
+.btn-secondary {
+  border-color: var(--bordure);
+  background: var(--fond);
+  color: var(--texte);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--fond-survol);
+}
+
+/*
+ * Un bouton désactivé faute de sélection n'attend rien : il refuse. Le curseur
+ * d'attente ne vaut que pendant un export, et `aria-busy` dit lequel des deux
+ * cas on est.
+ */
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+[aria-busy='true'] .btn:disabled {
+  cursor: wait;
+}
+
+/*
+ * Un état de focus partout. Seul `.btn` en avait un : au clavier, la
+ * navigation disparaissait dès qu'elle quittait les deux boutons d'action.
+ */
+.btn:focus-visible,
+.icon-button:focus-visible,
+.header-back-button:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.field {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.field-label {
+  font-size: var(--libelle);
+  font-weight: 600;
+  line-height: var(--libelle-interligne);
+}
+
+.input {
+  width: 100%;
+  height: var(--hauteur-action);
+  padding: 0 var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  outline: none;
+  background: var(--fond);
+  color: var(--texte);
+}
+
+/* L'adresse d'un dépôt enregistré se lit : le fond des blocs la distingue d'une saisie. */
+.input:read-only {
+  background: var(--fond-bloc);
+  color: var(--texte-second);
+}
+
+.input:focus-visible {
+  border-color: var(--bordure-marque);
+  box-shadow: 0 0 0 1px var(--bordure-marque);
+}
+
+/*
+ * Aucune hauteur réservée ici non plus (même doctrine que la note) : les cinq
+ * champs gardaient chacun une ligne vide pour le cas où une erreur arriverait,
+ * soit 60 px qui repoussaient le bouton « Enregistrer » sous la ligne de
+ * flottaison — en permanence, pour un cas rare. Les erreurs arrivent toutes
+ * ensemble, au clic sur « Enregistrer », jamais sous le curseur pendant la
+ * saisie : le décalage se produit au moment où on l'a demandé.
+ */
+.field-error {
+  color: var(--texte-danger);
+}
+
+/*
+ * Les onglets reprennent le dessin de `@create-figma-plugin/ui`, décalque de
+ * l'éditeur : une rangée soulignée, des segments de 24 px, l'onglet actif en
+ * gras sur le fond des blocs.
+ */
+.onglets {
+  display: flex;
+  gap: var(--espace-serre);
+  padding-bottom: var(--espace-serre);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.onglet {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 60px;
+  min-width: 60px;
+  height: var(--hauteur-secondaire);
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--espace-controle);
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--texte-second);
+  cursor: pointer;
+  font-weight: 600;
+  line-height: var(--libelle-interligne);
+}
+
+.onglet:hover:not([aria-selected='true']) {
+  background: var(--fond-survol);
+  color: var(--texte);
+}
+
+.onglet[aria-selected='true'] {
+  background: var(--fond-bloc);
+  color: var(--texte);
+}
+
+.onglet:focus-visible,
+.interrupteur:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.reglage {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.reglage-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+/* L'interrupteur de l'éditeur : 28 × 16 px, le curseur à droite quand il est activé. */
+.interrupteur {
+  display: inline-flex;
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--texte-second);
+  cursor: pointer;
+}
+
+.interrupteur:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.interrupteur[aria-checked='true'] {
+  justify-content: flex-end;
+  background: var(--fond-marque);
+}
+
+.interrupteur-curseur {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fond);
+}
+
+/*
+ * La poignée de redimensionnement. Elle est posée dans le coin, hors du
+ * flux : sa place ne dépend d'aucun contenu, et la marge de la page la sépare
+ * déjà du pied de page.
+ */
+.resize-grip {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--texte-second);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.resize-grip svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}

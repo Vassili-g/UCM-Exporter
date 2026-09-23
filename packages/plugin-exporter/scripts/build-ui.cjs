@@ -11,6 +11,6 @@ if (require.main === module) {
   construireUi({
     srcDir: path.resolve(__dirname, '../src/ui'),
     distDir: path.resolve(__dirname, '../dist'),
-    feuilles: ['styles.css'],
+    feuilles: [require.resolve('ucm-plugin-socle/socle.css'), 'styles.css'],
   });
 }

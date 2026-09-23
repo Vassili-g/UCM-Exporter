@@ -5,9 +5,9 @@
  * Le point d'entrée de l'UI ne conserve que le routage des messages Figma.
  */
 import type { PluginMessage, ReglagesPublics } from '../../messages';
-import { createInterrupteur } from './Interrupteur';
+import { createInterrupteur } from 'ucm-plugin-socle/src/ui/Interrupteur';
 import { createListeDesDepots } from './ListeDesDepots';
-import { createOnglets } from './Onglets';
+import { createOnglets } from 'ucm-plugin-socle/src/ui/Onglets';
 import { versSandbox } from '../pont';
 
 /** Les onglets de la configuration. */

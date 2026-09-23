@@ -21,6 +21,12 @@ import test from 'node:test';
 
 const racine = path.resolve(__dirname, '..');
 const dossierUi = path.join(racine, 'src/ui');
+/**
+ * Le socle porte les composants communs et la feuille qui les stylise : la loi
+ * lit les deux côtés, sans quoi une règle du socle passerait pour morte et une
+ * classe d'un composant du socle pour non stylisée.
+ */
+const dossierUiDuSocle = path.dirname(require.resolve('ucm-plugin-socle/socle.css'));
 
 /** `figma-dark` est posée par l'hôte sur `html`, jamais par ce code. */
 const POSEES_PAR_FIGMA = new Set(['figma-dark']);
@@ -31,12 +37,18 @@ function sourcesUi(): string {
     ...fs
       .readdirSync(path.join(dossierUi, 'components'))
       .map((nom) => path.join(dossierUi, 'components', nom)),
+    ...fs
+      .readdirSync(dossierUiDuSocle)
+      .filter((nom) => nom.endsWith('.ts'))
+      .map((nom) => path.join(dossierUiDuSocle, nom)),
   ];
   return fichiers.map((fichier) => fs.readFileSync(fichier, 'utf8')).join('\n');
 }
 
 const source = sourcesUi();
-const feuille = fs.readFileSync(path.join(dossierUi, 'styles.css'), 'utf8');
+/** Les deux feuilles, dans l'ordre où le build les concatène. */
+const feuille = fs.readFileSync(path.join(dossierUiDuSocle, 'socle.css'), 'utf8')
+  + fs.readFileSync(path.join(dossierUi, 'styles.css'), 'utf8');
 
 /** Les littéraux d'une déclaration, lus au fichier qui la porte. */
 function litterauxDe(motif: RegExp, quoi: string, fichier = 'src/messages.ts'): string[] {
@@ -97,7 +109,7 @@ function classesStylisees(): Set<string> {
   return stylisees;
 }
 
-test('toute classe posée par l’interface a une règle dans styles.css', () => {
+test('toute classe posée par l’interface a une règle dans les feuilles', () => {
   const stylisees = classesStylisees();
   const sansRegle = [...classesPosees()].filter((classe) => !stylisees.has(classe));
   assert.deepEqual(

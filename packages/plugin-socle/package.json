@@ -6,7 +6,8 @@
   "license": "MIT",
   "exports": {
     "./build/*": "./build/*",
-    "./src/*": "./src/*.ts"
+    "./src/*": "./src/*.ts",
+    "./socle.css": "./src/ui/socle.css"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

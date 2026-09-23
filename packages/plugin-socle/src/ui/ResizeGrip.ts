@@ -1,9 +1,15 @@
-import { versSandbox } from '../pont';
+/** La demande de redimensionnement qu'une poignée envoie au sandbox. */
+export interface DemandeDeTaille {
+  type: 'resize';
+  largeur: number;
+  hauteur: number;
+}
 
 /**
- * La poignée de redimensionnement de la fenêtre.
+ * La poignée de redimensionnement de la fenêtre. Chaque plugin fournit sa
+ * porte d'envoi vers le sandbox.
  */
-export function createResizeGrip(): HTMLDivElement {
+export function createResizeGrip(envoyer: (demande: DemandeDeTaille) => void): HTMLDivElement {
   const grip = document.createElement('div');
   grip.className = 'resize-grip';
   grip.setAttribute('aria-hidden', 'true');
@@ -24,7 +30,7 @@ export function createResizeGrip(): HTMLDivElement {
     // demandée, à la marge de la poignée près. Aucun delta à accumuler, donc
     // aucune dérive après plusieurs glissés.
     const suivre = (mouvement: PointerEvent) => {
-      versSandbox({
+      envoyer({
         type: 'resize',
         largeur: Math.ceil(mouvement.clientX + 4),
         hauteur: Math.ceil(mouvement.clientY + 4),
