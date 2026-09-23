@@ -3,14 +3,19 @@
  * ranger : le rangement suit la fin du geste (D-D).
  */
 import {
+  DERIVE_MAXIMALE,
+  PROFILS,
   ajusterPartsGrises,
+  arrondir,
   boutsDe,
   ecrireHexa,
   lireHexa,
   prereglageTailwind,
   rgb8VersOklch,
+  type Derive,
   type DeriveRangee,
   type Palette,
+  type Profil,
   type Recette,
 } from 'ucm-couleur';
 
@@ -102,6 +107,64 @@ export function deplacer(recette: Recette, id: string, sens: -1 | 1): Recette {
  */
 export function supprimer(recette: Recette, id: string): Recette {
   return { ...recette, palettes: recette.palettes.filter((palette) => palette.id !== id) };
+}
+
+/** Le préréglage Tailwind de la référence d'une palette, sur le relevé de la recette (section 6.5). */
+export function prereglageDe(recette: Recette, palette: Palette): Derive {
+  const couleur = lireHexa(palette.reference);
+  if (!couleur) return { clair: 0, sombre: 0 };
+  return prereglageTailwind(rgb8VersOklch(couleur), boutsDe(recette.courbes), recette.derives, recette.seuils.chromaGrise);
+}
+
+/**
+ * L'origine que deux angles méritent ([DER-11]) : `tailwind` s'ils valent le
+ * préréglage, `constante` s'ils valent zéro, `libre` sinon. Les angles se
+ * comparent arrondis au centième, comme ils se rangent ([MOT-27]).
+ */
+export function origineDe(recette: Recette, palette: Palette, derive: Derive): DeriveRangee['origine'] {
+  const tailwind = prereglageDe(recette, palette);
+  if (derive.clair === tailwind.clair && derive.sombre === tailwind.sombre) return 'tailwind';
+  if (derive.clair === 0 && derive.sombre === 0) return 'constante';
+  return 'libre';
+}
+
+/** Les profils qu'un réglage touche : les deux quand ils sont liés ([DER-12]). */
+export function profilsTouches(palette: Palette, profil: Profil): readonly Profil[] {
+  return palette.derive.lien ? PROFILS : [profil];
+}
+
+function poserDerive(recette: Recette, palette: Palette, profils: readonly Profil[], derive: Derive): Palette {
+  const rangee: DeriveRangee = {
+    clair: arrondir(Math.max(-DERIVE_MAXIMALE, Math.min(DERIVE_MAXIMALE, derive.clair)), 2) + 0,
+    sombre: arrondir(Math.max(-DERIVE_MAXIMALE, Math.min(DERIVE_MAXIMALE, derive.sombre)), 2) + 0,
+    origine: 'libre',
+  };
+  const avecOrigine = { ...rangee, origine: origineDe(recette, palette, rangee) };
+  const suivante = { ...palette.derive };
+  for (const cible of profils) suivante[cible] = avecOrigine;
+  return { ...palette, derive: suivante };
+}
+
+/**
+ * La palette dont un bout de la dérive prend `angle` ([DER-07], [DER-08]),
+ * borné à ±90° et arrondi au centième ([MOT-27]), pour le profil réglé, ou les
+ * deux quand ils sont liés.
+ */
+export function reglerBout(recette: Recette, palette: Palette, profil: Profil, bout: 'clair' | 'sombre', angle: number): Palette {
+  const actuelle = palette.derive[profil];
+  return poserDerive(recette, palette, profilsTouches(palette, profil), { ...actuelle, [bout]: angle });
+}
+
+/** La palette dont les deux dérives prennent un préréglage ([DER-11]) : Tailwind, ou 0° et 0°. */
+export function appliquerPrereglage(recette: Recette, palette: Palette, profil: Profil, prereglage: 'tailwind' | 'constante'): Palette {
+  const derive = prereglage === 'tailwind' ? prereglageDe(recette, palette) : { clair: 0, sombre: 0 };
+  return poserDerive(recette, palette, profilsTouches(palette, profil), derive);
+}
+
+/** Délier garde les deux dérives telles quelles ; lier aligne soft sur vivid ([DER-12]). */
+export function lierLesProfils(palette: Palette, lien: boolean): Palette {
+  const { soft, vivid } = palette.derive;
+  return { ...palette, derive: { lien, soft: lien ? vivid : soft, vivid } };
 }
 
 /** La recette où la palette d'identifiant `palette.id` est remplacée. */

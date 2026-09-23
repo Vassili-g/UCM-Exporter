@@ -193,7 +193,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const ligneDeDerive = document.createElement('div');
   ligneDeDerive.className = 'ligne-secondaire ligne-infos';
   ligneDeDerive.append(derive, regler);
-  const editeur = createEditeur();
+  const editeur = createEditeur({
+    previsualiser: (suivante) => modifier(suivante),
+    valider: (suivante) => {
+      if (recette) valider(remplacerPalette(recette, suivante));
+    },
+  });
   let editeurOuvert = false;
   const apercu = createApercu(() => rendre());
   const constats = document.createElement('div');
@@ -368,33 +373,39 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     zoneDeLaNote.hidden = !note;
   }
 
+  /**
+   * Montre une seule des trois zones. La visibilité se pose avant le
+   * remplissage : un élément caché ne reçoit pas le focus, et la poignée
+   * redessinée de l'éditeur doit le reprendre.
+   */
+  function montrer(zone: HTMLElement): void {
+    for (const candidate of [zoneDuBloquant, vide, vue]) candidate.hidden = candidate !== zone;
+  }
+
   function rendre(): void {
     indication.textContent = STATUTS_DU_RANGEMENT[statut];
     rendreRefus();
-    zoneDuBloquant.hidden = true;
-    vide.hidden = true;
-    vue.hidden = true;
     if (!classementLu) {
+      montrer(vide);
       ligneVide.textContent = TEXTES.lectureEnCours;
-      vide.hidden = false;
       return;
     }
     if (classementLu.etat === 'future' || classementLu.etat === 'illisible') {
+      montrer(zoneDuBloquant);
       const constat = classementLu.etat === 'future' ? recetteFuture(classementLu.version) : recetteIllisible(classementLu.refus);
       zoneDuBloquant.replaceChildren(blocDeConstat(constat, 'bloquant'));
-      zoneDuBloquant.hidden = false;
       return;
     }
     const courante = ouverte();
     if (!recette || !courante) {
+      montrer(vide);
       ligneVide.textContent = classementLu.etat === 'absente' ? TEXTES.recetteAbsente : palettesDuFichier(0);
       placerLaCreation(vide, null);
       creation.element.hidden = false;
-      vide.hidden = false;
       return;
     }
+    montrer(vue);
     rendrePalette(courante, recette);
-    vue.hidden = false;
   }
 
   creation.ouvrir(false);

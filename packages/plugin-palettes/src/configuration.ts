@@ -11,9 +11,12 @@ export type ChampDeConfiguration =
   | { readonly part: Profil }
   | { readonly seuil: 'profilsConfondus' };
 
-/** Un nombre saisi, à virgule ou à point ; `null` pour une saisie qui n'en est pas un. */
+/**
+ * Un nombre saisi, à virgule ou à point, signe moins ordinaire ou
+ * typographique ; `null` pour une saisie qui n'en est pas un.
+ */
 export function lireNombre(saisie: string): number | null {
-  const nettoyee = saisie.trim().replace(',', '.');
+  const nettoyee = saisie.trim().replace(',', '.').replace('−', '-');
   if (!/^-?\d+(\.\d+)?$/.test(nettoyee)) return null;
   return Number(nettoyee);
 }

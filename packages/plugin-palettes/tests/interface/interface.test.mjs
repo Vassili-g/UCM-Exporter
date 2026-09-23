@@ -497,3 +497,192 @@ test('[DER-15] une référence presque grise désactive l’éditeur', async () 
     await page.close();
   }
 });
+
+/** Le rangement qu'un geste envoie, aussitôt accepté : le geste suivant part avec son empreinte. */
+async function rangementDe(page, avant) {
+  const demande = await prochaine(page, avant);
+  assert.equal(demande.type, 'ranger-recette');
+  await envoyer(page, rangee(demande.demande));
+  return demande.recette.palettes[0];
+}
+
+async function editeurSur(id) {
+  const page = await ouvrirSur(id);
+  await deplier(page);
+  return page;
+}
+
+const poignee = (page, bout) => page.locator(`.derive-poignee[data-bout="${bout}"]`);
+
+test('[DER-07] glisser une poignée suit le pointeur sans ranger, puis range au relâchement', async () => {
+  const page = await editeurSur('alertes-seules');
+  try {
+    const avantLApercu = await page.locator('[aria-label^="vivid.50 "]').getAttribute('aria-label');
+    const boite = await poignee(page, 'clair').locator('circle').boundingBox();
+    const avant = await compte(page);
+    await page.mouse.move(boite.x + boite.width / 2, boite.y + boite.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(boite.x + boite.width / 2, boite.y - 30, { steps: 4 });
+    assert.notEqual(await page.locator('[aria-label^="vivid.50 "]').getAttribute('aria-label'), avantLApercu, 'l’aperçu suit le glisser');
+    assert.equal(await compte(page), avant, 'rien ne se range pendant le glisser');
+    await page.mouse.up();
+    const palette = await rangementDe(page, avant);
+    assert.ok(palette.derive.vivid.clair > 7.8, JSON.stringify(palette.derive));
+    assert.ok(Number.isInteger(palette.derive.vivid.clair), 'au degré près');
+    assert.equal(palette.derive.vivid.origine, 'libre');
+    assert.deepEqual(palette.derive.soft, palette.derive.vivid);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-09] au clavier, une poignée avance d’un degré, de cinq avec Maj, et garde le focus', async () => {
+  const page = await editeurSur('alertes-seules');
+  try {
+    await poignee(page, 'sombre').focus();
+    const depart = Number(await poignee(page, 'sombre').getAttribute('aria-valuenow'));
+    let avant = await compte(page);
+    await page.keyboard.press('ArrowUp');
+    let palette = await rangementDe(page, avant);
+    assert.equal(palette.derive.vivid.sombre, Math.round((depart + 1) * 100) / 100);
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.bout), 'sombre', 'le focus survit au redessin');
+    avant = await compte(page);
+    await page.keyboard.press('Shift+ArrowDown');
+    palette = await rangementDe(page, avant);
+    assert.equal(palette.derive.vivid.sombre, Math.round((depart - 4) * 100) / 100);
+    avant = await compte(page);
+    await page.keyboard.press('Home');
+    palette = await rangementDe(page, avant);
+    assert.equal(palette.derive.vivid.sombre, -90);
+    assert.match(await poignee(page, 'sombre').getAttribute('aria-valuetext'), /^−90,0°, teinte \d+°$/);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-10] un double-clic ramène la poignée au préréglage Tailwind', async () => {
+  const page = await editeurSur('alertes-seules');
+  try {
+    const tailwind = Number(await poignee(page, 'clair').getAttribute('aria-valuenow'));
+    await poignee(page, 'clair').focus();
+    let avant = await compte(page);
+    await page.keyboard.press('Shift+ArrowUp');
+    await rangementDe(page, avant);
+    avant = await compte(page);
+    await poignee(page, 'clair').locator('circle').dblclick();
+    const palette = await rangementDe(page, avant);
+    assert.equal(palette.derive.vivid.clair, tailwind);
+    assert.equal(palette.derive.vivid.origine, 'tailwind');
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-08] le champ et la réglette règlent le bout, virgule acceptée, Maj pour cinq degrés', async () => {
+  const page = await editeurSur('alertes-seules');
+  try {
+    const champ = page.locator('.reglette').first().locator('.champ-nombre');
+    let avant = await compte(page);
+    await champ.fill('12,5');
+    await champ.press('Tab');
+    let palette = await rangementDe(page, avant);
+    assert.equal(palette.derive.vivid.clair, 12.5);
+    assert.equal(Number(await poignee(page, 'clair').getAttribute('aria-valuenow')), 12.5, 'le graphe suit le champ');
+    avant = await compte(page);
+    await page.locator('.reglette').first().locator('.reglette-curseur').focus();
+    await page.keyboard.press('Shift+ArrowRight');
+    palette = await rangementDe(page, avant);
+    assert.equal(palette.derive.vivid.clair, 17.5);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-11] le préréglage Constante pose deux dérives nulles', async () => {
+  const page = await editeurSur('alertes-seules');
+  try {
+    const avant = await compte(page);
+    await page.getByRole('combobox', { name: 'Préréglage' }).selectOption('constante');
+    const palette = await rangementDe(page, avant);
+    assert.deepEqual(palette.derive.vivid, { clair: 0, sombre: 0, origine: 'constante' });
+    assert.deepEqual(palette.derive.soft, palette.derive.vivid);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-12] délier règle un seul profil, relier demande confirmation et aligne soft sur vivid', async () => {
+  const page = await editeurSur('alertes-seules');
+  try {
+    let avant = await compte(page);
+    await page.getByRole('button', { name: 'soft = vivid' }).click();
+    let palette = await rangementDe(page, avant);
+    assert.equal(palette.derive.lien, false);
+    await page.getByRole('group', { name: 'Profil réglé' }).getByRole('button', { name: 'soft' }).click();
+    await poignee(page, 'clair').focus();
+    avant = await compte(page);
+    await page.keyboard.press('Shift+ArrowUp');
+    palette = await rangementDe(page, avant);
+    assert.notDeepEqual(palette.derive.soft, palette.derive.vivid);
+    const vivid = palette.derive.vivid;
+    avant = await compte(page);
+    await page.getByRole('button', { name: 'soft = vivid' }).click();
+    assert.equal(await page.locator('.editeur-derive .confirmation').isVisible(), true);
+    assert.equal(await compte(page), avant, 'relier attend la confirmation');
+    await page.getByRole('button', { name: 'Aligner' }).click();
+    palette = await rangementDe(page, avant);
+    assert.equal(palette.derive.lien, true);
+    assert.deepEqual(palette.derive.soft, vivid);
+  } finally {
+    await page.close();
+  }
+});
+
+test('E21 : Ctrl+Z dans l’éditeur défait le dernier réglage, hors d’un champ texte', async () => {
+  const page = await editeurSur('alertes-seules');
+  try {
+    await poignee(page, 'clair').focus();
+    const depart = Number(await poignee(page, 'clair').getAttribute('aria-valuenow'));
+    let avant = await compte(page);
+    await page.keyboard.press('ArrowUp');
+    await rangementDe(page, avant);
+    avant = await compte(page);
+    await page.keyboard.press('ArrowUp');
+    await rangementDe(page, avant);
+    avant = await compte(page);
+    await page.keyboard.press('Control+z');
+    const palette = await rangementDe(page, avant);
+    assert.equal(palette.derive.vivid.clair, Math.round((depart + 1) * 100) / 100);
+    // Un réglage reste dans la pile : Ctrl+Z dans le champ ne doit pas le défaire.
+    const champ = page.locator('.reglette').first().locator('.champ-nombre');
+    await champ.focus();
+    avant = await compte(page);
+    await page.keyboard.press('Control+z');
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 20)));
+    assert.equal(await compte(page), avant, 'dans un champ texte, Ctrl+Z reste au champ');
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-03] à ±90°, les poignées et leurs étiquettes restent dans le cadre du graphe', async () => {
+  for (const [clair, sombre] of [[90, -90], [-90, 90]]) {
+    const page = await ouvrir();
+    try {
+      const message = structuredClone(messageDe('derive-deliee-libre'));
+      message.classement.recette.palettes[0].derive.vivid = { clair, sombre, origine: 'libre' };
+      await envoyer(page, message);
+      await deplier(page);
+      const dehors = await page.evaluate(() => {
+        const cadre = document.querySelector('.derive-graphe').getBoundingClientRect();
+        return [...document.querySelectorAll('.derive-poignee text, .derive-poignee circle')]
+          .map((noeud) => noeud.getBoundingClientRect())
+          .filter((boite) => boite.top < cadre.top || boite.bottom > cadre.bottom || boite.left < cadre.left || boite.right > cadre.right)
+          .length;
+      });
+      assert.equal(dehors, 0, `clair ${clair}, sombre ${sombre}`);
+    } finally {
+      await page.close();
+    }
+  }
+});

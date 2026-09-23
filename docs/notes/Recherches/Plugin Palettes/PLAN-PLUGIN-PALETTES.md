@@ -512,19 +512,19 @@ avec D-C, E20 et E21.
 
 ### 5b : interactions
 
-- [ ] **L5.5** Glisser vertical, Maj pour 5°, double-clic pour la valeur
+- [x] **L5.5** Glisser vertical, Maj pour 5°, double-clic pour la valeur
   Tailwind ([DER-07], [DER-10]).
-- [ ] **L5.6** Champs et réglettes liés au graphe, virgule et point acceptés
+- [x] **L5.6** Champs et réglettes liés au graphe, virgule et point acceptés
   ([DER-08]).
-- [ ] **L5.7** Clavier et accessibilité d'E20 ; [DER-09] corrigé.
-- [ ] **L5.8** Préréglage et lien `soft = vivid` ([DER-11], [DER-12]),
+- [x] **L5.7** Clavier et accessibilité d'E20 ; [DER-09] corrigé.
+- [x] **L5.8** Préréglage et lien `soft = vivid` ([DER-11], [DER-12]),
   confirmation quand les valeurs diffèrent.
-- [ ] **L5.9** Annulation d'E21 ; rangement au relâchement (D-D).
-- [ ] **L5.10** Bornes [DER-14] à [DER-16].
-- [ ] **L5.11** `test:ui` : glisser au pointeur, flèches, Maj, double-clic,
+- [x] **L5.9** Annulation d'E21 ; rangement au relâchement (D-D).
+- [x] **L5.10** Bornes [DER-14] à [DER-16].
+- [x] **L5.11** `test:ui` : glisser au pointeur, flèches, Maj, double-clic,
   lien et déliaison, annulation ; l'aperçu change pendant le glisser.
-- [ ] **L5.12** Protocole de relecture sur les quatre états de l'éditeur.
-- [ ] **L5.13** Ouvrir M3.
+- [x] **L5.12** Protocole de relecture sur les quatre états de l'éditeur.
+- [x] **L5.13** Ouvrir M3.
 
 Critère : `test:ui` vert sur chaque interaction ; M3 ouvert.
 
@@ -693,6 +693,23 @@ Réponses du mainteneur :
   (D-B).
 
 Traité par le commit qui porte cette entrée, avant le lot 8.
+
+### M3 : l'éditeur de dérive dans Figma
+
+Question : dans Figma, ouvrir une palette, « Régler », glisser une poignée,
+et dire si l'aperçu suit le pointeur sans saccade visible (§16, point 3).
+Puis passer les points (a) et (b) du protocole de relecture : l'onglet
+Palettes et l'éditeur côte à côte avec un panneau natif de Figma, et les
+deux thèmes, en vérifiant le contraste du texte de sévérité à 11 px.
+
+Préparé : hors de Figma, un mouvement de poignée coûte 1,6 ms de travail
+en médiane et 3,8 ms au pire dans Chromium, analyse, aperçu et graphe
+compris (`packages/plugin-palettes/scripts/mesurer-glisser.mjs`). À
+trancher avec ces deux points : l'onglet compte 16 objets au-dessus de la
+ligne de flottaison sur une palette ouverte (L4.14), au-delà de la
+douzaine que le point (e) admet.
+
+Ce point attend M1 : le plugin doit être importé dans Figma.
 
 ### M5 : UCM Exporter après l'extraction du socle
 

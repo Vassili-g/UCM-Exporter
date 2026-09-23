@@ -227,10 +227,11 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
   src/ui/frontiere.ts      la numérotation des demandes, et un seul rangement en vol
   src/ui/configuration.ts  courbes, parts et seuil derrière l'engrenage, avec la garantie des courbes
-  src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG, éditeur replié sous « Régler »
+  src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG ; glisser, clavier, réglettes, préréglage, lien, annulation
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
   galerie/                 les états de l'interface, à la taille par défaut et à la taille minimale
   tests/                   dont la loi d'écriture, et interface/ pour Chromium
+  scripts/mesurer-glisser.mjs  le coût d'un mouvement de poignée, hors des tests
   manifest.json            identifiant provisoire jusqu'au point M1
 
 docs/                    la documentation classée par sujet

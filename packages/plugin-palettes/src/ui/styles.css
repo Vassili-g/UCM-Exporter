@@ -502,3 +502,79 @@
   font-size: 8px;
   font-weight: 600;
 }
+
+.editeur-entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.bouton-discret[aria-pressed='true'] {
+  border-color: var(--bordure-marque);
+}
+
+.champ-prereglage {
+  width: auto;
+  height: var(--hauteur-secondaire);
+}
+
+.reglettes {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.reglette {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.reglette .field-label {
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.reglette .champ-nombre {
+  flex: 0 0 56px;
+  width: 56px;
+}
+
+/* La piste porte le curseur natif et, par-dessus, le repère du préréglage ([DER-06]). */
+.reglette-piste {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+}
+
+.reglette-curseur {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--fond-marque);
+}
+
+.reglette-curseur:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.reglette-repere {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--texte-second);
+  pointer-events: none;
+}
+
+.derive-poignee:focus {
+  outline: none;
+}
+
+.derive-poignee:focus-visible .derive-poignee-rond {
+  stroke: var(--texte);
+  stroke-width: 3;
+}

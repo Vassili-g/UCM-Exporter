@@ -100,7 +100,29 @@ export const TEXTES_DE_LA_DERIVE = {
   grisDesactive: 'La référence est presque grise : sa dérive ne se voit pas.',
   sansSegmentClair: 'La référence est plus claire que le bout clair de la rampe : la dérive claire n’a pas de segment à régler.',
   sansSegmentSombre: 'La référence est plus sombre que le bout sombre de la rampe : la dérive sombre n’a pas de segment à régler.',
+  prereglage: 'Préréglage',
+  tailwind: 'Tailwind',
+  constante: 'Constante',
+  libre: 'Libre',
+  lien: 'soft = vivid',
+  profilRegle: 'Profil réglé',
+  aligner: 'Aligner',
+  annuler: 'Annuler',
+  confirmationDuLien: 'Aligner soft sur vivid ? La dérive de soft sera remplacée par celle de vivid.',
+  bout: { clair: 'Bout clair', sombre: 'Bout sombre' },
+  deriveAuBout: { clair: 'Dérive au bout clair', sombre: 'Dérive au bout sombre' },
+  ramenerAuPrereglage: { clair: 'Ramener le bout clair au préréglage Tailwind', sombre: 'Ramener le bout sombre au préréglage Tailwind' },
 } as const;
+
+/** Ce qu'une poignée annonce au lecteur d'écran ([DER-09]) : l'angle et la teinte absolue. */
+export function valeurDePoignee(angle: number, teinte: number): string {
+  return `${angleEcrit(angle)}, teinte ${Math.round(teinte) % 360}°`;
+}
+
+/** Le repère Tailwind d'une réglette ([DER-06]). */
+export function repereTailwind(angle: number): string {
+  return `Tailwind ${angleEcrit(angle)}`;
+}
 
 /** Un angle signé, au dixième : « −7,5° », « +5,1° », « 0,0° ». */
 export function angleEcrit(degres: number): string {

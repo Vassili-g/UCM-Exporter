@@ -21,7 +21,7 @@ import {
 } from 'ucm-couleur';
 
 import { REPERES, abscisse, ligneBrisee, ordonnee, rangDuPivot, type Cadre } from './geometrie';
-import { etiquetteDePoignee, graduation, infobulleDuPivot } from '../textes';
+import { TEXTES_DE_LA_DERIVE, etiquetteDePoignee, graduation, infobulleDuPivot, valeurDePoignee } from '../textes';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -31,7 +31,8 @@ const Y_CRANS = 164;
 const Y_BANDE = 172;
 const Y_RAMPE = 192;
 const HAUTEUR_DE_CASE = 16;
-const HAUTEUR_TOTALE = Y_RAMPE + HAUTEUR_DE_CASE;
+/** La hauteur du viewBox : un glisser convertit l'ordonnée du pointeur à cette échelle. */
+export const HAUTEUR_TOTALE = Y_RAMPE + HAUTEUR_DE_CASE;
 
 /**
  * La clarté à laquelle la bande peint chaque teinte : celle d'un cran moyen,
@@ -85,7 +86,16 @@ export function createGraphe(): GrapheUi {
   }
 
   function poignee(bout: 'clair' | 'sombre', rang: number, angle: number, teinte: number, initiale: string, total: number): SVGGElement {
-    const groupe = element('g', {});
+    // Une poignée est un curseur au sens WAI-ARIA : focalisable, bornée, et qui dit sa valeur ([DER-09]).
+    const groupe = element('g', {
+      tabindex: 0,
+      role: 'slider',
+      'aria-label': TEXTES_DE_LA_DERIVE.deriveAuBout[bout],
+      'aria-valuemin': -90,
+      'aria-valuemax': 90,
+      'aria-valuenow': angle,
+      'aria-valuetext': valeurDePoignee(angle, teinte),
+    });
     groupe.setAttribute('class', 'derive-poignee');
     groupe.dataset.bout = bout;
     const x = abscisse(rang, CADRE, total);
@@ -95,7 +105,9 @@ export function createGraphe(): GrapheUi {
     const lettre = element('text', { x, y: y + 3, 'text-anchor': 'middle' });
     lettre.setAttribute('class', 'derive-poignee-lettre');
     lettre.textContent = initiale;
-    const etiquette = element('text', { x: bout === 'clair' ? x + 11 : x - 11, y: y - 10, 'text-anchor': bout === 'clair' ? 'start' : 'end' });
+    // Près du haut du cadre, l'étiquette passe sous la poignée : au-dessus, elle sortirait du graphe.
+    const dessous = angle > 60;
+    const etiquette = element('text', { x: bout === 'clair' ? x + 11 : x - 11, y: dessous ? y + 18 : y - 10, 'text-anchor': bout === 'clair' ? 'start' : 'end' });
     etiquette.setAttribute('class', 'derive-graduation');
     etiquette.textContent = etiquetteDePoignee(angle, teinte);
     groupe.append(rond, lettre, etiquette);

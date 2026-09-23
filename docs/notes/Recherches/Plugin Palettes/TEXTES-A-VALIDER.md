@@ -192,6 +192,14 @@ Lignes simples, sans les trois parties :
   touchée », « {n} palettes touchées » ;
 - configuration, nombre refusé : « « {saisie} » n'est pas un nombre : 0,5 ou
   0.5 par exemple. » ;
+- éditeur de dérive : « Régler », « Replier », « Préréglage », « Tailwind »,
+  « Constante », « Libre », « soft = vivid », « Profil réglé », « Bout
+  clair », « Bout sombre » ; confirmation du lien : « Aligner soft sur
+  vivid ? La dérive de soft sera remplacée par celle de vivid. » ; bouts
+  sans segment : « La référence est plus claire que le bout clair de la
+  rampe : la dérive claire n'a pas de segment à régler. », et son pendant
+  sombre ; référence grise : « La référence est presque grise : sa dérive
+  ne se voit pas. » ;
 - configuration sans recette lisible : « La recette du fichier ne se lit pas :
   sa configuration attend une recette lisible. »
 
