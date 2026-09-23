@@ -1,0 +1,15 @@
+{
+  "name": "ucm-couleur",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Le moteur de couleur d'UCM Palettes : conversions, plafond de chroma, rampes, préréglage Tailwind et contraste, sans Figma ni DOM.",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/tsconfig.json",
+    "test": "node scripts/run-tests.cjs"
+  }
+}

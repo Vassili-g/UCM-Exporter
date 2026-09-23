@@ -180,6 +180,16 @@ packages/adapter-typescript/  l'adaptateur opt-in : parité TS/TSX et types gén
   src/index.mjs               ce que `ucm check` charge quand il le découvre
   src/index.d.mts             ce que cette porte promet à un consommateur TS
 
+packages/couleur/        le moteur de couleur d'UCM Palettes : ucm-couleur, privé, lu en source
+  src/conversions.ts       hexa, sRGB, linéaire, Oklab, OKLCH et Display P3
+  src/plafond.ts           la plus grande chroma que sRGB porte, mémorisée
+  src/rampe.ts             un cran, la teinte pivotée, les quatre rampes d'une palette
+  src/tailwind.ts          le préréglage Tailwind et son relevé
+  src/contraste.ts         contraste WCAG 2, ΔEok, part de chroma, écriture à virgule
+  src/index.ts             la porte du paquet
+  scripts/mesurer-temps.mjs  la médiane de cent palettes, hors des tests
+  tests/                   vecteurs figés, propriétés, et la loi de pureté
+
 docs/                    la documentation classée par sujet
   README.md              le sommaire par profil de lecteur, et la table des autorités
   format/                la forme publiée, sa compatibilité et son historique
@@ -786,6 +796,21 @@ La spécification en lien porte le raisonnement.
   un chemin, et le chemin bouge. Toute écriture se relit, une écriture perdue
   ne levant pas.
   → [spec](./packages/plugin/SPEC.md#comment-lécriture-range-une-règle)
+
+### Moteur de couleur
+
+- Le moteur de couleur ne lit ni `figma`, ni le DOM, ni l'heure, ni le hasard,
+  ni la langue du poste : les mêmes entrées rendent les mêmes octets dans Node,
+  dans l'iframe d'un plugin et dans le sandbox Figma. Le `tsconfig.json` de
+  `packages/couleur` compile `src/` en ES2020 sans type d'environnement, et
+  `packages/couleur/tests/loiDePurete.test.ts` refuse ce qu'ES2020 déclare :
+  `Date`, `Math.random`, `Intl`, `toLocaleString`, avec `TextEncoder`. Borne :
+  la loi lit le texte ligne à ligne, commentaires retirés.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#6-le-moteur-de-couleur)
+- À la clarté de la couleur de référence, la teinte vaut celle de la référence,
+  quelle que soit la dérive. `teinteA` (`packages/couleur/src/rampe.ts`) en est
+  l'unique autorité, et `proprietes.test.ts` l'éprouve sur vingt mille tirages.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#64-la-teinte-dun-cran)
 
 ## Vérification
 

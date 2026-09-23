@@ -35,6 +35,7 @@ const DOMAINES = [
   'Echantillon de maquette',
   'Versionnage',
   'Ecriture dans le document',
+  'Moteur de couleur',
 ];
 
 /**
@@ -141,6 +142,8 @@ const AUTORITES = [
   'override.visible',
   'overrides',
   'packages/kit/schema/ucm-contract.schema.json',
+  'packages/couleur/src/rampe.ts',
+  'packages/couleur/tests/loiDePurete.test.ts',
   'packages/kit/src/format/names.ts',
   'packages/plugin/tests/lois.ts',
   'padding.x',
@@ -182,6 +185,7 @@ const AUTORITES = [
   'tests/loiDesParties.test.ts',
   'textSlots',
   'textStyles',
+  'teinteA',
   'tokenCssVariable',
   'tokens.json',
   'tokensUsed',
@@ -372,7 +376,7 @@ const ENONCES_SPEC = [
 const sansAccent = (texte: string): string =>
   texte.normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-test("les onze domaines d'invariants sont la, dans leur ordre", () => {
+test("les douze domaines d'invariants sont la, dans leur ordre", () => {
   const bloc = sansAccent(sectionDesInvariants());
   const trouves = [...bloc.matchAll(/^### (.+)$/gm)].map((t) => t[1].trim());
   assert.deepEqual(trouves, DOMAINES);

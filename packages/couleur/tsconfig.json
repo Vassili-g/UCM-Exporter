@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "moduleResolution": "Bundler",
+    // Le moteur tourne dans Node, dans l'iframe du plugin et dans le sandbox
+    // Figma, et doit y rendre les mêmes octets. Sans DOM ni types
+    // d'environnement, `figma`, `document`, `window` et `performance` sont des
+    // erreurs de compilation. `Array.prototype.at` est hors d'ES2020.
+    "lib": ["ES2020"],
+    "types": [],
+    "noEmit": true
+  },
+  "include": ["src/**/*"]
+}

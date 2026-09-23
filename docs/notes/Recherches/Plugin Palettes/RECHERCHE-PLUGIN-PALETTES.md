@@ -149,6 +149,12 @@ dans l'iframe du plugin et dans le sandbox Figma.
 - `[MOT-06]` `plafond(L, H, gamut)` rend la plus grande chroma que le gamut
   porte à cette clarté et cette teinte. Dichotomie sur `[0, 0.5]`, 50
   itérations, tolérance d'appartenance au gamut `1e-6` par composante linéaire.
+  La dichotomie rend la première sortie du gamut sur le rayon de chroma. Au
+  coin du bleu primaire, le rayon sort avant d'atteindre le coin : `#0000FF`
+  porte une chroma de 0,313, et le plafond à sa clarté et sa teinte vaut 0,266.
+  Sur les 360 teintes entières aux clartés des deux courbes, aucun rayon ne
+  rentre dans le gamut au-delà du plafond. La tolérance donne aussi un plafond
+  non nul au noir, 0,02 au plus, sous la courbe sombre.
 - `[MOT-07]` Le résultat est mémorisé par clé `L|H|gamut`. La mémoire est bornée
   à 20 000 entrées et vidée au-delà.
 - `[MOT-08]` Seul `srgb` est implémenté. Une recette qui demande un autre gamut
@@ -267,17 +273,20 @@ dérive du côté sombre, une référence foncée du côté clair.
 - `[MOT-21]` Le contraste est celui de WCAG 2 : luminance relative
   `0.2126 R + 0.7152 G + 0.0722 B` sur les composantes linéaires de `rgb8`,
   puis `(Yhaut + 0.05) / (Ybas + 0.05)`.
-- `[MOT-22]` Une comparaison à un seuil se fait sur la valeur brute. L'affichage
-  tronque à deux décimales : 4,499 s'affiche 4,49 et échoue à 4,5. La troncature
-  coupe l'écriture décimale à dix chiffres (`toFixed(10)`) après la deuxième
-  décimale : `Math.floor(x × 100) / 100` rendrait 4,34 pour 4,35. Le moteur
+- `[MOT-22]` Une comparaison à un seuil se fait sur la valeur écrite à dix
+  décimales (`toFixed(10)`), jamais sur l'affichage. L'affichage tronque cette
+  même écriture après la deuxième décimale : 4,499 s'affiche 4,49 et échoue à
+  4,5. `Math.floor(x × 100) / 100` rendrait 4,34 pour 4,35. Comparer la valeur
+  brute ferait échouer un contraste de 4,5 moins 1e-11, que l'affichage écrit
+  4,50. Le moteur
   écrit lui-même la virgule décimale, sans `Intl` ni `toLocaleString`, dont la
   sortie dépend de l'environnement. Un test vérifie que l'affichage et le
   verdict concordent.
 - `[MOT-23]` La distance entre deux couleurs est la distance euclidienne en
   Oklab, sur `rgb8`, notée ΔEok.
 - `[MOT-24]` La part de chroma d'une couleur est `C / plafond(L, H, gamut)`,
-  bornée à `[0, 1]`.
+  bornée à `[0, 1]`. Une couleur sans teinte (`[MOT-04]`) a une part nulle : le
+  blanc relu porte une chroma de 4e-8 contre un plafond de 2e-7.
 
 ### 6.7 Peindre dans l'espace du document
 

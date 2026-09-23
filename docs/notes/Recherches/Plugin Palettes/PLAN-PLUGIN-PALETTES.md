@@ -207,39 +207,39 @@ contredit plus ce plan.
 Spécification : [section 6](./RECHERCHE-PLUGIN-PALETTES.md#6-le-moteur-de-couleur).
 Paquet `packages/couleur`, nom `ucm-couleur`.
 
-- [ ] **L1.1** Paquet : `package.json` privé avec
+- [x] **L1.1** Paquet : `package.json` privé avec
   `"exports": { ".": "./src/index.ts" }`, sans étape de build ; esbuild, tsx et
   tsc en résolution `Bundler` lisent la source. Scripts `test` et `typecheck`.
   `scripts/run-tests.cjs` copié de celui du kit. `npm install`, lock commité.
-- [ ] **L1.2** Deux `tsconfig`. Celui de `src/` pose `lib: ["ES2020"]` et
+- [x] **L1.2** Deux `tsconfig`. Celui de `src/` pose `lib: ["ES2020"]` et
   `types: []` : `figma`, `document`, `window` et `performance` y deviennent des
   erreurs de compilation. Celui de `tests/` ajoute les types de Node.
   `Array.prototype.at` est hors d'ES2020 et reste interdit.
-- [ ] **L1.3** Loi de pureté, textuelle, sur ce que le compilateur ne voit
+- [x] **L1.3** Loi de pureté, textuelle, sur ce que le compilateur ne voit
   pas : `Date`, `Math.random`, `Intl`, `toLocaleString`, `TextEncoder`.
-- [ ] **L1.4** `conversions.ts` : [MOT-01] à [MOT-05], plus la conversion P3
+- [x] **L1.4** `conversions.ts` : [MOT-01] à [MOT-05], plus la conversion P3
   vers sRGB d'E10.
-- [ ] **L1.5** `plafond.ts` : [MOT-06] à [MOT-08].
-- [ ] **L1.6** `rampe.ts` : [MOT-09] à [MOT-17], teinte pivotée de §6.4, parts
+- [x] **L1.5** `plafond.ts` : [MOT-06] à [MOT-08].
+- [x] **L1.6** `rampe.ts` : [MOT-09] à [MOT-17], teinte pivotée de §6.4, parts
   propres d'une palette, arrondi d'E3. Expose aussi le chemin sans arrondi à 8
   bits, pour L1.10.
-- [ ] **L1.7** `tailwind.ts` : [MOT-18] à [MOT-20], relevé par défaut des
+- [x] **L1.7** `tailwind.ts` : [MOT-18] à [MOT-20], relevé par défaut des
   dix-sept paires de `mesurer-recette.mjs`.
-- [ ] **L1.8** `contraste.ts` : [MOT-21] à [MOT-24], troncature d'E8, écriture
+- [x] **L1.8** `contraste.ts` : [MOT-21] à [MOT-24], troncature d'E8, écriture
   décimale à virgule.
-- [ ] **L1.9** Vecteurs, premier jeu de §6.8 : calculés une fois par un script
+- [x] **L1.9** Vecteurs, premier jeu de §6.8 : calculés une fois par un script
   jetable avec culori, hors des dépendances, puis figés dans le test. Le script
   ne se commite pas ; le test dit d'où viennent les nombres.
-- [ ] **L1.10** Critère de l'architecture : les minima de `verifier-courbes.mjs`,
+- [x] **L1.10** Critère de l'architecture : les minima de `verifier-courbes.mjs`,
   relevés en L0.2, figés dans un test sur le chemin sans arrondi, à 0,01 près.
-- [ ] **L1.11** Second jeu de §6.8 recalculé par le moteur, comparé au script,
+- [x] **L1.11** Second jeu de §6.8 recalculé par le moteur, comparé au script,
   puis figé.
-- [ ] **L1.12** Tests de propriété : pivot pour toute dérive et toute référence
+- [x] **L1.12** Tests de propriété : pivot pour toute dérive et toute référence
   dans `[Ls, Lc]` ; [MOT-12] ; plafond jamais hors gamut sur 360 teintes.
-- [ ] **L1.13** Script `packages/couleur/scripts/mesurer-temps.mjs` pour
+- [x] **L1.13** Script `packages/couleur/scripts/mesurer-temps.mjs` pour
   [MOT-13] : médiane de cent calculs d'une palette de 44 crans. Chiffre dans le
   commit.
-- [ ] **L1.14** AGENTS.md : `packages/couleur` dans la carte du code ; invariant
+- [x] **L1.14** AGENTS.md : `packages/couleur` dans la carte du code ; invariant
   de pureté avec sa loi.
 
 Critère : vecteurs et propriétés verts ; loi de pureté vue rouge ; médiane
