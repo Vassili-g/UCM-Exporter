@@ -278,7 +278,8 @@ est une règle du format, pas un choix d’implémentation :
 Tout bug corrigé doit être reproduit par un test. La logique pure se teste avec
 des objets Figma minimaux et des dépendances injectées.
 
-Chaque paquet a son `scripts/run-tests.cjs`, qui découvre les fichiers
+Chaque paquet découvre ses tests par son `scripts/run-tests.cjs` ; le socle des
+plugins range le sien sous `build/`. Le script lance les fichiers
 `tests/*.test.ts` et `tests/*.test.mjs` de son dossier.
 
 Une loi de forme d’un contrat s’écrit dans `packages/plugin/tests/lois.ts` et

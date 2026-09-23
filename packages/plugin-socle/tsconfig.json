@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Comme pour UCM Exporter : npm hisse les dépendances à la racine, et le
+    // global `figma` vient de ses typages.
+    "typeRoots": ["../../node_modules/@types", "../../node_modules/@figma"],
+    "moduleResolution": "Bundler",
+    "noEmit": true
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}

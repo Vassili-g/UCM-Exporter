@@ -95,7 +95,7 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
     variables.ts               index commun, collisions et alias
     base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
     config.ts                  la configuration locale : dépôts, dépôt actif, clé de destination, reprise des anciennes clés
-    fenetre.ts                 la taille de la fenêtre, ses bornes et son rangement
+    fenetre.ts                 les bornes et la clé de la fenêtre ; le socle la lit et la range
     connexion.ts               ce que vaut la connexion au dépôt, et le geste qu'elle demande
     prevol.ts                  ce que l'analyse conclut avant d'écrire, et l'action qu'elle propose
     cible.ts                   ce sur quoi l'export porte, et pourquoi il ne porte pas
@@ -195,6 +195,13 @@ packages/couleur/        le moteur de couleur d'UCM Palettes : ucm-couleur, priv
   src/index.ts             la porte du paquet
   scripts/mesurer-temps.mjs  la médiane de cent palettes, hors des tests
   tests/                   vecteurs figés, propriétés, et la loi de pureté
+
+packages/plugin-socle/   ce que les plugins partagent : ucm-plugin-socle, privé, lu en source
+  build/inline-ui.cjs      du bundle et des feuilles de style à un HTML autonome
+  build/manifest.cjs       le manifest de distribution
+  build/run-tests.cjs      le découvreur de tests, que chaque plugin appelle
+  src/fenetre.ts           la taille bornée de la fenêtre, rangée dans clientStorage
+  tests/                   le build, le manifest et la fenêtre, pour des bornes quelconques
 
 docs/                    la documentation classée par sujet
   README.md              le sommaire par profil de lecteur, et la table des autorités
@@ -826,8 +833,9 @@ npm run typecheck
 npm run build
 ```
 
-Chaque paquet a son `scripts/run-tests.cjs`, qui découvre les fichiers
-`tests/*.test.ts` et `tests/*.test.mjs` de son dossier. Tout bug corrigé
+Chaque paquet a son `scripts/run-tests.cjs`, `build/run-tests.cjs` dans le socle,
+qui découvre les fichiers `tests/*.test.ts` et `tests/*.test.mjs` de son dossier.
+Tout bug corrigé
 reçoit un test de régression.
 
 `npm run cascade` charge la feuille des tokens dans Chromium, Firefox et

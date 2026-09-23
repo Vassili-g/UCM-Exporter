@@ -284,7 +284,7 @@ Paquet `packages/plugin-socle`, nom `ucm-plugin-socle`. Ce lot touche UCM
 Exporter : la preuve porte sur son DOM, les captures n'étant pas
 reproductibles.
 
-- [ ] **L8.1** Relevé avant, dans un worktree isolé, par un script hors du
+- [x] **L8.1** Relevé avant, dans un worktree isolé, par un script hors du
   dépôt : pour chaque état de la galerie d'UCM Exporter, rejoué par Playwright
   dans Chromium, transitions neutralisées et attente de `data-galerie="pret"`,
   relever le `innerHTML` de `#app` et le style calculé de chaque élément.
@@ -292,11 +292,11 @@ reproductibles.
 
 ### 8a : scripts, manifest, fenêtre
 
-- [ ] **L8.2** Build de l'interface, manifest, découvreur de tests et fenêtre
+- [x] **L8.2** Build de l'interface, manifest, découvreur de tests et fenêtre
   dans le socle, bornes et clé en paramètres. Fichiers relais laissés là où les
   tests d'UCM Exporter les attendent (`buildUi.test.ts` fait un `require` de
   `../scripts/build-ui.cjs`).
-- [ ] **L8.3** Relevé après, comparaison. Commit.
+- [x] **L8.3** Relevé après, comparaison. Commit.
 
 ### 8b : feuille de style, composants et en-tête
 

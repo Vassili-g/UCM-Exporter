@@ -1,0 +1,15 @@
+{
+  "name": "ucm-plugin-socle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ce que les plugins Figma d'UCM partagent : build de l'interface, manifest, découvreur de tests, fenêtre, feuille de style, composants et banc de galerie. Lu en source, jamais publié.",
+  "license": "MIT",
+  "exports": {
+    "./build/*": "./build/*",
+    "./src/*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node build/run-tests.cjs"
+  }
+}
