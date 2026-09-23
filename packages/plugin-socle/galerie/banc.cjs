@@ -62,6 +62,16 @@ function pilote(etat) {
         champ.dispatchEvent(new Event('input', { bubbles: true }));
       } else if (etape.erreurUi) {
         window.dispatchEvent(new ErrorEvent('error', { message: etape.erreurUi }));
+      } else if (etape.survol) {
+        var survolee = document.querySelector(etape.survol);
+        if (!survolee) throw new Error('Galerie : aucun élément pour ' + etape.survol);
+        survolee.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+        survolee.dispatchEvent(new MouseEvent('mouseenter'));
+      } else if (etape.touche) {
+        var touchee = document.querySelector(etape.touche.dans);
+        if (!touchee) throw new Error('Galerie : aucun élément pour ' + etape.touche.dans);
+        touchee.focus();
+        touchee.dispatchEvent(new KeyboardEvent('keydown', { key: etape.touche.cle, bubbles: true }));
       }
       await pause(8);
     }

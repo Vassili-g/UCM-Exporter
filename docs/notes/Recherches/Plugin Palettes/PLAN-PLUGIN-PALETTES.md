@@ -437,19 +437,19 @@ avec E22.
 
 ### 4a : aperçu et verdict
 
-- [ ] **L4.1** Barre du haut : sélecteur de palette [UI-06], verdict, bouton
+- [x] **L4.1** Barre du haut : sélecteur de palette [UI-06], verdict, bouton
   « Dessiner » inactif jusqu'au lot 6 et marqué comme tel.
-- [ ] **L4.2** Référence et nom ; part de chroma et cran le plus proche.
-- [ ] **L4.3** Aperçu [UI-04] : bascule `light` et `dark`, deux rampes de onze
+- [x] **L4.2** Référence et nom ; part de chroma et cran le plus proche.
+- [x] **L4.3** Aperçu [UI-04] : bascule `light` et `dark`, deux rampes de onze
   pastilles de 24 px ; survol et focus donnent nom, hexa, contrastes, emplois.
   Tabulation mobile sur les pastilles, flèches pour se déplacer.
-- [ ] **L4.4** Promesses manquées, puis alertes, puis notices, dans l'ordre de
+- [x] **L4.4** Promesses manquées, puis alertes, puis notices, dans l'ordre de
   L2.3, avec les textes provisoires.
-- [ ] **L4.5** Ligne repliée de la dérive (E22), sans l'éditeur.
-- [ ] **L4.6** Galerie : Palette en saisie, promesses manquées, alertes seules,
+- [x] **L4.5** Ligne repliée de la dérive (E22), sans l'éditeur.
+- [x] **L4.6** Galerie : Palette en saisie, promesses manquées, alertes seules,
   couleur presque grise, notice `LEGACY`. Étapes `survol` et `touche` au banc
   du socle, jouées par ces états, sous la preuve de L8.1.
-- [ ] **L4.7** `test:ui` : à 440 × 520, verdict, « Dessiner » et première
+- [x] **L4.7** `test:ui` : à 440 × 520, verdict, « Dessiner » et première
   promesse manquée visibles sans défiler.
 
 ### 4b : gestion des palettes et rangement
@@ -457,7 +457,7 @@ avec E22.
 - [ ] **L4.8** Créer, renommer, dupliquer, réordonner, supprimer [ENT-03] ;
   identifiants de D-K.
 - [ ] **L4.9** Créer depuis la sélection [ENT-04], avec E10.
-- [ ] **L4.10** [ENT-01] : changer la référence recalcule le préréglage selon
+- [x] **L4.10** [ENT-01] : changer la référence recalcule le préréglage selon
   l'origine de la dérive.
 - [ ] **L4.11** Rangement automatique de D-D, avec l'empreinte lue (E13).
   Indication discrète de rang 3 : « rangé » ou « rangement… ».

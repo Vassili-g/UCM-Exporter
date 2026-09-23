@@ -4,7 +4,21 @@
  * mainteneur au point M2. Un constat a trois parties : où, quoi, geste
  * ([VER-09]).
  */
-import { FORMAT_RECETTE, type Refus, type RegleRecette } from 'ucm-couleur';
+import {
+  FORMAT_RECETTE,
+  ecrireArrondi,
+  ecrireContraste,
+  type Alerte,
+  type DeriveRangee,
+  type EmploiDUnCran,
+  type MembrePaire,
+  type Mode,
+  type Palette,
+  type Promesse,
+  type Recette,
+  type Refus,
+  type RegleRecette,
+} from 'ucm-couleur';
 
 export const TEXTES = {
   titre: 'UCM Palettes',
@@ -14,7 +28,190 @@ export const TEXTES = {
   ongletPlanche: 'Planche',
   lectureEnCours: 'Lecture de la recette du fichier…',
   recetteAbsente: 'Aucune recette dans ce fichier : la recette par défaut s’appliquera à la première palette.',
+  choisirUnePalette: 'Choisir la palette ouverte',
+  dessiner: 'Dessiner',
+  dessinAVenir: 'Le dessin sur la planche n’est pas encore disponible.',
+  prete: 'Prête',
+  reference: 'Référence',
+  nom: 'Nom',
+  apercu: 'Aperçu des rampes',
+  modesDeLApercu: 'Mode de l’aperçu',
+  modeClair: 'Clair',
+  modeSombre: 'Sombre',
+  detailParDefaut: 'Survolez une pastille pour lire son hexa, ses contrastes et ses emplois.',
+  titrePromesses: 'Promesses manquées',
+  titreAlertes: 'Alertes',
+  titreNotices: 'Notices',
 } as const;
+
+/** Le nom qu'une palette affiche : son nom, ou son hexa de référence. */
+export function nomDeLaPalette(palette: Palette): string {
+  return palette.nom?.trim() ? palette.nom : palette.reference;
+}
+
+/** Le verdict d'une palette ([VER-07]). */
+export function verdict(manquees: number): string {
+  if (manquees === 0) return TEXTES.prete;
+  return manquees === 1 ? '1 promesse manquée' : `${manquees} promesses manquées`;
+}
+
+const ADJECTIF_DU_MODE: Record<Mode, string> = { light: 'claire', dark: 'sombre' };
+const NOM_DU_MODE: Record<Mode, string> = { light: 'clair', dark: 'sombre' };
+
+/** Un seuil de contraste : « 4,5 », « 3 ». */
+const seuilEcrit = (valeur: number): string => ecrireArrondi(valeur, 1).replace(/,0$/, '');
+
+/** La part de la référence, celles des deux profils, et le cran le plus proche ([PLA-08]). */
+export function ligneDeLaPart(part: number, soft: number, vivid: number, cranProche: number): string {
+  return `part de chroma ${ecrireArrondi(part, 2)} · soft ${ecrireArrondi(soft, 2)} · vivid ${ecrireArrondi(vivid, 2)} · proche du cran ${cranProche}`;
+}
+
+const ORIGINES: Record<DeriveRangee['origine'], string> = { tailwind: 'Tailwind', constante: 'Constante', libre: 'Libre' };
+
+function angle(degres: number): string {
+  const signe = degres > 0 ? '+' : degres < 0 ? '−' : '';
+  return `${signe}${ecrireArrondi(Math.abs(degres), 1)}°`;
+}
+
+function uneDerive(derive: DeriveRangee): string {
+  return `${ORIGINES[derive.origine]} · clair ${angle(derive.clair)} · sombre ${angle(derive.sombre)}`;
+}
+
+/** La ligne repliée de la dérive (E22) : une seule quand les profils sont liés. */
+export function ligneDeLaDerive(palette: Palette): string {
+  const { lien, soft, vivid } = palette.derive;
+  return lien ? `Dérive ${uneDerive(vivid)}` : `Dérive soft ${uneDerive(soft)} ; vivid ${uneDerive(vivid)}`;
+}
+
+const ETATS_DU_DECALAGE = ['', ' survol', ' appui'];
+
+/** Un emploi et son état : « text survol ». */
+export function emploiEcrit({ emploi, decalage }: EmploiDUnCran): string {
+  return `${emploi}${ETATS_DU_DECALAGE[decalage] ?? ` +${decalage}`}`;
+}
+
+function membre(membrePaire: MembrePaire): string {
+  return 'fond' in membrePaire ? 'fond' : emploiEcrit(membrePaire);
+}
+
+/** Ce qu'un cran de l'aperçu montre au survol et au focus ([UI-04]). */
+export interface DetailDuCran {
+  readonly nom: string;
+  readonly hexa: string;
+  readonly fond: number;
+  readonly seuilTenu: number | null;
+  readonly blanc: number;
+  readonly noir: number;
+  readonly emplois: readonly EmploiDUnCran[];
+}
+
+export function detailDuCran(detail: DetailDuCran): string {
+  const seuil = detail.seuilTenu === null ? '–' : seuilEcrit(detail.seuilTenu);
+  const emplois = detail.emplois.length > 0 ? detail.emplois.map(emploiEcrit).join(', ') : 'aucun emploi';
+  return [
+    detail.nom,
+    detail.hexa,
+    `fond ${ecrireContraste(detail.fond)} (${seuil})`,
+    `blanc ${ecrireContraste(detail.blanc)}`,
+    `noir ${ecrireContraste(detail.noir)}`,
+    emplois,
+  ].join(' · ');
+}
+
+/** Un constat qui montre aussi des pastilles côte à côte ([VER-12]). */
+export interface ConstatIllustre extends Constat {
+  readonly pastilles?: readonly string[];
+}
+
+/** Une promesse manquée ([VER-06]). */
+export function constatDePromesse(promesse: Promesse, nom: string): Constat {
+  const { paire, mode, profil } = promesse;
+  const cran = [promesse.premier, promesse.second].find((designation) => designation.nature === 'cran');
+  const numero = cran && cran.nature === 'cran' ? cran.cran : '';
+  return {
+    ou: `${nom}, ${NOM_DU_MODE[mode]}, ${profil} : ${membre(paire.premier)} sur ${membre(paire.second)}`,
+    quoi: `Contraste ${ecrireContraste(promesse.contraste)} pour ${seuilEcrit(promesse.seuil)} demandé : le cran ${numero} ne tient pas la table des emplois.`,
+    geste: `Réglez la dérive ou les parts de la palette, ou la courbe ${ADJECTIF_DU_MODE[mode]} dans la configuration.`,
+  };
+}
+
+/** Ce que la mise en mots d'une alerte lit de la recette. */
+export interface ContexteDAlerte {
+  readonly recette: Recette;
+  readonly nomDe: (id: string) => string;
+}
+
+const referenceLue = (contexte: ContexteDAlerte, id: string): string =>
+  contexte.recette.palettes.find((palette) => palette.id === id)?.reference ?? '';
+
+/** Une alerte ou une notice de la section 11.3. */
+export function constatDAlerte(alerte: Alerte, contexte: ContexteDAlerte): ConstatIllustre {
+  switch (alerte.code) {
+    case 'profils-confondus': {
+      const plusProche = Math.min(...alerte.crans.map((cran) => cran.distance));
+      const crans = alerte.crans.map((cran) => `${NOM_DU_MODE[cran.mode]} ${cran.cran}`).join(', ');
+      return {
+        ou: `${contexte.nomDe(alerte.palette)}, crans ${crans}`,
+        quoi: `soft et vivid ne s’écartent que de ${ecrireArrondi(plusProche, 3)} ΔEok, sous ${ecrireArrondi(alerte.seuil, 2)}.`,
+        geste: 'Éloignez les parts de chroma des deux profils dans la configuration.',
+      };
+    }
+    case 'reference-plus-claire-que-bouton':
+      return {
+        ou: `${contexte.nomDe(alerte.palette)}, couleur de référence ${alerte.reference}`,
+        quoi: `Les boutons ne seront pas de cette couleur. Au cran 700, qui porte les boutons et les textes, elle devient ${alerte.bouton}, plus foncée.`,
+        geste: 'Gardez cette couleur pour le logo et les aplats de charte, ou choisissez une référence plus sombre.',
+        pastilles: [alerte.reference, alerte.bouton],
+      };
+    case 'palettes-proches':
+      return {
+        ou: `${contexte.nomDe(alerte.palettes[0])} et ${contexte.nomDe(alerte.palettes[1])}`,
+        quoi: `Crans 500, 600 et 700 en vivid clair : ${ecrireArrondi(alerte.distance, 3)} ΔEok en moyenne, sous ${ecrireArrondi(alerte.seuil, 2)}.`,
+        geste: 'Gardez une seule des deux palettes, ou éloignez leurs couleurs de référence.',
+      };
+    case 'couleur-presque-grise':
+      return {
+        ou: `${contexte.nomDe(alerte.palette)}, couleur de référence ${referenceLue(contexte, alerte.palette)}`,
+        quoi: `Chroma ${ecrireArrondi(alerte.chroma, 3)}, sous ${ecrireArrondi(alerte.seuil, 2)} : la dérive de teinte est désactivée, et les deux profils prennent la part de la référence.`,
+        geste: 'Pour une rampe colorée, choisissez une référence plus saturée.',
+      };
+    case 'reference-plus-terne':
+      return {
+        ou: `${contexte.nomDe(alerte.palette)}, couleur de référence ${referenceLue(contexte, alerte.palette)}`,
+        quoi: `Part de chroma ${ecrireArrondi(alerte.part, 2)}, sous celle de soft (${ecrireArrondi(alerte.partSoft, 2)}) : les deux rampes sont plus vives que la référence.`,
+        geste: 'Baissez les parts de cette palette dans « Avancé », ou choisissez une référence plus saturée.',
+      };
+    case 'reference-plus-vive':
+      return {
+        ou: `${contexte.nomDe(alerte.palette)}, couleur de référence ${referenceLue(contexte, alerte.palette)}`,
+        quoi: `Part de chroma ${ecrireArrondi(alerte.part, 2)}, au-dessus de vivid (${ecrireArrondi(alerte.partVivid, 2)}) : la rampe vivid est un peu plus terne que la référence.`,
+        geste: 'Montez la part de vivid dans « Avancé » si la rampe doit l’égaler.',
+      };
+    case 'reference-hors-rampe':
+      return {
+        ou: `${contexte.nomDe(alerte.palette)}, couleur de référence ${referenceLue(contexte, alerte.palette)}`,
+        quoi: `Clarté ${ecrireArrondi(alerte.clarte, 3)}, hors des bouts de la rampe (${ecrireArrondi(alerte.boutSombre, 3)} à ${ecrireArrondi(alerte.boutClair, 3)}) : un seul segment de dérive se règle.`,
+        geste: 'Réglez la dérive du bout qui reste, ou choisissez une référence dans la rampe.',
+      };
+    case 'fond-hors-courbe': {
+      const sens = alerte.mode === 'light' ? 'plus sombre' : 'plus claire';
+      return {
+        ou: `Fond de référence ${NOM_DU_MODE[alerte.mode]}, ${contexte.recette.fonds[alerte.mode]}`,
+        quoi: `Clarté ${ecrireArrondi(alerte.clarte, 3)}, ${sens} que le cran 50 (${ecrireArrondi(alerte.cran, 3)}) : les contrastes promis supposent ce cran.`,
+        geste: 'Rapprochez le fond du cran 50, ou acceptez des promesses mesurées sur ce fond.',
+      };
+    }
+  }
+}
+
+/** La notice d'un document sans profil de couleur géré. */
+export function noticeLegacy(): Constat {
+  return {
+    ou: 'Document, profil de couleur',
+    quoi: 'Profil non géré : Figma ne dit pas dans quel espace les couleurs de la planche seront peintes.',
+    geste: 'Choisissez sRGB ou Display P3 dans les réglages de couleur du fichier.',
+  };
+}
 
 /** Le nombre de palettes que la recette rangée porte. */
 export function palettesDuFichier(nombre: number): string {

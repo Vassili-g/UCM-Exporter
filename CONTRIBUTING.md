@@ -311,7 +311,9 @@ npm run test:ui --workspace ucm-exporter-plugin
 npm run test:ui --workspace ucm-palettes-plugin
 ```
 
-Chaque commande reconstruit l'interface de son plugin. Elle demande le navigateur installé par
+Chaque commande reconstruit l'interface de son plugin. Celle d'UCM Palettes
+reconstruit aussi ses galeries, dont elle rejoue des pages pour éprouver les
+étapes du banc. Elle demande le navigateur installé par
 `npx playwright install chromium` ; le job `cascade` de la CI l'exécute après
 les vérifications de la feuille de tokens.
 

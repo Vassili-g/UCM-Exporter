@@ -35,6 +35,19 @@ export function rampesDe(recette: Recette, palette: Palette): Rampes {
   });
 }
 
+/**
+ * Le cran dont la clarté de la courbe claire est la plus proche de celle de la
+ * référence ([PLA-08]). À égalité, le premier dans l'ordre de `crans`.
+ */
+export function cranLePlusProche(recette: Recette, palette: Palette): number {
+  const L = rgb8VersOklch(referenceDe(palette)).L;
+  let meilleur = 0;
+  recette.courbes.light.forEach((clarte, rang) => {
+    if (Math.abs(clarte - L) < Math.abs(recette.courbes.light[meilleur] - L)) meilleur = rang;
+  });
+  return recette.crans[meilleur];
+}
+
 /** Vrai quand la chroma de la référence est sous `seuils.chromaGrise` ([MOT-18]). */
 export function estPresqueGrise(recette: Recette, palette: Palette): boolean {
   return rgb8VersOklch(referenceDe(palette)).C < recette.seuils.chromaGrise;

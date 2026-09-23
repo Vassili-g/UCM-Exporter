@@ -5,6 +5,7 @@ import test from 'node:test';
 import {
   CRANS_DES_EMPLOIS,
   ajusterPartsGrises,
+  cranLePlusProche,
   alertesDePalette,
   alertesDeRecette,
   distanceDePalettes,
@@ -131,4 +132,11 @@ test('[ENT-09] des parts du designer restent, grise ou non', () => {
   const parts = { soft: 0.3, vivid: 0.6, origine: 'designer' } as const;
   assert.deepEqual(ajusterPartsGrises(recette, paletteTailwind('p-0000000c', '#6B7280', { parts })).parts, parts);
   assert.deepEqual(ajusterPartsGrises(recette, { ...BLEU, parts }).parts, parts);
+});
+
+test('[PLA-08] le cran le plus proche en clarté : 600 pour #1E6FD9, 300 pour #FACC15', () => {
+  // #1E6FD9 a une clarté de 0,555 : 0,585 au 600, 0,5 au 700.
+  assert.equal(cranLePlusProche(recetteAvec(BLEU), BLEU), 600);
+  const jaune = paletteTailwind('p-00000012', '#FACC15');
+  assert.equal(cranLePlusProche(recetteAvec(jaune), jaune), 300);
 });

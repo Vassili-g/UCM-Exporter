@@ -4,9 +4,225 @@
  * packages/plugin-socle, que le build place avant cette feuille.
  */
 
-/* Rang 3 : l'état de la lecture informe sans rien demander. */
-.etat-lecture {
+/* Rang 3 : ce qui informe sans rien demander. */
+.etat-lecture,
+.ligne-secondaire,
+.detail-cran,
+.constats-titre {
   color: var(--texte-second);
+}
+
+/*
+ * Rang 1 : la barre du haut porte le sélecteur, le verdict et « Dessiner ».
+ * Elle se lit sans défiler, à la plus petite taille de fenêtre.
+ */
+.barre-palette {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+.barre-verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.verdict {
+  font-size: var(--libelle);
+  font-weight: 600;
+  line-height: var(--libelle-interligne);
+}
+
+.verdict[data-etat='manque'] {
+  color: var(--texte-danger);
+}
+
+.selecteur {
+  position: relative;
+  min-width: 0;
+}
+
+.selecteur-bouton {
+  display: inline-flex;
+  max-width: 100%;
+  height: var(--hauteur-action);
+  align-items: center;
+  gap: var(--espace-controle);
+  padding: 0 var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+  color: var(--texte);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.selecteur-bouton:hover {
+  background: var(--fond-survol);
+}
+
+.selecteur-nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selecteur-fleche {
+  color: var(--texte-second);
+}
+
+.selecteur-liste {
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--hauteur-action) + var(--espace-serre));
+  left: 0;
+  min-width: 100%;
+  max-height: 240px;
+  margin: 0;
+  padding: var(--espace-serre);
+  overflow-y: auto;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+  list-style: none;
+}
+
+.selecteur-option {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-controle);
+  padding: var(--espace-serre) var(--espace-controle);
+  border-radius: var(--rayon);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.selecteur-option:hover,
+.selecteur-option[data-visee='true'] {
+  background: var(--fond-survol);
+}
+
+.selecteur-option[aria-selected='true'] {
+  font-weight: 600;
+}
+
+.selecteur-bouton:focus-visible,
+.selecteur-liste:focus-visible,
+.bascule-option:focus-visible,
+.pastille:focus-visible,
+.pipette:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+/* Les pastilles de couleur portent la couleur de la palette, jamais un rôle. */
+.pastille-reference,
+.pastille-exemple {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 50%;
+}
+
+.pastille-exemple {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--rayon);
+}
+
+.ligne-reference {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--espace-controle);
+}
+
+.champ-ligne {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.champ-hexa {
+  width: 88px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pipette {
+  width: var(--hauteur-action);
+  height: var(--hauteur-action);
+  flex-shrink: 0;
+  padding: 2px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+  cursor: pointer;
+}
+
+.apercu {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+/* Deux segments, comme les onglets : le mode pressé porte le fond des blocs. */
+.bascule {
+  display: flex;
+  gap: var(--espace-serre);
+}
+
+.bascule-option {
+  height: var(--hauteur-secondaire);
+  padding: 0 var(--espace-controle);
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--texte-second);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.bascule-option[aria-pressed='true'] {
+  background: var(--fond-bloc);
+  color: var(--texte);
+}
+
+.grille-apercu {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.rampe {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rampe-profil {
+  width: 40px;
+  flex-shrink: 0;
+  color: var(--texte-second);
+}
+
+/* [UI-04] : une pastille fait 24 × 24. */
+.pastille {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.constats {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+.constats-titre {
+  font-weight: 600;
 }
 
 /* Un constat garde ses trois parties séparées : où, quoi, geste. */
@@ -17,10 +233,25 @@
   border-radius: 0 var(--rayon) var(--rayon) 0;
 }
 
-/* Un bloquant porte le filet de sévérité du danger, jamais une puce. */
+/* La couleur ne dit que la sévérité : danger pour ce qui bloque ou manque sa promesse. */
 .constat-bloquant {
   border-left: 2px solid var(--texte-danger);
   background: var(--fond-danger);
+}
+
+.constat-promesse {
+  border-left: 2px solid var(--texte-danger);
+}
+
+.constat-alerte {
+  border-left: 2px solid var(--texte-avertissement);
+  background: var(--fond-avertissement);
+}
+
+/* Rang 3 : une notice se lit en couleur secondaire, sans filet. */
+.constat-notice {
+  padding-left: 0;
+  color: var(--texte-second);
 }
 
 .constat-ou {
@@ -31,7 +262,12 @@
   overflow-wrap: anywhere;
 }
 
+.constat-pastilles {
+  display: flex;
+  gap: var(--espace-serre);
+}
+
 /* Le geste garde la couleur de lecture ; son rang vient de sa position, la dernière. */
 .constat-geste {
-  color: var(--texte);
+  color: inherit;
 }

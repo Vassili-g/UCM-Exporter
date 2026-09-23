@@ -8,6 +8,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 
+import { ORDRE_DES_SEVERITES } from 'ucm-couleur';
+
 import {
   classesSansRegle,
   couleursHorsDesRoles,
@@ -30,7 +32,10 @@ const feuilleDuPlugin = lire(path.join(dossierUi, 'styles.css'));
 const ENTREES: EntreesLoiDesStyles = {
   source,
   feuille: feuilleDuSocle() + feuilleDuPlugin,
-  valeursDeGabarit: { variant: () => variantesDeBouton(source) },
+  valeursDeGabarit: {
+    variant: () => variantesDeBouton(source),
+    severite: () => [...ORDRE_DES_SEVERITES],
+  },
   poseesParLHote: new Set(['figma-dark']),
 };
 

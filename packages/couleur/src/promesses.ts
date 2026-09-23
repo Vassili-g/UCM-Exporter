@@ -5,7 +5,7 @@
  */
 import { lireHexa, type Rgb8 } from './conversions';
 import { atteintLeSeuil, contraste } from './contraste';
-import { TABLE_DES_EMPLOIS, type Emploi } from './emplois';
+import { EMPLOIS, TABLE_DES_EMPLOIS, type Emploi } from './emplois';
 import { rampesDe } from './palette';
 import { MODES, PROFILS, type Mode, type Profil, type Rampes } from './rampe';
 import type { Palette, Recette, Seuils } from './recette';
@@ -50,6 +50,32 @@ export function decalagesDeLEmploi(nom: Emploi): number[] {
     }
   }
   return [...vus].sort((a, b) => a - b);
+}
+
+/** Un emploi, avancé de `decalage` crans : 1 pour le survol, 2 pour l'appui. */
+export interface EmploiDUnCran {
+  readonly emploi: Emploi;
+  readonly decalage: number;
+}
+
+/**
+ * Les emplois que la table confie au cran de rang `rang` dans `crans`, états
+ * compris, dans l'ordre de la planche : la dernière ligne de la carte d'un cran
+ * (section 9.3).
+ * `on-solid` vise le fond et ne tombe sur aucun cran.
+ */
+export function emploisDuCran(crans: readonly number[], rang: number): EmploiDUnCran[] {
+  const trouves: EmploiDUnCran[] = [];
+  for (const nom of EMPLOIS) {
+    const cible = TABLE_DES_EMPLOIS[nom];
+    if (cible === 'fond') continue;
+    const depart = crans.indexOf(cible);
+    if (depart < 0) continue;
+    for (const decalage of decalagesDeLEmploi(nom)) {
+      if (depart + decalage === rang) trouves.push({ emploi: nom, decalage });
+    }
+  }
+  return trouves;
 }
 
 /** Ce qu'un membre désigne dans la rampe d'un profil et d'un mode. */

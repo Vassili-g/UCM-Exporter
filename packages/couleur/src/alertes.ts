@@ -121,7 +121,7 @@ export function distanceDePalettes(recette: Recette, a: Palette, b: Palette): nu
 }
 
 /** Un fond plus sombre que le cran 50 clair, ou plus clair que le cran 50 sombre, à 0,005 près ([ENT-06]). */
-function fondsHorsCourbe(recette: Recette): Alerte[] {
+export function alertesDesFonds(recette: Recette): Alerte[] {
   const alertes: Alerte[] = [];
   for (const mode of MODES) {
     const fond = lireHexa(recette.fonds[mode]);
@@ -139,7 +139,7 @@ function fondsHorsCourbe(recette: Recette): Alerte[] {
  * la recette, puis chaque paire de palettes proches.
  */
 export function alertesDeRecette(recette: Recette): Alerte[] {
-  const alertes = fondsHorsCourbe(recette);
+  const alertes = alertesDesFonds(recette);
   for (const palette of recette.palettes) alertes.push(...alertesDePalette(recette, palette));
   recette.palettes.forEach((a, rang) => {
     for (const b of recette.palettes.slice(rang + 1)) {

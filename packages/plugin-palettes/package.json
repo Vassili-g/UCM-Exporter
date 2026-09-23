@@ -12,7 +12,7 @@
     "build:manifest": "node scripts/build-manifest.cjs",
     "galerie": "npm run build:ui && node galerie/build-galerie.cjs",
     "galerie:captures": "node galerie/capturer.cjs",
-    "test:ui": "npm run build:ui && node --test tests/interface/interface.test.mjs",
+    "test:ui": "npm run galerie && node --test tests/interface/interface.test.mjs",
     "build": "npm run typecheck && npm run build:code && npm run build:ui && npm run build:manifest",
     "test": "node scripts/run-tests.cjs"
   },

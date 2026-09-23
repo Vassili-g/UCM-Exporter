@@ -190,7 +190,7 @@ packages/couleur/        le moteur de couleur d'UCM Palettes : ucm-couleur, priv
   src/recette.ts           la forme de la recette, sa validation, son classement à la lecture
   src/empreinte.ts         JSON canonique, encodeur UTF-8 et FNV-1a
   src/palette.ts           une palette lue contre sa recette, et ses parts grises
-  src/promesses.ts         les quatorze paires, jugées par mode et par profil
+  src/promesses.ts         les quatorze paires, jugées par mode et par profil, et les emplois d'un cran
   src/alertes.ts           les alertes de conception et la notice
   src/constats.ts          les sévérités et leur ordre d'affichage
   src/index.ts             la porte du paquet
@@ -212,9 +212,13 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/code.ts              routage des demandes de l'interface, une porte par geste d'écriture
   src/messages.ts          les deux sens de la frontière sandbox ↔ interface
   src/lecture.ts           la recette rangée, classée, son empreinte, et le profil du document
+  src/analyse.ts           une palette pour l'onglet : rampes, promesses, alertes et notices triées
+  src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
   src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
+  src/ui/ongletPalettes.ts barre du verdict, référence, dérive repliée, aperçu et constats
+  src/ui/apercu.ts         les pastilles de 24 px en grille, et le détail du cran survolé
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
   galerie/                 les états de l'interface, à la taille par défaut et à la taille minimale
   tests/                   dont la loi d'écriture, et interface/ pour Chromium

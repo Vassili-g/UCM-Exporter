@@ -7,6 +7,7 @@ import {
   PAIRES,
   TABLE_DES_EMPLOIS,
   compterManquees,
+  emploisDuCran,
   contraste,
   ecrireHexa,
   lireHexa,
@@ -175,4 +176,23 @@ test('[VER-03] un cran reçoit ses contrastes contre le fond, le blanc et le noi
 test('[VER-04] un cran n’a pas de verdict', () => {
   const mesure = mesurerCran(lireHexa('#0E5DC6')!, lireHexa('#F7F7F7')!, recetteParDefaut().seuils);
   assert.deepEqual(Object.keys(mesure).sort(), ['blanc', 'fond', 'noir', 'seuilTenu']);
+});
+
+test('section 9.3 : chaque cran porte les emplois que la table lui confie, états compris', () => {
+  const nommer = (rang: number) => emploisDuCran(recette.crans, rang)
+    .map(({ emploi, decalage }) => `${emploi}${decalage ? `+${decalage}` : ''}`);
+  const parCran = Object.fromEntries(recette.crans.map((cran, rang) => [cran, nommer(rang)]));
+  assert.deepEqual(parCran, {
+    50: [],
+    100: ['surface'],
+    200: ['surface+1'],
+    300: ['surface+2', 'border-decorative'],
+    400: [],
+    500: [],
+    600: ['border-control', 'focus'],
+    700: ['solid', 'text', 'border-control+1'],
+    800: ['solid+1', 'text+1', 'border-control+2'],
+    900: ['solid+2', 'text+2'],
+    950: [],
+  });
 });
