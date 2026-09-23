@@ -1,0 +1,1233 @@
+# UCM Palettes : spécification du plugin
+
+UCM Palettes est un plugin Figma qui fabrique des palettes de couleur selon la
+recette de [l'architecture
+multi-marques](../Archi%20Tokens%20Multi-marques/ARCHITECTURE-FINALE-MULTIMARQUES.md),
+et les dessine dans le fichier Figma. Une palette part d'une couleur de
+référence et produit quatre rampes de onze crans : `subtle` et `vivid`, en clair
+et en sombre. La planche dessinée montre, pour chaque cran, son hexa, ses
+valeurs OKLCH, ses contrastes, le seuil qu'il tient et les rôles qu'un câblage
+proposé lui confie.
+
+Une palette ne sait pas à quoi elle sert : couleur de marque, utilitaire ou
+autre. Le designer lui donne un nom s'il le souhaite, et ce nom n'a aucun effet
+sur le calcul.
+
+Ce document est la base du [plan de développement](./PLAN-PLUGIN-PALETTES.md).
+Un agent qui implémente le plugin y trouve chaque formule, chaque écran et
+chaque cadre de la planche ; le plan donne l'ordre des lots et le critère qui
+ferme chacun. Ce qui manquait à la version précédente est dans [la revue
+critique](./REVUE-CRITIQUE-PLUGIN-PALETTES.md).
+
+## 1. Statut et lecture
+
+- **Statut** : spécification. Aucune ligne de code n'existe.
+- **Utilisateur** : l'équipe du design system.
+- **Dépôt** : ce monorepo, en paquet séparé d'UCM Exporter. Le renommage du
+  dépôt en UCM-Kit est prévu ; ce plugin ne l'attend pas et ne le prépare pas.
+- **Exigences** : chaque règle vérifiable porte un identifiant entre crochets,
+  `[MOT-03]` par exemple. Le plan de développement cite ces identifiants ; un
+  test cite dans son nom l'identifiant qu'il vérifie.
+
+| Préfixe | Domaine |
+|---|---|
+| `MOT` | Moteur de couleur, sans Figma |
+| `REC` | Recette : contenu, rangement, version |
+| `ENT` | Entrées du designer |
+| `DER` | Éditeur de la dérive de teinte |
+| `PLA` | Planche : les palettes dessinées dans Figma |
+| `VER` | Vérifications et alertes |
+| `ARC` | Architecture du code et réemploi |
+| `UI` | Interface du plugin |
+
+## 2. Vocabulaire
+
+| Terme | Sens |
+|---|---|
+| Palette | Une couleur de référence et ses réglages. Elle produit quatre rampes |
+| Couleur de référence | L'hexa que le designer saisit. Elle ne change jamais ; la palette se construit autour d'elle |
+| Rampe | Onze crans, de 50 à 950, pour un profil et un mode |
+| Cran | Une couleur de la rampe, désignée par son numéro |
+| Profil | `subtle` ou `vivid` : la part de la vivacité maximale que l'écran affiche, 0,45 ou 0,95 par défaut |
+| Mode | `light` ou `dark` : la courbe de clarté employée |
+| Dérive de teinte | La rotation de teinte, en degrés, entre la couleur de référence et chaque bout de la rampe |
+| Fond de référence | L'hexa contre lequel se mesurent les contrastes d'un mode |
+| Rôle | Un emploi, `text` ou `solid` par exemple, et le cran que le câblage proposé lui confie |
+| Recette | Tous les nombres qui fabriquent les palettes du fichier |
+| Planche | Les cadres que le plugin dessine dans Figma |
+
+## 3. Décisions
+
+| # | Décision | Conséquence |
+|---|---|---|
+| D1 | Plugin séparé d'UCM Exporter, dans ce monorepo | UCM Exporter garde sa garantie : l'analyse et la publication n'écrivent jamais dans le document |
+| D2 | Le résultat est une planche : des cadres Figma qui dessinent chaque palette et ses informations | Le plugin ne crée ni ne modifie aucune variable. Créer les variables est une option ultérieure ([section 17](#17-option-ultérieure--créer-les-variables)) |
+| D3 | L'unité est la palette, sans notion de marque ni de famille | Le plugin ne nomme jamais une couleur `primary` ou `danger` ; le nom éventuel vient du designer |
+| D4 | La dérive se règle en degrés aux deux bouts, autour de la couleur de référence | La couleur de référence et sa teinte restent fixes ; les autres crans suivent le réglage en direct |
+| D5 | Un préréglage « Tailwind » calcule les deux dérives depuis le relevé des rampes Tailwind | Reproduire le comportement de Tailwind tient en un clic |
+| D6 | Le plugin n'a aucun accès réseau | La recette exportée se range à la main dans un dépôt |
+| D7 | Le moteur de couleur est un module pur, rangé dans le paquet privé `packages/couleur`, nom `ucm-couleur`, servi en source | Le plugin et ses tests emploient le même code. Le moteur entre dans le kit le jour où un lecteur de `tokens.json` en a besoin, avec une montée de version du kit |
+| D8 | Les contrastes se mesurent contre deux fonds de référence saisis, un clair et un sombre | Le plugin ne fabrique pas de rampe neutre |
+| D9 | Les rôles s'affichent comme un câblage proposé, vérifié | Le designer voit quel cran sert à quoi et si la promesse tient ; rien n'est câblé dans le fichier |
+| D10 | La recette rangée dans le fichier Figma fait autorité ; le JSON exporté en est une copie | Un import de JSON est un geste explicite, précédé de l'écart |
+| D11 | Les couleurs produites sont des hexas sRGB à 8 bits par canal | Chaque contraste et chaque distance se calcule sur l'hexa, jamais sur le flottant |
+| D12 | Les profils se nomment `subtle` et `vivid` | L'architecture dit `soft` ; l'alignement se fera avec l'option des variables |
+| D13 | Une partie commune aux deux plugins est extraite dans un paquet privé, après la planche, quand les deux plugins existent | D'ici là, le plugin Palettes part de copies des scripts d'UCM Exporter. L'extraction ne change ni le DOM ni les styles calculés de l'interface d'UCM Exporter |
+| D14 | Tous les textes destinés au designer sont dans un seul module de l'interface | Les textes provisoires se remplacent d'un geste quand le mainteneur les a validés |
+| D15 | Une palette s'identifie par `p-` suivi de huit chiffres hexadécimaux, tirés au hasard par l'interface | Le moteur reste sans hasard : il reçoit l'identifiant |
+
+## 4. Questions ouvertes et choix par défaut
+
+L'agent n'attend pas ces réponses : il implémente le défaut, qui reste un
+paramètre de la recette.
+
+| # | Question | Défaut implémenté | Où se change le choix |
+|---|---|---|---|
+| Q1 | Courbes de clarté | Celles de l'architecture | Recette, `courbes` |
+| Q2 | Parts de chroma | 0,45 `subtle`, 0,95 `vivid` | Recette, `profils` |
+| Q3 | Seuil de confusion entre profils | 0,02 en distance Oklab | Recette, `seuils` |
+| Q4 | Gamut de fabrication | sRGB | Recette, `gamut` ; Display P3 n'est pas implémenté |
+| Q5 | Fonds de référence | `#F7F7F7` en clair, `#121212` en sombre : le gris de clarté 0,975 et 0,18 | Recette, `fonds` |
+| Q6 | Profil visé par le câblage proposé | `vivid` pour les rôles qui visent un cran | Recette, `cablage` |
+| Q7 | Dérive d'une palette nouvelle | Préréglage Tailwind | Réglage de la palette |
+
+Les courbes et les parts de chroma sont des choix visuels : l'architecture les
+a fixées en comparant des rampes à l'écran, sans règle qui les impose. Elles se
+règlent dans l'onglet Recette en regardant la planche.
+
+## 5. Périmètre
+
+Le plugin fait :
+
+- fabriquer, pour chaque palette, ses quatre rampes ;
+- régler la dérive de teinte aux deux bouts, avec un aperçu en direct ;
+- mesurer les contrastes de chaque cran contre les fonds de référence ;
+- vérifier les promesses des rôles sur le câblage proposé ;
+- signaler les alertes ;
+- dessiner un cadre par palette, et le redessiner quand la recette change ;
+- ranger la recette dans le fichier, l'exporter et l'importer en JSON ;
+- exporter un rapport des vérifications.
+
+Le plugin ne fait pas :
+
+- créer, lire ou modifier une variable ou un style ;
+- deviner l'emploi d'une palette ;
+- publier vers GitHub ou GitLab ;
+- créer ou modifier un composant ;
+- écrire hors de la page de la planche, sauf la recette rangée sur le document ;
+- juger APCA ou tout autre modèle que le contraste WCAG 2.
+
+## 6. Le moteur de couleur
+
+Le moteur est un ensemble de fonctions pures. Il ne lit ni `figma`, ni le DOM,
+ni l'heure, ni le hasard. Les mêmes entrées donnent les mêmes octets dans Node,
+dans l'iframe du plugin et dans le sandbox Figma.
+
+### 6.1 Conversions
+
+- `[MOT-01]` Hexa vers sRGB : `#RRGGBB`, `RRGGBB` et `#RGB`, sans casse
+  imposée. Un alpha est refusé. La sortie s'écrit toujours `#RRGGBB` en
+  majuscules.
+- `[MOT-02]` sRGB vers linéaire et retour : fonction de transfert sRGB par
+  morceaux, seuil `0.04045` à l'aller, `0.0031308` au retour.
+- `[MOT-03]` Linéaire vers Oklab et retour : les matrices de Björn Ottosson,
+  telles que `mesurer-recette.mjs` les écrit dans les deux sens. Le moteur est
+  leur seul domicile dans le code livré.
+- `[MOT-04]` Oklab vers OKLCH : `C = hypot(a, b)`, `H = atan2(b, a)` en degrés,
+  ramené dans `[0, 360)`. Sous une chroma de `1e-4`, la teinte vaut 0.
+- `[MOT-05]` sRGB linéaire vers Display P3 linéaire : par l'espace `XYZ` au
+  blanc `D65`, avec les matrices de CSS Color 4. Cette conversion sert
+  uniquement à peindre dans un document `DISPLAY_P3`
+  ([section 6.7](#67-peindre-dans-lespace-du-document)).
+- `[MOT-26]` Display P3 linéaire vers sRGB linéaire : l'inverse de `[MOT-05]`,
+  par les mêmes matrices. Elle sert à lire la couleur d'un calque dans un
+  document `DISPLAY_P3` (`[ENT-04]`). Une composante hors de `[0, 1]` est bornée,
+  et le résultat dit que la couleur a été ramenée dans le gamut sRGB.
+
+### 6.2 Plafond de chroma
+
+- `[MOT-06]` `plafond(L, H, gamut)` rend la plus grande chroma que le gamut
+  porte à cette clarté et cette teinte. Dichotomie sur `[0, 0.5]`, 50
+  itérations, tolérance d'appartenance au gamut `1e-6` par composante linéaire.
+- `[MOT-07]` Le résultat est mémorisé par clé `L|H|gamut`. La mémoire est bornée
+  à 20 000 entrées et vidée au-delà.
+- `[MOT-08]` Seul `srgb` est implémenté. Une recette qui demande un autre gamut
+  est refusée par la lecture de la recette, pas par le moteur.
+
+### 6.3 Fabriquer un cran
+
+Pour une palette, un profil, un mode et un cran d'indice `i` :
+
+```text
+L = courbes[mode][i]
+H = teinte(L)                       section 6.4
+C = part(profil) × plafond(L, H, gamut)
+rgbLinéaire = oklchVersSrgbLinéaire(L, C, H)
+rgb8 = round(255 × encoder(clamp(rgbLinéaire, 0, 1)))   par canal
+hexa = format(rgb8)
+```
+
+- `[MOT-09]` La couleur produite est `rgb8`. Toute mesure en aval part de
+  `rgb8`.
+- `[MOT-10]` L'arrondi est `Math.round`, demi vers le haut, après bornage.
+- `[MOT-11]` Un cran rend aussi `L`, `C`, `H` recalculés depuis `rgb8`. La
+  planche affiche ces valeurs, qui sont celles de la couleur produite.
+- `[MOT-12]` Un cran clair et un cran sombre de même clarté rendent le même
+  hexa : clair 500 et sombre 700 partagent 0,670.
+- `[MOT-13]` Une palette de 44 crans se calcule en moins de 5 ms dans
+  l'interface, pour que l'éditeur de dérive suive le pointeur.
+
+### 6.4 La teinte d'un cran
+
+La teinte dépend de la clarté, jamais du numéro de cran. En sombre, le cran 50
+est sombre et prend la teinte du bout sombre.
+
+La couleur de référence a une clarté `La` et une teinte `Ha`. Elle est le pivot :
+à la clarté `La`, la teinte vaut `Ha`, quelle que soit la dérive. Les deux bouts
+sont les clartés `Lc = courbes.light[0]` et `Ls = courbes.light[dernier]`, soit
+0,975 et 0,270. Le designer règle deux angles signés : `dClair`, la dérive au
+bout clair, et `dSombre`, la dérive au bout sombre.
+
+```text
+si L ≥ La : u = clamp((L − La) / (Lc − La), 0, 1)    u = 0 si Lc ≤ La
+            teinte(L) = normaliser(Ha + dClair × u)
+sinon     : v = clamp((La − L) / (La − Ls), 0, 1)    v = 1 si La ≤ Ls
+            teinte(L) = normaliser(Ha + dSombre × v)
+normaliser(h) = ((h mod 360) + 360) mod 360
+```
+
+- `[MOT-14]` Une clarté hors de `[Ls, Lc]` prend la dérive entière du bout le
+  plus proche. La courbe sombre descend à 0,18 : ses crans 50 et 100 prennent
+  `dSombre` entier.
+- `[MOT-15]` Une dérive se borne à `[-90, 90]` degrés. Une dérive positive
+  tourne dans le sens des teintes croissantes : du bleu vers le violet, du
+  jaune vers le vert.
+- `[MOT-16]` Chaque profil a sa propre dérive. Par défaut, `subtle` et `vivid`
+  partagent la même ([section 12](#12-léditeur-de-dérive)).
+- `[MOT-17]` La couleur de référence ne se recalcule jamais. Elle n'est pas un
+  cran : elle s'affiche à part, et la rampe passe par sa teinte à sa clarté.
+
+### 6.5 Le préréglage Tailwind
+
+Le préréglage reproduit la dérive des dix-sept rampes colorées de Tailwind. Le
+relevé est rangé dans la recette sous `derives` : une paire (teinte du cran 50,
+teinte du cran 950) par rampe. Il redonne le tableau 3.3 de l'architecture :
+
+| Teinte au bout clair | Exemples | Dérive totale en fonçant |
+|---|---|---|
+| 70° à 105°, jaunes et oranges | orange, amber, yellow | -37° à -50°, vers le rouge |
+| 120°, vert-jaune | lime | +11°, vers le vert |
+| 155° à 180°, verts | green, emerald, teal | -3° à +12° |
+| 200°, cyan | cyan | +29°, vers le bleu |
+| 235° à 275°, bleus | sky, blue, indigo | +7° à +13°, vers le violet |
+| 290° à 320°, violets | violet, purple, fuchsia | -6° à +6° |
+| 340°, rose | pink | +21°, vers le rouge |
+| 10° à 20°, rouges | rose, red | 0° à +9° |
+
+Calcul pour une couleur de référence `(La, Ca, Ha)` :
+
+```text
+d       = dériveTailwind(Ha)          dérive totale, du bout clair au bout sombre
+ta      = clamp((Lc − La) / (Lc − Ls), 0, 1)
+dClair  = −d × ta
+dSombre =  d × (1 − ta)
+```
+
+`dériveTailwind(h)` trie le relevé par teinte claire, prend les deux rampes
+voisines de `h` sur le cercle et interpole linéairement leur dérive totale
+selon la position angulaire de `h` entre leurs teintes claires. La dérive totale
+d'une rampe est `écart(clair, sombre)`, avec
+`écart(a, b) = ((b − a + 540) mod 360) − 180`. Sur le relevé, cette prédiction se
+trompe de 10,4° en moyenne, contre 15,8° pour une teinte constante
+(`mesurer-derive-teinte.mjs`).
+
+La dérive totale se répartit entre les deux bouts selon la position de la
+couleur de référence dans la rampe. Une référence claire reçoit presque toute la
+dérive du côté sombre, une référence foncée du côté clair.
+
+- `[MOT-18]` Sous une chroma de référence `seuils.chromaGrise` (défaut 0,03), le
+  préréglage rend `dClair = dSombre = 0` et l'alerte « couleur presque grise »
+  s'affiche : la teinte d'un gris n'a pas de sens. La palette reçoit aussi des
+  parts propres égales à la part de chroma de la référence, d'origine `grise`
+  (`[ENT-09]`) : sans elles, `#6B7280` produirait `#0E44F7` en `vivid.700`.
+- `[MOT-19]` Une seule évaluation de `dériveTailwind`, sur `Ha`. Deux
+  implémentations rendent ainsi le même préréglage.
+- `[MOT-20]` La recette garde les deux angles retenus et le nom du préréglage
+  dont ils viennent, `tailwind`, `constante` ou `libre`. Elle ne garde jamais la
+  formule : un relevé modifié ne change pas une palette déjà réglée.
+- `[MOT-27]` Un angle se range au centième de degré et une part de chroma au
+  millième, arrondis au moment où ils sont posés :
+  `arrondir(x, n) = signe(x) × round(|x| × 10ⁿ) / 10ⁿ`, symétrique en signe. Le
+  préréglage rend la valeur arrondie, et « Libre » se décide en comparant des
+  valeurs arrondies. Pour `#1E6FD9`, arrondir les deux angles change un cran sur
+  44 : le sombre 200 passe de `#021F63` à `#021F64`.
+
+### 6.6 Contraste et distance
+
+- `[MOT-21]` Le contraste est celui de WCAG 2 : luminance relative
+  `0.2126 R + 0.7152 G + 0.0722 B` sur les composantes linéaires de `rgb8`,
+  puis `(Yhaut + 0.05) / (Ybas + 0.05)`.
+- `[MOT-22]` Une comparaison à un seuil se fait sur la valeur brute. L'affichage
+  tronque à deux décimales : 4,499 s'affiche 4,49 et échoue à 4,5. La troncature
+  coupe l'écriture décimale à dix chiffres (`toFixed(10)`) après la deuxième
+  décimale : `Math.floor(x × 100) / 100` rendrait 4,34 pour 4,35. Le moteur
+  écrit lui-même la virgule décimale, sans `Intl` ni `toLocaleString`, dont la
+  sortie dépend de l'environnement. Un test vérifie que l'affichage et le
+  verdict concordent.
+- `[MOT-23]` La distance entre deux couleurs est la distance euclidienne en
+  Oklab, sur `rgb8`, notée ΔEok.
+- `[MOT-24]` La part de chroma d'une couleur est `C / plafond(L, H, gamut)`,
+  bornée à `[0, 1]`.
+
+### 6.7 Peindre dans l'espace du document
+
+Figma interprète la couleur d'une peinture dans le profil du document,
+`figma.root.documentColorProfile`. Le plugin peint donc chaque pastille dans
+cet espace, pour qu'elle s'affiche avec l'hexa qu'elle annonce.
+
+| `documentColorProfile` | Ce que le plugin peint |
+|---|---|
+| `SRGB` | `rgb8 / 255` |
+| `LEGACY` | `rgb8 / 255`, avec une notice unique : le document n'a pas de profil géré |
+| `DISPLAY_P3` | La couleur `rgb8` convertie en coordonnées Display P3, sans arrondi |
+
+- `[MOT-25]` L'hypothèse de cette table se vérifie dans Figma au lot 6
+  ([section 16](#16-recette-dans-figma)). Si elle est fausse, la ligne
+  `DISPLAY_P3` peint `rgb8 / 255` et la table se corrige.
+
+### 6.8 Vecteurs de test
+
+Le moteur est livré avec des vecteurs figés dans ses tests. Ceux-ci se
+calculent une fois avec une référence indépendante (Color.js ou culori), et la
+référence n'entre pas dans les dépendances du paquet.
+
+| Entrée | Attendu |
+|---|---|
+| `#FFFFFF` | `L = 1`, `C < 1e-4` |
+| `#000000` | `L = 0` |
+| `#767676` sur `#FFFFFF` | contraste 4,54 |
+| `#1E6FD9` | `L ≈ 0,555`, `C ≈ 0,179`, `H ≈ 257,4` |
+| `plafond(0.5, h, srgb)` sur 360 teintes | jamais hors gamut, et une chroma supérieure de `1e-3` en sort |
+| dérives nulles, 360 teintes, deux profils, deux modes | les quatorze promesses de la [section 11.2](#112-promesses-des-rôles) tenues après arrondi |
+| gris de clarté 0,975 et 0,180 | `#F7F7F7` et `#121212`, les fonds par défaut |
+| toute dérive, toute référence dans `[Ls, Lc]` | la teinte à la clarté `La` vaut `Ha` |
+
+Un second jeu vient de cette spécification. [`mesurer-recette.mjs`](./mesurer-recette.mjs)
+le calcule, angles arrondis au centième (`[MOT-27]`) et contrastes tronqués
+(`[MOT-22]`) ; le lot 1 le recalcule avec le moteur avant de le figer :
+
+| Entrée | Attendu |
+|---|---|
+| Référence `#1E6FD9`, préréglage Tailwind | dérive totale 12,63°, `dClair = -7,53`, `dSombre = +5,11` |
+| Même palette, `vivid`, clair 700 | `#0E5DC6`, contraste 5,76 contre `#F7F7F7` |
+| Même palette, `vivid`, sombre 200 | `#021F64`, contraste 1,23 contre `#121212` |
+| Référence `#F2A900`, préréglage Tailwind | dérive totale -39,63°, `dClair = +10,69`, `dSombre = -28,94` |
+| Même palette, `vivid`, sombre 700 | `#C9851B`, contraste 6,11 contre `#121212` |
+
+## 7. La recette
+
+### 7.1 Contenu
+
+La recette contient tous les nombres qui fabriquent les palettes du fichier.
+Deux outils qui la lisent produisent les mêmes hexas.
+
+| Clé | Contenu | Portée |
+|---|---|---|
+| `formatVersion` | Entier positif, version de la forme de la recette | Fichier |
+| `crans` | `[50, 100, …, 950]` | Toutes les rampes |
+| `courbes` | `light` et `dark`, une clarté par cran | Toutes les rampes |
+| `profils` | `subtle` et `vivid`, une part de chroma chacun | Toutes les palettes, sauf surcharge |
+| `gamut` | `"srgb"` | Fichier |
+| `fonds` | `light` et `dark`, un hexa chacun | Contrastes et rôles |
+| `seuils` | `texte` 4,5 ; `nonTexte` 3 ; `profilsConfondus` 0,02 ; `palettesProches` 0,05 ; `chromaGrise` 0,03 | Vérifications |
+| `derives` | Les dix-sept paires de Tailwind | Préréglage |
+| `cablage` | La cible proposée pour chaque rôle | Rôles, sauf surcharge |
+| `palettes` | Une entrée par palette, dans l'ordre d'affichage | Palettes |
+
+La recette ne porte pas la planche. L'identifiant de la page et ceux des cadres
+dessinés se rangent sous la clé partagée `ucm_palettes/planche`, que l'export
+ignore : un dessin écrit ces identifiants, et les ranger dans la recette
+changerait son empreinte à chaque dessin.
+
+Une palette porte :
+
+| Clé | Contenu |
+|---|---|
+| `id` | `p-` suivi de huit chiffres hexadécimaux minuscules, tirés au hasard par l'interface à la création, jamais dérivé du nom |
+| `nom` | Texte libre, facultatif. Absent, la palette s'affiche sous son hexa de référence |
+| `reference` | L'hexa de la couleur de référence |
+| `derive.lien` | `true` quand `subtle` et `vivid` partagent la même dérive |
+| `derive.subtle`, `derive.vivid` | `clair` et `sombre` en degrés, et `origine` : `tailwind`, `constante` ou `libre` |
+| `parts` | Facultatif : `subtle` et `vivid`, une part de chroma chacun, qui remplace celle de la recette, et `origine` : `designer` ou `grise` (`[ENT-09]`) |
+| `cablage` | Facultatif : les rôles que cette palette relie ailleurs que le câblage commun |
+
+Une cible de rôle s'écrit `{ "profil": "vivid", "cran": 700 }`,
+`{ "fond": true }` pour le fond de référence du mode, ou
+`{ "reference": true }` pour la couleur de référence.
+
+### 7.2 Exemple
+
+```json
+{
+  "formatVersion": 1,
+  "crans": [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950],
+  "courbes": {
+    "light": [0.975, 0.95, 0.905, 0.845, 0.76, 0.67, 0.585, 0.5, 0.42, 0.34, 0.27],
+    "dark": [0.18, 0.225, 0.275, 0.33, 0.4, 0.49, 0.58, 0.67, 0.76, 0.85, 0.93]
+  },
+  "profils": { "subtle": { "part": 0.45 }, "vivid": { "part": 0.95 } },
+  "gamut": "srgb",
+  "fonds": { "light": "#F7F7F7", "dark": "#121212" },
+  "seuils": {
+    "texte": 4.5, "nonTexte": 3, "profilsConfondus": 0.02,
+    "palettesProches": 0.05, "chromaGrise": 0.03
+  },
+  "derives": [["rose", 12.422, 12.094], ["red", 17.38, 26.042]],
+  "cablage": {
+    "solid": { "profil": "vivid", "cran": 700 },
+    "on-solid": { "fond": true },
+    "text": { "profil": "vivid", "cran": 700 },
+    "surface": { "profil": "vivid", "cran": 100 },
+    "border-control": { "profil": "vivid", "cran": 600 },
+    "border-decorative": { "profil": "vivid", "cran": 300 },
+    "focus": { "profil": "vivid", "cran": 600 }
+  },
+  "palettes": [
+    {
+      "id": "p-3fa2c91e",
+      "nom": "Bleu",
+      "reference": "#1E6FD9",
+      "derive": {
+        "lien": true,
+        "subtle": { "clair": -7.53, "sombre": 5.11, "origine": "tailwind" },
+        "vivid": { "clair": -7.53, "sombre": 5.11, "origine": "tailwind" }
+      }
+    },
+    {
+      "id": "p-08b7d4a0",
+      "reference": "#F2A900",
+      "derive": {
+        "lien": false,
+        "subtle": { "clair": 10.69, "sombre": -28.94, "origine": "tailwind" },
+        "vivid": { "clair": 6, "sombre": -35, "origine": "libre" }
+      }
+    }
+  ]
+}
+```
+
+L'exemple abrège `derives`. La recette par défaut du paquet porte les
+dix-sept paires.
+
+### 7.3 Rangement et version
+
+- `[REC-01]` La recette se range par
+  `figma.root.setSharedPluginData("ucm_palettes", "recette", json)`. L'espace de
+  noms partagé survit à un changement d'identifiant du plugin, entre une
+  version de développement et la version publiée.
+- `[REC-02]` Le JSON rangé est canonique : clés triées, nombres tels que
+  `JSON.stringify` les écrit. Son empreinte est un `FNV-1a` 32 bits sur les
+  octets UTF-8 du JSON canonique, écrite en hexadécimal sur huit chiffres. Le
+  moteur produit ces octets par son propre encodeur : le sandbox n'a pas
+  `TextEncoder`.
+- `[REC-03]` La lecture classe la recette avant de l'employer : absente, la
+  recette par défaut du paquet est proposée ; `formatVersion` courante, lue ;
+  antérieure et connue, migrée en mémoire ; supérieure, refusée avec un message
+  qui demande de mettre le plugin à jour ; illisible, refusée sans écrire.
+- `[REC-04]` Un refus de lecture laisse la recette rangée intacte. Le plugin ne
+  dessine rien tant que la recette n'est pas lisible.
+- `[REC-05]` Une validation de forme précède tout emploi : crans croissants,
+  deux courbes de même longueur que `crans`, courbe claire décroissante, courbe
+  sombre croissante, clartés dans `[0, 1]`, parts dans `[0, 1]` avec
+  `subtle ≤ vivid` dans la recette et après les parts propres de chaque
+  palette, dérives dans `[-90, 90]`, seuils strictement positifs, hexas valides,
+  identifiants uniques, cibles de rôle qui désignent un cran existant. `derives`
+  compte au moins deux paires, aux noms uniques, aux teintes dans `[0, 360)`, et
+  leurs teintes claires sont distinctes : deux teintes claires égales annulent
+  le dénominateur de l'interpolation de `dériveTailwind`.
+- `[REC-06]` La recette se range automatiquement à la fin de chaque geste :
+  relâcher une poignée, valider un champ, créer, dupliquer, réordonner ou
+  supprimer une palette. Elle ne se range jamais pendant un glisser. Après
+  chaque rangement, le plugin appelle `figma.commitUndo()` : un Ctrl+Z dans
+  Figma défait ce rangement seul, sans défaire le dessin qui le précède.
+- `[REC-10]` Chaque demande de rangement porte l'empreinte de la recette que
+  l'interface a lue. Si la recette rangée a une autre empreinte, parce qu'un
+  autre designer ou un Ctrl+Z dans Figma l'a changée, le sandbox refuse et
+  l'interface propose « Recharger ». L'interface relit l'état quand sa fenêtre
+  reprend le focus.
+- `[REC-11]` Une recette illisible ou future offre trois gestes : exporter la
+  recette rangée telle quelle, importer une recette, et repartir de la recette
+  par défaut après confirmation.
+
+## 8. Les entrées
+
+### 8.1 Une palette
+
+| Entrée | Forme | Défaut |
+|---|---|---|
+| Couleur de référence | Hexa, avec un sélecteur de couleur | aucun |
+| Nom | Texte libre, facultatif | l'hexa de référence |
+| Dérive de teinte | Deux angles par profil, dans l'éditeur de la [section 12](#12-léditeur-de-dérive) | préréglage Tailwind |
+| Part de chroma par profil | Nombre dans `[0, 1]`, facultatif, sous « Avancé » | celle de la recette |
+| Câblage de la palette | Cible par rôle, facultative, sous « Rôles » | le câblage commun |
+
+- `[ENT-01]` Changer la couleur de référence recalcule le préréglage Tailwind.
+  Une dérive d'origine `tailwind` suit ce nouveau calcul ; une dérive `libre` ou
+  `constante` reste telle quelle, et l'éditeur montre la valeur Tailwind en
+  repère.
+- `[ENT-02]` Chaque saisie met l'aperçu à jour sans aller-retour avec le
+  sandbox : le moteur est inclus dans l'interface.
+- `[ENT-03]` Une palette se crée, se renomme, se duplique, se réordonne et se
+  supprime dans l'onglet Palettes. Supprimer une palette ne supprime pas son
+  cadre de la planche ; le cadre est signalé orphelin.
+- `[ENT-04]` Créer une palette depuis la sélection : si un calque sélectionné a
+  un remplissage uni, le plugin propose sa couleur comme référence. Seule une
+  peinture `SOLID` visible et d'opacité 1 se propose. Dans un document
+  `DISPLAY_P3`, la couleur lue est en P3 : le plugin la convertit en sRGB
+  (`[MOT-26]`), et une note dit quand elle a été ramenée dans le gamut.
+- `[ENT-09]` Une référence dont la chroma est sous `seuils.chromaGrise` reçoit
+  des parts propres égales à sa part de chroma, d'origine `grise`. Ces parts
+  disparaissent quand la référence cesse d'être grise. Une palette qui porte
+  des parts d'origine `designer` les garde, grise ou non. L'alerte « Profils
+  confondus » se tait pour une palette aux parts `grise`, dont les deux profils
+  sont égaux par construction.
+
+### 8.2 Les fonds de référence
+
+- `[ENT-05]` Deux hexas, `fonds.light` et `fonds.dark`, dans l'onglet Recette.
+  Ils servent de fond de page pour tous les contrastes du mode, de couleur du
+  rôle `on-solid` par défaut, et de fond aux sections de la planche.
+- `[ENT-06]` Un fond clair plus sombre que le cran 50 clair, ou un fond sombre
+  plus clair que le cran 50 sombre, produit l'alerte « fond hors de la
+  courbe » : les contrastes promis par l'architecture supposent le cran 50. La
+  clarté du fond se compare à la valeur de la courbe avec une tolérance de
+  0,005 : `#121212`, le fond sombre par défaut, a une clarté de 0,1822.
+
+### 8.3 La recette commune
+
+L'onglet Recette règle ce qui touche toutes les palettes : courbes, parts,
+fonds, seuils, câblage commun.
+
+- `[ENT-07]` Chaque champ de cet onglet affiche le nombre de palettes qu'il
+  modifie.
+- `[ENT-08]` La liste des crans ne se modifie pas dans l'interface : elle
+  passe par un import de recette.
+
+## 9. Sortie 1 : la planche
+
+La planche dessine chaque palette dans Figma, avec ses valeurs, ses
+contrastes, ses rôles et ses alertes. Elle sert à relire une palette, à la
+présenter et à comparer des palettes côte à côte.
+
+### 9.1 Emplacement et propriété
+
+- `[PLA-01]` La planche vit sur une page dédiée, « Palettes », créée au premier
+  dessin. Si une page de ce nom existe déjà sans être celle du plugin, le
+  plugin crée « Palettes (UCM) ». L'identifiant de la page est rangé sous la
+  clé `ucm_palettes/planche`. Le plugin retrouve la page par
+  `getNodeByIdAsync`, contrôle `removed`, puis appelle `await page.loadAsync()`
+  avant de lire ses enfants ou d'y écrire : le manifest déclare
+  `documentAccess: "dynamic-page"`. Il ne charge aucune autre page.
+- `[PLA-02]` Un cadre de premier niveau par palette, nommé du nom de la palette
+  ou de son hexa de référence. Chaque cadre porte la donnée de plugin partagée
+  `ucm_palettes/cadre`, qui vaut l'identifiant de la palette, et
+  `ucm_palettes/proprietaire`, qui vaut l'`id` du cadre lui-même.
+- `[PLA-03]` Redessiner un cadre garde sa position et remplace son contenu. Le
+  plugin n'écrit jamais hors des cadres qu'il possède. Chaque calque qu'il pose
+  porte un marqueur. Avant de redessiner, il compte les calques sans marqueur
+  que le designer a ajoutés dans le cadre, et demande confirmation en les
+  nommant : ces calques disparaissent au dessin.
+- `[PLA-04]` Une page ou un cadre supprimé par le designer est recréé au dessin
+  suivant ; son identifiant rangé est alors remplacé.
+- `[PLA-05]` Les cadres se rangent de gauche à droite dans l'ordre de
+  `recette.palettes`, 200 px entre eux. Un cadre déplacé à la main garde sa
+  nouvelle position. Un cadre neuf se pose à 200 px à droite du cadre possédé
+  le plus à droite, aligné sur le haut du premier cadre.
+- `[PLA-06]` Le geste « Dessiner » porte sur la palette ouverte ;
+  « Dessiner toutes les palettes » porte sur toutes. Après un dessin, le plugin
+  appelle `figma.commitUndo()` : un Ctrl+Z défait ce dessin entier, et lui seul.
+  Le résultat du dessin propose « Voir sur la planche », qui ouvre la page de la
+  planche et cadre le dessin (`setCurrentPageAsync`, puis
+  `scrollAndZoomIntoView`).
+- `[PLA-25]` Un cadre dont `ucm_palettes/proprietaire` diffère de son propre
+  `id` est une copie faite par le designer. Le plugin la signale en notice et ne
+  la réécrit jamais.
+
+### 9.2 Le cadre d'une palette
+
+```text
+┌ Bleu ────────────────────────────────────────────────────────────────────┐
+│ Bleu          recette v1 · empreinte 3fa2c91e · sRGB · 28/28 promesses   │
+│ Dessiné par UCM Palettes. Ce cadre est remplacé à chaque dessin.         │
+├──────────────────────────────────────────────────────────────────────────┤
+│ Référence  [■ #1E6FD9]   dérive subtle et vivid : clair −7,5° sombre +5,1°│
+├──────────────────────────────────────────────────────────────────────────┤
+│ Light     fond de référence #F7F7F7                                      │
+│  subtle   [50][100][200][300][400][500][600][700][800][900][950]         │
+│  vivid    [50]...                                                        │
+├──────────────────────────────────────────────────────────────────────────┤
+│ Dark      fond de référence #121212, section peinte de ce fond           │
+│  subtle   [50]...                                                        │
+│  vivid    [50]...                                                        │
+├──────────────────────────────────────────────────────────────────────────┤
+│ Rôles     light                        │ dark                            │
+│  (table de la section 9.4)             │                                 │
+├──────────────────────────────────────────────────────────────────────────┤
+│ Alertes   (une ligne par alerte, section 11.3)                           │
+├──────────────────────────────────────────────────────────────────────────┤
+│ Légende   seuils, profils, ce que mesure chaque contraste                │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+- `[PLA-07]` L'en-tête donne le nom de la palette, la version de la recette,
+  l'empreinte du modèle de ce cadre (`[PLA-19]`), l'espace de couleur du
+  document et le compte des promesses tenues sur le total.
+- `[PLA-08]` Le bloc « Référence » montre la couleur de référence en carte
+  large : pastille, hexa, OKLCH, part de chroma, cran le plus proche en clarté,
+  contraste contre le blanc, le noir et les deux fonds, verdict de chaque
+  contraste contre 4,5 et 3. À côté, les dérives de chaque profil et leur
+  origine.
+- `[PLA-09]` La section `light` est peinte de `fonds.light`, la section `dark`
+  de `fonds.dark`. Chaque rampe se lit ainsi sur le fond où elle servira. Les
+  légendes de la section sombre sont claires ; celles de la section claire sont
+  sombres.
+- `[PLA-10]` Une rangée porte à gauche son profil et la part de chroma
+  employée.
+- `[PLA-11]` La légende dit que les seuils `profilsConfondus` et
+  `palettesProches` sont des paramètres de conception, pas des seuils
+  d'accessibilité.
+
+### 9.3 La carte d'un cran
+
+```text
+┌──────────────┐
+│              │  pastille 96 × 56
+│     700      │  numéro du cran, posé sur la pastille, en noir ou en blanc
+├──────────────┤
+│ vivid.700    │  nom : profil et cran
+│ #0E5DC6      │  hexa
+│ L 0,499      │  clarté, chroma et teinte recalculées sur l'hexa
+│ C 0,179      │
+│ H 258°       │
+│ fond 5,76 4,5│  contraste contre le fond de référence du mode, et le seuil tenu
+│ blanc 6,17   │  le plus fort des contrastes contre le blanc et le noir
+│ text · solid │  les rôles que le câblage proposé confie à ce cran
+└──────────────┘
+```
+
+- `[PLA-12]` Le seuil tenu s'écrit « 4,5 » quand le contraste atteint
+  `seuils.texte`, « 3 » quand il atteint `seuils.nonTexte`, et un tiret sinon.
+- `[PLA-13]` Le numéro du cran sur la pastille prend le noir ou le blanc,
+  celui des deux qui contraste le plus avec l'hexa.
+- `[PLA-14]` Le calque de la pastille se nomme `{profil}/{mode}/{cran}`,
+  `vivid/light/700` par exemple, sous le cadre de sa palette. Ce nom permet de
+  retrouver chaque couleur dans le panneau des calques, et sert de clé à
+  l'option de la [section 17](#17-option-ultérieure--créer-les-variables).
+- `[PLA-15]` Une carte où les deux profils se confondent porte la mention
+  « ≈ subtle » ou « ≈ vivid », sur tous les crans. L'alerte « Profils
+  confondus » ne porte que sur les crans que le câblage vise
+  ([section 11.3](#113-alertes)).
+- `[PLA-16]` Le texte de la carte est sélectionnable et copiable : un hexa se
+  copie depuis la planche sans ouvrir le plugin.
+
+### 9.4 Les rôles
+
+Une table par mode, une ligne par rôle : sept lignes. Les rôles sont ceux de
+l'architecture, rapportés à une seule palette.
+
+| Colonne | Contenu |
+|---|---|
+| Rôle | `text` |
+| Emploi | « Texte sur le fond de page » |
+| Cible proposée | `vivid.700`, `fond` ou `référence` |
+| Spécimen | Un cadre de 120 × 32 : le fond et le texte de la paire principale, texte « Aa Libellé » |
+| Contraste | Le rapport de la paire principale du rôle |
+| Seuil | 4,5, 3 ou un tiret |
+| Verdict | « tenu », « manqué » ou « non vérifiable » |
+
+La paire principale de chaque rôle :
+
+| Rôle | Emploi | Paire principale | Seuil |
+|---|---|---|---|
+| `solid` | Fond plein d'un bouton, d'un badge | `on-solid` sur `solid` | 4,5 |
+| `on-solid` | Texte posé sur ce fond | `on-solid` sur `solid` | 4,5 |
+| `text` | Texte coloré sur le fond de page | `text` sur fond | 4,5 |
+| `surface` | Fond teinté discret | `text` sur `surface` | 4,5 |
+| `border-control` | Contour d'un champ, d'une case | `border-control` sur fond | 3 |
+| `border-decorative` | Séparateur, filet | aucune | aucun |
+| `focus` | Anneau de focus, décalé du contrôle | `focus` sur fond | 3 |
+
+- `[PLA-17]` Sous la table, les paires d'état de la
+  [section 11.2](#112-promesses-des-rôles) : une ligne par paire, sans
+  spécimen.
+- `[PLA-18]` L'en-tête de la table rappelle que le câblage est une proposition :
+  les composants ne le reçoivent pas du plugin.
+
+### 9.5 La grille de contraste
+
+Option du geste « Dessiner », désactivée par défaut. Pour chaque rampe et
+chaque mode, une grille de onze sur onze : ligne et colonne sont les crans, la
+cellule donne le contraste entre les deux, sur un fond vert, jaune ou gris
+selon le seuil tenu. Elle répond à la question « quel cran puis-je poser sur
+quel cran ».
+
+### 9.6 Fraîcheur
+
+- `[PLA-19]` Chaque cadre porte la donnée de plugin `ucm_palettes/empreinte` :
+  l'empreinte du modèle de planche de ce cadre (`[ARC-07]`) au moment du
+  dessin. Elle se calcule sur le modèle privé du texte qui l'affiche dans
+  l'en-tête. Une empreinte de la recette entière périmerait tous les cadres dès
+  qu'une seule palette change.
+- `[PLA-20]` À l'ouverture et après chaque rangement de la recette, le plugin
+  recalcule le modèle de chaque cadre et compare son empreinte à celle du
+  cadre. Un écart classe le cadre « périmé » dans l'interface, avec le geste
+  « Redessiner ». Le plugin ne redessine jamais sans ce geste. Renommer une
+  palette peut périmer le cadre d'une autre, dont l'alerte « Palettes proches »
+  cite le nom.
+
+### 9.7 Mise en page et typographie
+
+- `[PLA-21]` Tous les cadres sont en auto layout, trame de 8 px, sans position
+  absolue.
+- `[PLA-22]` Police Inter : 24 px gras pour le titre, 13 px moyen pour les
+  titres de section, 11 px normal pour les valeurs. Le plugin charge ces trois
+  styles par `loadFontAsync` avant de créer un seul calque ; un chargement qui
+  échoue arrête le dessin, sans cadre à moitié dessiné.
+- `[PLA-23]` Les couleurs de légende et de filet de la planche sont des
+  constantes du plugin, séparées des couleurs de la palette.
+- `[PLA-24]` Le dessin se fait palette par palette, avec un message de
+  progression. « Dessiner toutes les palettes » demande une confirmation
+  au-delà de six palettes. Le lot 6 mesure le temps de dessin de douze palettes
+  et revoit ce seuil ; au-delà de dix secondes pour douze, le dessin d'une
+  seule palette reste le geste par défaut.
+
+## 10. Sortie 2 : la recette et le rapport
+
+### 10.1 La recette exportée
+
+- `[REC-07]` « Exporter la recette » télécharge `palettes.recette.json`, le JSON
+  canonique de la [section 7.3](#73-rangement-et-version). Une recette
+  illisible ou future s'exporte telle qu'elle est rangée (`[REC-11]`).
+- `[REC-08]` « Importer une recette » lit un fichier, le valide, puis affiche
+  l'écart avec la recette rangée : palettes ajoutées, retirées, modifiées, et
+  paramètres communs modifiés. Le designer confirme ; l'import remplace la
+  recette rangée et ne redessine rien.
+- `[REC-09]` La recette exportée se range dans le dépôt du design system. Cette
+  étape est manuelle : le plugin n'a pas de réseau.
+
+### 10.2 Le rapport de vérification
+
+- `[VER-01]` « Exporter le rapport » télécharge `palettes.rapport.json` : pour
+  chaque palette et chaque mode, chaque cran avec son hexa et ses contrastes,
+  chaque promesse avec sa paire, son contraste et son verdict, et chaque alerte
+  avec sa mesure.
+- `[VER-02]` Le rapport porte l'empreinte de la recette qui l'a produit.
+
+## 11. Les vérifications
+
+Les vérifications portent sur les hexas produits, contre les fonds de
+référence de la recette.
+
+### 11.1 Crans
+
+- `[VER-03]` Chaque cran de chaque rampe reçoit son contraste contre le fond de
+  référence de son mode, contre le blanc et contre le noir, et le seuil tenu
+  contre le fond.
+- `[VER-04]` Un cran n'a pas de verdict : seul un rôle promet un contraste.
+
+### 11.2 Promesses des rôles
+
+Pour chaque palette et chaque mode, quatorze paires, calculées sur le câblage
+proposé. `R+1` désigne le cran suivant celui que le rôle `R` vise, dans la même
+rampe : l'architecture fait avancer un état d'un cran.
+
+| # | Paire | Seuil |
+|---|---|---|
+| 1 | `text` sur fond | 4,5 |
+| 2 | `text` sur `surface` | 4,5 |
+| 3 | `text+1` sur `surface+1`, survol | 4,5 |
+| 4 | `text+2` sur `surface+2`, appui | 4,5 |
+| 5 | `on-solid` sur `solid` | 4,5 |
+| 6 | `on-solid` sur `solid+1` | 4,5 |
+| 7 | `on-solid` sur `solid+2` | 4,5 |
+| 8 | `border-control` sur fond | 3 |
+| 9 | `border-control` sur `surface` | 3 |
+| 10 | `border-control+1` sur `surface+1` | 3 |
+| 11 | `border-control+2` sur `surface+2` | 3 |
+| 12 | `focus` sur fond | 3 |
+| 13 | `focus` sur `surface` | 3 |
+| 14 | `solid+1` sur fond | 3 |
+
+Une palette compte 28 paires : quatorze par mode.
+
+- `[VER-05]` Une paire est « non vérifiable » quand un de ses membres vise le
+  fond ou la référence et que la paire demande un cran suivant, ou quand `R+1`
+  dépasse le dernier cran de `crans`. Elle s'affiche comme telle, jamais comme
+  tenue.
+- `[VER-06]` Une promesse manquée nomme la paire, le contraste obtenu, le seuil,
+  et le cran de la même rampe qui la tiendrait. Le membre qui vise un cran
+  bouge, le premier si les deux en visent un : pour les paires 5 à 7, le
+  premier membre vise le fond, et `solid` bouge. Le cran proposé tient toutes
+  les paires du rôle. Il se cherche par distance croissante au cran courant, et
+  à égalité le plus contrasté l'emporte.
+- `[VER-07]` Une promesse manquée n'empêche pas le dessin. Elle s'affiche au
+  premier rang, et le verdict de la palette devient « {n} promesses
+  manquées ».
+
+### 11.3 Alertes
+
+| Alerte | Mesure | Seuil | Portée |
+|---|---|---|---|
+| Profils confondus | ΔEok entre `subtle` et `vivid`, même cran et même mode, sur les crans que le câblage vise, états `+1` et `+2` compris | `profilsConfondus` | chaque palette, sauf parts `grise` (`[ENT-09]`) |
+| Palettes proches | ΔEok moyen sur les crans 500, 600 et 700 de `vivid`, en clair | `palettesProches` | chaque paire de palettes de la recette |
+| Couleur presque grise | chroma de la référence | `chromaGrise` | chaque palette |
+| Référence plus terne que `subtle` | part de chroma de la référence inférieure à la part de `subtle` | sans seuil | chaque palette |
+| Référence hors de la rampe | clarté de la référence hors de `[Ls, Lc]` | sans seuil | chaque palette |
+| Fond hors de la courbe | [section 8.2](#82-les-fonds-de-référence) | sans seuil | chaque fond |
+
+- `[VER-08]` Une alerte n'empêche rien. Elle dit ce qui est mesuré, la valeur,
+  le seuil et le geste qui la lève.
+- `[VER-10]` Une référence plus vive que `vivid` est une notice. Toute couleur
+  au plafond du gamut la déclencherait, et aucun réglage ne la lève.
+- `[VER-11]` « Profils confondus » ne porte que sur les crans que le câblage
+  vise ; ailleurs, la carte de la planche porte la mention « ≈ » (`[PLA-15]`).
+  À dérive nulle, sur 360 teintes, l'alerte portée sur tous les crans sonne
+  pour 320 teintes, aux crans 50, 100 et 950. Bornée aux crans câblés, elle
+  sonne encore pour 249 teintes : le câblage par défaut vise `vivid.100` pour
+  `surface`, et le cran 100 confond les deux profils sur 216 teintes en clair
+  et 39 en sombre.
+
+### 11.4 Sévérités et messages
+
+| Sévérité | Emploi | Rang dans l'interface |
+|---|---|---|
+| Bloquant | Le dessin ne peut pas se faire : recette illisible ou future, police absente | Premier, avant toute autre ligne |
+| Promesse manquée | Un rôle ne tient pas son seuil | Juste après les bloquants |
+| Alerte | Une mesure franchit un seuil de conception | Ensuite |
+| Notice | Profil `LEGACY`, cadre orphelin, copie de cadre, référence plus vive que `vivid`, couleur ramenée dans le gamut sRGB | Dernier, en couleur secondaire |
+
+- `[VER-09]` Chaque message a trois parties séparées : où, quoi, geste. Il se
+  rédige avec la skill `rediger-diagnostics-ucm`, et le modèle de
+  `packages/plugin/src/contract/localisation.ts` sert de patron, sans import.
+  Tous les textes destinés au designer sont dans un seul module de l'interface
+  (D14).
+
+## 12. L'éditeur de dérive
+
+L'éditeur règle les deux dérives d'une palette et montre leur effet sur chaque
+cran pendant le geste. Il occupe la zone centrale de l'onglet Palettes, replié
+par défaut sur une ligne : le préréglage, les deux angles et le bouton
+« Régler », qui le déplie. Déplié à 440 × 520, il repousserait les promesses
+manquées sous le pli, contre `[VER-07]`.
+
+```text
+┌ Dérive de teinte ─────────────────── Préréglage [Tailwind ▾]  🔗 subtle = vivid ┐
+│ +30° ┤                                                                        │
+│      │                                                                        │
+│   0° ┼━━━━━━━━━━━━━━━━━━━━━━━━━━━━◆━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●            │
+│      ●╱                  référence 257° (fixe)          bout sombre +5,1°     │
+│ −30° ┤ bout clair −7,5°                                                       │
+│       50   100   200   300   400   500   600   700   800   900   950          │
+│      ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇  teintes     │
+│      ▪    ▪    ▪    ▪    ▪    ▪    ▪    ▪    ▪    ▪    ▪         vivid light   │
+├────────────────────────────────────────────────────────────────────────────────┤
+│ Bout clair   [ −7,5 ]°  ◂━━━━━━━━●━━━━━━━━▸   ┊ Tailwind −7,5°                 │
+│ Bout sombre  [ +5,1 ]°  ◂━━━━━━━━━━●━━━━━━▸   ┊ Tailwind +5,1°                 │
+└────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 12.1 Ce que l'éditeur montre
+
+- `[DER-01]` Un graphe : en abscisse le rang du cran de la courbe claire, onze
+  positions régulières, du bout clair à gauche au bout sombre à droite ; en
+  ordonnée la dérive par rapport à `Ha`, de -90° à +90°, avec des repères tous
+  les 15°. La courbe est une ligne brisée qui passe, à chaque position, par la
+  dérive que la [section 6.4](#64-la-teinte-dun-cran) donne à ce cran. Le pivot
+  se place entre les deux rangs qui encadrent sa clarté, par interpolation
+  linéaire de la clarté, et la ligne brisée y passe aussi. Les positions régulières alignent le graphe, la bande
+  de teintes et la rampe sur les mêmes onze colonnes.
+- `[DER-02]` Le pivot est un losange placé à la clarté de la référence, sur la
+  ligne 0°. Il ne se déplace pas ; son infobulle dit « couleur de référence,
+  teinte fixe, 257° ».
+- `[DER-03]` Deux poignées rondes aux bouts de la courbe portent `dClair` et
+  `dSombre`. Leur étiquette donne l'angle signé et la teinte absolue qui en
+  résulte.
+- `[DER-04]` Sous le graphe, une bande de teintes : chaque cran peint à sa
+  teinte, à la chroma de `vivid` en clair. Sous la bande, la rampe du profil et
+  du mode affichés dans l'aperçu. Les deux se mettent à jour pendant le geste.
+- `[DER-05]` Quand `subtle` et `vivid` ont des dérives distinctes, le graphe
+  trace deux courbes de deux couleurs de trait et de deux motifs, plein et
+  tireté, pour rester lisibles sans la couleur. Chaque poignée porte l'initiale
+  de son profil.
+- `[DER-06]` Sur chaque réglette, un repère fin marque la valeur du préréglage
+  Tailwind, même quand la dérive est libre. Le designer voit ainsi l'écart avec
+  Tailwind sans changer de préréglage.
+
+### 12.2 Ce que le designer fait
+
+- `[DER-07]` Glisser une poignée verticalement change sa dérive au degré près.
+  Maintenir Maj arrondit aux 5°. La poignée ne se déplace pas horizontalement.
+- `[DER-08]` Chaque dérive a aussi un champ numérique et une réglette, liés au
+  graphe dans les deux sens. Le champ accepte une décimale, la virgule et le
+  point.
+- `[DER-09]` Au clavier, une poignée ou une réglette qui a le focus change de 1°
+  avec les flèches, de 5° avec Maj et les flèches. Origine et Fin gardent le
+  sens que le motif clavier d'un curseur leur donne : le minimum et le maximum.
+  Un bouton « Tailwind » à côté de chaque champ ramène la valeur du préréglage.
+  Chaque poignée porte `role="slider"` et une `aria-valuetext` qui donne l'angle
+  et la teinte absolue.
+- `[DER-10]` Un double-clic sur une poignée ramène sa valeur Tailwind.
+- `[DER-11]` Le menu Préréglage propose « Tailwind », « Constante » (les deux
+  dérives à 0) et affiche « Libre » dès qu'une valeur s'écarte du préréglage
+  choisi. Choisir un préréglage remplace les deux dérives du profil affiché,
+  ou des deux profils quand ils sont liés.
+- `[DER-12]` Le bouton de lien « subtle = vivid » est actif par défaut. Le
+  désactiver copie la dérive courante dans les deux profils, puis un sélecteur
+  choisit le profil dont on règle les poignées. Le réactiver aligne `subtle` sur
+  `vivid`, après confirmation si leurs valeurs diffèrent.
+- `[DER-13]` Tout changement se lit dans l'aperçu en moins d'une image
+  (`[MOT-13]`). Il se range au relâchement de la poignée ou à la validation du
+  champ, jamais pendant le glisser (`[REC-06]`). Ctrl+Z, ou Cmd+Z sur Mac,
+  annule le dernier réglage de dérive quand le focus est dans l'éditeur, hors
+  d'un champ texte. La pile garde cinquante réglages, sans rétablissement.
+
+### 12.3 Bornes de l'éditeur
+
+- `[DER-14]` Une référence plus claire que le bout clair n'a pas de segment
+  clair : la poignée claire est masquée et une note dit pourquoi. Même règle au
+  bout sombre.
+- `[DER-15]` Une référence presque grise désactive l'éditeur et affiche
+  l'alerte « couleur presque grise » : sans teinte, une dérive ne se voit pas.
+- `[DER-16]` La largeur minimale de la fenêtre garde les onze positions du
+  graphe lisibles : 24 px par cran, repères compris.
+
+## 13. L'interface
+
+### 13.1 Fenêtre et onglets
+
+- `[UI-01]` Taille par défaut 600 × 720, minimale 440 × 520, rangée sous une
+  clé propre au plugin par une copie de `packages/plugin/src/fenetre.ts`, que
+  la version du socle remplace à l'extraction.
+- `[UI-02]` Trois onglets : **Palettes**, **Recette**, **Planche**. L'onglet
+  Planche porte les gestes qui touchent au document : dessiner, redessiner,
+  exporter et importer la recette, exporter le rapport.
+- `[UI-03]` La hiérarchie de l'information de
+  [CONTRIBUTING.md](../../../../CONTRIBUTING.md#la-hiérarchie-de-linformation)
+  s'applique : le verdict et l'action principale se lisent sans défiler.
+
+### 13.2 Écrans
+
+Onglet Palettes, une palette ouverte :
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ [Bleu ▾] [+]                  2 promesses manquées [Dessiner] │
+├──────────────────────────────────────────────────────────────┤
+│ Référence [■ #1E6FD9]  Nom [Bleu        ]                     │
+│ part 0,89 · entre subtle 0,45 et vivid 0,95 · proche du 600   │
+├──────────────────────────────────────────────────────────────┤
+│ Dérive  Tailwind · clair −7,5° · sombre +5,1°      [Régler]   │
+├──────────────────────────────────────────────────────────────┤
+│ [Light | Dark]                                                │
+│  subtle  ▪▪▪▪▪▪▪▪▪▪▪                                          │
+│  vivid   ▪▪▪▪▪▪▪▪▪▪▪                                          │
+│  survol d'une pastille : nom, hexa, contrastes, rôles          │
+├──────────────────────────────────────────────────────────────┤
+│ Promesses manquées                                            │
+│  text sur surface, dark : 4,31 pour 4,5 · viser le cran 800   │
+│ Alertes                                                       │
+│  proche de « Violet » : ΔEok 0,03 pour 0,05                   │
+│ ▸ Rôles  ▸ Avancé                                             │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- `[UI-04]` Une pastille de l'aperçu fait 24 × 24. Les valeurs d'un cran
+  s'affichent au survol et au focus clavier, jamais en permanence : la planche
+  est l'endroit où tout se lit. Une rampe compte pour un objet au point (e) du
+  protocole de relecture.
+- `[UI-05]` Le bouton « Dessiner » range la recette et dessine la palette
+  ouverte. La progression s'affiche à sa place.
+- `[UI-06]` Le sélecteur de palette liste chaque palette par son nom ou son
+  hexa, avec une pastille de sa référence.
+
+Onglet Planche :
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Planche : 4 palettes · recette v1 · empreinte 3fa2c91e · sRGB │
+├──────────────────────────────────────────────────────────────┤
+│ Bleu       à jour                                             │
+│ #F2A900    périmée                           [Redessiner]     │
+│ Violet     jamais dessinée                   [Dessiner]       │
+│ [Dessiner toutes les palettes]   ☐ grille de contraste        │
+├──────────────────────────────────────────────────────────────┤
+│ Recette  [Exporter] [Importer]      Rapport  [Exporter]       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 13.3 États de la galerie
+
+Chaque état a son entrée dans `galerie/etats.cjs`, et un message déclaré dans
+`messages.ts` sans état fait échouer le test de la galerie, comme dans UCM
+Exporter.
+
+| État | Ce qu'il montre |
+|---|---|
+| Premier lancement | Aucune recette rangée, recette par défaut proposée, aucune palette |
+| Premier lancement, palette créée | La première palette ouverte, recette rangée |
+| Palette en saisie | Aperçu à jour, rien de dessiné |
+| Hexa invalide | Le champ de référence refuse la saisie, aperçu inchangé |
+| Recette modifiée ailleurs | Rangement refusé, geste « Recharger » |
+| Notice `LEGACY` | Le document n'a pas de profil de couleur géré |
+| Dérive liée, préréglage Tailwind | Une courbe, repères Tailwind confondus avec les poignées |
+| Dérive déliée et libre | Deux courbes, repères Tailwind visibles à l'écart |
+| Référence hors de la rampe | Une poignée masquée et sa note |
+| Couleur presque grise | Éditeur désactivé, alerte |
+| Palette avec promesses manquées | Verdict et lignes au premier rang |
+| Palette avec alertes seules | Verdict « prête », alertes dessous |
+| Dessin en cours | Progression, aucun geste possible |
+| Dessin interrompu | Message d'erreur, cadre non posé, geste « Réessayer » |
+| Confirmation au-delà de six palettes | « Dessiner toutes les palettes » demande confirmation |
+| Onglet Planche sans palette | Aucun cadre à dessiner, geste vers l'onglet Palettes |
+| Planche à jour | Toutes les palettes à jour |
+| Planche périmée | Cadres nommés, geste « Redessiner » |
+| Cadre orphelin | Palette supprimée, cadre toujours sur la page |
+| Copie de cadre | Notice, la copie n'est pas réécrite |
+| Calques étrangers | Confirmation avant dessin, qui nomme les calques ajoutés |
+| Document Display P3 | Notice de conversion |
+| Recette future | Refus, demande de mise à jour du plugin, trois gestes de sortie |
+| Recette illisible | Refus sans écriture, trois gestes de sortie |
+| Import invalide | Erreurs de forme, recette rangée intacte |
+| Écart d'import | Palettes et paramètres modifiés, confirmation |
+| Police indisponible | Bloquant, aucun cadre posé |
+
+### 13.4 Messages
+
+- `[UI-07]` `messages.ts` déclare les deux sens de la frontière. L'interface
+  envoie des demandes : lire l'état, lire la couleur de la sélection, ranger la
+  recette, dessiner une palette ou toutes, importer, voir sur la planche,
+  redimensionner. Le sandbox envoie l'état (recette rangée, profil du document,
+  état de chaque cadre), la couleur de la sélection, la progression et les
+  résultats. Un message entre dans `messages.ts` au lot qui le met en scène
+  dans la galerie.
+- `[UI-08]` Chaque résultat porte le numéro de la demande qui l'a produit.
+  L'interface écarte un résultat plus ancien que la dernière demande du même
+  geste.
+
+## 14. Architecture du code
+
+### 14.1 Les paquets
+
+```text
+packages/couleur/                ucm-couleur, privé, le moteur pur    [ARC-01]
+  src/conversions.ts               hexa, sRGB, linéaire, Oklab, OKLCH, P3
+  src/plafond.ts                   plafond de chroma, mémorisé
+  src/rampe.ts                     cran, teinte pivotée, rampe entière
+  src/tailwind.ts                  le préréglage et son relevé
+  src/contraste.ts                 contraste WCAG, ΔEok, part de chroma
+  src/promesses.ts                 les quatorze paires, sur un câblage résolu
+  src/alertes.ts                   les alertes de la section 11.3
+  src/recette.ts                   forme, validation, migration, recette par défaut
+  src/empreinte.ts                 JSON canonique, encodeur UTF-8 et FNV-1a
+  src/index.ts                     la porte du paquet, lue en source
+
+packages/plugin-socle/           privé, extrait après la planche      [ARC-02]
+  build/inline-ui.cjs              du bundle et du CSS à un HTML autonome
+  build/manifest.cjs               le manifest de distribution
+  build/run-tests.cjs              le découvreur de tests
+  ui/socle.css                     échelle de texte, trame, rôles de couleur, replis sombres
+  ui/composants/                   Bouton, Onglets, Interrupteur, PoigneeDeRedimensionnement
+  fenetre.ts                       taille bornée, rangée dans clientStorage
+  galerie/                         le banc d'états : build, captures, décalque du thème Figma
+  tests/                           les lois communes : styles et DOM, gabarit, manifest
+
+packages/plugin-palettes/        le plugin UCM Palettes              [ARC-03]
+  manifest.json
+  src/code.ts                      routage des demandes de l'interface
+  src/messages.ts                  les deux sens de la frontière sandbox et interface
+  src/planche/modele.ts            de la recette calculée à l'arbre de cadres à dessiner, pur
+  src/ecriture/planche.ts          dessine un modèle de planche dans la page
+  src/ecriture/recette.ts          range la recette dans le fichier
+  src/lecture.ts                   la recette rangée, la page, les cadres, la couleur sélectionnée
+  src/navigation.ts                la page courante, le cadrage et la sélection
+  src/ui/                          l'interface
+  src/ui/textes.ts                 tous les textes destinés au designer
+  src/ui/derive/                   l'éditeur de dérive : graphe, poignées, réglettes
+  galerie/etats.cjs                les états de l'interface
+  tests/
+```
+
+- `[ARC-04]` Le moteur est le paquet privé `ucm-couleur`, sans étape de build :
+  son `package.json` exporte `./src/index.ts`, qu'esbuild, tsx et tsc en
+  résolution `Bundler` lisent tels quels. Il ne dépend d'aucun paquet. Sa
+  compilation cible ES2020 sans types d'environnement : `figma`, `document`,
+  `window` et `performance` y sont des erreurs. Il entre dans `@ucm-kit/core`
+  le jour où un lecteur de `tokens.json` en a besoin ; ranger un contenu dans
+  le kit en monte la version, que la CLI et l'adaptateur épinglent.
+- `[ARC-05]` Le manifest du plugin déclare `editorType: ["figma"]`,
+  `documentAccess: "dynamic-page"`, et
+  `networkAccess: { "allowedDomains": ["none"] }`. Son identifiant est celui que
+  Figma attribue à la création du plugin.
+- `[ARC-06]` Le `package.json` racine ajoute le build du plugin à `npm run
+  build`. `npm test` le couvre par les workspaces, sans ligne ajoutée.
+- `[ARC-07]` La planche se calcule en deux temps. `planche/modele.ts` rend un
+  arbre de données pur : cadres, textes, couleurs, tailles, noms de calque.
+  `ecriture/planche.ts` le traduit en nodes Figma, sans décision. Tout ce que la
+  [section 9](#9-sortie-1--la-planche) exige se teste sur le modèle, hors de
+  Figma.
+- `[ARC-08]` L'éditeur de dérive est un composant DOM natif, comme le reste de
+  l'interface, dessiné en SVG. Sa géométrie (position d'une poignée, angle
+  d'une position) est une fonction pure testée à part.
+
+### 14.2 Ce qui se partage avec UCM Exporter
+
+Les chemins partent de la racine du dépôt ; un nom seul reste dans le dossier
+du chemin qui le précède.
+
+| Élément d'UCM Exporter | Sort | Raison |
+|---|---|---|
+| `packages/plugin/scripts/build-ui.cjs` | Extrait dans le socle | Les deux plugins produisent un HTML autonome, et le piège de `String.replace` y est déjà traité |
+| `packages/plugin/scripts/build-manifest.cjs`, `packages/plugin/scripts/run-tests.cjs` | Extraits | Identiques d'un plugin à l'autre |
+| `packages/plugin/src/fenetre.ts` | Extrait, clé et bornes en paramètres | Les bornes diffèrent, la logique est la même |
+| `packages/plugin/src/ui/styles.css`, variables et replis de thème | Socle extrait ; les règles propres à UCM Exporter restent dans son paquet | Une seule autorité sur le rendu dans les thèmes de Figma |
+| `Button`, `Onglets`, `Interrupteur`, `ResizeGrip` de `packages/plugin/src/ui/components/` | Extraits ; `ResizeGrip` reçoit sa fonction d'envoi | Aucun ne dépend d'un message d'UCM Exporter, sauf l'envoi |
+| `packages/plugin/galerie/build-galerie.cjs`, `capturer.cjs`, `theme-figma.css` | Extraits, `ETATS` passé en paramètre | Le banc est générique, les états ne le sont pas |
+| `packages/plugin/tests/stylesUi.test.ts`, `buildUi.test.ts`, `manifestDistribution.test.ts` | Leur logique devient des fonctions du socle, appelées par un test dans chaque plugin | Chaque plugin garde un test à son nom, qui échoue chez lui |
+| `packages/plugin/src/messages.ts`, `packages/plugin/src/ui/pont.ts` | Patron recopié, pas de code partagé | Le vocabulaire des messages est propre à chaque plugin |
+| `packages/plugin/src/contract/localisation.ts` | Patron recopié | Les constats du plugin de palettes ne portent pas sur un contrat |
+| `packages/plugin/tests/loiDuDocumentIntact.test.ts` | Patron recopié, sens inversé | Le plugin de palettes écrit par nature ; sa loi borne les fichiers qui écrivent |
+
+- `[ARC-09]` L'extraction vient après la planche, quand les deux plugins
+  existent ; jusque-là, le plugin Palettes emploie des copies des scripts
+  d'UCM Exporter, et chaque copie dit en tête qu'elle sera remplacée.
+  L'extraction ne change rien à UCM Exporter : sa suite passe, et pour chaque
+  état de sa galerie, le `innerHTML` de `#app` et le style calculé de chaque
+  élément sont identiques avant et après. `dist/ui.html` est identique, ou ne
+  diffère que par l'ordre des modules du bundle. La preuve se fait sur le DOM,
+  pas sur les captures, qui ne sont pas reproductibles.
+- `[ARC-10]` Le socle n'est pas publié. Ses fichiers sont lus par les deux
+  plugins à travers le workspace, et esbuild les inclut dans chaque bundle.
+
+### 14.3 Le plugin
+
+- `[ARC-11]` Le moteur de couleur est inclus deux fois : dans l'interface pour
+  l'aperçu, dans le sandbox pour le modèle de planche. Les deux importent le
+  même module. Le sandbox calcule la planche depuis la recette rangée ;
+  l'interface n'envoie jamais un hexa à dessiner.
+- `[ARC-12]` Seuls les fichiers de `src/ecriture/` appellent une API Figma qui
+  écrit. La loi qui le tient lit le code ligne à ligne et cherche une liste
+  explicite de motifs : `figma.create*`, `.remove(`, `setPluginData`,
+  `setSharedPluginData`, `appendChild`, `insertChild`, `.fills =`,
+  `.strokes =`, `.name =`, `.characters =`, `.resize(`, `.x =`, `.y =`,
+  `.layoutMode =`, `.fontName =`, `.fontSize =`. Une affectation absente de la
+  liste lui échappe.
+- `[ARC-13]` Aucun fichier de `src/` n'appelle `figma.variables`,
+  `loadAllPagesAsync` ou une API de style.
+- `[ARC-15]` La navigation (`setCurrentPageAsync`, `scrollAndZoomIntoView`,
+  `selection`) est dans `src/navigation.ts`, hors de la loi d'écriture : elle
+  ne modifie pas le document.
+- `[ARC-14]` Le routage de `code.ts` n'a qu'une porte par geste d'écriture :
+  « dessiner » et « ranger la recette ».
+
+### 14.4 Invariants
+
+Ces règles entrent dans `AGENTS.md` au lot qui les rend vraies, chacune avec le
+test qui la tient.
+
+| Règle | Test |
+|---|---|
+| Le moteur de couleur ne lit ni `figma`, ni le DOM, ni l'heure, ni le hasard | Compilation sans types d'environnement, et loi de pureté sur `packages/couleur/src/` pour `Date`, `Math.random`, `Intl`, `toLocaleString` et `TextEncoder` |
+| À la clarté de la référence, la teinte vaut celle de la référence, quelle que soit la dérive | Test de propriété du moteur |
+| Seul `src/ecriture/` écrit dans le document | Loi d'écriture, patron de `loiDuDocumentIntact` |
+| Le plugin ne touche aucune variable | Loi d'écriture : `figma.variables` absent de `src/` |
+| Le plugin n'écrit que dans les cadres qu'il possède et dans la recette | Tests du modèle et de l'écriture |
+| Le manifest n'ouvre aucun domaine | Test du manifest |
+| Aucun des deux plugins n'importe l'autre | Loi d'import, dans chaque plugin |
+
+## 15. Les lots
+
+Le [plan de développement](./PLAN-PLUGIN-PALETTES.md) détaille chaque lot en
+cases et donne son critère de sortie. Chaque lot se termine par `npm test`,
+`npm run typecheck` et `npm run build` verts, et par un commit sur `main`. Un
+lot qui touche l'interface passe le protocole de relecture de
+[CONTRIBUTING.md](../../../../CONTRIBUTING.md#le-protocole-de-relecture).
+
+| Lot | Contenu | Exigences |
+|---|---|---|
+| 0 | Mise en place : cette spécification corrigée, le dossier suivi par Git | aucune |
+| 1 | Moteur de couleur, préréglage Tailwind, dans `packages/couleur` | MOT-01 à MOT-24, MOT-26, MOT-27, ARC-01, ARC-04 |
+| 2 | Promesses, alertes, recette, empreinte | VER-03 à VER-11, ENT-06, ENT-09, REC-02 à REC-05 |
+| 3 | Squelette du plugin, lecture et rangement de la recette, galerie | ARC-03, ARC-05, ARC-06, ARC-12 à ARC-15, REC-01, REC-04, REC-10, UI-01, UI-02, UI-07, UI-08 |
+| 4 | Onglet Palettes, aperçu, gestion des palettes | ENT-01 à ENT-04, REC-06, UI-03 à UI-06, ARC-11 |
+| 5 | Éditeur de dérive | DER-01 à DER-16, ARC-08 |
+| 6 | Planche : modèle, écriture, fraîcheur, recette Figma | PLA-01 à PLA-25, MOT-25, ARC-07 |
+| 7 | Onglet Recette, import et export, rapport | ENT-05, ENT-07, ENT-08, REC-07 à REC-09, REC-11, VER-01, VER-02 |
+| 8 | Extraction du socle commun | ARC-02, ARC-09, ARC-10 |
+| 9 | Clôture : README, invariants, feuille de route | invariants de la [section 14.4](#144-invariants) |
+
+## 16. Recette dans Figma
+
+Ce qui ne se prouve pas hors de Figma se rejoue à la main.
+
+1. Document `SRGB` : dessiner une palette ; la pipette de Figma sur une pastille
+   rend l'hexa de sa carte.
+2. Document `DISPLAY_P3` : la pipette y rend une couleur P3, pas l'hexa sRGB
+   de la carte. Dessiner la même palette dans un document `SRGB` et dans un
+   document `DISPLAY_P3`, poser les deux planches côte à côte : elles
+   s'affichent identiques, et les composantes relues de la peinture P3 égalent
+   la conversion `[MOT-05]`. Ce point tranche `[MOT-25]`.
+3. Glisser une poignée de dérive : l'aperçu suit le pointeur sans saccade
+   visible.
+4. Déplacer un cadre, redessiner : il reste à sa place.
+5. Ctrl+Z après un dessin défait ce dessin entier.
+6. Modifier la recette : le cadre est signalé périmé, puis redessiné au geste.
+7. Douze palettes dessinées : temps mesuré, et défilement de la page Palettes
+   sans saccade visible.
+8. Copier un hexa depuis une carte de la planche.
+
+## 17. Option ultérieure : créer les variables
+
+Cette option n'entre dans aucun lot. Elle se décide après usage du plugin, si
+la planche convient. Ce qui suit liste ce qu'elle devra trancher, pour que la
+décision parte de faits connus.
+
+- **Les noms.** Le plugin ne connaît que le nom éventuel de la palette, le
+  profil, le mode et le cran. Le designer devra dire dans quelle collection et
+  sous quel chemin chaque palette entre ; le nom de calque des pastilles
+  (`[PLA-14]`) donne déjà la fin de ce chemin.
+- **Les modes Figma.** Si une collection porte un mode par marque, Figma remplit
+  un mode ajouté avec les valeurs du premier. Une valeur copiée ne doit pas
+  passer pour une valeur écrite ou retouchée.
+- **Les retouches.** Une valeur modifiée à la main dans Figma ne s'écrase pas.
+- **Le profil du document.** La table de la [section 6.7](#67-peindre-dans-lespace-du-document)
+  vaut aussi pour la valeur d'une variable, à vérifier de même.
+- **UCM Exporter.** Les variables écrites seront exportées comme les autres ; son
+  moteur n'a pas à changer.
+
+## 18. Risques
+
+- **Les courbes et les parts de chroma sont des choix visuels.** L'onglet
+  Recette sert à les régler en regardant la planche.
+- **Une planche est un relevé.** Les pastilles sont peintes, pas liées : une
+  couleur modifiée à la main sur la planche ne modifie pas la recette, et
+  disparaît au prochain dessin.
+- **Le profil Display P3.** La conversion repose sur `[MOT-25]`, que seule la
+  recette Figma confirme.
+- **La planche est lourde.** Environ 400 calques par palette. Le lot 6 mesure,
+  et `[PLA-24]` prévoit le repli.
+- **L'éditeur de dérive est le point d'ergonomie du plugin.** Le lot 5 lui est
+  réservé, et le protocole de relecture s'y applique avant la suite.
+- **L'extraction du socle touche UCM Exporter.** Le lot 8 ne passe que si le
+  DOM et les styles calculés de sa galerie sont identiques.
+
+## 19. Consignes pour l'agent
+
+Les règles de conduite de chaque lot sont dans [le
+plan](./PLAN-PLUGIN-PALETTES.md#règles-de-conduite). Trois d'entre elles
+touchent à cette spécification :
+
+- lire ce document section par section, au lot qui la concerne ;
+- mesurer avant d'implémenter une prémisse : une formule de ce document qui
+  contredit une mesure se corrige ici, et le commit le dit ;
+- ne rien changer au comportement d'UCM Exporter. Le lot 8 est le seul qui
+  touche son paquet, et il ne change ni son DOM ni ses styles calculés.
