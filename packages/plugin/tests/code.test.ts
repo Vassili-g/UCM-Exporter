@@ -96,6 +96,12 @@ function ouvrir() {
   };
   /** Ce que la lecture des règles conclut du conteneur ; le test le choisit. */
   const regles = { exploitables: true, aRediger: 0 };
+  /**
+   * Les noms compactés des composants qui ont déjà leurs règles. Les deux
+   * imbriqués publiés du banc les ont par défaut, faute de quoi chaque création
+   * rendrait leurs points à des tests qui parlent d'autre chose.
+   */
+  const contractes = { noms: ['button', 'icon'] };
   /** Le test de connexion, par configuration reçue. */
   const connexionDe = { traiter: async (_config: { projet: string; jeton: string }): Promise<Diagnostic> => ({ cause: 'connecte', layout: null }) };
   const runtime = {
@@ -130,10 +136,13 @@ function ouvrir() {
     './contract/extractRules': {
       extractRules: async () => ({ releve: releve.actuel, aRediger: regles.aRediger }),
       hasUsableRules: () => regles.exploitables,
+      compactName: (nom: string) => nom.replace(/\s+/g, '').toLowerCase(),
       MARQUEUR_A_COMPLETER: '[À compléter]',
     },
     './contract/composedComponents': {
       oublierLIndexDuDocument: () => { appels.oublisDIndex += 1; },
+      // Les composants dont le test dit qu'ils ont déjà leurs règles.
+      indexContractedNamesInDocument: async () => new Set(contractes.noms),
     },
     // Le vrai relevé lit les définitions Figma ; ici la clé publique vaut le
     // nom brut, ce qui suffit à dire quelles props le parent déclare.
@@ -179,7 +188,7 @@ function ouvrir() {
     clearTimeout: (id: number) => temporisations.delete(id),
   });
   return {
-    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, regles, resolution, creation, runtime, stockage,
+    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, regles, contractes, resolution, creation, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string, parent?: { type: string }) {
       runtime.currentPage.selection = [{
@@ -1225,78 +1234,10 @@ test('« creer-regles » écrit une fois, et relance le relevé de sélection', 
   // Le contrat porte aussi les propriétés d'un enfant élu wrapper. Le template
   // ne documente que celles que le composant sélectionné déclare, et c'est ce
   // relevé qui les nomme.
-  assert.deepEqual(h.appels.relevesDeProps, [['severity']]);
-});
-
-test('les propriétés écartées du template donnent un point rouge, nommées une à une', async () => {
-  // Le contrat porte les propriétés d'un enfant élu wrapper ; le composant
-  // sélectionné ne déclare que « severity ». Les taire ferait croire à un
-  // template complet, alors que le contrat publié les décrit sans un mot
-  // d'usage.
-  const h = ouvrir();
-  h.exporte.traiter = async () => ({
-    ...resultat('Exemple.contract.json'),
-    content: JSON.stringify({
-      props: {
-        severity: { type: 'enum', values: ['info'] },
-        size: { type: 'enum', values: ['small'] },
-        label: { type: 'boolean', default: true },
-      },
-    }),
-  });
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  const points = h.messages.filter((message) => message.type === 'diagnostic');
-  assert.equal(points.length, 1);
-  assert.equal(points[0].severite, 'danger');
-  assert.equal(points[0].titre, 'Règles de « Exemple » : 2 propriétés ne sont pas documentées, « size » et « label ».');
-  assert.match(points[0].impact, /à « Button », qui n’a pas encore ses propres règles/);
-  assert.equal(points[0].action, 'Créez les règles de « Button », puis relancez l’analyse de « Exemple ».');
-  // Les deux instances du Button, pour que la carte offre d'aller les voir.
-  assert.deepEqual([...points[0].nodeIds ?? []], ['btn-1', 'btn-2']);
-  // Le point suit le succès : la création a bien posé les règles.
-  assert.match(derniereNote(h) ?? '', /règles posées/);
-});
-
-test('chaque composant imbriqué a son propre point, avec son geste', async () => {
-  // Dix enfants donneraient dix gestes noyés dans une phrase unique. Le geste
-  // vise un composant : le point aussi.
-  const h = ouvrir();
-  h.exporte.traiter = async () => ({
-    ...resultat('Exemple.contract.json'),
-    content: JSON.stringify({
-      props: {
-        severity: { type: 'enum', values: ['info'] },
-        size: { type: 'enum', values: ['small'] },
-        iconName: { type: 'boolean', default: true },
-      },
-    }),
-  });
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  const points = h.messages.filter((message) => message.type === 'diagnostic');
-  assert.deepEqual(points.map((point) => point.titre), [
-    'Règles de « Exemple » : Une propriété n’est pas documentée, « size ».',
-    'Règles de « Exemple » : Une propriété n’est pas documentée, « iconName ».',
-  ]);
-  assert.deepEqual(points.map((point) => [...point.nodeIds ?? []]), [['btn-1', 'btn-2'], ['ico-1']]);
-});
-
-test('une propriété qu’aucun imbriqué ne revendique est nommée quand même', async () => {
-  const h = ouvrir();
-  h.exporte.traiter = async () => ({
-    ...resultat('Exemple.contract.json'),
-    content: JSON.stringify({ props: { orpheline: { type: 'boolean', default: true } } }),
-  });
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  const points = h.messages.filter((message) => message.type === 'diagnostic');
-  assert.equal(points.length, 1);
-  assert.match(points[0].impact, /un composant imbriqué que le plugin n’a pas su nommer/);
-  assert.equal(points[0].nodeIds, undefined);
+  // Le composant sélectionné, puis sa seule pièce interne. Les deux imbriqués
+  // publiés ont leurs règles, donc le parcours les élague sans les lire, et
+  // avec eux ce qu'ils contiennent.
+  assert.deepEqual(h.appels.relevesDeProps, [['severity'], ['taille']]);
 });
 
 /** Les cibles `@prop` du modèle posé, dans l'ordre où le template les écrit. */
@@ -1307,7 +1248,75 @@ function ciblesPosees(h: ReturnType<typeof ouvrir>): string[] {
     .flatMap((element) => (element.genre === 'regle' && element.cible ? [element.cible] : []));
 }
 
-test('les propriétés d’une pièce interne sont documentées par le parent, sans point', async () => {
+/** Les points à corriger rendus par la création. */
+function points(h: ReturnType<typeof ouvrir>) {
+  return h.messages.filter((message) => message.type === 'diagnostic');
+}
+
+test('un imbriqué sans règles donne un point rouge qui nomme les deux composants', async () => {
+  // Le composant sélectionné en intègre un autre, qui n'a pas ses règles. Le
+  // contrat du parent décrira donc les internes de cet autre au lieu de le
+  // réutiliser, et le geste à faire vise cet autre.
+  const h = ouvrir();
+  h.contractes.noms = ['icon'];
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.equal(points(h).length, 1);
+  const point = points(h)[0];
+  assert.equal(point.severite, 'danger');
+  assert.equal(
+    point.titre,
+    'Le composant « Exemple » intègre « Button », dont 3 propriétés ne sont pas documentées :',
+  );
+  // Ce que le Button déclare, et ce que déclare sa propre pièce interne : sa
+  // surface publiée, dont pas une ligne n'est documentée.
+  assert.deepEqual([...point.elements ?? []], ['size', 'label', 'profondeur']);
+  assert.equal(
+    point.impact,
+    'Sans les règles de « Button », le contrat de « Exemple » décrit les internes de '
+    + '« Button » au lieu de le réutiliser.',
+  );
+  assert.equal(
+    point.action,
+    'Créez et complétez les règles de « Button », puis relancez l’analyse de « Exemple » '
+    + 'avant de l’exporter.',
+  );
+  assert.deepEqual([...point.nodeIds ?? []], ['btn-1', 'btn-2']);
+  // Le point suit le succès : la création a bien posé les règles.
+  assert.match(derniereNote(h) ?? '', /règles posées/);
+});
+
+test('chaque imbriqué sans règles a son propre point, dans l’ordre des calques', async () => {
+  // Deux composants sans règles dans le même parent : deux points, deux gestes.
+  // Un point unique en noierait un des deux.
+  const h = ouvrir();
+  h.contractes.noms = [];
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(points(h).map((point) => point.titre), [
+    'Le composant « Exemple » intègre « Button », dont 3 propriétés ne sont pas documentées :',
+    'Le composant « Exemple » intègre « Icon », dont une propriété n’est pas documentée :',
+  ]);
+  assert.deepEqual(points(h).map((point) => [...point.elements ?? []]), [
+    ['size', 'label', 'profondeur'],
+    ['iconName'],
+  ]);
+  assert.deepEqual(points(h).map((point) => [...point.nodeIds ?? []]), [['btn-1', 'btn-2'], ['ico-1']]);
+});
+
+test('un imbriqué qui a ses règles ne donne aucun point, ni lui ni ce qu’il contient', async () => {
+  // Il est une dépendance : le contrat s'arrête à lui, et sa pièce interne
+  // n'entre pas dans celui du parent.
+  const h = ouvrir();
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(points(h), []);
+});
+
+test('les propriétés d’une pièce interne sont documentées par le parent', async () => {
   // Une pièce interne n'est pas publiée par Figma : aucun designer ne
   // l'instanciera seule, elle n'aura jamais de règles à elle, et le contrat du
   // parent porte ses propriétés comme les siennes. Les règles doivent en dire
@@ -1326,39 +1335,14 @@ test('les propriétés d’une pièce interne sont documentées par le parent, s
   await h.envoyer({ type: 'creer-regles', operation: 1 });
 
   assert.deepEqual(ciblesPosees(h), ['severity.info', 'taille.small', 'taille.medium']);
-  assert.deepEqual(h.messages.filter((message) => message.type === 'diagnostic'), []);
+  assert.deepEqual(points(h), []);
 });
 
-test('une pièce interne et un composant sans règles se distinguent dans la même création', async () => {
-  // Les deux entrent dans le contrat par le même chemin. Seul celui qui peut
-  // porter ses propres règles donne un point ; l'autre est documenté ici.
+test('la pièce interne d’un imbriqué publié n’est pas documentée par le parent', async () => {
+  // La même pièce interne, un cran plus bas : elle appartient au Button qui
+  // l'abrite, pas au composant sélectionné. Son point va au Button.
   const h = ouvrir();
-  h.exporte.traiter = async () => ({
-    ...resultat('Exemple.contract.json'),
-    content: JSON.stringify({
-      props: {
-        severity: { type: 'enum', values: ['info'] },
-        size: { type: 'enum', values: ['small'] },
-        taille: { type: 'enum', values: ['medium'] },
-      },
-    }),
-  });
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(ciblesPosees(h), ['severity.info', 'taille.medium']);
-  const points = h.messages.filter((message) => message.type === 'diagnostic');
-  assert.deepEqual(points.map((point) => point.titre), [
-    'Règles de « Exemple » : Une propriété n’est pas documentée, « size ».',
-  ]);
-});
-
-test('la pièce interne d’un composant publié rend son point à ce composant', async () => {
-  // Le cas d'un composé dont l'enfant n'a pas reçu ses règles : le parcours
-  // descend dans cet enfant, faute de dépendance qui l'élague, et trouve la
-  // pièce interne de l'enfant. Ses propriétés sont celles de l'enfant, pas
-  // celles du parent : le geste à faire reste de créer les règles de l'enfant.
-  const h = ouvrir();
+  h.contractes.noms = ['icon'];
   h.exporte.traiter = async () => ({
     ...resultat('Exemple.contract.json'),
     content: JSON.stringify({
@@ -1372,16 +1356,28 @@ test('la pièce interne d’un composant publié rend son point à ce composant'
   await h.envoyer({ type: 'creer-regles', operation: 1 });
 
   assert.deepEqual(ciblesPosees(h), ['severity.info']);
-  const points = h.messages.filter((message) => message.type === 'diagnostic');
-  assert.equal(points.length, 1);
+  assert.deepEqual(points(h).map((point) => point.titre), [
+    'Le composant « Exemple » intègre « Button », dont 3 propriétés ne sont pas documentées :',
+  ]);
+});
+
+test('une propriété qu’aucun imbriqué ne revendique est nommée quand même', async () => {
+  const h = ouvrir();
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    content: JSON.stringify({ props: { orpheline: { type: 'boolean', default: true } } }),
+  });
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.equal(points(h).length, 1);
   assert.equal(
-    points[0].titre,
-    'Règles de « Exemple » : Une propriété n’est pas documentée, « profondeur ».',
+    points(h)[0].titre,
+    'Une propriété de « Exemple » n’est pas documentée, et le plugin n’a pas su nommer le '
+    + 'composant imbriqué qui la porte :',
   );
-  // Le composant publié, jamais la pièce interne : c'est lui qui peut recevoir
-  // des règles, et le geste demandé le vise.
-  assert.match(points[0].impact, /à « Button », qui n’a pas encore ses propres règles/);
-  assert.deepEqual([...points[0].nodeIds ?? []], ['btn-1', 'btn-2']);
+  assert.deepEqual([...points(h)[0].elements ?? []], ['orpheline']);
+  assert.equal(points(h)[0].nodeIds, undefined);
 });
 
 test('un template qui documente tout ne rend aucun point', async () => {

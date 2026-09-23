@@ -117,6 +117,52 @@ test('la création occupe les deux gestes de la carte et n’offre aucune annula
   }
 });
 
+test('un point à corriger pose ses éléments en liste, un par ligne', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await envoyer(cible('b', 'creer'));
+    await creer(page).click();
+    await envoyer({
+      type: 'diagnostic',
+      severite: 'danger',
+      titre: 'Le composant « Exemple » intègre « Button », dont 3 propriétés ne sont pas documentées :',
+      elements: ['size', 'label', 'iconLeft'],
+      impact: 'Sans les règles de « Button », le contrat décrit ses internes.',
+      action: 'Créez et complétez les règles de « Button ».',
+      operation: 1,
+    });
+    const liste = page.locator('.carte-danger .carte-liste li');
+    assert.deepEqual(await liste.allInnerTexts(), ['size', 'label', 'iconLeft']);
+    // La liste se lit entre le titre et la conséquence : les propriétés sont ce
+    // que le titre annonce, pas un ajout après coup.
+    assert.deepEqual(
+      await page.locator('.carte-danger > *').evaluateAll(
+        (enfants) => enfants.map((enfant) => enfant.className),
+      ),
+      ['pastille pastille-danger', 'carte-titre', 'carte-liste', 'carte-impact', 'carte-action'],
+    );
+  } finally {
+    await page.close();
+  }
+});
+
+test('un point sans éléments ne pose aucune liste', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await page.getByRole('button', { name: 'Analyser le composant', exact: true }).click();
+    await envoyer({
+      type: 'diagnostic',
+      titre: 'Layer « Border » : l’alignement du stroke est illisible.',
+      impact: 'Le développeur ne saura pas de quel côté poser le trait.',
+      action: 'Choisissez un alignement, puis réexportez.',
+      operation: 1,
+    });
+    assert.equal(await page.locator('.carte-liste').count(), 0);
+  } finally {
+    await page.close();
+  }
+});
+
 /**
  * Une iframe de plugin n'a pas de navigateur : un lien suivi y remplacerait
  * l'interface par la page visée, sans retour possible.

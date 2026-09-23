@@ -215,6 +215,14 @@ export type PluginMessage =
       severite?: 'avertissement' | 'danger';
       /** « Layer « Border » : l'alignement du stroke est illisible. » */
       titre: string;
+      /**
+       * Les éléments que le titre annonce, un par ligne.
+       *
+       * Une énumération de sept propriétés dans une phrase ne se lit plus, et le
+       * designer les relève une à une dans Figma. Absente quand le point ne
+       * nomme aucun élément, ce qui est le cas de presque tous.
+       */
+      elements?: string[];
       /** Ce que le développeur n'aura pas. Une phrase. */
       impact: string;
       /** Le geste exact à faire dans Figma. Une phrase impérative. */

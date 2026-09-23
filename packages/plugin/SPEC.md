@@ -917,29 +917,50 @@ porte aussi la surface d'un wrapper élu (voir
 [FORMAT.md, section 3](../../docs/format/FORMAT.md#3-layout)), et le template ne
 les traite pas toutes de la même façon.
 
-La propriété est rendue à qui elle appartient : le **premier composant publié**
-rencontré en descendant du composant sélectionné jusqu'à celui qui la déclare,
-lui compris. Un composant est publié tant que son nom ne commence ni par `.` ni
-par `_` ; Figma retient les autres de la bibliothèque, et une pièce interne
-n'aura donc jamais de règles à elle.
+La propriété est rendue à qui elle appartient : le **composant publié le plus
+proche** rencontré en descendant du composant sélectionné jusqu'à celui qui la
+déclare, lui compris. Un composant est publié tant que son nom ne commence ni
+par `.` ni par `_` ; Figma retient les autres de la bibliothèque, et une pièce
+interne n'aura donc jamais de règles à elle.
 
 | Origine de la propriété | Règle posée | Pourquoi |
 |---|---|---|
 | Le composant sélectionné la déclare | oui | c'est son API |
 | Une de ses pièces internes la déclare, et rien de publié ne s'interpose | oui | cette pièce fait partie de son architecture : personne ne l'instanciera seule, elle n'aura jamais de règles à elle, et le parent porte ses propriétés pour de bon |
-| Un composant publié la déclare, ou l'une de ses pièces internes la déclare | non, et un point rouge nomme ce composant publié | il n'a été traversé que faute d'un conteneur de règles qui en fasse une dépendance ; ses propriétés, et celles de son architecture, quitteront le contrat du parent dès qu'il aura les siennes |
+| Un composant publié la déclare, ou l'une de ses pièces internes la déclare | non, et le point rouge de ce composant la nomme | il n'a été traversé que faute d'un conteneur de règles qui en fasse une dépendance |
 | Aucun imbriqué ne la revendique, ou le chemin ne se lit pas | non, et un point rouge la nomme sans nommer son porteur | la taire ferait croire à un template complet |
 
 **La profondeur tranche, pas le nom.** La même pièce interne se rencontre aux
 deux endroits : posée dans le composant sélectionné, elle est à lui ; posée dans
-un composant publié que le parcours a traversé, elle est à celui-là. Le premier
-publié, et non le dernier, parce que ses règles, une fois créées, élaguent du
-contrat du parent tout ce qu'il contient.
+un composant publié que le parcours a traversé, elle est à celui-là. Le plus
+proche, et non le plus extérieur, pour qu'un Button rangé dans un Alert reste un
+Button et garde son propre geste.
 
 Le nom sert à reconnaître un composant publié parce qu'aucune lecture ne fait
 mieux : `getPublishStatusAsync` dit tout le monde non publié sur une
 bibliothèque qui ne l'a jamais été, et le vrai défaut passerait alors sous
 silence.
+
+### Les points rouges de la création
+
+La création rend un point à corriger par **composant publié imbriqué qui n'a pas
+ses règles**, et non par propriété absorbée. Un composé absorbe la surface d'un
+seul wrapper élu ; le compter comme déclencheur laissait muets les autres
+composants sans règles qu'il abrite, alors que chacun coûte la même chose au
+contrat et demande le même geste.
+
+Le point liste la surface publiée de ce composant, ce qu'il déclare et ce que
+déclarent ses propres pièces internes : sans conteneur, pas une ligne n'en est
+documentée. Il porte la sévérité `danger`, parce que le contrat décrit déjà le
+composant de travers.
+
+Ce qu'un composant **contracté** abrite est élagué : le contrat s'arrête à cette
+dépendance, et rien de ce qu'elle contient n'entre dans celui du parent. Un
+composant contracté est un composant dont un `.componentRules` écrit le nom,
+c'est-à-dire le même index que celui de la composition.
+
+Un dernier point, sans nom de composant, rassemble ce que le contrat publie sans
+qu'aucun imbriqué lisible le revendique.
 
 L'écriture vit dans un seul fichier, `src/template/ecriture.ts`, atteint par
 une seule porte, la demande `creer-regles`. `loiDuDocumentIntact.test.ts`

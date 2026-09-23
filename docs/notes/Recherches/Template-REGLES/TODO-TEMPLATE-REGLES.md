@@ -535,6 +535,13 @@ Référence : [phase 7](PLAN-TEMPLATE-REGLES.md#phase-7-recette-dans-figma).
       composant sans règles dans la même création, et la pièce interne d'un
       composant publié rend son point à ce composant. Constat, premier critère
       faux compris, dans le [compte rendu](#7-recette-dans-figma-1).
+- [x] **Correction 7.2** : un point par composant imbriqué sans règles, et non
+      par propriété absorbée, avec un texte qui nomme les deux composants et
+      pose les propriétés en liste. Tests du point réécrits dans
+      `tests/code.test.ts`, deux épreuves neuves dans
+      `tests/interface/interface.test.mjs`, état de galerie
+      `creation-imbriques-sans-regles`. Constat dans le
+      [compte rendu](#7-recette-dans-figma-1).
 
 ## 8. Kit Community
 
@@ -1291,3 +1298,51 @@ portent un `parent`, sans quoi la profondeur ne s'éprouve pas.
 
 Ce que la correction ne touche pas : le contrat publié, qui portait déjà ces
 propriétés et continue de les porter ; l'axe d'états, jamais filtré.
+
+#### Correction 7.2 : un point par composant sans règles, et un texte qui se lit
+
+**Deux écarts, rapportés ensemble.** Le mainteneur a d'abord trouvé le message
+illisible : « Règles de « Alert » : 4 propriétés ne sont pas documentées » se lit
+comme si l'Alert avait quatre propriétés à écrire, alors que le geste vise le
+Button qu'il intègre. Il a ensuite constaté, sur le composant de la maquette qui
+abrite un Alert et plusieurs Button, un seul point, celui de l'Alert. Les Button
+ne disaient rien.
+
+**Ce qui les causait.** Le point partait des propriétés absorbées par le
+contrat. Or un composé n'absorbe la surface que d'un seul wrapper élu : les
+autres composants sans règles qu'il abrite n'entrent dans aucune clé écartée, et
+restaient donc muets. Le déclencheur mesurait une conséquence, pas la cause.
+
+**Le déclencheur retenu.** Un point par composant publié imbriqué qui n'a pas
+ses règles. Chacun coûte la même chose au contrat, qui décrira ses internes au
+lieu de le réutiliser, et chacun demande le même geste. Le point liste la
+surface publiée de ce composant, ce qu'il déclare et ce que déclarent ses
+propres pièces internes. Ce qu'un composant contracté abrite reste élagué, par
+le même index que celui de la composition.
+
+**Le texte.** Le titre nomme les deux composants, celui qu'on a sélectionné et
+celui sur lequel agir, dans l'ordre où le designer les pense. Les propriétés
+passent d'une énumération en fin de phrase à une liste : sept d'entre elles dans
+une phrase ne se relisent pas, et le designer les relève une à une dans Figma.
+Le message `diagnostic` reçoit donc un champ `elements`, que la carte rend en
+`<ul>` entre le titre et la conséquence.
+
+L'action dit « avant de l'exporter » et non « pour pouvoir exporter » : la
+sévérité `danger` porte la pastille « Bloquant », mais rien dans le plugin
+n'empêche la publication. Promettre un blocage qui n'existe pas se verrait au
+premier essai.
+
+**Ce qui a été vu rouge.** Les tests du point, réécrits sur le nouveau
+déclencheur, et deux épreuves d'interface neuves sur la liste. Le banc de
+`code.test.ts` reçoit l'index des composants contractés, sans quoi les deux
+imbriqués du banc rendraient leurs points à tous les tests de création.
+
+**Les 59 états de galerie restent intacts, par construction et non par
+capture.** La carte ne pose la liste que si le moteur passe `elements`, et aucun
+des 59 états n'en passe ; la règle `.carte-liste` ne trouve donc rien à styler
+chez eux. Le soixantième état, `creation-imbriques-sans-regles`, montre les deux
+points et la liste de sept propriétés qui a motivé le changement.
+
+**Rouge du dépôt, étranger à ce lot.** `npm run test:ui` rend 21 verts sur 22 ;
+l'épreuve du bouton de création échoue sur un `.creation-sans-source` résolu en
+deux éléments. Mesuré : elle échoue de la même façon sans ce lot.

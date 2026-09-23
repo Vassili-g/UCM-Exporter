@@ -120,6 +120,20 @@ export function createCompteRendu(): CompteRenduUi {
 
     carte.append(pastille, titre);
 
+    // Une liste quand le moteur en a passé une : sept propriétés énumérées dans
+    // une phrase ne se relèvent plus une à une dans Figma. Le moteur décide ce
+    // qu'elle contient, et son titre l'annonce ; rien n'est découpé ici.
+    if (point.elements && point.elements.length > 0) {
+      const liste = document.createElement('ul');
+      liste.className = 'carte-liste';
+      for (const element of point.elements) {
+        const ligne = document.createElement('li');
+        ligne.textContent = element;
+        liste.appendChild(ligne);
+      }
+      carte.appendChild(liste);
+    }
+
     if (point.impact) {
       const impact = document.createElement('p');
       impact.className = 'carte-impact';

@@ -4,8 +4,16 @@
  * Rôle : afficher l'UI, écouter ses demandes d'export, lancer le bon
  * handler et lui renvoyer le fichier produit ou l'erreur.
  */
-import { oublierLIndexDuDocument } from './contract/composedComponents';
-import { extractRules, hasUsableRules, MARQUEUR_A_COMPLETER } from './contract/extractRules';
+import {
+  indexContractedNamesInDocument,
+  oublierLIndexDuDocument,
+} from './contract/composedComponents';
+import {
+  compactName,
+  extractRules,
+  hasUsableRules,
+  MARQUEUR_A_COMPLETER,
+} from './contract/extractRules';
 import type { ExtractedRules, ReleveDeSource } from './contract/extractRules';
 import handleExportComponent, { getSelectedComponent } from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
@@ -973,15 +981,17 @@ function enumerer(mots: readonly string[]): string {
   return `${cites.slice(0, -1).join(', ')} et ${cites[cites.length - 1]}`;
 }
 
-/** Un composant imbriqué, les propriétés qui lui reviennent et ses instances. */
-type PorteurEcarte = { nom: string | null; cles: string[]; nodeIds: string[] };
+/** Un composant imbriqué sans règles, ses propriétés et ses instances. */
+type ImbriqueSansRegles = { nom: string; cles: string[]; nodeIds: string[] };
 
-/** Le tri des propriétés que le composant sélectionné ne déclare pas. */
-type PropsHorsDuParent = {
-  /** Ce que ses pièces internes lui prêtent : à lui de les documenter. */
+/** Ce que le parcours du composant sélectionné apprend de ses imbriqués. */
+type ReleveDesImbriques = {
+  /** Ce que sa propre architecture lui prête : à lui de le documenter. */
   auParent: string[];
-  /** Ce qui revient à un composant publié, un groupe par composant. */
-  ecartes: PorteurEcarte[];
+  /** Un composant publié sans règles, un groupe par composant. */
+  sansRegles: ImbriqueSansRegles[];
+  /** Ce qu'aucun imbriqué lisible ne revendique. */
+  sansPorteur: string[];
 };
 
 /**
@@ -1004,30 +1014,38 @@ function estUnePieceInterne(nom: string): boolean {
 }
 
 /**
- * Le composant à qui reviennent les propriétés qu'une instance imbriquée
- * déclare : le premier composant publié rencontré en descendant du composant
- * sélectionné jusqu'à elle, elle comprise.
+ * Ce qu'une instance imbriquée est, vue du composant sélectionné.
  *
- * Le nom seul ne suffit pas, et s'y fier a été une erreur. La même pièce
- * interne se rencontre à deux profondeurs. Posée dans le composant
- * sélectionné, elle fait partie de son architecture, et ses propriétés sont les
- * siennes. Posée dans un composant publié que le parcours a traversé faute de
- * règles qui en fassent une dépendance, elle fait partie de l'architecture de
- * celui-là, et le geste à demander reste de créer les règles de celui-là.
+ * `composant` nomme le composant publié le plus proche d'elle sur le chemin,
+ * elle comprise : c'est lui qui possède ce qu'elle déclare. Le plus proche, et
+ * non le plus extérieur, pour qu'un Button rangé dans un Alert reste un Button
+ * et garde son propre geste.
  *
- * Le premier publié, et non le dernier : ses règles, une fois créées, élaguent
- * tout ce qu'il contient du contrat du parent, pièces internes comprises.
+ * `null` dit que le chemin n'est fait que de pièces internes, et que le
+ * composant sélectionné possède donc ce qu'elle déclare. Le nom seul ne suffit
+ * pas à le dire, et s'y fier a été une erreur : la même pièce interne se
+ * rencontre à deux profondeurs, dans le composant sélectionné où elle est à
+ * lui, et dans un composant publié où elle est à celui-là.
  *
- * Rend `null` quand le chemin n'est fait que de pièces internes, et
- * `'illisible'` dès qu'un maillon ne se laisse pas lire. Figma annonce parfois
+ * `'elaguee'` dit qu'un composant publié qui a ses règles l'abrite : le contrat
+ * s'arrête à cette dépendance et ne décrit rien de ce qu'elle contient.
+ *
+ * `'illisible'` dit qu'un maillon ne se laisse pas lire. Figma annonce parfois
  * un node qu'il ne sert plus, et un chemin incertain ne fait pas documenter au
  * parent ce qui n'est peut-être pas à lui.
  */
-function premierComposantPublie(
+type Appartenance =
+  | { composant: ComponentNode | ComponentSetNode }
+  | null
+  | 'elaguee'
+  | 'illisible';
+
+function aQuiAppartient(
   instance: InstanceNode,
   composant: ComponentNode | ComponentSetNode,
   porteurs: ReadonlyMap<string, ComponentNode | ComponentSetNode>,
-): ComponentNode | ComponentSetNode | null | 'illisible' {
+  contractes: ReadonlySet<string>,
+): Appartenance {
   const chaine: InstanceNode[] = [];
   try {
     let courant: BaseNode | null = instance;
@@ -1038,12 +1056,15 @@ function premierComposantPublie(
   } catch {
     return 'illisible';
   }
+  let proche: ComponentNode | ComponentSetNode | null = null;
   for (const maillon of chaine) {
     const porteur = porteurs.get(maillon.id);
     if (!porteur) return 'illisible';
-    if (!estUnePieceInterne(porteur.name)) return porteur;
+    if (estUnePieceInterne(porteur.name)) continue;
+    if (contractes.has(compactName(porteur.name))) return 'elaguee';
+    proche = porteur;
   }
-  return null;
+  return proche ? { composant: proche } : null;
 }
 
 /**
@@ -1076,27 +1097,29 @@ function clesDeclareesParLePorteur(
 }
 
 /**
- * Les propriétés que le contrat publie sans que le composant sélectionné les
- * déclare, rendues à qui elles appartiennent.
+ * Ce que le composant sélectionné abrite : les propriétés que sa propre
+ * architecture lui prête, et les composants publiés qui n'ont pas leurs règles.
  *
- * Elles entrent dans le contrat par l'élection du wrapper, qui fusionne dans la
- * surface du parent celle d'un composant imbriqué. Deux cas s'y présentent sous
- * la même forme, et c'est la profondeur qui les sépare, non le nom du porteur :
- * une pièce interne du composant sélectionné lui prête ses propriétés pour de
- * bon, alors qu'une pièce interne trouvée dans un composant publié appartient à
- * ce composant, traversé seulement parce qu'il lui manque ses règles.
+ * Le parcours ne part pas des propriétés absorbées par le contrat. Une seule
+ * l'est, celle du wrapper élu, et un composé qui abrite trois composants sans
+ * règles n'en signalait donc qu'un. Il part des composants eux-mêmes : chacun
+ * de ceux qui n'ont pas leurs règles est un composant que le contrat du parent
+ * décrira par ses internes, au lieu de le réutiliser, et chacun demande le même
+ * geste au designer.
  *
- * La recherche ne quitte pas le composant sélectionné, et ne part que s'il y a
- * quelque chose à classer.
+ * Les propriétés d'un composant sans règles sont celles qu'il déclare et celles
+ * que déclarent ses propres pièces internes : c'est sa surface publiée, et pas
+ * une ligne n'en est documentée tant qu'il n'a pas de conteneur.
  *
- * Une propriété qu'aucun imbriqué ne revendique forme un dernier groupe sans
- * nom : la nommer quand même vaut mieux que la taire.
+ * Ce qu'un composant contracté abrite est élagué. Le contrat s'arrête à cette
+ * dépendance, et rien de ce qu'elle contient n'entre dans celui du parent.
+ *
+ * La recherche ne quitte pas le composant sélectionné.
  */
-async function trierLesPropsHorsDuParent(
+async function releverLesImbriques(
   composant: ComponentNode | ComponentSetNode,
   horsDuParent: readonly string[],
-): Promise<PropsHorsDuParent> {
-  if (horsDuParent.length === 0) return { auParent: [], ecartes: [] };
+): Promise<ReleveDesImbriques> {
   const restantes = new Set(horsDuParent);
   const instances = composant.findAll((node) => node.type === 'INSTANCE') as InstanceNode[];
   const porteurs = new Map<string, ComponentNode | ComponentSetNode>();
@@ -1104,89 +1127,106 @@ async function trierLesPropsHorsDuParent(
     const main = await instance.getMainComponentAsync().catch(() => null);
     if (main) porteurs.set(instance.id, porteurDeLInstance(main));
   }
+  const contractes = await indexContractedNamesInDocument().catch(() => new Set<string>());
 
   const auParent: string[] = [];
-  const ecartes: PorteurEcarte[] = [];
-  const groupeParPorteur = new Map<string, PorteurEcarte>();
-  const sansNom: string[] = [];
+  const sansRegles: ImbriqueSansRegles[] = [];
+  const parComposant = new Map<string, ImbriqueSansRegles>();
+  const sansPorteur: string[] = [];
   for (const instance of instances) {
-    if (restantes.size === 0) break;
     const porteur = porteurs.get(instance.id);
     if (!porteur) continue;
-    const declarees = clesDeclareesParLePorteur(porteur);
-    if (!declarees) continue;
-    const cles = declarees.filter((cle) => restantes.has(cle));
-    if (cles.length === 0) continue;
-    for (const cle of cles) restantes.delete(cle);
+    const appartenance = aQuiAppartient(instance, composant, porteurs, contractes);
+    if (appartenance === 'elaguee') continue;
+    const declarees = clesDeclareesParLePorteur(porteur) ?? [];
+    for (const cle of declarees) restantes.delete(cle);
 
-    const publie = premierComposantPublie(instance, composant, porteurs);
-    if (publie === null) {
-      auParent.push(...cles);
-    } else if (publie === 'illisible') {
-      sansNom.push(...cles);
-    } else {
-      const connu = groupeParPorteur.get(publie.id);
-      if (connu) connu.cles.push(...cles);
-      else {
-        // Toutes les instances de ce composant que rien de publié n'abrite :
-        // la carte offre d'aller les voir, et celles qui vivent sous un autre
-        // composant publié relèvent de celui-là.
-        const nodeIds = instances
-          .filter((autre) => porteurs.get(autre.id)?.id === publie.id
-            && premierComposantPublie(autre, composant, porteurs) === publie)
-          .map((autre) => autre.id);
-        const groupe: PorteurEcarte = { nom: publie.name, cles: [...cles], nodeIds };
-        groupeParPorteur.set(publie.id, groupe);
-        ecartes.push(groupe);
-      }
+    if (appartenance === 'illisible') {
+      sansPorteur.push(...declarees.filter((cle) => horsDuParent.includes(cle)));
+      continue;
     }
+    if (appartenance === null) {
+      auParent.push(...declarees.filter((cle) => horsDuParent.includes(cle)));
+      continue;
+    }
+    const proprietaire = appartenance.composant;
+    const connu = parComposant.get(proprietaire.id);
+    if (connu) {
+      for (const cle of declarees) if (!connu.cles.includes(cle)) connu.cles.push(cle);
+      continue;
+    }
+    // Toutes ses instances que rien de publié n'abrite : la carte offre d'aller
+    // les voir, et celles qui vivent dans un autre composant publié relèvent de
+    // celui-là.
+    const nodeIds = instances.filter((autre) => {
+      if (porteurs.get(autre.id)?.id !== proprietaire.id) return false;
+      const sienne = aQuiAppartient(autre, composant, porteurs, contractes);
+      return typeof sienne === 'object' && sienne !== null && sienne.composant === proprietaire;
+    }).map((autre) => autre.id);
+    const groupe: ImbriqueSansRegles = { nom: proprietaire.name, cles: [...declarees], nodeIds };
+    parComposant.set(proprietaire.id, groupe);
+    sansRegles.push(groupe);
   }
-  const orphelines = [...sansNom, ...restantes];
-  if (orphelines.length > 0) ecartes.push({ nom: null, cles: orphelines, nodeIds: [] });
-  return { auParent, ecartes };
+  return { auParent, sansRegles, sansPorteur: [...sansPorteur, ...restantes] };
 }
 
 /**
- * Les points rouges des propriétés que le template ne documente pas, un par
- * composant imbriqué qui les porte.
- *
- * Seul un composant capable de porter ses propres règles arrive ici : la pièce
- * interne n'en aura jamais, et le template la documente au lieu de la signaler.
- * Les taire toutes ferait croire à un template complet, alors que le contrat
- * publié décrirait ces propriétés sans un mot d'usage.
+ * Les points rouges du composant sélectionné : un par composant imbriqué qui
+ * n'a pas ses règles, puis un dernier pour ce qui n'a pas de porteur.
  *
  * Un point par composant plutôt qu'une liste unique : le geste qu'il demande
  * vise un composant, et dix composants donneraient dix gestes noyés dans une
  * seule phrase.
+ *
+ * Le titre nomme les deux composants et le manque, parce que le designer a
+ * sélectionné l'un et doit agir sur l'autre. Les propriétés viennent en liste :
+ * il va les relever une à une dans Figma, et sept d'entre elles dans une phrase
+ * ne se relisent pas.
  */
-function signalerLesPropsEcartees(
+function signalerLesImbriques(
   parent: string,
-  ecartes: readonly PorteurEcarte[],
+  releve: ReleveDesImbriques,
   provenance: Partial<Provenance>,
 ): void {
-  for (const { nom, cles, nodeIds } of ecartes) {
-    const uneSeule = cles.length === 1;
-    const sujet = uneSeule ? 'Une propriété' : `${cles.length} propriétés`;
-    const verbe = uneSeule ? 'n’est pas documentée' : 'ne sont pas documentées';
-    const appartiennent = uneSeule ? 'Elle appartient' : 'Elles appartiennent';
-    const publie = uneSeule ? 'la publie comme si elle était la sienne' : 'les publie comme si elles étaient les siennes';
+  for (const { nom, cles, nodeIds } of releve.sansRegles) {
+    const compte = cles.length === 1
+      ? 'dont une propriété n’est pas documentée'
+      : `dont ${cles.length} propriétés ne sont pas documentées`;
     versUi({
       type: 'diagnostic',
       severite: 'danger',
-      titre: `Règles de « ${parent} » : ${sujet} ${verbe}, ${enumerer(cles)}.`,
-      impact: nom === null
-        ? `${appartiennent} à un composant imbriqué que le plugin n’a pas su nommer, et `
-          + `« ${parent} » ${publie}.`
-        : `${appartiennent} à « ${nom} », qui n’a pas encore ses propres règles, et `
-          + `« ${parent} » ${publie}.`,
-      action: nom === null
-        ? `Créez les règles du composant imbriqué qui les porte, puis relancez l’analyse de `
-          + `« ${parent} ».`
-        : `Créez les règles de « ${nom} », puis relancez l’analyse de « ${parent} ».`,
+      titre: cles.length === 0
+        ? `Le composant « ${parent} » intègre « ${nom} », qui n’a pas ses règles d’usage.`
+        : `Le composant « ${parent} » intègre « ${nom} », ${compte} :`,
+      ...(cles.length > 0 ? { elements: [...cles] } : {}),
+      impact: `Sans les règles de « ${nom} », le contrat de « ${parent} » décrit les internes `
+        + `de « ${nom} » au lieu de le réutiliser.`,
+      action: `Créez et complétez les règles de « ${nom} », puis relancez l’analyse de `
+        + `« ${parent} » avant de l’exporter.`,
       ...(nodeIds.length > 0 ? { nodeIds } : {}),
       ...provenance,
     });
   }
+
+  const orphelines = releve.sansPorteur;
+  if (orphelines.length === 0) return;
+  const uneSeule = orphelines.length === 1;
+  const compte = uneSeule
+    ? `Une propriété de « ${parent} » n’est pas documentée`
+    : `${orphelines.length} propriétés de « ${parent} » ne sont pas documentées`;
+  const porte = uneSeule ? 'qui la porte' : 'qui les porte';
+  versUi({
+    type: 'diagnostic',
+    severite: 'danger',
+    titre: `${compte}, et le plugin n’a pas su nommer le composant imbriqué ${porte} :`,
+    elements: [...orphelines],
+    impact: uneSeule
+      ? `Le contrat de « ${parent} » la publie comme si elle était la sienne.`
+      : `Le contrat de « ${parent} » les publie comme si elles étaient les siennes.`,
+    action: `Créez les règles du composant imbriqué ${porte}, puis relancez l’analyse de `
+      + `« ${parent} ».`,
+    ...provenance,
+  });
 }
 
 async function creerRegles(operation: number): Promise<void> {
@@ -1222,8 +1262,8 @@ async function creerRegles(operation: number): Promise<void> {
     const horsDuParent = clesDuParent
       ? Object.keys(contrat.props ?? {}).filter((cle) => !clesDuParent.has(cle))
       : [];
-    const { auParent, ecartes } = await trierLesPropsHorsDuParent(composant, horsDuParent);
-    const surface = clesDuParent ? new Set([...clesDuParent, ...auParent]) : null;
+    const imbriques = await releverLesImbriques(composant, horsDuParent);
+    const surface = clesDuParent ? new Set([...clesDuParent, ...imbriques.auParent]) : null;
     const propre = surface ? restreindreAuParent(contrat, surface) : contrat;
     const modele = modeleDeRegles(composant.name, propre);
 
@@ -1243,7 +1283,7 @@ async function creerRegles(operation: number): Promise<void> {
     );
     // Après le statut : la création a réussi, et ce point dit ce qu'elle laisse
     // au designer plutôt que ce qu'elle a raté.
-    signalerLesPropsEcartees(composant.name, ecartes, provenance);
+    signalerLesImbriques(composant.name, imbriques, provenance);
   } catch (erreur) {
     const message = erreur instanceof Error ? erreur.message : ECHEC_GENERIQUE;
     postStatus('error', message, provenance);

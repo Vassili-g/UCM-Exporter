@@ -82,6 +82,23 @@ const AVERTISSEMENT_COMPOSE = { // exportComponent.ts, dépendance non placée
   action: "Placez ce layer dans l'auto layout frame qui porte le gap et le padding, puis réexportez.",
 };
 
+// code.ts, signalerLesImbriques. Sept propriétés : c'est ce volume qui a fait
+// passer l'énumération en liste, et l'état doit le montrer.
+const IMBRIQUE_SANS_REGLES_BOUTON = {
+  severite: 'danger',
+  titre: 'Le composant « Alert » intègre « Button », dont 7 propriétés ne sont pas documentées :',
+  elements: ['color', 'variant', 'state', 'size', 'label', 'iconLeft', 'iconRight'],
+  impact: 'Sans les règles de « Button », le contrat de « Alert » décrit les internes de « Button » au lieu de le réutiliser.',
+  action: 'Créez et complétez les règles de « Button », puis relancez l’analyse de « Alert » avant de l’exporter.',
+};
+const IMBRIQUE_SANS_REGLES_ICONE = {
+  severite: 'danger',
+  titre: 'Le composant « Alert » intègre « Icon », dont une propriété n’est pas documentée :',
+  elements: ['iconName'],
+  impact: 'Sans les règles de « Icon », le contrat de « Alert » décrit les internes de « Icon » au lieu de le réutiliser.',
+  action: 'Créez et complétez les règles de « Icon », puis relancez l’analyse de « Alert » avant de l’exporter.',
+};
+
 const AVERTISSEMENT_PROFIL = { // exportTokens.ts, avertissementDeProfil
   titre: 'Fichier « Design System » : aucun profil de couleur n’est choisi.',
   impact: 'Le développeur recevra ces couleurs en sRGB, que Figma les affiche en sRGB ou en Display P3.',
@@ -466,6 +483,22 @@ const ETATS = [
     atteinte: [
       ...lancerLaCreation(),
       { message: { type: 'status', state: 'success', text: CREATION_FAITE } },
+      aCreer(null, COMPOSANT_LONG, REGLES_A_REDIGER),
+    ],
+  },
+  {
+    id: 'creation-imbriques-sans-regles',
+    titre: 'Les règles sont posées, deux imbriqués n’en ont pas',
+    quand:
+      'Le composant en intègre deux autres qui n’ont pas encore leurs règles d’usage. Le contrat décrira leurs internes au lieu de les réutiliser.',
+    regarder:
+      'Un point par composant, et non un seul qui les mêlerait : le geste vise un composant à la fois. Le titre nomme les deux composants, celui qu’on a sélectionné et celui sur lequel agir. Les propriétés viennent en liste, parce qu’on va les relever une à une dans Figma ; sept d’entre elles dans une phrase ne se reliraient pas. Le fond rouge et la pastille « Bloquant » disent que le contrat est déjà faux, et la note du succès reste au-dessus : la création, elle, a réussi.',
+    existe: true,
+    atteinte: [
+      ...lancerLaCreation(),
+      { message: { type: 'status', state: 'success', text: CREATION_FAITE } },
+      diagnostic(IMBRIQUE_SANS_REGLES_BOUTON, ['12:350', '12:351']),
+      diagnostic(IMBRIQUE_SANS_REGLES_ICONE, ['12:352']),
       aCreer(null, COMPOSANT_LONG, REGLES_A_REDIGER),
     ],
   },

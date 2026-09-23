@@ -856,6 +856,16 @@ p {
   font-weight: 600;
 }
 
+/*
+ * Les éléments que le titre annonce. Ils gardent la couleur de lecture : ce
+ * sont eux que le designer va chercher dans Figma, un par un.
+ */
+.carte-liste {
+  margin: var(--espace-serre) 0 0;
+  padding-left: var(--espace-page);
+  color: var(--texte);
+}
+
 /* La conséquence est un CONTEXTE : elle se lit après le titre, pas avant. */
 .carte-impact {
   color: var(--texte-second);
