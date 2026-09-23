@@ -316,6 +316,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     wrapper?.componentSet?.componentPropertyDefinitions,
     warnings,
     propertyModel,
+    wrapper?.componentSet?.name,
   );
   const props = propertySurface.props;
   const publicPropertyKeyByFigmaName = propertySurface.publicPropertyKeyByFigmaName;

@@ -355,6 +355,8 @@ async function indexDependencyPropertySurfaces(
         entry.owner.componentPropertyDefinitions ?? {},
         wrapper?.componentSet?.componentPropertyDefinitions,
         [],
+        undefined,
+        wrapper?.componentSet?.name,
       ),
       ...(wrapper?.componentSet ? { wrapperOwnerId: wrapper.componentSet.id } : {}),
     };

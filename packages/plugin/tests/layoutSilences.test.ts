@@ -120,7 +120,7 @@ test('un calque posé hors du node de layout élu est signalé, pas oublié', as
   );
 
   assert.ok(warnings.some((warning) => (
-    warning.includes('« Badge »') && warning.includes("à côté de l'auto layout frame")
+    warning.includes('« Badge »') && warning.includes('n’est pas à l’intérieur de « Contenu »')
   )));
 });
 

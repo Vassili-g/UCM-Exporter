@@ -204,7 +204,7 @@ export async function extractStructure(
   // complète donc ici. Les messages identiques se dédupliquent à l'export.
   for (const { component } of matrix.variants) {
     if (component === referenceLayout?.component) continue;
-    warnLayersOutsideLayoutNode(component, layoutNodeOf(component), notices, composed);
+    await warnLayersOutsideLayoutNode(component, layoutNodeOf(component), notices, composed);
   }
 
   // « Où vivent les dimensions » se décide avant de les relever, et une seule

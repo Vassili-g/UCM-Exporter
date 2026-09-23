@@ -576,6 +576,51 @@ async function describeNode(
 }
 
 /**
+ * Vrai quand le node élu vit à l'intérieur d'un composant publié imbriqué.
+ *
+ * Un wrapper de dimensions légitime est une coquille interne : Figma retient de
+ * la bibliothèque tout composant dont le nom commence par un point ou un tiret
+ * bas, et personne ne pose une instance d'une telle coquille seule. Un
+ * composant publié, lui, n'aurait jamais dû être élu : il n'est candidat que
+ * parce qu'il n'a pas ses règles d'usage, donc parce qu'il n'est pas encore une
+ * dépendance. Le point bloquant qui réclame ces règles dit déjà la cause, et
+ * nomme le geste.
+ *
+ * Le nom lu est celui du composant maître, jamais celui du calque : une
+ * instance se renomme, et une coquille renommée ferait taire des messages
+ * qu'elle doit produire.
+ */
+async function dansUnComposantPublie(
+  component: SceneNode,
+  layoutNode: SceneNode,
+): Promise<boolean> {
+  const instances: InstanceNode[] = [];
+  let current: BaseNode | null | undefined = layoutNode;
+  while (current && current !== component) {
+    if (current.type === 'INSTANCE') instances.push(current);
+    current = current.parent;
+  }
+  // Un maître illisible n'est jamais tenu pour publié : ne rien savoir n'est
+  // pas savoir qu'il s'agit d'une coquille interne, et taire à tort effacerait
+  // le seul message qui dise au designer que ces calques quittent le contrat.
+  const maitres = await Promise.all(
+    instances.map(async (instance) => {
+      try {
+        return await instance.getMainComponentAsync();
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return maitres.some((maitre) => {
+    if (!maitre) return false;
+    const porteur = maitre.parent?.type === 'COMPONENT_SET' ? maitre.parent : maitre;
+    const premier = porteur.name.trimStart().charAt(0);
+    return premier !== '.' && premier !== '_';
+  });
+}
+
+/**
  * Calques que l'élection du node de layout laisse hors du contrat.
  *
  * `structure.children` ne décrit que les enfants directs du node élu. Ce qui
@@ -583,17 +628,24 @@ async function describeNode(
  * donc ni slot, ni typographie, ni visibilité, alors que ses couleurs entrent
  * bien dans `variantTokens`, relevé sur le variant entier.
  *
+ * Rien n'est relevé quand le node élu vit dans un composant publié imbriqué :
+ * une seule cause, un seul point. Ce composant a été élu faute de règles, et le
+ * point bloquant qui les réclame porte le geste. Les dix calques du composant
+ * sélectionné se retrouvent alors mécaniquement « en dehors », et dix messages
+ * demandant de les déplacer enterreraient la cause sous ses conséquences.
+ *
  * Exporté parce que ce relevé couvre toute la matrice, là où
  * `structure.children` ne décrit que la référence : un calque écarté dans un
  * autre variant apporte ses couleurs exactement de la même façon.
  */
-export function warnLayersOutsideLayoutNode(
+export async function warnLayersOutsideLayoutNode(
   component: SceneNode,
   layoutNode: SceneNode,
   warnings: string[],
   composed: ComposedInstances,
-): void {
+): Promise<void> {
   if (component === layoutNode) return;
+  if (await dansUnComposantPublie(component, layoutNode)) return;
 
   const exportable = new Set(getAllNodes(component, [], composed).map((node) => node.id));
   let current: BaseNode | null | undefined = layoutNode;
@@ -603,11 +655,10 @@ export function warnLayersOutsideLayoutNode(
       for (const sibling of parent.children) {
         if (sibling.id === current.id || !exportable.has(sibling.id)) continue;
         pousserLocalise(warnings, 'Layer', sibling, {
-          manque: `il est posé à côté de l'auto layout frame qui porte le gap et le padding, `
-            + `pas dedans.`,
-          impact: `Le contrat ne décrit ni sa place, ni sa typographie, ni sa visibilité : le `
-            + `développeur ne le rendra pas.`,
-          action: `Déplacez-le dans cet auto layout frame, puis réexportez.`,
+          manque: `il n’est pas à l’intérieur de « ${layoutNode.name} ».`,
+          impact: `Le contrat ne décrit que le contenu de « ${layoutNode.name} ». `
+            + `« ${sibling.name} » n’y figure pas, et le développeur ne le rendra pas.`,
+          action: `Déplacez-le dans « ${layoutNode.name} », puis réexportez.`,
         });
       }
     }
@@ -692,7 +743,7 @@ export async function extractLayout(
   layoutElectionWarnings: string[] = warnings,
   publishedNodePaths: PublishedNodePaths = new Map(),
 ): Promise<LayoutStructure> {
-  warnLayersOutsideLayoutNode(component, layoutNode, layoutElectionWarnings, composed);
+  await warnLayersOutsideLayoutNode(component, layoutNode, layoutElectionWarnings, composed);
   warnIntermediateBounds(component, layoutNode, warnings);
   warnMissingDirection(layoutNode, warnings);
   warnUnsupportedProperties(layoutNode, warnings);

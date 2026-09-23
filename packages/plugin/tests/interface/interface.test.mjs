@@ -164,6 +164,49 @@ test('un point sans éléments ne pose aucune liste', async () => {
 });
 
 /**
+ * Le moteur émet les points bloquants après les avertissements : il lit le
+ * contrat qu'il vient de produire pour les relever. Les lire en dernier ferait
+ * corriger dix détails avant d'apprendre que le contrat est faux.
+ */
+test('un point bloquant émis en dernier se lit en premier', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await page.getByRole('button', { name: 'Analyser le composant', exact: true }).click();
+    const avertissement = (nom) => ({
+      type: 'diagnostic',
+      titre: `Layer « ${nom} » : il n’est pas à l’intérieur de « Contenu ».`,
+      impact: 'Impact.',
+      action: 'Action.',
+      operation: 1,
+    });
+    await envoyer(avertissement('Badge'));
+    await envoyer(avertissement('Divider'));
+    await envoyer({
+      type: 'diagnostic',
+      severite: 'danger',
+      titre: 'Le composant « Exemple » intègre « Alert », qui n’a pas ses règles d’usage.',
+      impact: 'Sans les règles de « Alert », le contrat décrit ses internes.',
+      action: 'Créez et complétez les règles de « Alert ».',
+      operation: 1,
+    });
+    assert.deepEqual(
+      await page.locator('.groupe-liste .carte').evaluateAll(
+        (cartes) => cartes.map((carte) => carte.className),
+      ),
+      ['carte carte-danger', 'carte carte-avertissement', 'carte carte-avertissement'],
+    );
+    // L'ordre d'arrivée survit entre eux : deux bloquants se suivent comme le
+    // moteur les a écrits, et les avertissements gardent le leur.
+    assert.match(
+      await page.locator('.groupe-liste .carte').nth(1).innerText(),
+      /« Badge »/,
+    );
+  } finally {
+    await page.close();
+  }
+});
+
+/**
  * Une iframe de plugin n'a pas de navigateur : un lien suivi y remplacerait
  * l'interface par la page visée, sans retour possible.
  */

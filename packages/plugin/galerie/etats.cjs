@@ -76,6 +76,11 @@ const AVERTISSEMENT_SANS_TEXT_STYLE = { // extractVariantTypography.ts, loadText
   impact: "Sa typographie manquera au développeur.",
   action: "Appliquez un text style au layer entier, puis réexportez.",
 };
+const AVERTISSEMENT_HORS_DU_NODE = { // extractLayout.ts, warnLayersOutsideLayoutNode
+  titre: "Layer « Badge » : il n’est pas à l’intérieur de « Contenu ».",
+  impact: "Le contrat ne décrit que le contenu de « Contenu ». « Badge » n’y figure pas, et le développeur ne le rendra pas.",
+  action: "Déplacez-le dans « Contenu », puis réexportez.",
+};
 const AVERTISSEMENT_COMPOSE = { // exportComponent.ts, dépendance non placée
   titre: "Layer « Icon slot » : il contient le composant « Icon », mais le contrat ne décrit ce layer nulle part.",
   impact: "Le développeur ne rendra pas « Icon » dans ce composant.",
@@ -648,6 +653,34 @@ const ETATS = [
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       diagnostic(AVERTISSEMENT_COMPOSE),
       verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 1 }),
+    ],
+  },
+  {
+    id: 'resultat-bloquant-en-tete',
+    titre: 'Un bloquant au milieu d’avertissements',
+    quand:
+      'Une analyse qui relève trois calques à replacer, puis découvre qu’un composant imbriqué n’a pas ses règles. Le moteur écrit le bloquant en dernier : il le relève sur le contrat qu’il vient de produire.',
+    regarder:
+      'Le point bloquant EN PREMIER, alors qu’il est arrivé après les trois autres. C’est l’écran qui dit si la pastille et le fond suffisent à le détacher sans rien ajouter. Le compteur du groupe et le verdict annoncent le même nombre : les quatre points sont des gestes, pas trois gestes et une note.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      diagnostic(AVERTISSEMENT_HORS_DU_NODE, ['12:360']),
+      diagnostic({
+        ...AVERTISSEMENT_HORS_DU_NODE,
+        titre: AVERTISSEMENT_HORS_DU_NODE.titre.replace('« Badge »', '« TilesGrid »'),
+        impact: AVERTISSEMENT_HORS_DU_NODE.impact.replace('« Badge »', '« TilesGrid »'),
+      }, ['12:361', '12:362', '12:363']),
+      diagnostic({
+        ...AVERTISSEMENT_HORS_DU_NODE,
+        titre: AVERTISSEMENT_HORS_DU_NODE.titre.replace('« Badge »', '« ActionsWrap »'),
+        impact: AVERTISSEMENT_HORS_DU_NODE.impact.replace('« Badge »', '« ActionsWrap »'),
+      }, ['12:364']),
+      diagnostic(IMBRIQUE_SANS_REGLES_BOUTON, ['12:365', '12:366']),
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 4 }),
     ],
   },
   {

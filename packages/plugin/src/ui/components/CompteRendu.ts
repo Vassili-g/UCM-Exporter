@@ -9,7 +9,7 @@ export type PointACorriger = Omit<Extract<PluginMessage, { type: 'diagnostic' }>
 interface GroupeUi {
   element: HTMLDivElement;
   liste: HTMLDivElement;
-  ajouter(noeud: Node): void;
+  ajouter(noeud: Node, grave?: boolean): void;
   vider(): void;
 }
 
@@ -57,19 +57,30 @@ export function createCompteRendu(): CompteRenduUi {
 
     element.append(entete, liste);
     let total = 0;
+    // Les points graves occupent la tête de la liste : le compteur dit où
+    // s'arrête ce bloc, donc où insérer le suivant. Sans lui, un point grave
+    // émis après vingt avertissements se lirait après eux, et le designer
+    // corrigerait vingt détails avant d'apprendre que le contrat est faux.
+    let graves = 0;
 
     return {
       element,
       liste,
-      ajouter(noeud: Node) {
+      ajouter(noeud: Node, grave = false) {
         total += 1;
         entete.textContent = compte ? `${titre} (${total})` : titre;
         section.hidden = false;
         element.hidden = false;
+        if (grave) {
+          liste.insertBefore(noeud, liste.children[graves] ?? null);
+          graves += 1;
+          return;
+        }
         liste.appendChild(noeud);
       },
       vider() {
         total = 0;
+        graves = 0;
         entete.textContent = titre;
         element.hidden = true;
         liste.replaceChildren();
@@ -187,7 +198,7 @@ export function createCompteRendu(): CompteRenduUi {
     },
     /** `point` est ce que le moteur a écrit : titre, impact, action, nodes. */
     ajouterDiagnostic(point: PointACorriger) {
-      aCorriger.ajouter(creerDiagnostic(point));
+      aCorriger.ajouter(creerDiagnostic(point), point.severite === 'danger');
     },
     ajouterPublication(texte: string, niveau: LogLevel = 'info') {
       ajouterEntree(creerLignePublication(texte, niveau));

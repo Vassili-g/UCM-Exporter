@@ -695,6 +695,11 @@ async function analyser(
       return;
     }
     postStatus('loading', loadingText, provenance);
+    // La sélection est lue avant l'extraction, jamais après : elle peut changer
+    // pendant, et les points des imbriqués nommeraient alors un composant que
+    // le contrat produit ne décrit pas. Un refus se dit ici comme il se dirait
+    // depuis le handler, qui lit la même sélection.
+    const cible = artifactKind === 'component' ? getSelectedComponent() : null;
     const result = await handler((etape) => {
       verifierAnnulation();
       versUi({ type: 'phase', texte: etape, ...provenance });
@@ -719,13 +724,24 @@ async function analyser(
       });
     }
 
+    // Un composant imbriqué sans règles n'est pas réutilisé : le contrat du
+    // parent décrit ses internes, et le moteur peut même l'élire wrapper de
+    // dimensions, ce qui écarte du contrat tout ce qui l'entoure. Les points de
+    // layout qui en découlent ne se comprennent pas sans cette cause. La
+    // création des règles la disait déjà ; l'analyse est le geste que le
+    // designer relance, et elle doit la dire aussi.
+    const bloquants = cible ? await signalerLesImbriquesDuContrat(cible, result.content, provenance) : 0;
+
     const analyse: AnalyseGardee = {
       kind: artifactKind,
       filename: result.filename,
       content: result.content,
       warnings: result.warnings ?? [],
       succes,
-      avertissements: result.warningCount,
+      // Le verdict compte ce que la liste montre : les points bloquants y
+      // figurent, et un total qui les oublierait annoncerait moins de gestes
+      // que le designer n'en lit juste en dessous.
+      avertissements: result.warningCount + bloquants,
       destination: provenance.destination,
     };
     analyseProduite = analyse;
@@ -1264,12 +1280,17 @@ async function releverLesImbriques(
  * sélectionné l'un et doit agir sur l'autre. Les propriétés viennent en liste :
  * il va les relever une à une dans Figma, et sept d'entre elles dans une phrase
  * ne se relisent pas.
+ *
+ * Rend le nombre de points posés : le verdict d'une analyse les compte avec ses
+ * avertissements, et les recompter ailleurs finirait par diverger de ce qui est
+ * réellement écrit ici.
  */
 function signalerLesImbriques(
   parent: string,
   releve: ReleveDesImbriques,
   provenance: Partial<Provenance>,
-): void {
+): number {
+  let poses = 0;
   for (const { nom, distant, cles, nodeIds } of releve.sansRegles) {
     const compte = cles.length === 1
       ? 'dont une propriété n’est pas documentée'
@@ -1293,10 +1314,11 @@ function signalerLesImbriques(
       ...(nodeIds.length > 0 ? { nodeIds } : {}),
       ...provenance,
     });
+    poses += 1;
   }
 
   const orphelines = releve.sansPorteur;
-  if (orphelines.length === 0) return;
+  if (orphelines.length === 0) return poses;
   const uneSeule = orphelines.length === 1;
   const compte = uneSeule
     ? `Une propriété de « ${parent} » n’est pas documentée`
@@ -1314,6 +1336,38 @@ function signalerLesImbriques(
       + `« ${parent} ».`,
     ...provenance,
   });
+  return poses + 1;
+}
+
+/**
+ * Le même relevé, pris sur le contrat qu'une analyse vient de produire.
+ *
+ * `creerRegles` le prend sur l'analyse qu'il lance lui-même ; ce point d'entrée
+ * le prend sur celle que le designer a demandée. Les deux passent par
+ * `releverLesImbriques` : une seconde lecture de l'arbre, même équivalente en
+ * apparence, finirait par désigner d'autres composants que la première.
+ *
+ * Un contrat illisible ne fait pas échouer l'analyse. Le fichier est extrait,
+ * il part au téléchargement, et le priver de cette sortie pour un point qu'on
+ * n'a pas su poser coûterait au designer plus que le point ne lui rapporte.
+ */
+async function signalerLesImbriquesDuContrat(
+  composant: ComponentNode | ComponentSetNode,
+  contenu: string,
+  provenance: Provenance,
+): Promise<number> {
+  let contrat: ContratLu;
+  try {
+    contrat = JSON.parse(contenu) as ContratLu;
+  } catch {
+    return 0;
+  }
+  const clesDuParent = clesDeclareesPar(composant);
+  const horsDuParent = clesDuParent
+    ? Object.keys(contrat.props ?? {}).filter((cle) => !clesDuParent.has(cle))
+    : [];
+  const imbriques = await releverLesImbriques(composant, horsDuParent);
+  return signalerLesImbriques(composant.name, imbriques, provenance);
 }
 
 async function creerRegles(operation: number): Promise<void> {

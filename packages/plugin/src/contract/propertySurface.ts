@@ -37,14 +37,19 @@ export function mergeWrapperProps(
   props: Record<string, ContractProp>,
   wrapperProps: Record<string, ContractProp>,
   warnings: string[],
+  // Le nom du composant imbriqué d'où viennent `wrapperProps`. Le designer doit
+  // pouvoir ouvrir les deux component sets pour choisir lequel renommer, et
+  // « le composant imbriqué » ne lui en désigne aucun.
+  wrapperName?: string,
 ): Set<string> {
   const accepted = new Set<string>();
+  const imbrique = wrapperName ? `« ${wrapperName} »` : 'le composant imbriqué';
   for (const [key, prop] of Object.entries(wrapperProps)) {
     if (Object.prototype.hasOwnProperty.call(props, key)) {
       pousserSansNode(warnings, `Component property « ${key} »`, {
-        manque: `le composant imbriqué qui porte les dimensions et le component set `
-          + `sélectionné l’exposent tous les deux.`,
-        impact: `Seule celle du component set sélectionné est exportée.`,
+        manque: `${imbrique} et le component set sélectionné la déclarent tous les deux.`,
+        impact: `Le contrat ne publie que celle du component set sélectionné : celle de `
+          + `${imbrique} manquera au développeur.`,
         action: `Renommez l’une des deux, puis réexportez.`,
       });
       continue;
@@ -67,6 +72,9 @@ export function buildContractPropertySurface(
   wrapperDefinitions?: ComponentPropertyDefinitions,
   warnings: string[] = [],
   directModel?: ContractPropertyModel,
+  // Le nom du composant d'où `wrapperDefinitions` est lu, pour que le message
+  // de collision le nomme.
+  wrapperName?: string,
 ): ContractPropertySurface {
   // L'orchestrateur construit ce modèle avant de connaître le wrapper, car la
   // matrice de variants en dépend. Le réutiliser évite une seconde extraction
@@ -80,7 +88,7 @@ export function buildContractPropertySurface(
   }
 
   const wrapperModel = extractContractPropertyModel(wrapperDefinitions, warnings);
-  const acceptedKeys = mergeWrapperProps(props, wrapperModel.props, warnings);
+  const acceptedKeys = mergeWrapperProps(props, wrapperModel.props, warnings, wrapperName);
   for (const [figmaName, publicKey] of wrapperModel.publicPropertyKeyByFigmaName) {
     if (acceptedKeys.has(publicKey)) publicPropertyKeyByFigmaName.set(figmaName, publicKey);
   }

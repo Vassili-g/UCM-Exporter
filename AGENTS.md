@@ -496,6 +496,12 @@ La spécification en lien porte le raisonnement.
 - Ce que l’élection écarte est dit. Un calque hors du node élu, ou à côté d’une
   dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni visibilité,
   alors que ses couleurs entrent dans `variants[].tokens` : il avertit.
+- Sauf quand le node élu vit dans un composant **publié** imbriqué, reconnu au
+  nom de son maître (ni `.` ni `_` en tête). Ce composant n’est candidat que
+  parce qu’il n’a pas ses règles, et le point bloquant qui les réclame porte
+  déjà la cause : tous les calques du composant sélectionné se retrouvent alors
+  mécaniquement « en dehors », et leurs messages enterreraient ce point sous ses
+  propres conséquences. Une coquille interne, elle, garde les siens.
 - Un auto-layout linéaire publie ses alignements (`justifyContent`,
   `alignItems`) ; ses slots ne publient que leurs exceptions (`alignSelf`,
   `flexGrow`). Une absence signifie hors flux ou non applicable, jamais
@@ -590,6 +596,17 @@ La spécification en lien porte le raisonnement.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
   geste à faire. Les trois sont exigés ; un constat qui ne nomme aucun geste
   n’est pas un avertissement, et il ne s’écrit nulle part.
+- **Un point bloquant se lit en tête de la liste, quel que soit son rang
+  d’arrivée.** Il dit que le contrat est déjà faux, là où un avertissement le
+  laisse exact ; le moteur, lui, le relève sur le contrat qu’il vient de
+  produire, donc en dernier. L’interface l’insère avant le premier
+  avertissement, sans trier les autres
+  (`tests/interface/interface.test.mjs`).
+- **Un composant imbriqué sans ses règles se signale à l’analyse comme à la
+  création des règles.** Les deux passent par le même relevé
+  (`releverLesImbriques`) : c’est l’analyse que le designer relance, et taire la
+  cause là où il la cherche laisse ses conséquences seules à l’écran. Ces points
+  entrent dans le compte du verdict, qui annonce donc ce que la liste montre.
 - **Les trois parties voyagent séparées**, du site d’émission jusqu’à
   l’interface : un site écrit un `Constat` (`src/contract/localisation.ts`),
   jamais une phrase. La phrase compacte que publient `meta.diagnostics`, la

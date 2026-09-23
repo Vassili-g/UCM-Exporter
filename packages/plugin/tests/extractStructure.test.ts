@@ -272,7 +272,7 @@ test('un calque écarté de la projection garde sa place dans la vue exacte', as
   // Son déplacement est demandé une seule fois, par la note dédiée à la
   // projection ; la peinture, elle, ne réclame rien.
   assert.ok(notices.some((note) => note.includes('Repère')
-    && note.includes('Déplacez-le dans cet auto layout frame')));
+    && note.includes('Déplacez-le dans « Wrapper »')));
   assert.equal(
     [...warnings, ...notices].some((message) => message.includes('arbre publié')),
     false,
