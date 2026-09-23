@@ -482,3 +482,142 @@ export function recetteIllisible(refus: readonly Refus[]): Constat {
     geste: 'Exportez la recette pour la corriger, importez une recette valide, ou repartez de la recette par défaut.',
   };
 }
+
+/** Les textes que la planche porte dans le document (section 9). */
+export const TEXTES_DE_LA_PLANCHE = {
+  avertissement: 'Dessiné par UCM Palettes. Ce cadre est remplacé à chaque dessin.',
+  reference: 'Référence',
+  emplois: 'Emplois',
+  emploisCites: 'Ces crans sont ceux que les composants citent, dans toutes les marques.',
+  etats: 'États',
+  alertes: 'Alertes',
+  aucuneAlerte: 'Aucune alerte.',
+  legende: 'Légende',
+  specimen: 'Aa Libellé',
+  tenu: 'tenu',
+  manque: 'manqué',
+  colonnes: ['Emploi', 'Usage', 'Cran', 'Spécimen', 'Contraste', 'Seuil', 'Verdict'],
+  bouton: 'Boutons',
+  mode: { light: 'Light', dark: 'Dark' },
+  usage: {
+    solid: 'Fond plein d’un bouton, d’un badge',
+    'on-solid': 'Texte posé sur ce fond',
+    text: 'Texte coloré sur le fond de page',
+    surface: 'Fond teinté discret',
+    'border-control': 'Contour d’un champ, d’une case',
+    'border-decorative': 'Séparateur, filet',
+    focus: 'Anneau de focus, décalé du contrôle',
+  },
+} as const;
+
+const ESPACES: Record<ProfilDuDocumentEcrit, string> = { SRGB: 'sRGB', DISPLAY_P3: 'Display P3', LEGACY: 'profil non géré' };
+type ProfilDuDocumentEcrit = 'SRGB' | 'DISPLAY_P3' | 'LEGACY';
+
+/** La ligne d'en-tête d'un cadre ([PLA-07]). */
+export function enTeteDuCadre(version: number, empreinte: string, profil: ProfilDuDocumentEcrit, tenues: number, total: number): string {
+  return `recette v${version} · empreinte ${empreinte} · ${ESPACES[profil]} · ${tenues}/${total} promesses`;
+}
+
+/** Un seuil tenu, tel que la planche l'écrit ([PLA-12]) : « 4,5 », « 3 », ou un tiret. */
+export function seuilTenuEcrit(seuil: number | null): string {
+  return seuil === null ? '–' : seuilEcrit(seuil);
+}
+
+/** La ligne d'une rangée ([PLA-10]) : le profil et la part de chroma employée. */
+export function enTeteDeRangee(profil: string, part: number): string {
+  return `${profil}\npart ${ecrireArrondi(part, 2)}`;
+}
+
+/** L'en-tête d'une section de mode ([PLA-09]). */
+export function enTeteDeSection(mode: Mode, fond: string): string {
+  return `${TEXTES_DE_LA_PLANCHE.mode[mode]} · fond de référence ${fond}`;
+}
+
+/** Ce qu'une carte de cran écrit sous sa pastille (section 9.3). */
+export interface TexteDeCarte {
+  readonly nom: string;
+  readonly hexa: string;
+  readonly L: number;
+  readonly C: number;
+  readonly H: number;
+  readonly fond: number;
+  readonly seuilTenu: number | null;
+  readonly blanc: number;
+  readonly noir: number;
+  readonly emplois: readonly EmploiDUnCran[];
+  /** Le profil dont ce cran se confond, `null` quand les deux s'écartent ([PLA-15]). */
+  readonly confondu: string | null;
+}
+
+export function texteDeCarte(carte: TexteDeCarte): string {
+  const contraire = carte.blanc >= carte.noir ? `blanc ${ecrireContraste(carte.blanc)}` : `noir ${ecrireContraste(carte.noir)}`;
+  return [
+    carte.nom,
+    carte.hexa,
+    `L ${ecrireArrondi(carte.L, 3)}`,
+    `C ${ecrireArrondi(carte.C, 3)}`,
+    `H ${Math.round(carte.H) % 360}°`,
+    `fond ${ecrireContraste(carte.fond)} ${seuilTenuEcrit(carte.seuilTenu)}`,
+    contraire,
+    carte.emplois.length > 0 ? carte.emplois.map(emploiEcrit).join(' · ') : '',
+    carte.confondu ? `≈ ${carte.confondu}` : '',
+  ].filter((ligne) => ligne !== '').join('\n');
+}
+
+/** Le bloc « Référence » d'un cadre ([PLA-08]). */
+export interface TexteDeReference {
+  readonly hexa: string;
+  readonly L: number;
+  readonly C: number;
+  readonly H: number;
+  readonly part: number;
+  readonly cranProche: number;
+  /** Contraste et seuil tenu contre le blanc, le noir, le fond clair et le fond sombre. */
+  readonly contrastes: readonly { readonly contre: string; readonly valeur: number; readonly seuil: number | null }[];
+}
+
+export function texteDeReference(reference: TexteDeReference): string {
+  return [
+    reference.hexa,
+    `L ${ecrireArrondi(reference.L, 3)} · C ${ecrireArrondi(reference.C, 3)} · H ${Math.round(reference.H) % 360}°`,
+    `part de chroma ${ecrireArrondi(reference.part, 2)} · proche du cran ${reference.cranProche}`,
+    reference.contrastes.map(({ contre, valeur, seuil }) => `${contre} ${ecrireContraste(valeur)} ${seuilTenuEcrit(seuil)}`).join(' · '),
+  ].join('\n');
+}
+
+/** Les dérives d'un cadre ([PLA-08]) : une ligne par profil, ou une seule quand ils sont liés. */
+export function texteDesDerives(palette: Palette): string {
+  const { lien, soft, vivid } = palette.derive;
+  return lien ? `soft et vivid : ${uneDerive(vivid)}` : `soft : ${uneDerive(soft)}\nvivid : ${uneDerive(vivid)}`;
+}
+
+/** La carte du bouton, à côté de la référence ([PLA-08], [VER-12]). */
+export function texteDuBouton(hexa: string): string {
+  return `${TEXTES_DE_LA_PLANCHE.bouton}\n${hexa}\ncran 700 vivid, clair`;
+}
+
+/** Une ligne de paire d'état sous une table d'emplois ([PLA-17]). */
+export function ligneDePaire(premier: MembrePaire, second: MembrePaire, contraste: number, seuil: number, tenue: boolean): string {
+  const verdictDeLaPaire = tenue ? TEXTES_DE_LA_PLANCHE.tenu : TEXTES_DE_LA_PLANCHE.manque;
+  return `${membre(premier)} sur ${membre(second)} · ${ecrireContraste(contraste)} · ${seuilEcrit(seuil)} · ${verdictDeLaPaire}`;
+}
+
+/** Le titre d'une table d'emplois : son mode et son profil. */
+export function titreDeTable(mode: Mode, profil: string): string {
+  return `${TEXTES_DE_LA_PLANCHE.emplois} · ${TEXTES_DE_LA_PLANCHE.mode[mode]} · ${profil}`;
+}
+
+/** Une ligne d'alerte de la planche : où, puis quoi. */
+export function ligneDAlerte(constat: Constat): string {
+  return `${constat.ou} : ${constat.quoi}`;
+}
+
+/** La légende d'un cadre ([PLA-11]). */
+export function legende(seuils: Recette['seuils'], parts: { soft: number; vivid: number }): string {
+  return [
+    `Seuils de contraste : texte ${seuilEcrit(seuils.texte)}, non-texte ${seuilEcrit(seuils.nonTexte)}.`,
+    `profilsConfondus ${ecrireArrondi(seuils.profilsConfondus, 2)} et palettesProches ${ecrireArrondi(seuils.palettesProches, 2)} sont des paramètres de conception, pas des seuils d’accessibilité.`,
+    `Parts de chroma de la recette : soft ${ecrireArrondi(parts.soft, 2)}, vivid ${ecrireArrondi(parts.vivid, 2)}.`,
+    'fond : contraste contre le fond de référence du mode, puis le seuil tenu. blanc ou noir : le plus fort des deux.',
+  ].join('\n');
+}

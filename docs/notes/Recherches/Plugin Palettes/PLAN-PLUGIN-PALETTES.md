@@ -535,14 +535,14 @@ Spécification : [section 9](./RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planc
 
 ### 6a : modèle
 
-- [ ] **L6.1** `src/planche/modele.ts` [ARC-07] : arbre pur de cadres, textes,
+- [x] **L6.1** `src/planche/modele.ts` [ARC-07] : arbre pur de cadres, textes,
   couleurs, tailles et noms de calque, calculé depuis la recette rangée
   ([ARC-11]).
-- [ ] **L6.2** Cadre de palette §9.2, carte de cran §9.3, table des emplois
+- [x] **L6.2** Cadre de palette §9.2, carte de cran §9.3, table des emplois
   §9.4, grille de contraste §9.5 : [PLA-07] à [PLA-18], [PLA-21] à [PLA-23].
-- [ ] **L6.3** Peinture selon le profil du document, table de §6.7.
-- [ ] **L6.4** Empreinte du modèle (E2).
-- [ ] **L6.5** Tests sur le modèle : chaque exigence `PLA` de 6a, noms de calque
+- [x] **L6.3** Peinture selon le profil du document, table de §6.7.
+- [x] **L6.4** Empreinte du modèle (E2).
+- [x] **L6.5** Tests sur le modèle : chaque exigence `PLA` de 6a, noms de calque
   [PLA-14], texte lisible sur chaque fond [PLA-09] [PLA-13], compte de
   calques par palette relevé et écrit dans le commit.
 
