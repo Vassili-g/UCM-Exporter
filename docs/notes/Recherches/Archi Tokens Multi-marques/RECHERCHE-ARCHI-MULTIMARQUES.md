@@ -2,44 +2,51 @@
 
 Six marques à terme, deux modes d'affichage. Chaque marque doit s'afficher en
 clair et en sombre sur ses propres couleurs, et chaque composant doit suivre.
-La question posée : quelle forme donner aux collections de tokens pour couvrir
-ce produit sans écrire le même fait plusieurs fois.
 
-Le sujet est la collection de tokens du Playground, à qui il manque le mode
-sombre. La forme retenue se réplique ensuite dans Figma, puisque `tokens.json`
-sort d'un export et ne se retouche pas à la main.
+Le sujet est la collection de tokens du Playground, qui servira de base à une
+bibliothèque de composants bien plus grande que le corpus d'essai actuel. La
+forme retenue se réplique ensuite dans Figma, puisque `tokens.json` sort d'un
+export et ne se retouche pas à la main.
 
-Le document mesure l'état du Playground, propose une cible et son chemin, puis
-regarde le fichier Figma de production comme un exemple de ce qu'une autre
-répartition coûte. Il ne décide rien : aucune partie du produit n'en dépend, et
-la cible reste soumise aux mesures de la section 8.
+Le document ne décide rien : aucune partie du produit n'en dépend.
 
-## 1. Le Playground aujourd'hui
+## 1. Les critères
 
-Relevé par `mesurer-duplication.mjs`, dans ce dossier, sur
-`UCM-Playground/src/tokens/tokens.json` : 760 feuilles, huit collections, un
-seul axe.
+Le volume de tokens compte moins que ce que l'architecture rend possible. Six
+critères, dans cet ordre.
 
-| Collection | Feuilles | Modes |
+| Critère | Ce qu'il exige |
+|---|---|
+| Liberté d'expression | Un composant nouveau doit pouvoir citer n'importe quelle couleur du système sans qu'on ajoute d'abord un nom à un vocabulaire |
+| Marque | Ajouter une marque doit être une colonne, sans toucher aux autres couches |
+| Mode | Ajouter un mode d'affichage doit être une colonne, sans toucher aux autres couches |
+| Exception | Une divergence réelle sur un composant doit rester locale à ce composant |
+| Combinaisons | Aucune combinaison marque et mode ne doit s'écrire à la main |
+| Vérifiabilité | Un écart doit se relever mécaniquement, pas à l'œil |
+
+Le premier critère écarte toute architecture qui demande de nommer un rôle
+avant de pouvoir dessiner. C'est la force de la répartition employée par le
+fichier Figma de production, et une proposition qui la perdrait serait un recul.
+
+## 2. Le Playground aujourd'hui
+
+Relevé par `mesurer-duplication.mjs`, dans ce dossier : 760 feuilles, huit
+collections, un seul axe, `color-brand-tokens`, deux marques, dix feuilles.
+
+Les rampes disponibles :
+
+| Collection | Familles | Crans |
 |---|---|---|
-| `components` | 369 | aucun |
-| `primitives` | 175 | aucun |
-| `typography` | 60 | aucun |
-| `color-utilities` | 54 | aucun |
-| `color-brands` | 44 | aucun |
-| `layouts` | 31 | aucun |
-| `tests` | 17 | aucun |
-| `color-brand-tokens` | 10 | `intencial`, `marque-2` |
+| `color-brands.<marque>` | `primary`, `secondary` | 50 à 950, onze crans |
+| `color-utilities` | `success`, `warning`, `info`, `danger` | 50 à 900, dix crans |
+| `color-utilities.neutral` | | 50 à 1100, plus `white` et `black`, quatorze crans |
+| `primitives.colors` | neuf teintes brutes | |
 
-La matrice des citations descend strictement, aucune collection ne cite une
-collection qui la cite. La forme est saine. Il lui manque une couche.
+### 2.1 Le mode sombre n'a rien à quoi s'accrocher
 
-### 1.1 Le mode sombre n'a rien à quoi s'accrocher
+`components` porte 306 feuilles de couleur. Voici ce qu'elles citent.
 
-La collection `components` porte 306 feuilles de couleur. Voici ce qu'elles
-citent.
-
-| Cible | Citations | Ce qu'un axe clair et sombre pourrait y changer |
+| Cible | Citations | Ce qu'un axe clair et sombre y changerait |
 |---|---|---|
 | `color-utilities.neutral` | 84 | rien, la collection n'a pas de mode |
 | `color-utilities.success`, `warning`, `danger`, `info` | 133 | rien |
@@ -48,38 +55,27 @@ citent.
 
 256 des 306 citations, soit 84 %, ne traversent aucune couche commutable.
 `components.alert.colors.info.standard.background` vise
-`primitives.colors.sky.50` : un bleu très clair, écrit en dur, qu'aucun contexte
-ne peut remplacer par un fond sombre.
+`primitives.colors.sky.50`, un bleu très clair écrit en dur qu'aucun contexte ne
+peut remplacer par un fond sombre.
 
-Le constat qui commande tout le reste : le mode sombre ne s'ajoute pas par un
-axe, il s'ajoute par une couche. Le Playground ne porte pas de couche sémantique
-de couleur. `color-brand-tokens` en tient lieu pour dix tokens de marque, ce qui
-couvre un sixième des couleurs de composants. Poser un axe `light` et `dark` sur
-une collection existante laisserait les 256 autres citations figées.
+Le constat qui commande le reste : le mode sombre ne s'ajoute pas par un axe
+posé sur une collection existante, puisqu'il n'existe aucune couche que les
+composants traversent tous.
 
-### 1.2 La couche qui manque tient en cinquante-cinq noms
-
-Les 306 feuilles de couleur ne citent que **55 cibles distinctes**.
+### 2.2 Les 306 citations visent 55 cibles distinctes
 
 | Groupe visé | Cibles distinctes |
 |---|---|
 | `primitives.colors` | 21 |
 | `color-utilities.success` | 9 |
-| `color-utilities.info` | 5 |
-| `color-utilities.warning` | 5 |
+| `color-utilities.info`, `warning` | 5 chacun |
 | `color-utilities.danger` | 4 |
 | `color-utilities.neutral` | 3 |
-| `color-brand-tokens.secondary` | 4 |
-| `color-brand-tokens.primary` | 4 |
+| `color-brand-tokens.primary`, `secondary` | 4 chacun |
 
-C'est la taille de la collection sémantique à écrire, et la borne du travail de
-repointage. Cinquante-cinq tokens à deux colonnes suffisent à rendre les 369
-tokens de composants capables de basculer.
+Ce nombre borne le travail de repointage, quelle que soit la cible retenue.
 
-### 1.3 Les rampes de marque sont presque alignées
-
-`color-brand-tokens` donne un nom de rôle à un cran de la rampe de chaque
-marque.
+### 2.3 Les rôles de `color-brand-tokens` par marque
 
 | Rôle | Cran `intencial` | Cran `marque-2` |
 |---|---|---|
@@ -94,186 +90,306 @@ marque.
 | `secondary.emphasis` | 800 | 700 |
 | `secondary.strong` | 900 | 900 |
 
-La rampe `primary` est alignée : le même numéro joue le même rôle dans les deux
-marques, et les deux colonnes de `color-brand-tokens.primary.*` disent la même
-phrase. La rampe `secondary` diverge sur trois rôles.
+La rampe `primary` tombe sur le même cran dans les deux marques. La rampe
+`secondary` diverge sur trois rôles. La section 3.1 dit ce que cette divergence
+signifie, et ce qu'elle ne signifie pas.
 
-L'information portée par l'axe des marques se réduit donc à trois cases sur
-dix. C'est ce que mesure le relevé n° 3 du script : une colonne morte est un
-fait écrit deux fois. Sur six marques, ce sera écrit six fois.
+## 3. Trois objections, et ce que l'état de l'art en dit
 
-## 2. La règle qui décide
+### 3.1 Des rampes ajustées à la main peuvent quand même être alignées
 
-Un fait s'écrit une fois, à la couche la plus basse où il varie.
+L'objection : les palettes de marque diffèrent, une `secondary` naturellement
+très foncée impose d'ajuster toute sa rampe, donc deux marques ne peuvent pas
+avoir des rampes strictement identiques. Exact, et aucune architecture ne doit
+l'exiger.
 
-Trois conséquences produisent la cible.
+L'ajustement manuel et l'alignement ne s'opposent pourtant pas. Ils se
+rejoignent dès que le numéro d'un cran cesse de décrire une clarté pour décrire
+un emploi. [Radix
+Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale)
+attribue un emploi à chaque cran d'une échelle de douze, indépendamment de la
+teinte :
 
-Un axe par collection. Figma résout chaque collection indépendamment et
-`ucm tokens css` croise les axes tout seul, donc rien n'oblige à écrire le
-produit des dimensions à la main.
+| Cran | Emploi |
+|---|---|
+| 1, 2 | Fond d'application, fond discret |
+| 3, 4, 5 | Fond d'un élément d'interface, au repos, survolé, actif |
+| 6, 7, 8 | Bordures discrètes, bordure et anneau de focus, bordure survolée |
+| 9, 10 | Aplats, aplat survolé |
+| 11, 12 | Texte à faible contraste, texte à fort contraste |
 
-Une dimension entre le plus bas possible. Si la marque entre à la couche des
-rampes, la couche sémantique et la couche composant n'en portent aucune trace.
-Si elle entre plus haut, tout ce qui est au-dessus porte ses six colonnes.
+Chaque échelle est ajustée à la main pour sa teinte, et c'est cet ajustement qui
+fait tenir la promesse : le cran 9 d'une teinte claire et le cran 9 d'une teinte
+sombre n'ont pas la même clarté, ils ont le même emploi. Radix publie une
+variante sombre de chaque échelle sous les mêmes numéros, avec les mêmes emplois.
 
-Une couche sans variation n'a pas de mode. Une collection de tokens de
-composants qui n'alias que la couche sémantique suit ce que celle-ci résout,
-sans colonne à elle.
+[Material 3](https://m3.material.io/styles/color/system/how-the-system-works)
+obtient le même résultat autrement : la palette tonale est calculée depuis une
+couleur clé, le ton exprime une clarté mesurée, et l'alignement est donc
+automatique. Le prix est de renoncer à l'ajustement manuel, ce que la demande
+exclut.
 
-## 3. La cible pour le Playground
+La conséquence pour le Playground. L'écart de trois rôles sur `secondary` ne
+prouve pas que les rampes soient mal faites. Il prouve que leurs numéros
+décrivent une clarté. Deux lectures possibles, et les deux sont tenables.
 
-### 3.1 Les collections
+La première consiste à donner un emploi à chaque cran et à ajuster chaque rampe
+de marque pour qu'elle le tienne. L'axe des marques devient alors purement
+chromatique et aucune correspondance par marque ne subsiste.
+
+La seconde admet qu'un fait reste propre à chaque marque : où se trouve, dans sa
+rampe, la couleur de marque elle-même. Ce fait tient en une poignée
+d'emplacements, `default`, `subtle`, `emphasis`, `strong`, `subtlest`, qui
+existent déjà dans `color-brand-tokens` et qui ont fait leurs preuves. Dix
+emplacements sur six marques coûtent soixante valeurs, ce qui ne pèse rien. La
+suite du document retient cette seconde lecture, sans interdire la première.
+
+### 3.2 Une couche sémantique inventée serait un recul
+
+L'objection : une couche `theme.surface.*`, `theme.text.*`, `theme.feedback.*`
+suppose que les composants ont des propriétés déterminées et des comportements
+attendus. Sur une bibliothèque de plusieurs centaines de composants, cette
+supposition se paie à chaque composant qui sort du cadre prévu.
+
+L'objection est juste, et la proposition qu'elle vise est abandonnée.
+
+Une nuance factuelle, cependant, sur le fichier Figma de production, qui sert de
+référence à l'objection. Ce fichier porte bien une couche sémantique :
+`theme.light.primary.main`, `theme.light.text.primary`,
+`theme.light.background.paper`, `theme.light.neutral.*` forment le vocabulaire
+de palette de Material UI, et les tokens de composants le citent largement. Ce
+qui manque à ce fichier est autre chose, et la section 3.3 le nomme.
+
+Le vocabulaire sémantique n'est donc pas ce qui distingue les deux
+architectures. La cible de la section 5 laisse ce vocabulaire entièrement libre,
+et n'en impose aucun.
+
+### 3.3 Ce qui manque au fichier de production est une couche de commutation
+
+Ce fichier rend le service attendu, sur cinq marques et deux modes, pour
+n'importe quel composant. Sa répartition est la suivante :
+
+| Collection | Axe | Contenu |
+|---|---|---|
+| `colour-tokens` | aucun | Les rampes, une par marque, en niveaux de dossier |
+| `theme` | cinq marques | `theme.light.*` et `theme.dark.*`, sémantique et composants, en deux dossiers |
+| `mode` | clair et sombre | Un aiguillage qui choisit entre les deux dossiers |
+
+Le clair et le sombre sont un niveau de dossier dans la collection des marques,
+donc la surface entière est écrite deux fois, chaque fois avec ses cinq colonnes
+de marque. La collection `mode` ne fait que choisir entre les deux :
+
+```json
+"mode.primary.main": {
+  "com.ucm.axis": "mode",
+  "com.ucm.modes": {
+    "light": "{theme.light.primary.main}",
+    "dark":  "{theme.dark.primary.main}"
+  }
+}
+```
+
+Cette collection `mode` est exactement une couche de commutation, et elle est
+bien placée. Ce qui coûte est qu'elle arrive après la duplication au lieu
+d'arriver avant. Placée entre les rampes et tout le reste, la même mécanique
+supprimerait les deux dossiers.
+
+Le prix payé se lit dans le fichier. Trois écritures du même fait divergent :
+`mode.components.icon.error.foreground` sert la valeur sombre dans ses deux
+colonnes, `mode.components.filters.stroke` impose en sombre un bleu Gresham à
+toutes les marques, `theme.dark.primary.main` vaut `null` pour Gresham, et deux
+tokens de `theme` citent la collection `mode` qui les cite.
+
+## 4. L'invariant que tous les systèmes respectent
+
+| Système | Comment le mode est porté |
+|---|---|
+| [Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale) | Une échelle claire et une échelle sombre, mêmes numéros de cran, mêmes emplois |
+| [Material 3](https://m3.material.io/styles/color/system/how-the-system-works) | Des rôles identiques dans les deux schémas, alimentés par des tons différents de la même palette tonale |
+| [Primer](https://primer.style/product/primitives/token-names/) | Quatre thèmes livrés depuis un seul jeu de composants, chaque thème étant une autre affectation de valeurs aux mêmes noms |
+| [Carbon](https://carbondesignsystem.com/elements/themes/overview/) | Des variables universelles définies par leur rôle, que chaque thème renseigne, sans toucher aux composants |
+| [Atlassian](https://atlassian.design/foundations/tokens/design-tokens) | Un thème est un jeu de valeurs ; clair, sombre et contraste renforcé emploient le même jeu de tokens |
+| [Spectrum](https://spectrum.adobe.com/page/color-system/) | Un nom unique se résout en valeurs différentes selon le thème, la rampe s'inversant entre clair et sombre |
+
+L'invariant est le même partout : **les noms ne changent pas d'un thème à
+l'autre, seules les valeurs changent**. Aucun de ces systèmes n'écrit deux jeux
+de noms, un clair et un sombre.
+
+Il ne dit rien du vocabulaire employé. Il dit seulement où le mode se décide :
+en un point, sur un jeu de noms unique, en amont de tout ce qui consomme.
+
+## 5. La cible
+
+### 5.1 Une collection qui ne décide rien
+
+Une seule collection s'ajoute, entre les rampes et tout ce qui les consomme.
+Son rôle est mécanique : elle expose les mêmes noms que les rampes, en deux
+colonnes.
+
+```
+color-brands.primary.500        (six colonnes, une par marque)
+color-brands.accent.500         (six colonnes, la variante étudiée pour le sombre)
+
+scheme.primary.500              light → color-brands.primary.500
+                                dark  → color-brands.accent.500
+
+components.button…background    → scheme.primary.500
+```
+
+Cette collection `scheme` n'invente aucun vocabulaire. Sa liste de variables se
+déduit mécaniquement des rampes du dessous : un cran en dessous donne un cran
+dans `scheme`. Ajouter une rampe ajoute ses crans, sans décision de rangement et
+sans hypothèse sur ce qu'un composant en fera.
+
+Un composant reste donc aussi libre que dans le fichier de production. Il cite
+`scheme.primary.300` ou `scheme.neutral.900` selon ce que la maquette demande.
+La seule règle est de citer `scheme` plutôt que les rampes, et cette règle est
+mécanique, pas sémantique. Le relevé n° 5 du script la vérifie à chaque export.
+
+### 5.2 Les collections
 
 | Collection | Modes | Contenu | Cite |
 |---|---|---|---|
-| `primitives` | aucun | Les rampes brutes, les dimensions, les primitives typographiques. Inchangée | rien |
-| `color-brands` | 6 : une par marque | La rampe de la marque courante, cran par cran : `color-brands.primary.50` à `900`, `secondary.*`. Un seul jeu de noms, six colonnes | `primitives` |
-| `color-utilities` | aucun | Les rampes `neutral`, `success`, `warning`, `danger`, `info`. Inchangée | `primitives` |
-| `theme` | 2 : `light`, `dark` | La couche qui manque, environ 55 tokens. Le seul endroit où le clair et le sombre se décident | `color-brands`, `color-utilities` |
-| `components` | aucun | Les 369 tokens actuels, repointés sur `theme` et `layouts` | `theme`, `layouts` |
+| `primitives` | aucun | Les teintes brutes, les dimensions, les primitives typographiques | rien |
+| `color-brands` | 6, une par marque | Les rampes de la marque courante : `primary.50` à `950`, `accent.*`, `secondary.*`, `secondary-accent.*`, plus les emplacements de rôle de la section 3.1 | `primitives` |
+| `color-utilities` | aucun | `success`, `warning`, `info`, `danger`, `neutral`, et leurs variantes sombres | `primitives` |
+| `scheme` | 2 : `light`, `dark` | Le miroir des deux collections ci-dessus, en deux colonnes | `color-brands`, `color-utilities` |
+| `components` | aucun | Les tokens de composants, repointés sur `scheme` | `scheme`, `layouts` |
 | `layouts`, `typography` | aucun | Inchangées | `primitives` |
 
-`color-brand-tokens` disparaît. Ses dix noms de rôle remontent dans `theme`,
-sous `theme.primary.*` et `theme.secondary.*`, et la marque descend dans
-`color-brands`.
+`color-brand-tokens` se dissout : ses dix emplacements de rôle descendent dans
+`color-brands`, qui porte déjà l'axe des marques, et `scheme` les mirroite comme
+les autres.
 
-Deux changements portent tout le gain. La marque cesse d'être un niveau de
-dossier dans `color-brands` pour devenir six colonnes sur un jeu de noms unique,
-ce qui la fait disparaître de tous les noms en aval. Et la couche `theme`
-s'intercale entre les rampes et les composants, ce qui donne au clair et au
-sombre un endroit unique où se décider.
+Deux axes au total, `color-brands` et `scheme`, sur deux collections distinctes.
+Figma résout chaque collection indépendamment, donc une maquette pose une marque
+et un mode sans que l'un connaisse l'autre.
 
-### 3.2 Comment une couleur de marque traverse les deux axes
+### 5.3 La palette accent
 
-Une seule ligne par rôle couvre les six marques et les deux modes :
+La variante étudiée pour le sombre, plus saturée et de teinte légèrement
+décalée, trouve sa place sans rien changer à la mécanique. Elle vit dans
+`color-brands` comme une rampe de plus, avec ses six colonnes, et `scheme`
+décide cran par cran d'où vient le sombre :
 
 ```
-color-brands.primary.500     intencial → primitives.colors.sky.500
-                             marque-2  → primitives.colors.grass.500
-                             …          (six colonnes, une par marque)
+scheme.primary.500    light → color-brands.primary.500
+                      dark  → color-brands.accent.500
 
-theme.primary.default        light → color-brands.primary.500
-                             dark  → color-brands.primary.300
-
-components.button.colors.primary.contained.default.background
-                             → theme.primary.default
+scheme.primary.900    light → color-brands.primary.900
+                      dark  → color-brands.primary.900     (la rampe claire suffit ici)
 ```
 
-Le fait « la primaire d'une marque est son cran 500 » est écrit une fois, dans
-`theme`, pour les six marques. Le fait « quel bleu est le cran 500 d'intencial »
-est écrit une fois, dans `color-brands`. Le bouton ne sait ni quelle marque ni
-quel mode il rend.
+Le choix « pour ce cran, le sombre vient de l'accent » ou « la rampe normale
+suffit » s'écrit une fois, pour les six marques. C'est une ligne par cran, et
+c'est la seule décision de conception que porte `scheme`.
 
-Cela suppose que le cran `500` joue le même rôle dans les six rampes. La rampe
-`primary` du Playground le vérifie déjà (section 1.3). La rampe `secondary` ne
-le vérifie pas sur trois rôles, ce que la section 3.4 traite.
+Les rampes utilitaires suivent la même mécanique. Là où une rampe sombre dédiée
+existe, `scheme` la vise en sombre. Là où elle n'existe pas, `scheme` vise le
+cran miroir de la même rampe, ce qui fait de `scheme.neutral.50` le fond le plus
+clair en clair et le plus sombre en sombre.
 
-### 3.3 Ce que `theme` contient
+### 5.4 Les exceptions par composant
 
-Les 55 cibles distinctes de la section 1.2 se rangent en cinq familles. Les
-noms proposés suivent ceux déjà employés par `color-brand-tokens`.
+Une bibliothèque de plusieurs centaines de composants produira des divergences
+que les rampes n'expriment pas : une marque qui veut du blanc là où les autres
+prennent une couleur de marque, un logo dont le nom change par marque. Le
+fichier de production en porte plusieurs.
 
-| Famille | Tokens | Source en clair | Source en sombre |
-|---|---|---|---|
-| `theme.surface.*` | `page`, `raised`, `sunken`, `overlay` | crans clairs de `color-utilities.neutral` | crans sombres de la même rampe |
-| `theme.text.*` | `primary`, `secondary`, `disabled`, `on-brand`, `on-feedback` | crans sombres de `neutral` | crans clairs |
-| `theme.border.*` | `subtle`, `default`, `strong` | `neutral` | `neutral` |
-| `theme.primary.*`, `theme.secondary.*` | `subtlest`, `subtle`, `default`, `emphasis`, `strong` | crans de `color-brands` | crans plus clairs de `color-brands` |
-| `theme.feedback.<ton>.*` | `surface`, `border`, `foreground`, `solid`, `on-solid` pour `success`, `warning`, `danger`, `info` | crans de `color-utilities` | crans opposés |
+Trois façons de les loger, selon ce que l'offre Figma autorise.
 
-Les 39 citations brutes vers `primitives.colors.*` se replient sur
-`theme.feedback.*`. L'exemple de la section 1.1,
-`components.alert.colors.info.standard.background`, vise alors
-`theme.feedback.info.surface`, qui vaut `color-utilities.info.50` en clair et
-`color-utilities.info.900` en sombre.
+**Une collection étendue sur `components`.** Une collection parente et une
+extension par marque, qui ne surcharge que les tokens divergents. L'export écrit
+ces surcharges sous `com.ucm.extensions`, et la feuille CSS émet un
+intermédiaire par extension. Le coût d'écriture se limite aux exceptions. Deux
+réserves : la fonction est réservée à l'offre Enterprise, et la lecture du
+produit est prouvée sur une simulation de l'API Figma, pas sur un fichier réel.
 
-### 3.4 Les trois rôles qui divergent
+**Une collection d'exceptions.** Une collection à six modes, placée entre
+`scheme` et `components`, ne portant que les tokens divergents. Son coût est un
+second espace de noms, que seuls les composants concernés citent.
 
-Trois rôles de `secondary` ne tombent pas sur le même cran selon la marque.
-Deux issues.
+**Un emplacement de rôle de plus dans `color-brands`.** Quand la divergence est
+un fait de marque plutôt qu'un fait de composant, elle descend à la couche de
+marque et redevient une ligne unique en aval.
 
-**Réaligner la rampe.** Renuméroter les crans pour qu'un même numéro joue le
-même rôle dans les six marques. C'est la voie à préférer : elle rend l'axe des
-marques purement chromatique, et la couche `theme` décide seule des crans. Dans
-un fichier de laboratoire, c'est un renommage.
+### 5.5 Ce que la cible ne prescrit pas
 
-**Doubler l'emplacement pour ces rôles seulement.** Ajouter dans `color-brands`
-un emplacement de rôle porté par les six colonnes, par exemple
-`color-brands.secondary.default.on-light` et `.on-dark`, et laisser `theme` les
-citer. Le coût se limite aux rôles qui divergent, six colonnes fois deux
-emplacements, au lieu de forcer l'alignement.
+Aucun vocabulaire sémantique. Les noms de `scheme` sont ceux des rampes. Si
+l'équipe veut en plus une couche de rôles, elle l'ajoute au-dessus de `scheme`,
+sans mode, et les composants choisissent de la citer ou non. L'architecture
+tient dans les deux cas.
 
-Une troisième voie existe dans Figma pour des divergences plus profondes, quand
-une marque veut une famille de couleur différente pour un rôle sémantique : une
-collection `theme` parente et une extension par marque, qui ne surcharge que les
-tokens divergents. L'export écrit ces surcharges sous `com.ucm.extensions` et la
-feuille CSS émet un intermédiaire par extension. Deux réserves : la fonction est
-réservée à l'offre Enterprise, et la lecture du produit est prouvée sur une
-simulation de l'API Figma, pas sur un fichier réel.
+Aucune limite au nombre de modes d'affichage. Un contraste renforcé devient une
+troisième colonne dans `scheme`, et rien d'autre dans le fichier ne le sait.
 
-### 3.5 Aller plus loin sur le sombre
+## 6. Pourquoi cette forme plutôt que trois autres
 
-Deux raffinements que la cible permet sans la changer.
+| | Fichier de production | Produit cartésien | Couche de rôles inventée | Miroir de commutation |
+|---|---|---|---|---|
+| Forme | Mode en dossier, marque en mode | Une collection, douze modes `marque-mode` | Un vocabulaire de rôles à deux modes | Rampes à six modes, miroir à deux modes |
+| Liberté d'expression | entière | entière | bornée par le vocabulaire | entière |
+| Ajouter une marque | une colonne dans deux dossiers, sur toute la surface | deux colonnes | une colonne | une colonne |
+| Ajouter un mode | un troisième dossier à dupliquer | six colonnes | une colonne | une colonne |
+| Exception par composant | native, chaque token a ses colonnes | native | par extension | par extension |
+| Combinaisons écrites à la main | oui | oui, douze colonnes | non | non |
+| Plafond de modes Figma | cinq | douze, au-delà de certaines offres | six et deux | six et deux |
+| Marque et mode indépendants sur un sous-arbre | oui | non, un seul attribut | oui | oui |
 
-Un mode sombre n'est pas seulement une rampe inversée. La désaturation des
-couleurs vives sur fond sombre et les surfaces surélevées se décident dans
-`theme`, en pointant vers d'autres crans ou vers des crans ajoutés aux rampes.
-Aucune autre couche ne bouge.
+Le produit cartésien mérite un mot, parce qu'il est la solution la plus simple à
+écrire. Une seule collection, douze modes nommés `intencial-light`,
+`intencial-dark` et ainsi de suite, et les composants citent les rampes
+directement. Il échoue sur deux points : le nombre de colonnes croît en
+multipliant à chaque mode ajouté, et un seul attribut porte les deux dimensions,
+donc un encart sombre dans une page claire force à répéter la marque.
 
-Un troisième mode d'affichage, contraste renforcé par exemple, devient une
-troisième colonne dans `theme`. Rien d'autre dans le fichier ne le sait.
+## 7. Le volume
 
-## 4. Ce que la cible change en volume
-
-Sur les nombres mesurés du Playground, pour six marques et deux modes.
+Sur les nombres relevés dans le Playground, pour six marques et deux modes.
 
 | Poste | Valeurs écrites |
 |---|---|
-| `color-brands` : 22 crans, 6 colonnes | 132 |
-| `theme` : 55 tokens, 2 colonnes | 110 |
+| `color-brands` : quatre rampes de onze crans plus dix rôles, six colonnes | 324 |
+| `scheme` : 76 noms mirroités, deux colonnes | 152 |
 | `components` : 369 tokens, aucune colonne | 369 |
-| Total | 611 |
+| Total | 845 |
 
-Sans couche sémantique, couvrir le même produit demanderait d'écrire chaque
-couleur de composant dans chaque combinaison, soit 6 × 2 × 306 = 3 672 valeurs
-pour la seule couche composant.
+Écrire chaque couleur de composant dans chaque combinaison, comme le fait le
+fichier de production, demanderait 6 × 2 × 306 = 3 672 valeurs pour la seule
+couche composant.
 
-Le gain de volume compte moins que ce qu'il rend impossible. Un fait écrit une
-fois ne peut pas être en désaccord avec lui-même. La section 6 montre dix
-désaccords relevés dans un fichier où trois écritures du même fait coexistent.
+La propriété qui compte davantage : ajouter la palette accent n'ajoute aucun nom
+dans `scheme` ni dans `components`. Elle ajoute une rampe dans `color-brands` et
+change la source d'une colonne. Une architecture où un raffinement du sombre se
+paie sur toute la surface ne tiendrait pas une bibliothèque de plusieurs
+centaines de composants.
 
-## 5. Ce que la cible donne côté code
+## 8. Côté code
 
-Deux axes, donc deux attributs. La configuration du dépôt les nomme :
+Deux axes, donc deux attributs, nommés dans la configuration du dépôt :
 
 ```json
 {
   "modes": {
     "color-brands": "data-brand",
-    "theme": "data-theme"
+    "scheme": "data-theme"
   }
 }
 ```
 
-La clé d'un axe est le préfixe que sa collection donne aux chemins, et la valeur
-remplace l'attribut par défaut `data-` suivi du nom de l'axe.
-
-Les deux attributs se posent sur n'importe quel élément et valent pour son
-sous-arbre :
+La clé d'un axe est le préfixe que sa collection donne aux chemins. Les deux
+attributs se posent sur n'importe quel élément et valent pour son sous-arbre :
 
 ```html
 <html data-brand="intencial" data-theme="light">
+  <aside data-theme="dark">…</aside>
+</html>
 ```
 
-Un sous-arbre en sombre sous une page claire se pose seul. `ucm tokens css`
-déclare la base sur `:root`, une règle par mode de chaque axe, puis un
-croisement `@scope` pour le couple d'axes, ce qui départage la proximité des
-deux attributs. Le montage est vérifié sur trois axes imbriqués dans Chromium,
-Firefox et WebKit par `packages/cli/tests/cascade/`.
-
-```html
-<aside data-theme="dark">…</aside>
-```
+`ucm tokens css` déclare la base sur `:root`, une règle par mode de chaque axe,
+puis un croisement `@scope` pour le couple d'axes, ce qui départage la proximité
+de deux attributs imbriqués. Le montage est vérifié sur trois axes imbriqués
+dans Chromium, Firefox et WebKit par `packages/cli/tests/cascade/`.
 
 La feuille n'émet aucune règle `@media (prefers-color-scheme)`. L'application
 décide quand poser l'attribut :
@@ -288,231 +404,105 @@ sombre.addEventListener("change", appliquer);
 ```
 
 Un composant ne déclare jamais d'attribut, il lit des tokens. N'importe quel
-ancêtre commute donc sa marque et son mode, ce qui rend une galerie qui affiche
+ancêtre commute donc sa marque et son mode, ce qui rend une galerie affichant
 les douze combinaisons côte à côte écrivable sans code particulier.
 
-Deux points relevés dans le code de l'outillage valent d'être connus. Un token
-sans valeur dans un contexte se déclare `initial`, et la commande le nomme, donc
-un trou de couverture en sombre se voit à l'écriture de la feuille. Et la
-commande imprime le nombre de règles, de déclarations et d'octets à chaque
-écriture, donc le coût de la feuille se relève plutôt qu'il ne s'estime.
-
-## 6. Ce que le fichier Figma de production montre
-
-Ce fichier rend le service attendu, et rien ici ne dit de le refaire. Il porte
-cinq marques, deux modes et quatre paliers de mise en page, et il sert. Il vaut
-comme exemple parce que ses tokens sont écrits dans une répartition différente,
-et que les effets s'y lisent.
-
-Il déclare trois axes : `theme` pour les cinq marques, `layout` pour les quatre
-paliers, `mode` pour le clair et le sombre.
-
-### 6.1 La couche sémantique y est écrite trois fois
-
-Le clair et le sombre sont un niveau de dossier dans la collection des marques,
-pas un mode. `theme.light.primary.main` et `theme.dark.primary.main` sont deux
-variables distinctes, chacune avec ses cinq colonnes de marque. Une troisième
-collection, `mode`, porte l'axe clair et sombre et ne fait qu'aiguiller entre
-les deux dossiers :
-
-```json
-"mode.primary.main": {
-  "com.ucm.axis": "mode",
-  "com.ucm.modes": {
-    "light": "{theme.light.primary.main}",
-    "dark":  "{theme.dark.primary.main}"
-  }
-}
-```
-
-Une intention unique occupe trois variables et douze valeurs. Les tokens de
-composants vivent dans ces mêmes dossiers, donc chacun porte lui aussi dix
-valeurs là où la cible de la section 3 en écrit une.
-
-### 6.2 La cause tient aux rampes
-
-Les cinq rampes `primary` ont dix crans chacune, mais leurs crans ne portent pas
-les mêmes numéros et le cran utilisé en clair change d'une marque à l'autre.
-
-| Marque | Cran clair | Cran sombre |
-|---|---|---|
-| `intencial` | `400-[light]` | `200-[dark]` |
-| `gresham` | `800-[light]` | `400-[dark]` |
-| `apicil` | `700-[light]` | `300-[dark]` |
-| `onelife` | `700-[light]` | `200-[dark]` |
-| `blank` | `700-[light]` | `200-[dark]` |
-
-Les cinq colonnes de `theme.light.primary.main` disent alors la même phrase,
-« prends le cran clair de la rampe de ma marque » :
-
-```json
-"intencial": "{colour-tokens.intencial.primary.400-[light]}",
-"gresham":   "{colour-tokens.gresham.primary.800-[light]}",
-"apicil":    "{colour-tokens.apicil.primary.700-[light]}",
-"onelife":   "{colour-tokens.onelife.primary.700-[light]}"
-```
-
-Le seul fait qui varie d'une marque à l'autre est le numéro du cran, et ce fait
-appartient à la couche des rampes. Écrit à la couche sémantique, il oblige tout
-ce qui est au-dessus à porter cinq colonnes. La preuve inverse se lit à côté :
-`theme.light.primary.lighter` vaut le cran `100` dans les quatre marques
-renseignées, et `theme.light.primary.contrasttext` vaut le même blanc dans les
-cinq. Ces colonnes ne portent aucune information.
-
-Le suffixe `-[light]` et `-[dark]` dans un nom de cran est le même fait vu d'un
-autre côté : un mode inscrit dans un nom, qu'aucun contexte ne peut commuter.
-C'est précisément ce que la section 3.4 propose d'éviter dans le Playground.
-
-### 6.3 Ce que trois écritures du même fait ont produit
-
-Toutes ces lignes sont vérifiables dans le fichier.
-
-| Passage | Ce qu'il fait |
-|---|---|
-| `mode.components.icon.error.foreground` | Ses deux colonnes valent `{theme.dark.components.icon.error.foreground}`. Le mode clair sert la valeur sombre |
-| `mode.components.filters.stroke` | Sa colonne sombre vaut `{colour-tokens.gresham.primary.200}`. Le sombre impose un bleu Gresham quelle que soit la marque affichée |
-| `mode.components.tablecell.backgroundeven` | Ses deux colonnes valent `{colour-tokens.greyscale.50}`, alors que `theme.light.components.tablecell.backgroundeven` vise `{theme.light.neutral.light}` |
-| `mode.components.tablecell.backgroundodd-2` | Un nom qui a dérivé de celui de son homologue `backgroundodd` |
-| `mode.components.button.warning.text.default.foreground` | Vise un `background`, parce que la variable `foreground` manque dans le dossier clair |
-| `theme.light.components.dataviz.assets.a.surface`, colonne `apicil` | Vise `{mode.components.dataviz.pie.support_11}`. La couche sémantique cite la couche d'aiguillage qui la cite |
-| `theme.dark.components.button.success.outlined.focused.background`, colonne `blank` | Vise `{mode.success.dark}`. Même inversion |
-| `theme.dark.primary.main`, colonne `gresham` | Vaut `null` |
-| `theme.dark.components.sri.background` | Vise `{theme.light.background.grey}` |
-| `theme.light.background.container` | Porte une couleur dont les trois canaux valent `null` |
-
-Les deux inversions de couche méritent un mot pour le Playground.
-`ucm tokens css` refuse un cycle d'alias qu'un contexte peut atteindre. Ces deux
-passages n'en forment pas un, mais ils circulent dans le mauvais sens et un
-ajout les transformerait en cycle, donc en refus d'écriture de la feuille. Le
-relevé n° 5 du script imprime la matrice des citations, ce qui rend la loi
-d'ordre de la section 3.1 vérifiable à chaque export.
-
-### 6.4 Les variables qui ne décrivent aucun style
-
-La collection `layout` porte aussi des variables dont la valeur pilote une
-propriété de composant Figma : `layout.component.supercontainer.burger` est un
-booléen, `layout.component.selectcardtemplate.defaultoneslot` vaut `3` ou
-`Square`, `theme.light.components.supercontainer.logo.brands` vaut le nom de la
-marque. Elles sont légitimes dans le fichier de dessin, où elles commutent une
-variante selon le palier ou la marque.
-
-Elles n'ont pas de sens pour un consommateur, et l'export lit toutes les
-collections locales du fichier sans qu'aucun réglage n'en écarte une
-(`packages/plugin/src/tokens/exportTokens.ts:941`). Elles entrent donc dans
-`tokens.json` et dans la feuille CSS. Deux options : les tenir dans un fichier
-Figma distinct qui ne sert pas à l'export, ou les accepter. Un réglage d'export
-qui écarte une collection nommée est une évolution possible du plugin, qui
-n'existe pas.
-
-## 7. Ce que la pratique publiée établit
-
-| Source | Ce qu'elle établit |
-|---|---|
-| [Modes for variables, Figma](https://help.figma.com/hc/en-us/articles/15343816063383-Modes-for-variables) | Les modes appartiennent à une collection, pas à une variable. Un calque hérite du mode de son conteneur, collection par collection, jusqu'à un conteneur qui en fixe un ou jusqu'au défaut de la collection |
-| [Overview of variables, collections, and modes, Figma](https://help.figma.com/hc/en-us/articles/14506821864087-Overview-of-variables-collections-and-modes) | Une collection regroupe des variables liées ; un mode représente un contexte pour ces mêmes variables. Le plafond de modes par collection dépend de l'offre |
-| [Extend a variable collection, Figma](https://help.figma.com/hc/en-us/articles/36346281624471-Extend-a-variable-collection) | Une collection étendue hérite des modes, des noms et de l'ordre de sa parente, et n'accepte que des surcharges de valeurs. Aucun mode ni aucune variable ne s'y ajoute. La fonction est réservée à l'offre Enterprise |
-| [Multi-mode setups, Supernova](https://www.supernova.io/guides/supernova-figma-variables-playbook/1-mastering-figma-variables/multi-mode-setups) | Une collection par dimension, de un à trois modes chacune. Mêler le clair et le sombre avec les marques dans une même collection est nommé comme la façon de perdre le contrôle |
-| [Using Figma Variables to build a Multi-Brand Design System, Rangle](https://rangle.io/blog/using-figma-variables-to-build-a-multi-brand-design-system) | Deux montages selon que les marques partagent ou non leurs primitives : une fondation commune avec une couche sémantique par marque, ou une fondation par marque |
-| [Color system, Spectrum](https://spectrum.adobe.com/page/color-system/) | Un nom sémantique unique se résout en valeurs différentes selon le thème actif. Le numéro du cran porte le contraste avec le fond, et la rampe s'inverse entre clair et sombre. La couche sémantique n'est pas dupliquée par thème |
-| [Design Tokens Resolver Module](https://www.designtokens.org/tr/drafts/resolver/) | Le brouillon de résolution du format standardise des jeux de tokens et des modificateurs, avec un ordre de résolution explicite, pour composer plusieurs thèmes sans dupliquer les jeux |
-
-Le montage de Spectrum est celui de la section 3 : la marque et le mode sont
-deux dimensions indépendantes, et le nom sémantique ne les nomme ni l'une ni
-l'autre.
-
-Deux points de vigilance ressortent des forums Figma. Les collections étendues
-[ne respectent pas toujours la hiérarchie des
-modes](https://forum.figma.com/share-your-feedback-26/extended-collections-doesn-t-respect-mode-hierarchy-48123),
-et le plafond de modes par collection [dépend de
-l'offre](https://forum.figma.com/suggest-a-feature-11/launched-all-plans-should-offer-more-than-4-variable-modes-13979),
-avec des valeurs que les sources secondaires citent de façon contradictoire. Six
-marques dans une collection demandent donc de lire le plafond dans l'interface
-de l'équipe avant de s'y engager.
-
-## 8. Ce qui reste à mesurer
-
-Les nombres de la section 4 viennent du fichier réel du Playground, relevés avec
-le script de ce dossier :
-
-```sh
-node "docs/notes/Recherches/Archi Tokens Multi-marques/mesurer-duplication.mjs" <tokens.json>
-```
-
-Deux chiffres restent à établir, et ils portent sur la cible plutôt que sur
-l'état actuel.
-
-Le nombre exact de tokens de `theme`. Cinquante-cinq est la borne haute, le
-nombre de cibles distinctes citées aujourd'hui. La consolidation des 21 cibles
-brutes de `primitives.colors` dans `theme.feedback.*` le fera baisser. Le nombre
-retenu se connaît en écrivant la table de la section 3.3 jusqu'au bout.
-
-La taille de la feuille CSS. Deux axes croisés produisent des blocs `@scope` que
-le fichier actuel n'a pas. `ucm tokens css` imprime ses règles, ses déclarations
-et ses octets à chaque écriture, donc l'avant et l'après se comparent.
-
-Le même script relancé après la réorganisation donne la mesure du gain : le
-relevé n° 3 doit montrer zéro colonne morte sur l'axe des marques, et le relevé
-n° 5 doit montrer `components` ne citant plus que `theme` et `layouts`.
+Deux comportements de la commande valent d'être connus. Un token sans valeur
+dans un contexte se déclare `initial`, et la commande le nomme, donc un trou de
+couverture en sombre se voit à l'écriture de la feuille. Et la commande imprime
+le nombre de règles, de déclarations et d'octets, donc le coût de la feuille se
+relève plutôt qu'il ne s'estime.
 
 ## 9. Le chemin
 
-Le fichier de tokens du Playground sort d'un export, donc chaque étape se joue
-dans le fichier Figma source, et le Playground la reçoit. L'ordre proposé garde
-le fichier utilisable après chaque étape.
+Le fichier de tokens sort d'un export, donc chaque étape se joue dans le fichier
+Figma source et le Playground la reçoit. L'ordre garde le fichier utilisable
+après chaque étape.
 
 | Étape | Geste | Vérification |
 |---|---|---|
 | 1 | Relever l'état avec le script et garder le relevé | Un point de départ existe |
 | 2 | Lire le plafond de modes par collection de l'offre Figma de l'équipe | Six modes tiennent dans une collection |
-| 3 | Écrire la table de la section 3.3 jusqu'au bout, en rangeant les 55 cibles dans les cinq familles | Chaque cible actuelle a un nom sémantique |
-| 4 | Créer la collection `theme`, deux modes, et la renseigner en clair depuis les cibles actuelles | Le relevé n° 1 montre la collection, aucune valeur sombre encore |
-| 5 | Repointer les 306 liaisons de couleur des composants sur `theme` | Le relevé n° 5 montre `components` citant `theme` et `layouts` seulement |
-| 6 | Renseigner la colonne sombre de `theme` | Aucun token de `theme` ne se déclare `initial` |
-| 7 | Convertir `color-brands` en collection à modes, une colonne par marque, et supprimer `color-brand-tokens` | Le relevé n° 3 ne montre plus de colonne morte |
-| 8 | Aligner les trois rôles `secondary` divergents, ou doubler leur emplacement | La rampe joue le même rôle au même cran dans les six marques |
-| 9 | Ajouter les marques une à une | Chaque ajout est une colonne, aucun autre fichier ne bouge |
-| 10 | Exporter, générer la feuille, comparer les relevés | Le gain est chiffré |
+| 3 | Créer `scheme`, deux modes, en mirroitant les rampes actuelles, les deux colonnes visant la même source | La feuille CSS est inchangée à l'octet près, sauf les noms ajoutés |
+| 4 | Repointer les 306 liaisons de couleur des composants sur `scheme` | Le relevé n° 5 montre `components` citant `scheme` et `layouts` seulement |
+| 5 | Convertir `color-brands` en collection à modes, une colonne par marque, et y descendre les rôles de `color-brand-tokens` | Le relevé n° 3 mesure ce que l'axe des marques porte encore |
+| 6 | Ajouter les rampes accent, puis faire viser le sombre de `scheme` cran par cran | Le rendu sombre apparaît sans qu'aucun composant ne bouge |
+| 7 | Ajouter les marques une à une | Chaque ajout est une colonne |
+| 8 | Exporter, générer la feuille, comparer les relevés et la taille de feuille | Le gain est chiffré |
 
-L'étape 5 porte tout le travail manuel : 306 liaisons à refaire dans Figma. Les
-étapes 4 et 5 valent la peine d'être menées sur un seul composant d'abord,
-`Alert` par exemple, qui concentre les citations brutes vers
-`primitives.colors.*`.
+L'étape 3 ne change rien au rendu, ce qui la rend sûre : les deux colonnes de
+`scheme` visent d'abord la même source. L'étape 4 porte tout le travail manuel,
+306 liaisons à refaire dans Figma, et vaut d'être menée sur `Alert` d'abord, qui
+concentre les citations brutes vers `primitives.colors.*`.
+
+Le sombre n'existe qu'à l'étape 6, et il n'est alors qu'un changement de source
+dans une seule collection.
 
 ## 10. Ce qui peut rater
 
 **Le plafond de modes.** Six marques dans une collection supposent une offre qui
-l'autorise. À lire avant l'étape 7, pas après.
+l'autorise. Le plafond [dépend de
+l'offre](https://forum.figma.com/suggest-a-feature-11/launched-all-plans-should-offer-more-than-4-variable-modes-13979),
+avec des valeurs que les sources secondaires citent de façon contradictoire, et
+il se lit dans l'interface de l'équipe avant l'étape 5.
 
-**Le repointage de masse.** L'étape 5 casse le rendu de tout composant dont une
-liaison est oubliée. Une page de contrôle qui affiche les quatre combinaisons de
-marque et de mode sert de témoin, et le relevé n° 5 dit ce qui reste cité en
-dehors de `theme`.
+**Le repointage de masse.** L'étape 4 casse le rendu de tout composant dont une
+liaison est oubliée. Une page de contrôle qui affiche les combinaisons de marque
+et de mode sert de témoin, et le relevé n° 5 dit ce qui reste cité hors de
+`scheme`.
 
-**Le sombre qui n'est pas conçu.** Créer la colonne sombre ne décide pas des
-valeurs. L'étape 6 est un travail de conception, et l'architecture rend
-seulement visible ce qui reste à décider. Un token sombre non renseigné se
-déclare `initial` dans la feuille, et la commande le nomme.
+**Les rampes qui ne tiennent pas leur emploi.** Si un cran ne joue pas le même
+emploi d'une marque à l'autre, un composant qui le cite directement se dégrade
+sur cette marque. Les emplacements de rôle de la section 3.1 sont la réponse,
+mais encore faut-il que les composants les citent plutôt que le cran. Un relevé
+des crans cités directement par les composants, marque par marque, dira
+lesquels méritent un emplacement.
 
-**Les collections étendues.** Si la troisième voie de la section 3.4 est
-retenue, deux risques se cumulent : l'offre Enterprise, et une lecture du
-produit prouvée sur une simulation plutôt que sur un fichier réel. Un essai sur
-un vrai fichier étendu est le préalable.
+**Les collections étendues.** Si la première voie de la section 5.4 est retenue,
+deux risques se cumulent : l'offre Enterprise, et une lecture du produit prouvée
+sur une simulation plutôt que sur un fichier réel. Un essai sur un vrai fichier
+étendu est le préalable. Les collections étendues [ne respectent pas toujours la
+hiérarchie des
+modes](https://forum.figma.com/share-your-feedback-26/extended-collections-doesn-t-respect-mode-hierarchy-48123).
 
-**Le contraste en sombre.** Inverser une rampe ne garantit aucun rapport de
-contraste. Les couples de `theme` se vérifient en sombre comme en clair, marque
-par marque, ce qui fait douze jeux de couples à contrôler.
+**Le contraste en sombre.** Une rampe accent ne garantit aucun rapport de
+contraste. Les couples de `scheme` se vérifient dans les deux modes, marque par
+marque, ce qui fait douze jeux à contrôler.
+
+## 11. Ce qui reste à mesurer
+
+```sh
+node "docs/notes/Recherches/Archi Tokens Multi-marques/mesurer-duplication.mjs" <tokens.json>
+```
+
+Les nombres de la section 2 viennent du fichier réel. Trois restent à établir.
+
+Le nombre de noms de `scheme`. Soixante-seize est le compte des crans existants.
+Il baissera si des rampes utilitaires se révèlent inutiles aux composants, et
+montera avec les rampes accent qui apparaîtront comme sources sans apparaître
+comme noms.
+
+La taille de la feuille CSS. Deux axes croisés produisent des blocs `@scope` que
+le fichier actuel n'a pas, et `ucm tokens css` imprime ses règles, ses
+déclarations et ses octets à chaque écriture.
+
+Les crans cités directement par les composants, marque par marque, pour décider
+lesquels méritent un emplacement de rôle plutôt qu'un numéro.
 
 ## Sources
 
+- [Understanding the scale, Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale)
+- [Composing a palette, Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/composing-a-palette)
+- [How the system works, Material Design 3](https://m3.material.io/styles/color/system/how-the-system-works)
+- [Token names, Primer](https://primer.style/product/primitives/token-names/)
+- [Themes, Carbon Design System](https://carbondesignsystem.com/elements/themes/overview/)
+- [Design tokens, Atlassian Design System](https://atlassian.design/foundations/tokens/design-tokens)
+- [Color system, Spectrum](https://spectrum.adobe.com/page/color-system/)
 - [Modes for variables, Figma Learn](https://help.figma.com/hc/en-us/articles/15343816063383-Modes-for-variables)
 - [Overview of variables, collections, and modes, Figma Learn](https://help.figma.com/hc/en-us/articles/14506821864087-Overview-of-variables-collections-and-modes)
 - [Extend a variable collection, Figma Learn](https://help.figma.com/hc/en-us/articles/36346281624471-Extend-a-variable-collection)
 - [Extended collections doesn't respect mode hierarchy, forum Figma](https://forum.figma.com/share-your-feedback-26/extended-collections-doesn-t-respect-mode-hierarchy-48123)
 - [All plans should offer more than 4 variable modes, forum Figma](https://forum.figma.com/suggest-a-feature-11/launched-all-plans-should-offer-more-than-4-variable-modes-13979)
 - [Multi-mode setups, Supernova](https://www.supernova.io/guides/supernova-figma-variables-playbook/1-mastering-figma-variables/multi-mode-setups)
-- [What Are Figma Variables, Modes, and Collections, Supernova](https://www.supernova.io/blog/what-are-figma-variables-modes-collections)
 - [Using Figma Variables to build a Multi-Brand Design System, Rangle](https://rangle.io/blog/using-figma-variables-to-build-a-multi-brand-design-system)
-- [Figma variable modes in depth, zeroheight](https://zeroheight.com/learn/figma-variable-modes-in-depth-theming-dark-mode-and-brand-switching/)
-- [Color system, Spectrum](https://spectrum.adobe.com/page/color-system/)
 - [Design Tokens Resolver Module](https://www.designtokens.org/tr/drafts/resolver/)
-- [Design Tokens specification reaches first stable version](https://www.w3.org/community/design-tokens/2025/10/28/design-tokens-specification-reaches-first-stable-version/)
