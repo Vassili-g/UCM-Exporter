@@ -71,6 +71,9 @@ test('un composant homonyme invalide le verdict, une seconde notification du mê
 });
 
 const creer = (page) => page.getByRole('button', { name: 'Créer les règles d’usage', exact: true });
+// Deux notes portent cette classe, celle de la recherche et celle de la page
+// sans source, et une seule se montre à la fois.
+const noteDeCreation = (page) => page.locator('.creation-sans-source:visible');
 
 test('le bouton de création suit l’offre de la page : actif, inactif sous sa note, ou absent', async () => {
   const { page, envoyer } = await ouvrir();
@@ -80,19 +83,25 @@ test('le bouton de création suit l’offre de la page : actif, inactif sous sa 
 
     await envoyer(cible('b', 'creer'));
     assert.equal(await creer(page).isEnabled(), true);
-    assert.equal(await page.locator('.creation-sans-source').isVisible(), false);
+    assert.equal(await noteDeCreation(page).count(), 0);
 
     await envoyer(cible('c', 'remplir'));
     assert.equal(await creer(page).isEnabled(), true);
 
+    // La page n'a pas de source, et le parcours des autres pages court encore.
     await envoyer(cible('d', 'sans-source'));
     assert.equal(await creer(page).isVisible(), true);
     assert.equal(await creer(page).isDisabled(), true);
-    assert.match(await page.locator('.creation-sans-source').innerText(), /Aucune instance de « .componentRules »/);
+    assert.match(await noteDeCreation(page).innerText(), /Recherche de vos règles dans les autres pages/);
+
+    await envoyer(cible('d', 'document-sans-source'));
+    assert.equal(await creer(page).isVisible(), true);
+    assert.equal(await creer(page).isDisabled(), true);
+    assert.match(await noteDeCreation(page).innerText(), /Aucune instance de « .componentRules »/);
 
     await envoyer(cible('e', null));
     assert.equal(await creer(page).count(), 0);
-    assert.equal(await page.locator('.creation-sans-source').isVisible(), false);
+    assert.equal(await noteDeCreation(page).count(), 0);
   } finally {
     await page.close();
   }
