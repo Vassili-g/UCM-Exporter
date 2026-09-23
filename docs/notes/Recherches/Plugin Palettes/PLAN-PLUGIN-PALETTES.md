@@ -13,8 +13,9 @@ sont dans [Décisions](#décisions).
 
 ## Mode d'emploi
 
-- Les lots s'exécutent dans l'ordre. Un lot commence quand le précédent est
-  commité et poussé.
+- Les lots s'exécutent dans cet ordre : 0, 1, 2, 8, 3, 4, 5, 6, 7, 9. Le lot 8
+  garde son numéro et ses identifiants de cases (M6). Un lot commence quand le
+  précédent est commité et poussé.
 - Chaque case porte un identifiant, `L4.3` par exemple. Un commit cite les
   identifiants qu'il ferme, et la case se coche dans ce même commit.
 - Un lot marqué de sous-lots (`6a`, `6b`…) donne un commit par sous-lot.
@@ -94,7 +95,9 @@ devenu vrai avec le test qui le tient, CONTRIBUTING.md pour une commande. Le lot
 | # | Question | Décision | Effet sur la spécification |
 |---|---|---|---|
 | D-A | Où ranger le moteur de couleur | Paquet privé `packages/couleur`, nom `ucm-couleur`, servi en source. Il entre dans le kit le jour où un lecteur de `tokens.json` en a besoin, avec une montée de version | D7, [ARC-01], [ARC-04], §19 |
-| D-B | Quand extraire le socle commun | Après la planche, quand les deux plugins existent. D'ici là, le plugin Palettes part de copies des scripts d'UCM Exporter | D13, [ARC-09], §15 |
+| D-B | Quand extraire le socle commun | Maintenant et en entier : le lot 8 passe avant le lot 3, galerie comprise, et le plugin Palettes naît sur le socle. Remplace la décision d'extraire après la planche (M6) | D13, [ARC-09], §14.2, §15, §18 |
+| D-L | Où régler courbes, parts et seuil de profils confondus | Une configuration ouverte par le bouton en forme d'engrenage de l'en-tête, comme dans UCM Exporter, au sous-lot 4c. Deux onglets restent, Palettes et Planche (M6) | [UI-02], §8.3, §15 |
+| D-M | Une courbe éditée qui ne tient plus 600 à 3:1 ou 700 à 4,5:1 contre le cran 50 | Alerte non bloquante « courbe hors garantie », mesurée sur 360 teintes, deux profils, deux modes (M6) | [ENT-10] |
 | D-C | Abscisse du graphe de dérive | Le rang du cran, onze positions régulières. La courbe devient une ligne brisée qui passe par la dérive de chaque cran | [DER-01], [DER-16] |
 | D-D | Moment où la recette se range dans le fichier | Automatiquement, à la fin de chaque geste : relâcher une poignée, valider un champ, créer ou supprimer une palette. Jamais pendant un glisser | [REC-06], [DER-13] |
 | D12 | Nom des deux profils | `soft` et `vivid`, comme l'architecture. Renommés au lot 2, avant qu'une recette soit rangée dans un fichier : aucune migration de lecture. Après la première recette rangée, un renommage demandera une migration | D12, et chaque mention des profils |
@@ -273,6 +276,56 @@ Spécification : [section 7](./RECHERCHE-PLUGIN-PALETTES.md#7-la-recette),
 Critère : chaque exigence `VER` du lot et chaque règle de `[REC-05]` a un test
 vu rouge.
 
+## Lot 8 : extraction du socle
+
+Exécuté après le lot 2 et avant le lot 3 (D-B) : le plugin Palettes naît sur
+le socle. Spécification : [section 14.2](./RECHERCHE-PLUGIN-PALETTES.md#142-ce-qui-se-partage-avec-ucm-exporter).
+Paquet `packages/plugin-socle`, nom `ucm-plugin-socle`. Ce lot touche UCM
+Exporter : la preuve porte sur son DOM, les captures n'étant pas
+reproductibles.
+
+- [ ] **L8.1** Relevé avant, dans un worktree isolé, par un script hors du
+  dépôt : pour chaque état de la galerie d'UCM Exporter, rejoué par Playwright
+  dans Chromium, transitions neutralisées et attente de `data-galerie="pret"`,
+  relever le `innerHTML` de `#app` et le style calculé de chaque élément.
+  Garder `dist/ui.html`.
+
+### 8a : scripts, manifest, fenêtre
+
+- [ ] **L8.2** Build de l'interface, manifest, découvreur de tests et fenêtre
+  dans le socle, bornes et clé en paramètres. Fichiers relais laissés là où les
+  tests d'UCM Exporter les attendent (`buildUi.test.ts` fait un `require` de
+  `../scripts/build-ui.cjs`).
+- [ ] **L8.3** Relevé après, comparaison. Commit.
+
+### 8b : feuille de style, composants et en-tête
+
+- [ ] **L8.4** `socle.css` et règles propres à chaque plugin ; le build
+  concatène plusieurs feuilles dans un ordre écrit. `Button`, `Onglets`,
+  `Interrupteur`, `ResizeGrip` avec sa fonction d'envoi en paramètre. L'en-tête
+  et sa bascule vers la configuration, par le bouton en forme d'engrenage (D-L) ;
+  ce que l'en-tête affiche reste à chaque plugin.
+- [ ] **L8.5** La loi des styles lit toutes les feuilles et le socle.
+- [ ] **L8.6** Relevé après, comparaison. Commit.
+
+### 8c : galerie et tests communs
+
+- [ ] **L8.7** Banc de galerie dans le socle, `ETATS`, tailles et étapes en
+  paramètres ; `capturer.cjs` reste appelable depuis `packages/plugin/galerie`,
+  où `galerie.test.ts` le cherche. Logique des tests de styles, de gabarit et
+  de manifest en fonctions du socle ; UCM Exporter garde ses tests, qui les
+  appellent.
+- [ ] **L8.8** Relevé après, `npm run test:ui --workspace ucm-exporter-plugin`.
+  Commit.
+- [ ] **L8.9** AGENTS.md et CONTRIBUTING.md : carte du code, commandes de
+  galerie. Ouvrir M5.
+
+Critère : pour chaque état de la galerie d'UCM Exporter, `innerHTML` et styles
+calculés identiques avant et après. `dist/ui.html` identique, ou différence
+réduite à l'ordre des modules du bundle, montrée dans le commit. Un besoin que
+le plugin Palettes découvre plus tard se règle dans le socle, sous la même
+preuve.
+
 ## Lot 3 : squelette du plugin
 
 Spécification : [section 13](./RECHERCHE-PLUGIN-PALETTES.md#13-linterface),
@@ -280,13 +333,12 @@ Spécification : [section 13](./RECHERCHE-PLUGIN-PALETTES.md#13-linterface),
 Paquet `packages/plugin-palettes`, nom `ucm-palettes-plugin`.
 
 - [ ] **L3.1** Paquet, `tsconfig` avec les chemins de types d'UCM Exporter,
-  dépendance `ucm-couleur`, lock commité.
-- [ ] **L3.2** Copies paramétrées des scripts d'UCM Exporter : `build-ui.cjs`,
-  `build-manifest.cjs`, `run-tests.cjs`, `galerie/build-galerie.cjs`,
-  `galerie/capturer.cjs`, `galerie/theme-figma.css`. Paramètres : taille de la
-  galerie (600 × 720 et 440 × 520), étapes `survol` et `touche` en plus de
-  message, clic, saisie et erreurUi. Chaque copie dit en tête qu'elle sera
-  remplacée au lot 8.
+  dépendances `ucm-couleur` et `ucm-plugin-socle`, lock commité.
+- [ ] **L3.2** Scripts du socle : build de l'interface, manifest, découvreur
+  de tests et banc de galerie, appelés avec les paramètres du plugin : taille
+  de la galerie (600 × 720 et 440 × 520), étapes `survol` et `touche` en plus
+  de message, clic, saisie et erreurUi. Une étape qui manque au banc s'ajoute
+  au socle, sous la preuve de L8.1.
 - [ ] **L3.3** Manifest [ARC-05] avec un identifiant provisoire ; test du
   manifest : aucun domaine, aucune `enablePrivatePluginApi`, `documentAccess`
   exact.
@@ -297,14 +349,15 @@ Paquet `packages/plugin-palettes`, nom `ucm-palettes-plugin`.
 - [ ] **L3.5** `lecture.ts` : recette rangée, classement [REC-03], profil du
   document. `ecriture/recette.ts` : [REC-01], [REC-04], contrôle d'empreinte
   d'E13, `commitUndo` d'E12. `code.ts` : deux portes d'écriture [ARC-14].
-- [ ] **L3.6** Fenêtre [UI-01] : copie de `fenetre.ts` avec les bornes du
-  plugin et une clé propre.
-- [ ] **L3.7** Interface : trois onglets vides [UI-02], `textes.ts` pour tous
-  les textes du designer (D-J).
+- [ ] **L3.6** Fenêtre [UI-01] : celle du socle, avec les bornes du plugin et
+  une clé propre.
+- [ ] **L3.7** Interface : deux onglets vides et l'en-tête du socle, dont le
+  bouton en forme d'engrenage ouvre une configuration vide [UI-02] ;
+  `textes.ts` pour tous les textes du designer (D-J).
 - [ ] **L3.8** Galerie : `etats.cjs` avec Premier lancement, Recette future,
   Recette illisible ; les autres états de §13.3 déclarés `existe: false` avec
-  l'identifiant de la case qui les créera dans `attendu`. Test de la galerie
-  copié et adapté à ce format.
+  l'identifiant de la case qui les créera dans `attendu`. Test de la galerie :
+  la logique du socle, appelée par un test au nom du plugin.
 - [ ] **L3.9** Loi d'écriture ([ARC-12], [ARC-13]) : liste explicite des
   motifs (`figma.create*`, `.remove(`, `setPluginData`, `setSharedPluginData`,
   `appendChild`, `insertChild`, `.fills =`, `.strokes =`, `.name =`,
@@ -367,8 +420,29 @@ avec E22.
 - [ ] **L4.14** Protocole de relecture, points (c), (d) et (e), sur les
   captures ; les comptes d'objets entrent dans le message du commit.
 
-Critère : parcours de 4a et 4b vert dans `test:ui` ; DOM de chaque état de la
-galerie présent ; protocole passé.
+### 4c : configuration de la recette
+
+Spécification : [section 8.3](./RECHERCHE-PLUGIN-PALETTES.md#83-la-recette-commune),
+avec D-L et D-M.
+
+- [ ] **L4.15** Configuration derrière le bouton en forme d'engrenage : les deux
+  courbes, onze clartés chacune, les parts `soft` et `vivid`, le seuil
+  `profilsConfondus`. Chaque champ affiche le nombre de palettes qu'il
+  modifie [ENT-07]. Rangement à la validation d'un champ (D-D) ; un refus de
+  [REC-05] s'affiche sous le champ, et rien n'est rangé.
+- [ ] **L4.16** Moteur : garantie des courbes [ENT-10], fonction pure de
+  `ucm-couleur`, vue tenir et échouer. Temps du calcul mesuré par script, son
+  chiffre dans le commit.
+- [ ] **L4.17** Alerte « courbe hors garantie » sous la courbe fautive ;
+  l'aperçu suit chaque clarté validée.
+- [ ] **L4.18** Galerie : configuration de la recette, courbe hors garantie.
+  `test:ui` : ouvrir la configuration, changer une clarté, voir l'aperçu
+  changer, l'alerte sonner puis se taire.
+- [ ] **L4.19** Protocole de relecture, points (c), (d) et (e), sur la
+  configuration.
+
+Critère : parcours de 4a, 4b et 4c vert dans `test:ui` ; DOM de chaque état de
+la galerie présent ; protocole passé.
 
 ## Lot 5 : éditeur de dérive
 
@@ -462,13 +536,13 @@ Spécification : [section 9](./RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planc
 Critère : modèle et écriture testés hors de Figma ; M4 rendu par le mainteneur
 et repris.
 
-## Lot 7 : onglet Recette, import, export, rapport
+## Lot 7 : reste de la configuration, import, export, rapport
 
 Spécification : [section 8.3](./RECHERCHE-PLUGIN-PALETTES.md#83-la-recette-commune),
 [section 10](./RECHERCHE-PLUGIN-PALETTES.md#10-sortie-2--la-recette-et-le-rapport).
 
-- [ ] **L7.1** Onglet Recette : courbes, parts, fonds, seuils, câblage commun
-  ; nombre de palettes touchées par champ [ENT-05] [ENT-07] [ENT-08].
+- [ ] **L7.1** Configuration, à la suite de 4c : fonds, autres seuils, câblage
+  commun ; nombre de palettes touchées par champ [ENT-05] [ENT-07] [ENT-08].
 - [ ] **L7.2** Palette, sections repliées « Avancé » (parts propres, D-G
   visible) et « Rôles » (câblage propre).
 - [ ] **L7.3** Export de la recette [REC-07] ; import avec écart par
@@ -482,52 +556,9 @@ Spécification : [section 8.3](./RECHERCHE-PLUGIN-PALETTES.md#83-la-recette-comm
 
 Critère : scénario de L7.7 vert.
 
-## Lot 8 : extraction du socle
-
-Spécification : [section 14.2](./RECHERCHE-PLUGIN-PALETTES.md#142-ce-qui-se-partage-avec-ucm-exporter).
-Paquet `packages/plugin-socle`, nom `ucm-plugin-socle`. Ce lot touche UCM
-Exporter : la preuve porte sur son DOM, les captures n'étant pas
-reproductibles.
-
-- [ ] **L8.1** Relevé avant, dans un worktree isolé, par un script hors du
-  dépôt : pour chaque état des deux galeries, rejoué par Playwright dans
-  Chromium, transitions neutralisées et attente de `data-galerie="pret"`,
-  relever le `innerHTML` de `#app` et le style calculé de chaque élément.
-  Garder `dist/ui.html` des deux plugins.
-
-### 8a : scripts, manifest, fenêtre
-
-- [ ] **L8.2** Build de l'interface, manifest, découvreur de tests et fenêtre
-  dans le socle, bornes et clé en paramètres. Fichiers relais laissés là où les
-  tests d'UCM Exporter les attendent (`buildUi.test.ts` fait un `require` de
-  `../scripts/build-ui.cjs`).
-- [ ] **L8.3** Relevé après, comparaison. Commit.
-
-### 8b : feuille de style et composants
-
-- [ ] **L8.4** `socle.css` et règles propres à chaque plugin ; le build
-  concatène plusieurs feuilles dans un ordre écrit. `Button`, `Onglets`,
-  `Interrupteur`, `ResizeGrip` avec sa fonction d'envoi en paramètre.
-- [ ] **L8.5** La loi des styles lit toutes les feuilles et le socle.
-- [ ] **L8.6** Relevé après, comparaison. Commit.
-
-### 8c : galerie et tests communs
-
-- [ ] **L8.7** Banc de galerie dans le socle, `ETATS`, tailles et étapes en
-  paramètres ; `capturer.cjs` reste appelable depuis `packages/plugin/galerie`,
-  où `galerie.test.ts` le cherche. Logique des tests de styles, de gabarit et
-  de manifest en fonctions du socle ; chaque plugin garde son test.
-- [ ] **L8.8** Relevé après, `npm run test:ui` des deux plugins. Commit.
-- [ ] **L8.9** AGENTS.md et CONTRIBUTING.md : carte du code, commandes de
-  galerie. Ouvrir M5.
-
-Critère : pour chaque état des deux galeries, `innerHTML` et styles calculés
-identiques avant et après. `dist/ui.html` identique, ou différence réduite à
-l'ordre des modules du bundle, montrée dans le commit.
-
 ## Lot 9 : clôture
 
-- [ ] **L9.1** README du plugin : ouvrir, les trois onglets, les limites.
+- [ ] **L9.1** README du plugin : ouvrir, les deux onglets et la configuration, les limites.
 - [ ] **L9.2** AGENTS.md : l'introduction et les limites d'environnement
   parlent de deux plugins ; invariants de §14.4 tous présents avec leur test.
 - [ ] **L9.3** `ROADMAP.md` et `docs/README.md` à jour.
@@ -544,7 +575,8 @@ l'ordre des modules du bundle, montrée dans le commit.
 | M2 | L2.7 | Choisir une rédaction par message, ou en écrire une | tous ; les textes validés remplacent les provisoires au lot suivant |
 | M3 | L5.13 | Régler une dérive dans Figma : fluidité (§16.3), protocole points (a) et (b) | 6a |
 | M4 | L6.16 | Rejouer la recette de §16 et rendre ses constats | 7 |
-| M5 | L8.9 | Ouvrir UCM Exporter dans Figma, analyser un composant, publier | 9 |
+| M5 | L8.9 | Ouvrir UCM Exporter dans Figma, analyser un composant, publier | tous |
+| M6 | interlude du lot 2 | Trancher le placement de la configuration, la réaction à une courbe hors garantie et le moment de l'extraction du socle | aucun : l'ordre des lots en dépend |
 
 ## Journal des points mainteneur
 
@@ -571,3 +603,29 @@ rédaction du mainteneur. Préparé :
 alertes, la notice, les trois bloquants et les vingt-quatre refus de
 validation, et se termine par deux questions sur les messages sans geste
 franc. D'ici la réponse, l'interface emploie la rédaction A.
+
+### M6 : configuration de la recette et moment du socle
+
+Ouvert pendant le lot 2, à la demande du mainteneur, avec deux autres
+décisions : les profils s'appellent `soft` et `vivid` (D12), et le gamut de
+fabrication est sRGB.
+
+Constat préparé : la spécification prévoyait déjà l'édition des courbes, des
+parts et des seuils, dans un troisième onglet Recette, au lot 7. Aucune règle
+ne réagissait à une courbe qui ne tient plus la garantie de l'architecture,
+600 à 3:1 et 700 à 4,5:1 contre le cran 50 ; seules les promesses manquées des
+palettes existantes l'auraient montré.
+
+Questions posées : où placer la configuration, que faire d'une courbe hors
+garantie, et faut-il extraire le socle dès maintenant.
+
+Réponses du mainteneur :
+
+- la configuration s'ouvre par le bouton en forme d'engrenage, comme dans UCM
+  Exporter, dans un sous-lot 4c qui suit l'aperçu (D-L) ; le lot 7 garde le
+  reste de la configuration, l'import, l'export et le rapport ;
+- une courbe hors garantie produit une alerte non bloquante (D-M, `[ENT-10]`) ;
+- le socle s'extrait maintenant et en entier : le lot 8 passe avant le lot 3
+  (D-B).
+
+Traité par le commit qui porte cette entrée, avant le lot 8.

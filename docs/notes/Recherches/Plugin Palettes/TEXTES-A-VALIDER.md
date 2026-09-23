@@ -27,7 +27,7 @@ deux décimales, une distance ΔEok et une part de chroma à deux décimales.
 |---|---|---|---|
 | Où | {palette}, {mode} : {rôle} sur {autre membre} | {palette} · {rôle} sur {autre membre} ({mode}) | |
 | Quoi | Contraste {valeur} pour {seuil} demandé. Aucun cran de la rampe ne le tient. | Le contraste tombe à {valeur}, sous {seuil}, et aucun cran de la rampe ne le remonte. | |
-| Geste | Reliez {rôle} à une autre cible dans « Rôles », ou changez le fond de référence. | Choisissez une autre cible pour {rôle}, ou un autre fond dans l'onglet Recette. | |
+| Geste | Reliez {rôle} à une autre cible dans « Rôles », ou changez le fond de référence. | Choisissez une autre cible pour {rôle}, ou un autre fond dans la configuration. | |
 
 ### Promesse non vérifiable
 
@@ -45,7 +45,7 @@ deux décimales, une distance ΔEok et une part de chroma à deux décimales.
 |---|---|---|---|
 | Où | {palette}, crans {liste « mode cran »} | {palette} · soft et vivid, {liste « mode cran »} | |
 | Quoi | soft et vivid ne s'écartent que de {distance} ΔEok, sous {seuil}. | soft et vivid se confondent : {distance} ΔEok, pour un écart de {seuil} attendu. | |
-| Geste | Éloignez les parts de chroma des deux profils dans l'onglet Recette, ou reliez le rôle à un autre cran. | Écartez les parts de soft et vivid (onglet Recette), ou choisissez un autre cran pour ce rôle. | |
+| Geste | Éloignez les parts de chroma des deux profils dans la configuration, ou reliez le rôle à un autre cran. | Écartez les parts de soft et vivid (configuration), ou choisissez un autre cran pour ce rôle. | |
 
 ### Palettes proches
 
@@ -91,9 +91,17 @@ deux décimales, une distance ΔEok et une part de chroma à deux décimales.
 
 | Partie | A | B | Retenue |
 |---|---|---|---|
-| Où | Fond de référence {mode}, {hexa} | Onglet Recette · fond {mode} {hexa} | |
+| Où | Fond de référence {mode}, {hexa} | Configuration · fond {mode} {hexa} | |
 | Quoi | Clarté {clarté}, {plus sombre ou plus claire} que le cran 50 ({cran 50}) : les contrastes promis supposent ce cran. | Le fond est {plus sombre ou plus clair} que le cran 50 ({clarté} pour {cran 50}) : les promesses sont mesurées sur un autre fond que celui de l'architecture. | |
 | Geste | Rapprochez le fond du cran 50, ou acceptez des promesses mesurées sur ce fond. | Saisissez un fond de clarté {cran 50}, ou gardez celui-ci en connaissance de cause. | |
+
+### Courbe hors garantie
+
+| Partie | A | B | Retenue |
+|---|---|---|---|
+| Où | Courbe {mode}, cran {600 ou 700}, {profil} | Configuration · courbe {mode}, cran {600 ou 700} | |
+| Quoi | Contre le cran 50, le contraste descend à {valeur} à la teinte {teinte}°, pour {seuil} garanti. | Ce cran ne garantit plus {seuil} contre le cran 50 : {valeur} au pire, à {teinte}° en {profil}. | |
+| Geste | Éloignez la clarté du cran {600 ou 700} de celle du cran 50, ou gardez la courbe en connaissance de cause. | Rapprochez la clarté de ce cran de sa valeur par défaut ({défaut}). | |
 
 ## Bloquants
 

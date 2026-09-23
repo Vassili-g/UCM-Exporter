@@ -72,7 +72,7 @@ critique](./REVUE-CRITIQUE-PLUGIN-PALETTES.md).
 | D10 | La recette rangée dans le fichier Figma fait autorité ; le JSON exporté en est une copie | Un import de JSON est un geste explicite, précédé de l'écart |
 | D11 | Les couleurs produites sont des hexas sRGB à 8 bits par canal | Chaque contraste et chaque distance se calcule sur l'hexa, jamais sur le flottant |
 | D12 | Les profils se nomment `soft` et `vivid`, comme dans l'architecture | La recette, le moteur et la planche emploient ces deux noms. Aucune recette n'était rangée quand le nom a changé : la lecture n'a pas de migration pour `subtle` |
-| D13 | Une partie commune aux deux plugins est extraite dans un paquet privé, après la planche, quand les deux plugins existent | D'ici là, le plugin Palettes part de copies des scripts d'UCM Exporter. L'extraction ne change ni le DOM ni les styles calculés de l'interface d'UCM Exporter |
+| D13 | Une partie commune aux deux plugins est extraite dans un paquet privé, avant le squelette du plugin Palettes : build, manifest, tests communs, fenêtre, feuille de style, composants, en-tête à bouton de configuration et banc de galerie | Le plugin Palettes naît sur le socle, sans copie à remplacer. L'extraction ne change ni le DOM ni les styles calculés de l'interface d'UCM Exporter |
 | D14 | Tous les textes destinés au designer sont dans un seul module de l'interface | Les textes provisoires se remplacent d'un geste quand le mainteneur les a validés |
 | D15 | Une palette s'identifie par `p-` suivi de huit chiffres hexadécimaux, tirés au hasard par l'interface | Le moteur reste sans hasard : il reçoit l'identifiant |
 
@@ -93,7 +93,8 @@ paramètre de la recette.
 
 Les courbes et les parts de chroma sont des choix visuels : l'architecture les
 a fixées en comparant des rampes à l'écran, sans règle qui les impose. Elles se
-règlent dans l'onglet Recette en regardant la planche.
+règlent dans la configuration de la recette, en regardant l'aperçu et la
+planche.
 
 ## 5. Périmètre
 
@@ -508,7 +509,8 @@ dix-sept paires.
 
 ### 8.2 Les fonds de référence
 
-- `[ENT-05]` Deux hexas, `fonds.light` et `fonds.dark`, dans l'onglet Recette.
+- `[ENT-05]` Deux hexas, `fonds.light` et `fonds.dark`, dans la configuration
+  de la recette.
   Ils servent de fond de page pour tous les contrastes du mode, de couleur du
   rôle `on-solid` par défaut, et de fond aux sections de la planche.
 - `[ENT-06]` Un fond clair plus sombre que le cran 50 clair, ou un fond sombre
@@ -519,13 +521,21 @@ dix-sept paires.
 
 ### 8.3 La recette commune
 
-L'onglet Recette règle ce qui touche toutes les palettes : courbes, parts,
-fonds, seuils, câblage commun.
+La configuration de la recette règle ce qui touche toutes les palettes :
+courbes, parts, fonds, seuils, câblage commun. Le bouton en forme d'engrenage
+de l'en-tête l'ouvre, comme la configuration d'UCM Exporter, et le même
+composant du socle la porte (`[UI-02]`).
 
-- `[ENT-07]` Chaque champ de cet onglet affiche le nombre de palettes qu'il
-  modifie.
+- `[ENT-07]` Chaque champ de la configuration affiche le nombre de palettes
+  qu'il modifie.
 - `[ENT-08]` La liste des crans ne se modifie pas dans l'interface : elle
   passe par un import de recette.
+- `[ENT-10]` La configuration mesure la garantie des courbes : le cran 600
+  tient 3:1 et le cran 700 tient 4,5:1 contre le cran 50 de la même courbe,
+  gris, sur 360 teintes, les deux profils et les deux modes, sur les couleurs à
+  8 bits. Une courbe qui ne la tient plus produit l'alerte « courbe hors
+  garantie », qui nomme le cran, le mode, le profil, la teinte du pire cas et
+  son contraste. L'alerte n'empêche ni le rangement ni le dessin.
 
 ## 9. Sortie 1 : la planche
 
@@ -923,11 +933,12 @@ manquées sous le pli, contre `[VER-07]`.
 ### 13.1 Fenêtre et onglets
 
 - `[UI-01]` Taille par défaut 600 × 720, minimale 440 × 520, rangée sous une
-  clé propre au plugin par une copie de `packages/plugin/src/fenetre.ts`, que
-  la version du socle remplace à l'extraction.
-- `[UI-02]` Trois onglets : **Palettes**, **Recette**, **Planche**. L'onglet
-  Planche porte les gestes qui touchent au document : dessiner, redessiner,
-  exporter et importer la recette, exporter le rapport.
+  clé propre au plugin par la fenêtre du socle.
+- `[UI-02]` Deux onglets, **Palettes** et **Planche**, et un bouton en forme
+  d'engrenage dans l'en-tête, qui ouvre la configuration de la recette
+  (section 8.3) comme celui d'UCM Exporter ouvre la sienne. L'onglet Planche
+  porte les gestes qui touchent au document : dessiner, redessiner, exporter
+  et importer la recette, exporter le rapport.
 - `[UI-03]` La hiérarchie de l'information de
   [CONTRIBUTING.md](../../../../CONTRIBUTING.md#la-hiérarchie-de-linformation)
   s'applique : le verdict et l'action principale se lisent sans défiler.
@@ -993,6 +1004,8 @@ Exporter.
 | Premier lancement | Aucune recette rangée, recette par défaut proposée, aucune palette |
 | Premier lancement, palette créée | La première palette ouverte, recette rangée |
 | Palette en saisie | Aperçu à jour, rien de dessiné |
+| Configuration de la recette | Courbes, parts et seuils, avec le nombre de palettes que chaque champ modifie |
+| Courbe hors garantie | Alerte sous la courbe : cran, mode, profil, teinte du pire cas et contraste |
 | Hexa invalide | Le champ de référence refuse la saisie, aperçu inchangé |
 | Recette modifiée ailleurs | Rangement refusé, geste « Recharger » |
 | Notice `LEGACY` | Le document n'a pas de profil de couleur géré |
@@ -1048,12 +1061,12 @@ packages/couleur/                ucm-couleur, privé, le moteur pur    [ARC-01]
   src/empreinte.ts                 JSON canonique, encodeur UTF-8 et FNV-1a
   src/index.ts                     la porte du paquet, lue en source
 
-packages/plugin-socle/           privé, extrait après la planche      [ARC-02]
+packages/plugin-socle/           privé, extrait avant le squelette    [ARC-02]
   build/inline-ui.cjs              du bundle et du CSS à un HTML autonome
   build/manifest.cjs               le manifest de distribution
   build/run-tests.cjs              le découvreur de tests
   ui/socle.css                     échelle de texte, trame, rôles de couleur, replis sombres
-  ui/composants/                   Bouton, Onglets, Interrupteur, PoigneeDeRedimensionnement
+  ui/composants/                   Bouton, Onglets, Interrupteur, PoigneeDeRedimensionnement, En-tête
   fenetre.ts                       taille bornée, rangée dans clientStorage
   galerie/                         le banc d'états : build, captures, décalque du thème Figma
   tests/                           les lois communes : styles et DOM, gabarit, manifest
@@ -1108,16 +1121,15 @@ du chemin qui le précède.
 | `packages/plugin/src/fenetre.ts` | Extrait, clé et bornes en paramètres | Les bornes diffèrent, la logique est la même |
 | `packages/plugin/src/ui/styles.css`, variables et replis de thème | Socle extrait ; les règles propres à UCM Exporter restent dans son paquet | Une seule autorité sur le rendu dans les thèmes de Figma |
 | `Button`, `Onglets`, `Interrupteur`, `ResizeGrip` de `packages/plugin/src/ui/components/` | Extraits ; `ResizeGrip` reçoit sa fonction d'envoi | Aucun ne dépend d'un message d'UCM Exporter, sauf l'envoi |
+| `packages/plugin/src/ui/components/Header.ts`, le bouton de configuration | La bascule entre la vue de travail et la configuration est extraite ; ce qu'affiche l'en-tête reste à chaque plugin | Les deux plugins ouvrent leur configuration du même geste |
 | `packages/plugin/galerie/build-galerie.cjs`, `capturer.cjs`, `theme-figma.css` | Extraits, `ETATS` passé en paramètre | Le banc est générique, les états ne le sont pas |
 | `packages/plugin/tests/stylesUi.test.ts`, `buildUi.test.ts`, `manifestDistribution.test.ts` | Leur logique devient des fonctions du socle, appelées par un test dans chaque plugin | Chaque plugin garde un test à son nom, qui échoue chez lui |
 | `packages/plugin/src/messages.ts`, `packages/plugin/src/ui/pont.ts` | Patron recopié, pas de code partagé | Le vocabulaire des messages est propre à chaque plugin |
 | `packages/plugin/src/contract/localisation.ts` | Patron recopié | Les constats du plugin de palettes ne portent pas sur un contrat |
 | `packages/plugin/tests/loiDuDocumentIntact.test.ts` | Patron recopié, sens inversé | Le plugin de palettes écrit par nature ; sa loi borne les fichiers qui écrivent |
 
-- `[ARC-09]` L'extraction vient après la planche, quand les deux plugins
-  existent ; jusque-là, le plugin Palettes emploie des copies des scripts
-  d'UCM Exporter, et chaque copie dit en tête qu'elle sera remplacée.
-  L'extraction ne change rien à UCM Exporter : sa suite passe, et pour chaque
+- `[ARC-09]` L'extraction vient avant le squelette du plugin Palettes, qui
+  naît sur le socle. Elle ne change rien à UCM Exporter : sa suite passe, et pour chaque
   état de sa galerie, le `innerHTML` de `#app` et le style calculé de chaque
   élément sont identiques avant et après. `dist/ui.html` est identique, ou ne
   diffère que par l'ordre des modules du bundle. La preuve se fait sur le DOM,
@@ -1169,17 +1181,20 @@ cases et donne son critère de sortie. Chaque lot se termine par `npm test`,
 lot qui touche l'interface passe le protocole de relecture de
 [CONTRIBUTING.md](../../../../CONTRIBUTING.md#le-protocole-de-relecture).
 
+Les lots s'exécutent dans cet ordre : 0, 1, 2, 8, 3, 4, 5, 6, 7, 9. Le lot 8
+garde son numéro, et le plan ses identifiants de cases.
+
 | Lot | Contenu | Exigences |
 |---|---|---|
 | 0 | Mise en place : cette spécification corrigée, le dossier suivi par Git | aucune |
 | 1 | Moteur de couleur, préréglage Tailwind, dans `packages/couleur` | MOT-01 à MOT-24, MOT-26, MOT-27, ARC-01, ARC-04 |
 | 2 | Promesses, alertes, recette, empreinte | VER-03 à VER-11, ENT-06, ENT-09, REC-02 à REC-05 |
-| 3 | Squelette du plugin, lecture et rangement de la recette, galerie | ARC-03, ARC-05, ARC-06, ARC-12 à ARC-15, REC-01, REC-04, REC-10, UI-01, UI-02, UI-07, UI-08 |
-| 4 | Onglet Palettes, aperçu, gestion des palettes | ENT-01 à ENT-04, REC-06, UI-03 à UI-06, ARC-11 |
+| 8 | Extraction du socle commun, avant le squelette | ARC-02, ARC-09, ARC-10 |
+| 3 | Squelette du plugin sur le socle, lecture et rangement de la recette, galerie | ARC-03, ARC-05, ARC-06, ARC-12 à ARC-15, REC-01, REC-04, REC-10, UI-01, UI-02, UI-07, UI-08 |
+| 4 | Onglet Palettes, aperçu, gestion des palettes ; configuration des courbes, des parts et du seuil de profils confondus | ENT-01 à ENT-04, ENT-07, ENT-10, REC-06, UI-03 à UI-06, ARC-11 |
 | 5 | Éditeur de dérive | DER-01 à DER-16, ARC-08 |
 | 6 | Planche : modèle, écriture, fraîcheur, recette Figma | PLA-01 à PLA-25, MOT-25, ARC-07 |
-| 7 | Onglet Recette, import et export, rapport | ENT-05, ENT-07, ENT-08, REC-07 à REC-09, REC-11, VER-01, VER-02 |
-| 8 | Extraction du socle commun | ARC-02, ARC-09, ARC-10 |
+| 7 | Reste de la configuration, import et export, rapport | ENT-05, ENT-08, REC-07 à REC-09, REC-11, VER-01, VER-02 |
 | 9 | Clôture : README, invariants, feuille de route | invariants de la [section 14.4](#144-invariants) |
 
 ## 16. Recette dans Figma
@@ -1236,6 +1251,10 @@ décision parte de faits connus.
   réservé, et le protocole de relecture s'y applique avant la suite.
 - **L'extraction du socle touche UCM Exporter.** Le lot 8 ne passe que si le
   DOM et les styles calculés de sa galerie sont identiques.
+- **Le socle se dessine avec un seul consommateur.** Il est extrait avant que
+  le plugin Palettes existe : une frontière mal placée se corrigera quand le
+  second plugin l'emploiera, et cette correction touchera encore UCM Exporter,
+  sous la même preuve.
 
 ## 19. Consignes pour l'agent
 

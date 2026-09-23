@@ -158,9 +158,9 @@ L'architecture la range dans la recette, commune à toutes, et la section
 suivante disait « l'écran ne les modifie pas », puis « l'étape 1 sert aussi à
 les régler ».
 
-Correction : deux niveaux de réglage, dans deux onglets. L'onglet Recette
-règle ce qui touche toutes les palettes et l'annonce ; l'onglet Palettes ne
-règle que la palette ouverte ([section 8](./RECHERCHE-PLUGIN-PALETTES.md#8-les-entrées)).
+Correction : deux niveaux de réglage. La configuration de la recette,
+ouverte par le bouton en forme d'engrenage, règle ce qui touche toutes les
+palettes et l'annonce ; l'onglet Palettes ne règle que la palette ouverte ([section 8](./RECHERCHE-PLUGIN-PALETTES.md#8-les-entrées)).
 
 ### F5. Les « quatorze promesses » étaient ambiguës
 
