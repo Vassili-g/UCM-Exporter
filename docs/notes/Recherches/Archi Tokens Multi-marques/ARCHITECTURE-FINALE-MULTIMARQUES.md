@@ -1,10 +1,11 @@
 # L'architecture de tokens multi-marques
 
 Ce document propose la forme des tokens du nouveau design system : six marques,
-un mode clair et un mode sombre, deux profils de couleur par rampe, doux et
-vibrant. Le détail des arguments est dans [la
+un thème clair et un thème sombre, deux profils de couleur par rampe, `soft` et
+`vivid`. Le détail des arguments est dans [la
 recherche](./RECHERCHE-ARCHI-MULTIMARQUES.md) et [la revue
-critique](./SYNTHESE-CRITIQUE-ARCHI-MULTIMARQUES.md). L'outil qui fabrique les
+critique](./SYNTHESE-CRITIQUE-ARCHI-MULTIMARQUES.md), qui emploient encore
+l'ancien nom `scheme` de la collection `theme`. L'outil qui fabrique les
 palettes fait l'objet d'une [recherche séparée](../Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md).
 
 Chaque nombre cité se rejoue avec un script de ce dossier :
@@ -28,13 +29,14 @@ donne donc le même contraste contre le fond de page, quelle que soit la couleur
 | 700 | 5,23 à 6,79 | texte (seuil 4,5:1) |
 | 800 | 7,45 à 9,50 | texte appuyé |
 
-Ces bornes valent sur les 360 teintes, les deux profils et les deux modes. Un
-composant peut citer `primary.700` ou `success.700` pour un texte dans toutes
-les marques.
+Ces bornes valent sur les 360 teintes, les deux profils et les deux thèmes. Un
+composant peut citer `theme.primary.vivid.700` ou `theme.success.soft.700` pour
+un texte dans toutes les marques.
 
-Le mode sombre a sa propre courbe, avec les mêmes numéros. Le cran 50 est le fond
-de page dans les deux modes : le plus clair en clair, le plus sombre en sombre.
-Un texte lié une fois à `primary.700` reste lisible dans les deux modes.
+Le thème sombre a sa propre courbe, avec les mêmes numéros. Le cran 50 est le
+fond de page dans les deux thèmes : le plus clair en clair, le plus sombre en
+sombre. Un texte lié une fois à `theme.primary.vivid.700` reste lisible dans les
+deux thèmes.
 
 | Cran | 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 950 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -51,42 +53,97 @@ et son cran 500 y va de 2,2:1 à 6,9:1.
 | Collection | Modes | Contenu |
 |---|---|---|
 | `primitives` | aucun | Ce que les marques partagent : le neutre, les quatre utilitaires, les espacements, les durées |
-| `brand` | un par marque | Ce qui change d'une marque à l'autre : ses rampes de couleur, sa couleur exacte, le câblage de ses rôles, ses réglages |
-| `scheme` | `light`, `dark` | Les noms que les composants citent. Chaque nom pointe vers sa valeur claire ou sa valeur sombre |
+| `brand` | un par marque | Ce qui change d'une marque à l'autre : ses rampes de couleur, sa couleur exacte, le câblage de ses rôles |
+| `theme` | `light`, `dark` | Les noms que les composants citent. Chaque nom pointe vers sa valeur claire ou sa valeur sombre |
 | `components` | aucun | Les tokens de composants |
 
-**Le neutre est une palette fixe et grise**, commune aux marques. Il n'a qu'un
-profil. Les quatre utilitaires sont eux aussi communs, comme dans le Playground.
-Chacune de ces rampes existe en deux jeux dans `primitives`, un par courbe :
-`scheme.neutral.700` pointe vers `primitives.neutral.light.700` en clair et vers
-`primitives.neutral.dark.700` en sombre.
+Deux collections portent chacune un axe, et Figma choisit le mode de chaque
+collection séparément. Une maquette pose donc une marque et un thème sans que
+l'un dépende de l'autre. Une collection unique à douze modes, six marques fois
+deux thèmes, dépasserait les dix modes par collection de l'offre Professional.
 
-**Tout ce qui dépend de la marque va dans `brand`.** Figma choisit le mode de
-chaque collection séparément. Deux collections à six marques pourraient donc
-afficher la palette de la marque A avec les réglages de la marque B dans la même
-maquette.
+L'export dérive l'attribut HTML d'un axe du nom de sa collection : `brand`
+donne `data-brand` et `theme` donne `data-theme`, sans réglage dans
+`ucm.config.json`.
 
-**Un composant ne cite jamais `brand` pour une couleur**, il cite `scheme`.
+### Le chemin d'une couleur
+
+Une couleur se nomme dans cet ordre : famille, profil, thème, cran.
+
+```text
+primitives.neutral.light.700              le neutre, un seul profil
+primitives.success.soft.light.700         un utilitaire
+brand.palette.primary.vivid.dark.700      une rampe de marque
+```
+
+**Le neutre est une palette fixe et grise**, commune aux marques, avec un seul
+profil. **Les quatre utilitaires**, `success`, `warning`, `info` et `danger`,
+sont communs aux marques et portent les deux profils. Chaque rampe existe en
+deux jeux, un par courbe.
+
+**Tout ce qui dépend de la marque va dans `brand`.** Deux collections à six
+modes pourraient afficher la palette de la marque A avec les réglages de la
+marque B dans la même maquette.
+
+**Un composant ne cite jamais `brand` ni `primitives` pour une couleur**, il
+cite `theme`.
+
+### Ce que `theme` expose
+
+| Groupe | Exemple | Cible en clair | Variables |
+|---|---|---|---|
+| Neutre | `theme.neutral.700` | `primitives.neutral.light.700` | 11 |
+| Utilitaires | `theme.danger.vivid.700` | `primitives.danger.vivid.light.700` | 88 |
+| Rampes de marque | `theme.primary.soft.100` | `brand.palette.primary.soft.light.100` | 44 |
+| Rôles | `theme.role.primary.solid` | `brand.role.light.primary.solid` | 14 |
+| Exceptions | `theme.exception.…` | `brand.exception.light.…` | 0 |
+
+En sombre, la cible remplace `light` par `dark`. `theme` compte 157 variables à
+deux colonnes. `primitives` compte 198 couleurs : 22 pour le neutre, 176 pour
+les utilitaires. `brand` en compte 117 par marque : 88 crans, la couleur exacte et
+28 câblages de rôles.
 
 ### Les réglages et les exceptions de marque
 
-La revue critique propose de ranger dans `brand` des paramètres de marque et des
-exceptions de composants. Les chemins `brand.params` et `scheme.exception` sont
-le nommage que ce document propose pour ces deux idées. Ils restent à valider.
+Aucune marque ne diverge aujourd'hui. Les deux mécanismes ci-dessous n'ont donc
+aucune variable, et leurs noms sont réservés.
 
 Un **réglage de marque** est une valeur qui n'est pas une couleur et qui change
-d'une marque à l'autre. Le composant le cite directement.
+d'une marque à l'autre. Le thème ne le modifie pas, donc il ne passe pas par
+`theme`.
 
 ```text
 brand.params.radius.button        marque A → 4 px      marque B → 999 px
 brand.params.font.title           marque A → Inter     marque B → Playfair Display
+components.button.radius       →  brand.params.radius.button
 ```
 
 Une **exception** sert quand une marque veut un composant différent dans un seul
-mode. Exemple : la marque B veut un bouton principal gris foncé en sombre, et
-identique aux autres en clair. `brand` porte les deux valeurs de B, et
-`scheme.exception.button.primary.background` choisit la claire ou la sombre. Une
-exception ne se crée que le jour où une marque la demande.
+thème. Exemple : la marque B veut un bouton principal gris foncé en sombre, et
+identique aux autres en clair. `brand` porte les deux valeurs de chaque marque,
+et `theme` choisit la claire ou la sombre :
+
+```text
+brand.exception.light.button.primary.background   A et B → brand.role.light.primary.solid
+brand.exception.dark.button.primary.background    A      → brand.role.dark.primary.solid
+                                                  B      → primitives.neutral.dark.200
+theme.exception.button.primary.background         light → brand.exception.light.button.primary.background
+                                                  dark  → brand.exception.dark.button.primary.background
+components.button.primary.background           →  theme.exception.button.primary.background
+```
+
+Une exception fonctionne comme un rôle réservé à un composant. Les six marques
+en renseignent les deux valeurs, y compris celles qui gardent le rôle commun.
+
+Trois règles permettent d'ajouter l'un ou l'autre sans toucher à un composant
+publié :
+
+1. `brand` est la seule collection qui porte l'axe des marques. Un réglage ou
+   une exception s'y ajoute ; aucune seconde collection à six modes ne se crée.
+2. Chaque propriété d'un composant Figma est liée à une variable de
+   `components`. Ajouter un réglage ou une exception repointe cette variable, et
+   le composant ne change pas.
+3. Un réglage ou une exception se crée le jour où une marque le demande.
 
 ## 3. Fabriquer la palette d'une marque
 
@@ -94,7 +151,7 @@ exception ne se crée que le jour où une marque la demande.
 
 Le designer donne la couleur de marque en hexa. Chaque cran de la rampe prend :
 
-- sa clarté sur la courbe du mode ;
+- sa clarté sur la courbe du thème ;
 - sa teinte selon la règle de la section 3.3 ;
 - sa chroma, c'est-à-dire sa vivacité, en part du maximum que l'écran affiche à
   cette clarté et à cette teinte.
@@ -103,21 +160,26 @@ Une chroma fixe sortirait de ce que l'écran affiche aux deux bouts de la rampe,
 et elle rendrait un jaune et un bleu inégalement vifs, parce que leurs maximums
 diffèrent.
 
-### 3.2 Les profils doux et vibrant
+### 3.2 Les profils `soft` et `vivid`
 
 Les deux profils ont la même clarté, donc les mêmes contrastes. Ils diffèrent
-par la part de chroma, 0,45 pour le doux et 0,95 pour le vibrant, valeurs à
-régler à l'œil.
+par la part de chroma, 0,45 pour `soft` et 0,95 pour `vivid`, valeurs à régler
+à l'œil. Les rampes de marque et les utilitaires portent les deux profils ; le
+neutre n'en a qu'un.
 
-**Chaque profil peut avoir sa propre teinte.** Un bleu vibrant peut tirer vers
-le violet quand le bleu doux reste neutre. Les contrastes de la section 1 sont
+Un profil règle l'insistance d'un élément. `soft` sert à un élément répété ou
+secondaire, comme un badge présent vingt fois à l'écran. `vivid` sert à un
+élément qui doit être remarqué, comme une alerte.
+
+**Chaque profil peut avoir sa propre teinte.** Un bleu `vivid` peut tirer vers
+le violet quand le bleu `soft` reste neutre. Les contrastes de la section 1 sont
 mesurés sur les 360 teintes, donc ce choix ne les change pas.
 
-Les deux profils se posent dans la même maquette, un encart doux à côté d'un
-bouton vibrant. Aux crans 50, 100 et 950, l'écart de chroma entre les deux
-descend sous 0,02 pour certaines teintes, et les deux profils s'y confondent. Ce
-seuil de 0,02 est un réglage à calibrer à l'œil. L'outil de génération signale
-ces crans.
+Aux crans 50, 100 et 950, l'écart de chroma entre les deux profils descend sous
+0,02 pour certaines teintes, et les deux profils s'y confondent. Un fond pâle
+`soft` et un fond pâle `vivid` sont alors presque identiques ; les profils se
+distinguent sur les crans 500 à 800. Ce seuil de 0,02 est un réglage à calibrer
+à l'œil. L'outil de génération signale ces crans.
 
 ### 3.3 La dérive de teinte
 
@@ -192,8 +254,12 @@ régénérée plus tard reste identique. Il contient :
 - la liste des crans et les deux courbes de clarté ;
 - les parts de chroma des deux profils ;
 - pour chaque rampe, la couleur de départ et ses teintes aux bouts, par profil ;
-- le gamut de sortie, sRGB au départ ;
+- le gamut de sortie, sRGB ;
 - la liste des crans retouchés à la main, que la régénération n'écrase pas.
+
+Les couleurs sortent en sRGB. Display P3 est écarté : il changerait toutes les
+valeurs, et un écran sRGB ne montre pas la différence au designer qui les
+choisit.
 
 ## 4. Les rôles
 
@@ -203,14 +269,18 @@ claire ne remplit pas un bouton avec son cran 700 sans perdre son identité, une
 autre mène avec sa couleur secondaire.
 
 ```text
-scheme.role.primary.solid
-    marque A → brand.palette.primary.vivid.700
-    marque B → brand.palette.secondary.vivid.700
-    marque C → brand.identity.primary
+theme.role.primary.solid        light → brand.role.light.primary.solid
+                                dark  → brand.role.dark.primary.solid
+
+brand.role.light.primary.solid  marque A → brand.palette.primary.vivid.light.700
+                                marque B → brand.palette.secondary.vivid.light.700
+                                marque C → brand.identity.primary
 ```
 
-Sept rôles pour `primary`, autant pour `secondary`. Le câblage par défaut tient
-chaque promesse sur les 360 teintes, les deux profils et les deux modes.
+Sept rôles pour `primary`, autant pour `secondary`. Chaque marque câble ces
+quatorze rôles une fois par thème, soit 28 variables dans sa colonne de `brand`.
+Le câblage par défaut tient chaque promesse sur les 360 teintes, les deux
+profils et les deux thèmes.
 
 | Rôle | Emploi | Défaut | Promesse |
 |---|---|---|---|
@@ -238,7 +308,7 @@ Prendre la première ligne qui répond au besoin :
 |---|---|---|
 | Une autre couleur, pour toute la marque | Relier un rôle ailleurs dans `brand` | La marque B mène avec sa couleur secondaire |
 | Une autre valeur, sans être une couleur | Un réglage de marque | Boutons en pilule chez la marque B |
-| Une autre valeur dans un seul mode | Une exception | Bouton gris foncé en sombre chez la marque B |
+| Une autre valeur dans un seul thème | Une exception | Bouton gris foncé en sombre chez la marque B |
 | Un autre dessin | Une variante de composant | Une icône présente chez la marque A seulement |
 
 ## 6. Côté code
@@ -261,22 +331,24 @@ Environ cinq décisions : la couleur primaire et la secondaire en hexa, leurs
 teintes de bout sombre si la proposition ne convient pas, et les rôles à relier
 ailleurs quand un contrôle refuse le câblage par défaut.
 
+Une nouvelle colonne de mode dans Figma recopie les valeurs de la première. Une
+marque ajoutée paraît donc couverte avant d'être renseignée : relire chacune de
+ses variables avant de la publier.
+
 ## 8. Ce qui reste à décider
 
 - Les deux courbes de clarté, posées à l'œil.
 - Les parts de chroma des profils, et le seuil de 0,02 qui dit où deux profils
   se confondent.
 - Les teintes de bout sombre proposées par défaut, famille par famille.
-- sRGB ou Display P3 : P3 rend le vibrant plus vif, et change toutes les valeurs.
-- Les utilitaires : communs à toutes les marques, ou teintés par marque.
 - Les contrôles automatiques sur `tokens.json` : graphe d'alias, couverture de
-  chaque marque et de chaque mode, promesses des rôles. Aucun n'est écrit.
+  chaque marque et de chaque thème, promesses des rôles. Aucun n'est écrit.
 
 Avant d'étendre à la bibliothèque, un prototype à six marques éprouve les cas
 limites : un jaune clair, un bleu très sombre, une teinte très vive, une marque
 presque grise. Il pose un bouton plein et son survol, une alerte, un champ avec
-focus, un libellé long, une exception en sombre, un élément doux à côté d'un
-élément vibrant.
+focus, un libellé long, une exception en sombre, un élément `soft` à côté d'un
+élément `vivid`.
 
 ## Sources
 

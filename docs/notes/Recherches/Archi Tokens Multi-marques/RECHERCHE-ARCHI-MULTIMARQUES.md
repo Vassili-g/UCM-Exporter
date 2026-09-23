@@ -1,5 +1,9 @@
 # Architecture de tokens multi-marques, en clair et en sombre
 
+La forme retenue est dans
+[ARCHITECTURE-FINALE-MULTIMARQUES.md](./ARCHITECTURE-FINALE-MULTIMARQUES.md).
+La collection que ce document nomme `scheme` s'y appelle `theme`.
+
 Six marques à terme, deux modes d'affichage. Chaque marque doit s'afficher en
 clair et en sombre sur ses propres couleurs, et chaque composant doit suivre.
 

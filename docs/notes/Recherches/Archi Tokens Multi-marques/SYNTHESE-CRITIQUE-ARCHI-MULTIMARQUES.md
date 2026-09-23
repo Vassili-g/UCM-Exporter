@@ -1,5 +1,10 @@
 # Revue critique de l’architecture de tokens multi-marques
 
+La forme retenue est dans
+[ARCHITECTURE-FINALE-MULTIMARQUES.md](./ARCHITECTURE-FINALE-MULTIMARQUES.md).
+La collection que cette revue nomme `scheme` s’y appelle `theme`, et le profil
+doux s’y nomme `soft`.
+
 La [recherche](./RECHERCHE-ARCHI-MULTIMARQUES.md) identifie correctement le
 problème du Playground : la majorité des couleurs de composants contournent la
 collection qui porte les marques. Sa proposition de séparer marque et mode
