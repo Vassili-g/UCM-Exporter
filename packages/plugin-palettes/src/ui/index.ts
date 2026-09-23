@@ -13,6 +13,7 @@ import { createOnglets } from 'ucm-plugin-socle/src/ui/Onglets';
 import { createResizeGrip } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
 import type { PluginMessage } from '../messages';
+import { createConfiguration } from './configuration';
 import { createFrontiere } from './frontiere';
 import { createOngletPalettes } from './ongletPalettes';
 import { versSandbox } from './pont';
@@ -55,8 +56,12 @@ const travail = document.createElement('div');
 travail.className = 'page-stack colonne';
 travail.append(onglets.liste, ongletPalettes.element, panneauPlanche);
 
-const configuration = document.createElement('div');
-configuration.className = 'page-stack';
+const panneauDeConfiguration = createConfiguration({
+  lire: () => ongletPalettes.recette(),
+  previsualiser: (recette) => ongletPalettes.previsualiser(recette),
+  appliquer: (recette) => ongletPalettes.appliquer(recette),
+});
+const configuration = panneauDeConfiguration.element;
 configuration.hidden = true;
 
 function bascule(): ElementsDeBascule {
@@ -64,6 +69,7 @@ function bascule(): ElementsDeBascule {
 }
 
 function ouvrirConfiguration(): void {
+  panneauDeConfiguration.afficher();
   montrerConfiguration(bascule());
   titre.textContent = TEXTES.titreConfiguration;
 }
@@ -80,6 +86,7 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   if (!message) return;
   if (message.type === 'etat' && frontiere.accepterEtat(message)) {
     ongletPalettes.afficher(message.classement, message.profil);
+    panneauDeConfiguration.afficher();
   } else if (message.type === 'selection' && frontiere.accepterSelection(message)) {
     ongletPalettes.recevoirSelection(message.lecture);
   } else if (message.type === 'rangement') {

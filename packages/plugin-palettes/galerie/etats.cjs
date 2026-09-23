@@ -68,6 +68,14 @@ function rangee(palettes, modifier = (recette) => recette) {
 const BLEU = palette('p-3fa2c91e', 'Bleu', '#1E6FD9');
 const JAUNE = palette('p-08b7d4a0', 'Jaune', '#FACC15');
 
+/** Trois palettes que la configuration ne touche pas toutes : parts du designer, parts grises. */
+const TROIS_PALETTES = [
+  BLEU,
+  { ...JAUNE, parts: { soft: 0.3, vivid: 0.8, origine: 'designer' } },
+  palette('p-5c1d0e77', 'Ardoise', '#6B7280'),
+];
+const ouvrirLaConfiguration = { clic: '[aria-label="Ouvrir la configuration"]' };
+
 /** La courbe claire descend à 0,55 au cran 700 : text sur surface manque 4,5 en clair. */
 const cranSeptCentsPlusClair = (recette) => {
   const light = [...recette.courbes.light];
@@ -203,9 +211,27 @@ const ETATS = [
       { message: { type: 'rangement', demande: 3, issue: { issue: 'rangee', empreinte: '9b41d0e2' } } },
     ],
   },
+  {
+    id: 'configuration-de-la-recette',
+    titre: 'Configuration de la recette',
+    quand: 'Le designer ouvre l’engrenage sur un fichier de trois palettes, dont une aux parts propres et une grise.',
+    regarder: 'Les onze lignes des deux courbes, et le compte des palettes touchées : 3 par les courbes, 1 par les parts, 2 par le seuil.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee(TROIS_PALETTES)), ouvrirLaConfiguration],
+  },
+  {
+    id: 'courbe-hors-garantie',
+    titre: 'Courbe hors garantie',
+    quand: 'Le designer remonte le cran 700 clair à 0,56 : il ne tient plus 4,5 contre le cran 50.',
+    regarder: 'Les deux alertes sous la table, soft et vivid, avec la teinte du pire cas et son contraste.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee(TROIS_PALETTES)),
+      ouvrirLaConfiguration,
+      { saisie: { dans: '[data-mode="light"][data-rang="7"]', valeur: '0,56' } },
+    ],
+  },
   ...[
-    ['configuration-de-la-recette', 'Configuration de la recette', 'Courbes, parts et seuils, avec le nombre de palettes que chaque champ modifie.', 'L4.18'],
-    ['courbe-hors-garantie', 'Courbe hors garantie', 'Une clarté éditée ne tient plus 600 à 3:1 ou 700 à 4,5:1 contre le cran 50.', 'L4.18'],
     ['derive-liee-tailwind', 'Dérive liée, préréglage Tailwind', 'Une courbe, repères Tailwind confondus avec les poignées.', 'L5.4'],
     ['derive-deliee-libre', 'Dérive déliée et libre', 'Deux courbes, repères Tailwind visibles à l’écart.', 'L5.4'],
     ['reference-hors-rampe', 'Référence hors de la rampe', 'Une poignée masquée et sa note.', 'L5.4'],

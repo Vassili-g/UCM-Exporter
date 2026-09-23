@@ -187,7 +187,13 @@ Lignes simples, sans les trois parties :
   planche, signalé orphelin. » ;
 - recette absente : « Aucune recette dans ce fichier : la recette par défaut
   s'appliquera à la première palette. » ;
-- rangement : « rangement… », « rangé », « non rangé ».
+- rangement : « rangement… », « rangé », « non rangé » ;
+- configuration, compte d'un groupe : « aucune palette touchée », « 1 palette
+  touchée », « {n} palettes touchées » ;
+- configuration, nombre refusé : « « {saisie} » n'est pas un nombre : 0,5 ou
+  0.5 par exemple. » ;
+- configuration sans recette lisible : « La recette du fichier ne se lit pas :
+  sa configuration attend une recette lisible. »
 
 ## Questions pour le mainteneur
 

@@ -473,20 +473,20 @@ avec E22.
 Spécification : [section 8.3](./RECHERCHE-PLUGIN-PALETTES.md#83-la-recette-commune),
 avec D-L et D-M.
 
-- [ ] **L4.15** Configuration derrière le bouton en forme d'engrenage : les deux
+- [x] **L4.15** Configuration derrière le bouton en forme d'engrenage : les deux
   courbes, onze clartés chacune, les parts `soft` et `vivid`, le seuil
   `profilsConfondus`. Chaque champ affiche le nombre de palettes qu'il
   modifie [ENT-07]. Rangement à la validation d'un champ (D-D) ; un refus de
   [REC-05] s'affiche sous le champ, et rien n'est rangé.
-- [ ] **L4.16** Moteur : garantie des courbes [ENT-10], fonction pure de
+- [x] **L4.16** Moteur : garantie des courbes [ENT-10], fonction pure de
   `ucm-couleur`, vue tenir et échouer. Temps du calcul mesuré par script, son
   chiffre dans le commit.
-- [ ] **L4.17** Alerte « courbe hors garantie » sous la courbe fautive ;
+- [x] **L4.17** Alerte « courbe hors garantie » sous la courbe fautive ;
   l'aperçu suit chaque clarté validée.
-- [ ] **L4.18** Galerie : configuration de la recette, courbe hors garantie.
+- [x] **L4.18** Galerie : configuration de la recette, courbe hors garantie.
   `test:ui` : ouvrir la configuration, changer une clarté, voir l'aperçu
   changer, l'alerte sonner puis se taire.
-- [ ] **L4.19** Protocole de relecture, points (c), (d) et (e), sur la
+- [x] **L4.19** Protocole de relecture, points (c), (d) et (e), sur la
   configuration.
 
 Critère : parcours de 4a, 4b et 4c vert dans `test:ui` ; DOM de chaque état de

@@ -192,9 +192,11 @@ packages/couleur/        le moteur de couleur d'UCM Palettes : ucm-couleur, priv
   src/palette.ts           une palette lue contre sa recette, et ses parts grises
   src/promesses.ts         les quatorze paires, jugées par mode et par profil, et les emplois d'un cran
   src/alertes.ts           les alertes de conception et la notice
+  src/garantie.ts          la garantie des courbes : crans 600 et 700 contre le cran 50 gris, sur 360 teintes
   src/constats.ts          les sévérités et leur ordre d'affichage
   src/index.ts             la porte du paquet
   scripts/mesurer-temps.mjs  la médiane de cent palettes, hors des tests
+  scripts/mesurer-garantie.mjs  la médiane de vingt garanties des courbes, hors des tests
   tests/                   vecteurs figés, propriétés, et la loi de pureté
 
 packages/plugin-socle/   ce que les plugins partagent : ucm-plugin-socle, privé, lu en source
@@ -214,6 +216,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/lecture.ts           la recette rangée, classée, son empreinte, et le profil du document
   src/analyse.ts           une palette pour l'onglet : rampes, promesses, alertes et notices triées
   src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
+  src/configuration.ts     les champs de la configuration, et les palettes que chacun touche
   src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
@@ -223,6 +226,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/creation.ts       une palette neuve, par sa référence ou par la couleur de la sélection
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
   src/ui/frontiere.ts      la numérotation des demandes, et un seul rangement en vol
+  src/ui/configuration.ts  courbes, parts et seuil derrière l'engrenage, avec la garantie des courbes
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
   galerie/                 les états de l'interface, à la taille par défaut et à la taille minimale
   tests/                   dont la loi d'écriture, et interface/ pour Chromium

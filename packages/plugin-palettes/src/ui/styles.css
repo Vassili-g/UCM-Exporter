@@ -377,3 +377,35 @@
 .constat .btn {
   justify-self: start;
 }
+
+.config-groupe {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+/* Les deux courbes côte à côte, un cran par ligne : onze lignes tiennent en largeur minimale. */
+.table-courbes {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-courbes th {
+  padding: var(--espace-serre) var(--espace-controle) var(--espace-serre) 0;
+  color: var(--texte-second);
+  font-weight: 600;
+  text-align: left;
+}
+
+.table-courbes td {
+  padding: 2px var(--espace-controle) 2px 0;
+}
+
+.champ-nombre {
+  width: 72px;
+  height: var(--hauteur-secondaire);
+  font-variant-numeric: tabular-nums;
+}
+
+.champ-ligne .champ-nombre {
+  flex: 0 0 72px;
+}

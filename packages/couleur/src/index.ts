@@ -13,4 +13,5 @@ export * from './empreinte';
 export * from './palette';
 export * from './promesses';
 export * from './alertes';
+export * from './garantie';
 export * from './constats';

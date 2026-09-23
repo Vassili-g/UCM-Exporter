@@ -11,6 +11,7 @@ import {
   type Alerte,
   type DeriveRangee,
   type EmploiDUnCran,
+  type ManqueDeGarantie,
   type MembrePaire,
   type Mode,
   type Palette,
@@ -55,6 +56,42 @@ export const TEXTES = {
   selectionVide: 'Aucun calque n’est sélectionné dans Figma.',
   selectionSansRemplissage: 'Aucun calque sélectionné ne porte un remplissage uni, visible et opaque.',
 } as const;
+
+/** Les libellés de la configuration de la recette (section 8.3). */
+export const TEXTES_DE_CONFIGURATION = {
+  courbes: 'Courbes de clarté',
+  cran: 'Cran',
+  clair: 'Clair',
+  sombre: 'Sombre',
+  parts: 'Parts de chroma',
+  seuilProfilsConfondus: 'Seuil des profils confondus (ΔEok)',
+  sansRecette: 'La recette du fichier ne se lit pas : sa configuration attend une recette lisible.',
+} as const;
+
+/** Le nombre de palettes qu'un groupe de champs modifie ([ENT-07]). */
+export function palettesTouchees(nombre: number): string {
+  if (nombre === 0) return 'aucune palette touchée';
+  return nombre === 1 ? '1 palette touchée' : `${nombre} palettes touchées`;
+}
+
+/** Un nombre tel que la configuration l'affiche, à virgule. */
+export function nombreEcrit(valeur: number): string {
+  return String(valeur).replace('.', ',');
+}
+
+/** Une saisie qui n'est pas un nombre. */
+export function nombreInvalide(saisie: string): string {
+  return `« ${saisie} » n’est pas un nombre : 0,5 ou 0.5 par exemple.`;
+}
+
+/** La courbe qui ne tient plus la garantie de l'architecture ([ENT-10]). */
+export function constatDeGarantie(manque: ManqueDeGarantie): Constat {
+  return {
+    ou: `Courbe ${ADJECTIF_DU_MODE[manque.mode]}, cran ${manque.cran}, ${manque.profil}`,
+    quoi: `Contre le cran 50, le contraste descend à ${ecrireContraste(manque.contraste)} à la teinte ${manque.teinte}°, pour ${seuilEcrit(manque.seuil)} garanti.`,
+    geste: `Éloignez la clarté du cran ${manque.cran} de celle du cran 50, ou gardez la courbe en connaissance de cause.`,
+  };
+}
 
 /** L'indication discrète de rangement, au rang 3 (D-D). */
 export const STATUTS_DU_RANGEMENT = {

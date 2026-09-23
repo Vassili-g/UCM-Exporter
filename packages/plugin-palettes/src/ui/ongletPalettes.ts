@@ -64,6 +64,12 @@ export interface OngletPalettesUi {
   afficher(classement: Classement, profil: ProfilDuDocument): void;
   recevoirSelection(lecture: LectureDeSelection): void;
   poserStatut(statut: StatutDuRangement, refus: readonly Refus[]): void;
+  /** La recette affichée, `null` quand elle ne se lit pas. */
+  recette(): Recette | null;
+  /** Une recette en cours de saisie ailleurs, dans la configuration : l'aperçu la suit. */
+  previsualiser(recette: Recette): void;
+  /** Une recette validée ailleurs : elle se range. */
+  appliquer(recette: Recette): void;
 }
 
 function ligneDEtat(texte: string): HTMLParagraphElement {
@@ -389,6 +395,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       }
       creer(lecture.hexa, lecture.ramenee ? couleurRamenee(lecture.hexa) : null);
     },
+    recette: () => recette,
+    previsualiser(suivante) {
+      recette = suivante;
+      rendre();
+    },
+    appliquer: (suivante) => valider(suivante),
     poserStatut(suivant, refusDuSandbox) {
       statut = suivant;
       if (suivant === 'refuse') refus = recetteModifieeAilleurs();

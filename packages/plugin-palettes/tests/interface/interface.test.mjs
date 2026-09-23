@@ -346,7 +346,7 @@ test('un hexa impossible se signale sous le champ, et l’aperçu ne change pas'
     const avant = await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label');
     await page.locator('.champ-hexa').fill('#FACZ15');
     assert.equal(await page.locator('.champ-hexa').getAttribute('aria-invalid'), 'true');
-    assert.match(await page.locator('.ligne-reference + .field-error').textContent(), /n’est pas une couleur/);
+    assert.match(await page.locator('#panneau-palettes .ligne-reference + .field-error').textContent(), /n’est pas une couleur/);
     assert.equal(await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label'), avant);
   } finally {
     await page.close();
@@ -378,6 +378,61 @@ test('[UI-03] un nom de palette long ne pousse ni les gestes ni « Dessiner » h
       const boite = await locator.boundingBox();
       assert.ok(boite.x + boite.width <= largeur, JSON.stringify(boite));
     }
+  } finally {
+    await page.close();
+  }
+});
+
+test('[ENT-10] une clarté éditée fait sonner la garantie, se range à la validation, et l’aperçu la suit', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const avantLAperçu = await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label');
+    await page.getByRole('button', { name: 'Ouvrir la configuration' }).click();
+    const clair700 = page.getByRole('textbox', { name: 'Clair 700' });
+    assert.equal(await clair700.inputValue(), '0,5');
+    assert.equal(await page.locator('.config-groupe .constat-alerte').count(), 0);
+    const avant = await compte(page);
+    await clair700.fill('0,56');
+    assert.equal(await page.locator('.config-groupe .constat-alerte').count(), 2);
+    assert.equal(await compte(page), avant, 'la saisie ne range rien');
+    await clair700.press('Tab');
+    const demande = await prochaine(page, avant);
+    assert.equal(demande.type, 'ranger-recette');
+    assert.equal(demande.recette.courbes.light[7], 0.56);
+    await envoyer(page, rangee(demande.demande));
+    await clair700.fill('0,5');
+    assert.equal(await page.locator('.config-groupe .constat-alerte').count(), 0);
+    await clair700.fill('0,56');
+    await clair700.press('Tab');
+    await page.getByRole('button', { name: 'Retour' }).click();
+    assert.notEqual(await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label'), avantLAperçu);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[REC-05] une clarté qui casse la courbe se refuse sous le groupe, et rien n’est rangé', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    await page.getByRole('button', { name: 'Ouvrir la configuration' }).click();
+    const avant = await compte(page);
+    const clair700 = page.getByRole('textbox', { name: 'Clair 700' });
+    await clair700.fill('0,9');
+    await clair700.press('Tab');
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 20)));
+    assert.equal(await compte(page), avant);
+    assert.match(await page.locator('.config-groupe .field-error').first().textContent(), /ne descend pas/);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[ENT-07] chaque groupe de la configuration compte les palettes qu’il touche', async () => {
+  const page = await ouvrirSur('configuration-de-la-recette');
+  try {
+    await page.getByRole('button', { name: 'Ouvrir la configuration' }).click();
+    const comptes = await page.locator('.config-groupe .ligne-infos .ligne-secondaire').allTextContents();
+    assert.deepEqual(comptes, ['3 palettes touchées', '1 palette touchée', '2 palettes touchées']);
   } finally {
     await page.close();
   }
