@@ -20,4 +20,4 @@ packages/kit/fixtures/tokens/**/*.json text eol=lf
 
 # Le schéma DTCG figé garde les octets servis par designtokens.org : son README
 # en publie l'empreinte.
-packages/plugin/tests/dtcg-2025.10/*.json -text
+packages/plugin-exporter/tests/dtcg-2025.10/*.json -text

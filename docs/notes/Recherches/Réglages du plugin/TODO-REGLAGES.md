@@ -75,7 +75,7 @@ la raison donnée ci-dessus.
       chaque décision est tranchée. Une ligne revenue « En attente » arrête le
       lot qui en dépend : écrire la question dans le compte rendu.
 - [x] Constater que le code du plugin n'a pas bougé depuis la mesure :
-      `git diff --stat 94ec0a9 HEAD -- packages/plugin/src packages/plugin/galerie packages/plugin/tests`.
+      `git diff --stat 94ec0a9 HEAD -- packages/plugin-exporter/src packages/plugin-exporter/galerie packages/plugin-exporter/tests`.
       Vide à la rédaction de cette liste. Un diff non vide oblige à relire les
       faits de la [section 2](PLAN-REGLAGES.md#2-faits-vérifiés) que ces
       fichiers portent.
@@ -212,7 +212,7 @@ constater chaque échec, puis corriger.
 
 ### Document
 
-- [x] E3 : retirer de `packages/plugin/SPEC.md`, partie 3, la phrase selon
+- [x] E3 : retirer de `packages/plugin-exporter/SPEC.md`, partie 3, la phrase selon
       laquelle le libellé du bouton annonce l'ouverture du navigateur. Les
       libellés de `PUBLIER` ne changent pas.
 
@@ -322,9 +322,9 @@ appliquées : C2 (réglage global dans Général), P1 (onglet « Dépôts »).
 
 - [x] `CONTRIBUTING.md`, « La hiérarchie de l'information » : les deux phrases
       réécrites de [3.3, écran à une carte](PLAN-REGLAGES.md#33-questions-sur-la-séparation).
-- [x] `packages/plugin/SPEC.md` : « Contexte technique » et « Analyses et
+- [x] `packages/plugin-exporter/SPEC.md` : « Contexte technique » et « Analyses et
       publication ».
-- [x] `packages/plugin/README.md`, « Les deux commandes ».
+- [x] `packages/plugin-exporter/README.md`, « Les deux commandes ».
 - [x] `docs/guides/POUR-LES-DESIGNERS.md`, section 3 : l'ordre « tokens en
       premier » vaut quand la gestion des tokens est activée.
 - [x] `README.md` et `docs/README.md` : rendre « deux commandes » conditionnel
@@ -445,7 +445,7 @@ Le formulaire actuel reste l'interface de ce lot. La liste arrive au lot 3b.
       cite encore `src/config.ts` et `validateSettings()`, que `AUTORITES` de
       `tests/inventaireInvariants.test.ts` exige. Mettre à jour la ligne de
       `config.ts` dans la carte du code.
-- [x] `packages/plugin/SPEC.md`, partie 3 : stockage, règle du jeton, file
+- [x] `packages/plugin-exporter/SPEC.md`, partie 3 : stockage, règle du jeton, file
       d'écriture et sa limite entre deux fenêtres. L'énoncé en gras change :
       `ENONCES_SPEC` de `tests/inventaireInvariants.test.ts` change dans le
       même commit.
@@ -563,7 +563,7 @@ C4 (cartes dépliables), C5 (test de l'actif et du dépôt enregistré), C13
 ### Documents
 
 - [x] `docs/guides/POUR-LES-DESIGNERS.md`, « Configurer le dépôt ».
-- [x] `packages/plugin/README.md`, « Où l'export atterrit ».
+- [x] `packages/plugin-exporter/README.md`, « Où l'export atterrit ».
 
 ### Fin du lot
 
@@ -662,7 +662,7 @@ l'enregistrement même en export local), P2.
 
 ### Documents
 
-- [x] `packages/plugin/SPEC.md`, partie 3 ; `docs/guides/POUR-LES-DESIGNERS.md`.
+- [x] `packages/plugin-exporter/SPEC.md`, partie 3 ; `docs/guides/POUR-LES-DESIGNERS.md`.
 
 ### Fin du lot
 
@@ -675,7 +675,7 @@ Référence : [lot 6](PLAN-REGLAGES.md#lot-6-recette-dans-figma). Les mesures à
 deux fenêtres et entre application et navigateur ne se font pas, par décision
 du mainteneur ([4.3](PLAN-REGLAGES.md#43-la-clé-de-destination)).
 
-- [x] Préparer `packages/plugin/dist/` par `npm run build` et écrire dans le
+- [x] Préparer `packages/plugin-exporter/dist/` par `npm run build` et écrire dans le
       compte rendu les trois épreuves ci-dessous, avec les états de galerie qui
       leur correspondent.
 - [X] **[mainteneur]** Réglage des tokens désactivé : aucune carte ne clignote
@@ -688,8 +688,8 @@ du mainteneur ([4.3](PLAN-REGLAGES.md#43-la-clé-de-destination)).
 
 ## Clôture
 
-- [x] Relire `AGENTS.md`, `CONTRIBUTING.md`, `packages/plugin/SPEC.md`,
-      `packages/plugin/README.md`, `docs/guides/POUR-LES-DESIGNERS.md`,
+- [x] Relire `AGENTS.md`, `CONTRIBUTING.md`, `packages/plugin-exporter/SPEC.md`,
+      `packages/plugin-exporter/README.md`, `docs/guides/POUR-LES-DESIGNERS.md`,
       `README.md` et `docs/README.md` ; retirer toute description devenue
       fausse ou dupliquée, dont « repository connecté », « Supprimer le token
       enregistré » et `forge_du_jeton`.
@@ -929,7 +929,7 @@ propres lignes, par un index temporaire.
 
 ### L6
 
-`packages/plugin/dist/` est prêt : `npm run build` y a écrit `code.js`,
+`packages/plugin-exporter/dist/` est prêt : `npm run build` y a écrit `code.js`,
 `ui.html` et `manifest.json`. Le mainteneur charge ce dossier par « Import
 plugin from manifest » et passe les trois épreuves ci-dessous. Chacune a ses
 états de galerie, déjà relus hors de Figma ; la colonne de droite dit ce que
@@ -945,7 +945,7 @@ seule l'application ajoute.
 
 Relecture des sept documents. « repository connecté » et « Supprimer le token
 enregistré » ont disparu avec les lots 3c et 3a. `forge_du_jeton` reste dans
-`packages/plugin/SPEC.md`, partie 3 : la reprise des anciennes clés lit encore
+`packages/plugin-exporter/SPEC.md`, partie 3 : la reprise des anciennes clés lit encore
 cette clé, et la phrase décrit ce que le code fait. Deux descriptions y étaient
 devenues fausses, et sont corrigées : « le formulaire » pour la carte d'un
 dépôt, et l'écriture de `depotActif` à l'enregistrement d'un premier dépôt,

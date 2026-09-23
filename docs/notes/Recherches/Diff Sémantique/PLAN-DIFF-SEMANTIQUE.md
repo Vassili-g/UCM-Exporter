@@ -98,7 +98,7 @@ d'impact ; elles ne calculent pas encore le graphe inverse des alias.
 par `nodeId`. Le rapprochement d'ensembles complète cette règle par le chemin
 relatif lorsque les deux arbitres sont absents.
 
-`packages/plugin/tests/comparerTokens.ts` compare une migration précise du
+`packages/plugin-exporter/tests/comparerTokens.ts` compare une migration précise du
 format de tokens. Il admet seulement les différences décidées pour cette
 migration. Il reste un utilitaire de test et ne devient pas le comparateur
 générique.

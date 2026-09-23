@@ -147,7 +147,7 @@ test('le moteur n’écrit jamais dans le document Figma', () => {
     `${fautifs.length} appel(s) écriraient dans le document Figma. L'analyse et la `
       + `publication n'y écrivent pas ; un seul geste le fait, la création des règles `
       + `d'usage, et il vit dans src/template/ecriture.ts. Si cette règle doit changer, `
-      + `elle se change ici et dans packages/plugin/SPEC.md, jamais par un appel `
+      + `elle se change ici et dans packages/plugin-exporter/SPEC.md, jamais par un appel `
       + `ajouté ailleurs :\n`
       + fautifs.map((f) => `  ${f}`).join('\n'),
   );

@@ -7,7 +7,7 @@ Il ne dit pas ce que le produit garantit. Les règles que le code doit tenir son
 les invariants d'[AGENTS.md](./AGENTS.md#invariants), qui donnent pour chacune
 sa borne et son fichier autorité. Les deux spécifications portent leur
 raisonnement : [docs/format/FORMAT.md](./docs/format/FORMAT.md) pour la forme de ce qui est
-publié, [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) pour ce que le
+publié, [packages/plugin-exporter/SPEC.md](./packages/plugin-exporter/SPEC.md) pour ce que le
 plugin lit dans Figma. Lire la spécification concernée avant de modifier, et
 l'invariant avant de croire qu'une règle n'existe pas.
 
@@ -227,7 +227,7 @@ Quatre bornes, sans quoi la table ne tient pas :
 
 ### Regarder avant de conclure
 
-`packages/plugin/galerie/` rend chaque état de l’interface atteignable hors de
+`packages/plugin-exporter/galerie/` rend chaque état de l’interface atteignable hors de
 Figma : `etats.cjs` déclare, pour chacun, la suite exacte de messages qui le
 produit, et la galerie rejoue cette suite dans l’interface réelle que le build
 vient de produire. Rien n’y est redessiné.
@@ -282,7 +282,7 @@ Chaque paquet découvre ses tests par son `scripts/run-tests.cjs` ; le socle des
 plugins range le sien sous `build/`. Le script lance les fichiers
 `tests/*.test.ts` et `tests/*.test.mjs` de son dossier.
 
-Une loi de forme d’un contrat s’écrit dans `packages/plugin/tests/lois.ts` et
+Une loi de forme d’un contrat s’écrit dans `packages/plugin-exporter/tests/lois.ts` et
 nulle part ailleurs : elle s’applique alors du même geste à tous les scénarios
 existants. La raison de ce point unique, et celle qui interdit de commiter un
 `.contract.json` ici, sont dans [AGENTS.md](./AGENTS.md#vérification).
@@ -381,7 +381,7 @@ porte donc une altitude différente, et une seule fait autorité :
 | Endroit | Ce qu’il porte |
 |---|---|
 | `docs/format/FORMAT.md` | L’autorité sur la règle et son pourquoi, quand elle porte sur ce qui est publié |
-| `packages/plugin/SPEC.md` | L’autorité sur la règle et son pourquoi, quand elle porte sur ce que le plugin lit |
+| `packages/plugin-exporter/SPEC.md` | L’autorité sur la règle et son pourquoi, quand elle porte sur ce que le plugin lit |
 | `AGENTS.md` | La règle, sa borne, le fichier qui la porte, un lien vers la spécification |
 | Commentaire de code | Ce qui ne vaut qu’à cet endroit du code |
 | Nom de test | La clause vérifiable, une par test |

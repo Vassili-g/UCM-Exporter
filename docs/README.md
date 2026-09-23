@@ -7,7 +7,7 @@ quel ordre.
 
 ### Vous êtes designer et vous travaillez dans Figma
 
-1. [../packages/plugin/README.md](../packages/plugin/README.md) : où obtenir le
+1. [../packages/plugin-exporter/README.md](../packages/plugin-exporter/README.md) : où obtenir le
    plugin sur la Figma Community, ce que chacune de ses commandes écrit, et le
    réglage qui fait disparaître celle des tokens.
 2. [guides/POUR-LES-DESIGNERS.md](./guides/POUR-LES-DESIGNERS.md) : ce que le plugin attend
@@ -49,7 +49,7 @@ Vous n'avez besoin d'aucun autre document.
 2. [../CONTRIBUTING.md](../CONTRIBUTING.md) : les règles de code, de test et de
    rédaction.
 3. [format/FORMAT.md](./format/FORMAT.md) pour la forme publiée,
-   [../packages/plugin/SPEC.md](../packages/plugin/SPEC.md) pour ce que le
+   [../packages/plugin-exporter/SPEC.md](../packages/plugin-exporter/SPEC.md) pour ce que le
    plugin lit dans Figma.
 4. [../ROADMAP.md](../ROADMAP.md) pour la maturité et les limites connues.
 
@@ -68,8 +68,8 @@ autorité. Les autres y renvoient.
 |---|---|
 | [../CONCEPT.md](../CONCEPT.md) | Le problème résolu, les responsabilités et le [positionnement parmi les outils de design system](../CONCEPT.md#7-ucm-parmi-les-outils-de-design-system) |
 | [format/FORMAT.md](./format/FORMAT.md) | La forme de ce qui est publié, et ce que l'absence d'un champ signifie |
-| [../packages/plugin/README.md](../packages/plugin/README.md) | Où obtenir le plugin, ce que ses commandes écrivent, et ce qu'il ne fait pas |
-| [../packages/plugin/SPEC.md](../packages/plugin/SPEC.md) | Ce que le plugin lit dans Figma, ce qu'il élit, ce dont il avertit |
+| [../packages/plugin-exporter/README.md](../packages/plugin-exporter/README.md) | Où obtenir le plugin, ce que ses commandes écrivent, et ce qu'il ne fait pas |
+| [../packages/plugin-exporter/SPEC.md](../packages/plugin-exporter/SPEC.md) | Ce que le plugin lit dans Figma, ce qu'il élit, ce dont il avertit |
 | [format/COMPATIBILITE.md](./format/COMPATIBILITE.md) | Les classes de changement, la fenêtre de lecture, les états de la version du format de tokens et les responsabilités de migration |
 | [format/CHANGELOG-FORMAT.md](./format/CHANGELOG-FORMAT.md) | Ce que chaque version du contrat, et chaque version du format de tokens, a publié |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Les règles de code, de test, de message et de rédaction |

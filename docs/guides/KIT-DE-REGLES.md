@@ -13,7 +13,7 @@ Ce guide dit comment une équipe l'emploie, puis comment le mainteneur le vérif
 et le republie. La grammaire des règles est dans [FORMAT.md, section
 7](../format/FORMAT.md#7-intention-et-documentation-des-props), et le geste de
 création dans le [README du
-plugin](../../packages/plugin/README.md#documenter-les-règles-dusage).
+plugin](../../packages/plugin-exporter/README.md#documenter-les-règles-dusage).
 
 ## Employer le kit dans son fichier
 
@@ -84,5 +84,5 @@ FORMAT.md, section 7, change : un tag ajouté, un calque renommé.
    kit.
 
 Une republication garde l'adresse de la fiche. Si elle en change, remplacez
-l'URL dans `LIEN_DU_KIT` (`packages/plugin/src/ui/components/CarteComposant.ts`)
+l'URL dans `LIEN_DU_KIT` (`packages/plugin-exporter/src/ui/components/CarteComposant.ts`)
 et dans ce guide, le README du plugin, POUR-LES-DESIGNERS.md et FORMAT.md.

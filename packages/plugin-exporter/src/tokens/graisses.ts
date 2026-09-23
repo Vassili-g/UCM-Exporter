@@ -6,7 +6,7 @@
  * Figma réserve le scope `FONT_WEIGHT` aux `FLOAT` : une graisse `STRING` ne se
  * reconnaît qu'à son chemin et à ses valeurs. `poidsDeGraisse` du kit est la
  * seule table des noms, et ce module ne la recopie pas.
- * packages/plugin/SPEC.md énumère les règles appliquées ici.
+ * packages/plugin-exporter/SPEC.md énumère les règles appliquées ici.
  */
 import { poidsDeGraisse } from '@ucm-kit/core/format';
 

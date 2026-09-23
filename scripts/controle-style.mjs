@@ -368,7 +368,7 @@ export const AUTORITES = [
   'docs/format/CHANGELOG-FORMAT.md',
   'docs/guides/POUR-LES-DESIGNERS.md',
   'docs/guides/RECETTE.md',
-  'packages/plugin/SPEC.md',
+  'packages/plugin-exporter/SPEC.md',
 ];
 
 /**

@@ -79,7 +79,7 @@ Elles valent pour chaque lot et ne se recopient pas dans les lots.
 
 - Monter la version d'un paquet publié, ou publier.
 - Modifier le comportement d'UCM Exporter. Seul le lot 8 touche
-  `packages/plugin`, et il ne change pas son DOM.
+  `packages/plugin-exporter`, et il ne change pas son DOM.
 - Commiter un fichier qu'une autre session a créé ou modifié sans que le
   mainteneur l'ait dit.
 
@@ -97,6 +97,7 @@ devenu vrai avec le test qui le tient, CONTRIBUTING.md pour une commande. Le lot
 | D-A | Où ranger le moteur de couleur | Paquet privé `packages/couleur`, nom `ucm-couleur`, servi en source. Il entre dans le kit le jour où un lecteur de `tokens.json` en a besoin, avec une montée de version | D7, [ARC-01], [ARC-04], §19 |
 | D-B | Quand extraire le socle commun | Maintenant et en entier : le lot 8 passe avant le lot 3, galerie comprise, et le plugin Palettes naît sur le socle. Remplace la décision d'extraire après la planche (M6) | D13, [ARC-09], §14.2, §15, §18 |
 | D-L | Où régler courbes, parts et seuil de profils confondus | Une configuration ouverte par le bouton en forme d'engrenage de l'en-tête, comme dans UCM Exporter, au sous-lot 4c. Deux onglets restent, Palettes et Planche (M6) | [UI-02], §8.3, §15 |
+| D-N | Noms des dossiers de paquets | UCM Exporter passe de `packages/plugin` à `packages/plugin-exporter`, entre 8a et 8b ; son nom npm `ucm-exporter-plugin` ne change pas. Le moteur garde `packages/couleur` : il n'est pas un plugin. Le plugin de développement se réimporte dans Figma depuis le nouveau chemin du manifest | Chemins de §14 |
 | D-M | Une courbe éditée qui ne tient plus 600 à 3:1 ou 700 à 4,5:1 contre le cran 50 | Alerte non bloquante « courbe hors garantie », mesurée sur 360 teintes, deux profils, deux modes (M6) | [ENT-10] |
 | D-C | Abscisse du graphe de dérive | Le rang du cran, onze positions régulières. La courbe devient une ligne brisée qui passe par la dérive de chaque cran | [DER-01], [DER-16] |
 | D-D | Moment où la recette se range dans le fichier | Automatiquement, à la fin de chaque geste : relâcher une poignée, valider un champ, créer ou supprimer une palette. Jamais pendant un glisser | [REC-06], [DER-13] |
@@ -160,20 +161,20 @@ code.
 | E20 | [DER-09] détourne la touche Origine, que le motif clavier d'un curseur réserve au minimum | Origine et Fin gardent leur sens ; un bouton « Tailwind » à côté de chaque champ ramène la valeur du préréglage. Chaque poignée porte `role="slider"` et une `aria-valuetext` qui donne l'angle et la teinte |
 | E21 | [DER-13] : Ctrl+Z dans l'iframe | Actif seulement quand le focus est dans l'éditeur, hors d'un champ texte ; Cmd+Z sur Mac. Pile de cinquante réglages, sans rétablissement |
 | E22 | Hiérarchie : à 440 × 520, l'éditeur déplié repousse les promesses manquées sous le pli, contre [VER-07] | L'éditeur est replié par défaut sur une ligne : préréglage et deux angles, avec « Régler ». Le point (e) du protocole compte une rampe pour un objet |
-| E23 | Les chemins de §14.2 sont relatifs à `packages/plugin` | Les écrire depuis la racine du dépôt |
+| E23 | Les chemins de §14.2 sont relatifs à `packages/plugin-exporter` | Les écrire depuis la racine du dépôt |
 
 ## Correspondances utiles
 
 | Élément | Chemin dans le dépôt |
 |---|---|
-| Build de l'interface d'UCM Exporter | `packages/plugin/scripts/build-ui.cjs` |
-| Manifest distribuable | `packages/plugin/scripts/build-manifest.cjs` |
-| Découvreur de tests | `packages/plugin/scripts/run-tests.cjs` |
-| Fenêtre | `packages/plugin/src/fenetre.ts` |
-| Composants d'interface | `packages/plugin/src/ui/components/` |
-| Galerie | `packages/plugin/galerie/` et `packages/plugin/tests/galerie.test.ts` |
-| Loi du document intact | `packages/plugin/tests/loiDuDocumentIntact.test.ts` |
-| Patron du constat | `packages/plugin/src/contract/localisation.ts` |
+| Build de l'interface d'UCM Exporter | `packages/plugin-exporter/scripts/build-ui.cjs` |
+| Manifest distribuable | `packages/plugin-exporter/scripts/build-manifest.cjs` |
+| Découvreur de tests | `packages/plugin-exporter/scripts/run-tests.cjs` |
+| Fenêtre | `packages/plugin-exporter/src/fenetre.ts` |
+| Composants d'interface | `packages/plugin-exporter/src/ui/components/` |
+| Galerie | `packages/plugin-exporter/galerie/` et `packages/plugin-exporter/tests/galerie.test.ts` |
+| Loi du document intact | `packages/plugin-exporter/tests/loiDuDocumentIntact.test.ts` |
+| Patron du constat | `packages/plugin-exporter/src/contract/localisation.ts` |
 | Types de l'API Figma | `node_modules/@figma/plugin-typings/plugin-api.d.ts`, version 1.138 |
 
 Noms des paquets neufs, tous `private: true` : `ucm-couleur`
@@ -311,7 +312,7 @@ reproductibles.
 ### 8c : galerie et tests communs
 
 - [ ] **L8.7** Banc de galerie dans le socle, `ETATS`, tailles et étapes en
-  paramètres ; `capturer.cjs` reste appelable depuis `packages/plugin/galerie`,
+  paramètres ; `capturer.cjs` reste appelable depuis `packages/plugin-exporter/galerie`,
   où `galerie.test.ts` le cherche. Logique des tests de styles, de gabarit et
   de manifest en fonctions du socle ; UCM Exporter garde ses tests, qui les
   appellent.
@@ -379,7 +380,7 @@ Paquet `packages/plugin-palettes`, nom `ucm-palettes-plugin`.
 - [ ] **L3.14** Ouvrir M1.
 
 Critère : suite, typecheck et build verts ; lois vues rouges ; galerie
-construite ; UCM Exporter inchangé (`git diff --stat packages/plugin` vide).
+construite ; UCM Exporter inchangé (`git diff --stat packages/plugin-exporter` vide).
 
 ## Lot 4 : onglet Palettes et aperçu
 

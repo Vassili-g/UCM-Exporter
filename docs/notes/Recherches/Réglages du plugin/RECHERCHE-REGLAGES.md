@@ -38,7 +38,7 @@ Lire avant de commencer :
 2. [CONTRIBUTING.md, Interface du plugin](../../../../CONTRIBUTING.md#interface-du-plugin),
    qui fait autorité sur la hiérarchie de l'information et le protocole de
    relecture ;
-3. la [partie 3 de SPEC.md](../../../../packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge),
+3. la [partie 3 de SPEC.md](../../../../packages/plugin-exporter/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge),
    pour la configuration et la publication ;
 4. la skill [`rediger-sans-tics-ia`](../../../../.agents/skills/rediger-sans-tics-ia/SKILL.md)
    avant d'écrire le rapport, et la skill
@@ -93,7 +93,7 @@ Lire avant de commencer :
 | Un contrat est écrit à `{components}/{Nom}/{Nom}.contract.json`, où `{Nom}` est l'identifiant de code du composant, en PascalCase | `artifactPath`, `src/depot.ts` |
 | La configuration du plugin ne porte aucun chemin d'export. Le commentaire de `RepositorySettings` en donne la raison : un chemin rangé sur le poste enverrait l'export hors de la vue de `ucm check` | `RepositorySettings`, `src/config.ts` |
 
-Sauf mention contraire, les chemins de ce tableau partent de `packages/plugin/`.
+Sauf mention contraire, les chemins de ce tableau partent de `packages/plugin-exporter/`.
 
 ## 2. Décisions prises
 
@@ -127,7 +127,7 @@ Un seul sujet de fond reste ouvert : l'endroit où vit le réglage des tokens
 - **Jeton.** Le jeton ne passe jamais à l'UI, n'est jamais écrit dans le
   document ni journalisé. Un jeton ne part que vers la forge qui l'a reçu.
   L'ordre d'écriture de l'enregistrement protège cette règle contre une
-  sauvegarde interrompue ([AGENTS.md](../../../../AGENTS.md), [SPEC.md](../../../../packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)).
+  sauvegarde interrompue ([AGENTS.md](../../../../AGENTS.md), [SPEC.md](../../../../packages/plugin-exporter/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)).
 - **Mots des forges.** Tout texte qui nomme une forge, sa demande ou son jeton
   lit `src/forges/termes.ts`. Aucun message ne teste la forge.
 - **Sandbox.** Aucune boîte de dialogue : une confirmation passe par un second
@@ -163,8 +163,8 @@ celui de l'équipe UCM.
 
 L'inventaire ci-dessous est un point de départ. Le compléter par une recherche
 des termes `tokens`, `Tokens`, `avecTokens`, `EtatDesTokens`, `carte-tokens`,
-`tokens-resume`, `tokens-format` et `layout.tokens` dans `packages/plugin/src/`,
-`packages/plugin/galerie/` et `packages/plugin/tests/`.
+`tokens-resume`, `tokens-format` et `layout.tokens` dans `packages/plugin-exporter/src/`,
+`packages/plugin-exporter/galerie/` et `packages/plugin-exporter/tests/`.
 
 **G1, commande d'export des tokens**
 
@@ -469,13 +469,13 @@ ceux-ci, et ceux que l'agent découvre en plus.
 
 | Fichier | Ce qui change |
 |---|---|
-| `packages/plugin/SPEC.md` | Partie 3 : stockage, jeton, dépôt actif, débranchement. Section « Analyses et publication » : lecture de l'état des tokens |
+| `packages/plugin-exporter/SPEC.md` | Partie 3 : stockage, jeton, dépôt actif, débranchement. Section « Analyses et publication » : lecture de l'état des tokens |
 | `AGENTS.md` | Invariant du jeton, description de `config.ts` dans la carte du code |
 | `CONTRIBUTING.md` | Règle des deux cartes et place de l'alerte de repli, si la carte des tokens disparaît |
-| `packages/plugin/README.md` | « Les deux commandes », configuration de la forge |
+| `packages/plugin-exporter/README.md` | « Les deux commandes », configuration de la forge |
 | `docs/guides/POUR-LES-DESIGNERS.md` | Section 3, configuration du dépôt et ordre d'export des tokens |
-| `packages/plugin/galerie/etats.cjs` | États de configuration, de pastille, de repli et de tokens |
-| `packages/plugin/tests/` | `config.test.ts`, `connexion.test.ts`, `prevol.test.ts`, `etatDesTokens.test.ts`, `code.test.ts`, `galerie.test.ts`, `stylesUi.test.ts`, `buildUi.test.ts`, `interface/interface.test.mjs` |
+| `packages/plugin-exporter/galerie/etats.cjs` | États de configuration, de pastille, de repli et de tokens |
+| `packages/plugin-exporter/tests/` | `config.test.ts`, `connexion.test.ts`, `prevol.test.ts`, `etatDesTokens.test.ts`, `code.test.ts`, `galerie.test.ts`, `stylesUi.test.ts`, `buildUi.test.ts`, `interface/interface.test.mjs` |
 
 Commandes de vérification, depuis la racine :
 

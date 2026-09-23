@@ -4,7 +4,7 @@ Ce document définit le problème, les responsabilités et les principes du mod�
 puis situe UCM parmi les outils de design system.
 La forme de ce qui est publié est spécifiée dans
 [docs/format/FORMAT.md](./docs/format/FORMAT.md), le comportement du plugin dans
-[packages/plugin/SPEC.md](./packages/plugin/SPEC.md), et l’avancement dans
+[packages/plugin-exporter/SPEC.md](./packages/plugin-exporter/SPEC.md), et l’avancement dans
 [ROADMAP.md](./ROADMAP.md).
 
 ## 1. Le problème

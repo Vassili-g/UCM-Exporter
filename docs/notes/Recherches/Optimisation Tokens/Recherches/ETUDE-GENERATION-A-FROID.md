@@ -631,7 +631,7 @@ périmés.
 | `packages/adapter-typescript` | D'abord les données dérivées ; séparation éventuelle d'un adaptateur de rendu | TypeScript ne désigne pas un framework. Une génération de rendu exige une capacité plus précise. |
 | Adaptateurs de rendu supplémentaires | Compilation des vues et contrôles de leur environnement | Conventions locales pour les primitives, événements et accessibilité |
 | `packages/cli` | Façade éventuelle vers le nouveau module ; réemploi des fonctions du guide | La commande ne doit pas contenir un second orchestrateur |
-| `packages/plugin` | Aucun changement nécessaire pour le premier prototype | L'exporteur continue de publier le contrat portable sans modifier Figma |
+| `packages/plugin-exporter` | Aucun changement nécessaire pour le premier prototype | L'exporteur continue de publier le contrat portable sans modifier Figma |
 | Schéma et format publié | Aucun changement nécessaire pour compilation partielle et paquet dérivé | Une future refonte de l'export suit les règles de version et de compatibilité |
 | Repository de recette | Banc à froid, interfaces publiques, correspondance des icônes et vérification du rendu | Les anciennes implémentations servent éventuellement d'oracle isolé, jamais d'entrée au modèle |
 

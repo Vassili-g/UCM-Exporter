@@ -18,7 +18,7 @@ Lire uniquement ce qui concerne la tâche :
 
 1. [CONCEPT.md](./CONCEPT.md) pour les responsabilités du modèle ;
 2. [docs/format/FORMAT.md](./docs/format/FORMAT.md) si la tâche touche à la forme de ce qui
-   est publié, [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) si elle
+   est publié, [packages/plugin-exporter/SPEC.md](./packages/plugin-exporter/SPEC.md) si elle
    touche à la façon dont le plugin lit Figma. Ce que les versions précédentes
    publiaient est dans [docs/format/CHANGELOG-FORMAT.md](./docs/format/CHANGELOG-FORMAT.md),
    à ouvrir dès qu'une tâche touche à la compatibilité ;
@@ -56,7 +56,7 @@ l'information et le protocole de relecture y font autorité, et la galerie des
 ## Carte du code
 
 ```text
-packages/plugin/         le moteur : extraction Figma, dépend du kit
+packages/plugin-exporter/         le moteur : extraction Figma, dépend du kit
   src/
     code.ts                    routage UI → commandes
     contract/
@@ -111,7 +111,7 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
   tests/
   README.md                  ouvrir le plugin, ses deux commandes, ses limites
   SPEC.md                    le moteur : ce que le plugin lit, élit et signale
-  manifest.json              chargé dans Figma depuis packages/plugin/dist/
+  manifest.json              chargé dans Figma depuis packages/plugin-exporter/dist/
 
 packages/kit/            le format et ses lecteurs : @ucm-kit/core, publié
   src/format/              sous-chemin SANS dépendance Node ni Figma
@@ -274,7 +274,7 @@ La spécification en lien porte le raisonnement.
   propriétés, si bien que l'ordre des déclarations Figma ne décide de rien. Deux
   axes que la normalisation confond refusent l'export, aucun artefact ne sort et
   le designer en renomme un.
-  → [spec](./packages/plugin/SPEC.md#1-props)
+  → [spec](./packages/plugin-exporter/SPEC.md#1-props)
 - La convention `State`/`States`/`Status` porte sur un axe, donc sur le seul
   type `VARIANT`. Une propriété d'un autre type qui porte ce nom reste une prop.
   `STATE_AXIS_NAMES` (`semantics.ts`) est l'unique liste de ces noms : les props
@@ -311,7 +311,7 @@ La spécification en lien porte le raisonnement.
   `axeDesExtensions` le nom de l'axe de ses collections étendues. Une projection
   recopiée ailleurs est une faute : elle diverge sans produire d'erreur. Le
   chemin d'un token s'assemble dans `joinTokenPath` seul
-  (`packages/plugin/src/variables.ts`) : collection et variable passent par
+  (`packages/plugin-exporter/src/variables.ts`) : collection et variable passent par
   `normalizeName`, leurs segments perdent accolades et `$` de tête, puis la
   collection n'est écrite qu'une fois. Figma accepte ces caractères dans un nom
   de collection, et une référence DTCG ne sait pas les citer. Borne
@@ -365,7 +365,7 @@ La spécification en lien porte le raisonnement.
   cible absente et une boucle comprises, donne `string`. La table des graisses
   n'est jamais recopiée, et la décision ne dépend d'aucun ordre.
   `graissesNumeriques` (`tokens/graisses.ts`) en est l'unique autorité.
-  → [spec](./packages/plugin/SPEC.md#partie-2--export-tokens)
+  → [spec](./packages/plugin-exporter/SPEC.md#partie-2--export-tokens)
 - Le type d'une famille `STRING` se décide sur une composante connexe du graphe
   d'alias, tous modes confondus, et jamais sur la feuille courante ni sur son
   nom. Une composante devient `fontFamily` avec au moins une preuve positive,
@@ -375,7 +375,7 @@ La spécification en lien porte le raisonnement.
   Une composante sans preuve reste `string`. `graissesNumeriques` décide avant,
   et `famillesDeTokens` (`tokens/familles.ts`) ne voit pas ce qu'elle a retenu :
   les deux ensembles sont disjoints.
-  → [spec](./packages/plugin/SPEC.md#partie-2--export-tokens)
+  → [spec](./packages/plugin-exporter/SPEC.md#partie-2--export-tokens)
 - Une variable `TIMING` devient une durée en secondes, sans conversion ni
   arrondi. Une variable `EASING` devient une courbe dès que l'API joint ses
   quatre points, quel que soit son `type`, s'ils sont finis et si les abscisses
@@ -387,7 +387,7 @@ La spécification en lien porte le raisonnement.
   `VariableResolvedDataType` sans branche par défaut, et un septième produit
   une erreur de compilation. `easingsSansCourbe` (`tokens/mouvement.ts`) en est
   l'unique autorité.
-  → [spec](./packages/plugin/SPEC.md#partie-2--export-tokens)
+  → [spec](./packages/plugin-exporter/SPEC.md#partie-2--export-tokens)
 
 ### Couleurs
 
@@ -409,7 +409,7 @@ La spécification en lien porte le raisonnement.
   partagé, identique dans tous les contrats ; `rendering.keyRoles` porte le rôle
   de chaque clé observée qui n’en porte pas le nom, en deux tables que `colorKeys`
   sépare comme il sépare ses feuilles (`fills`, `strokes`). Résolution :
-  `roles[keyRoles[côté][clé] ?? clé]`, et `packages/plugin/tests/lois.ts` vérifie sur chaque
+  `roles[keyRoles[côté][clé] ?? clé]`, et `packages/plugin-exporter/tests/lois.ts` vérifie sur chaque
   contrat que la réponse existe et qu’elle est de la bonne nature.
 - Un rôle de contour ne cite jamais une propriété CSS qui consomme la boîte :
   `border` se rend en `box-shadow` et `ring` en `outline`, jamais l'un ni
@@ -674,14 +674,14 @@ La spécification en lien porte le raisonnement.
   `versionDeContrat()` (`format/version.ts`) pour un contrat,
   `etatDuFormatDeTokens()` (`format/tokens.ts`) pour `tokens.json`. Il ne vient
   jamais de `CONTRACT_VERSION` ni de `TOKENS_FORMAT_VERSION`.
-  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
+  → [spécification](./packages/plugin-exporter/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
 - Un export identique n’ouvre jamais une seconde demande de fusion. L’immobilité
   se juge sur la branche de base **et** sur les demandes d’export encore
   ouvertes (`exportsEnVol()`, `src/depot.ts`), sur l'une et l'autre forge. Le
   verdict porte l’endroit où le contenu identique a été trouvé, et le journal le
   dit. Un contenu différent pendant qu’une demande est ouverte est un réexport
   après correction, donc le geste normal, et il n’est pas refusé.
-  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
+  → [spécification](./packages/plugin-exporter/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
 - Un avertissement entre dans le corps de la demande en Markdown, et chaque
   forge y neutralise ses formes actives. `sansLienAutomatique()` publie en
   `code` `@nom` et `#123` sur GitHub (`src/forges/github.ts`), et en plus
@@ -689,7 +689,7 @@ La spécification en lien porte le raisonnement.
   ligne qui commence par `/` sur GitLab (`src/forges/gitlab.ts`), où cette
   ligne serait exécutée comme action rapide. Le rendu Markdown du kit, qui ne
   sait pas sur quelle forge le rapport part, neutralise les formes des deux.
-  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
+  → [spécification](./packages/plugin-exporter/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
 - Un jeton ne part que vers le dépôt qui l'a reçu. Il voyage dans l'entrée de
   son adresse, écrite en une seule écriture de `depots`, et l'adresse d'une
   entrée enregistrée ne change plus : le sandbox refuse une modification qui la
@@ -698,7 +698,7 @@ La spécification en lien porte le raisonnement.
   l'enregistrement passent tous par elle. Une file du sandbox ordonne les
   écritures de la configuration : une modification ne fait pas revenir une
   entrée supprimée dans la même fenêtre.
-  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
+  → [spécification](./packages/plugin-exporter/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
 - Tout texte du plugin qui nomme une forge, sa demande ou son jeton lit
   `src/forges/termes.ts` ; aucun message ne teste la forge. La galerie tient
   la frontière dans les deux sens : un état GitLab n'affiche aucun mot de
@@ -706,7 +706,7 @@ La spécification en lien porte le raisonnement.
   deux forges, vérifie chaque message contre la forge de son sujet : l'entrée
   désignée pour `depot-teste`, la clé de destination d'un résultat
   d'opération, le dépôt actif pour le reste (`tests/galerie.test.ts`).
-  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
+  → [spécification](./packages/plugin-exporter/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
 
 ### Échantillon de maquette
 
@@ -808,7 +808,7 @@ La spécification en lien porte le raisonnement.
 - Aucun handle de sous-calque ne se garde d'une écriture à l'autre : son id est
   un chemin, et le chemin bouge. Toute écriture se relit, une écriture perdue
   ne levant pas.
-  → [spec](./packages/plugin/SPEC.md#comment-lécriture-range-une-règle)
+  → [spec](./packages/plugin-exporter/SPEC.md#comment-lécriture-range-une-règle)
 
 ### Moteur de couleur
 
@@ -852,7 +852,7 @@ appartient au repository qui le consomme, à côté du code qu’il décrit. Un
 exemplaire commité pour juger le moteur serait un instantané : il ne bougerait
 qu’au réexport, si bien qu’une régression ne s’y verrait jamais, et un test posé
 dessus ne prouverait que sa propre immobilité. Les tests de
-`packages/plugin/tests/` jugent ce que le moteur fabrique au moment du test.
+`packages/plugin-exporter/tests/` jugent ce que le moteur fabrique au moment du test.
 
 **Le lecteur, lui, pose la question inverse.**
 `packages/kit/fixtures/contrats/` porte un corpus de la version **précédente**,
@@ -886,7 +886,7 @@ compare à une sortie du moteur ; il n'est jamais rafraîchi, et son empreinte
 SHA‑256 est dans le README voisin ; il disparaît avec le code qui lit la forme
 d'origine, jamais avant. Il n'est pas publié non plus.
 
-`packages/plugin/tests/dtcg-2025.10/` porte le schéma du module Format DTCG
+`packages/plugin-exporter/tests/dtcg-2025.10/` porte le schéma du module Format DTCG
 `2025.10`, tel que designtokens.org le sert, avec son empreinte.
 `conformiteDtcg.test.ts` y juge chaque feuille des exports du fichier simulé et
 fixe les chemins exacts du dialecte. Il ajoute les contrôles que le schéma ne
@@ -898,8 +898,8 @@ Dictionary, à la version exacte des `devDependencies` du plugin. Il refuse
 vide. Il ne lit pas la configuration du Playground, dont la preuve est son
 propre build.
 
-`packages/plugin/tests/lois.ts` est l’unique autorité sur les lois de forme d’un
-contrat, et `packages/plugin/tests/exportComponent.test.ts` les applique à chaque
+`packages/plugin-exporter/tests/lois.ts` est l’unique autorité sur les lois de forme d’un
+contrat, et `packages/plugin-exporter/tests/exportComponent.test.ts` les applique à chaque
 contrat que le moteur fabrique : renvois qui se résolvent, catalogues sans doublon ni entrée
 orpheline, adresses (slotPath de typographie, chemins de peintures,
 `icons.*.slot`) qui désignent un calque de l’arbre qui les porte, absence de

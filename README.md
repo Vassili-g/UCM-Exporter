@@ -58,7 +58,7 @@ Exporter » :
 **<https://www.figma.com/community/plugin/1678431364325816914>**
 
 Installez-le une fois, puis lancez-le depuis le menu `Plugins` de l'application
-de bureau. [packages/plugin/README.md](./packages/plugin/README.md) décrit ses
+de bureau. [packages/plugin-exporter/README.md](./packages/plugin-exporter/README.md) décrit ses
 commandes, sa configuration GitHub ou GitLab et ses limites. La commande des
 tokens n'apparaît que lorsque « Gérer les tokens » est activé.
 
@@ -152,7 +152,7 @@ couvre TypeScript et React : le repository l'installe lui-même, et il demande u
 
 Les règles d'usage sont la part que le designer écrit à la main, dans une
 instance de `.componentRules` posée à côté du composant. [Documenter les règles
-d'usage](./packages/plugin/README.md#documenter-les-règles-dusage) donne les
+d'usage](./packages/plugin-exporter/README.md#documenter-les-règles-dusage) donne les
 huit tags et le geste de chacun.
 
 Un développeur ou un agent écrit le composant depuis le seul contrat. Le contrat
@@ -193,7 +193,7 @@ npm install
 npm run build
 ```
 
-Dans Figma, importez `packages/plugin/dist/manifest.json` par `Plugins >
+Dans Figma, importez `packages/plugin-exporter/dist/manifest.json` par `Plugins >
 Development > Import plugin from manifest`.
 
 | Commande | Rôle |
@@ -211,7 +211,7 @@ règles de code, de test et de rédaction.
 ## Architecture
 
 ```text
-packages/plugin/    le moteur : extraction Figma. Dépend du kit. Non publié.
+packages/plugin-exporter/    le moteur : extraction Figma. Dépend du kit. Non publié.
 packages/kit/       le format : @ucm-kit/core, publié sur npm.
 packages/cli/       la commande : @ucm-kit/cli, publiée sur npm.
 packages/adapter-typescript/  l'adaptateur opt-in, publié sur npm.

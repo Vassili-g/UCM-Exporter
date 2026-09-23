@@ -12,7 +12,7 @@
  * `TextStyle.boundVariables.fontFamily` prouve l'usage. Un scope `FONT_FAMILY`
  * déclare une intention et ne limite que les sélecteurs de Figma : l'API
  * autorise encore une liaison dans un autre champ, d'où les conflits relevés
- * à côté. `packages/plugin/SPEC.md` énumère les règles appliquées ici.
+ * à côté. `packages/plugin-exporter/SPEC.md` énumère les règles appliquées ici.
  */
 import { firstVariableAlias } from '../variables';
 

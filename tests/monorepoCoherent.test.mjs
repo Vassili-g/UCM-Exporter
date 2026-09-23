@@ -2,11 +2,11 @@
  * Chaque paquet de ce dépôt voit-il le kit de ce dépôt, ou une copie du registre ?
  *
  * **Ce test existe parce que la réponse a été « non » pendant six versions, sans
- * que rien ne le dise.** `packages/plugin` épinglait `@ucm-kit/core` à `0.1.0`
+ * que rien ne le dise.** `packages/plugin-exporter` épinglait `@ucm-kit/core` à `0.1.0`
  * un pin exact, la règle du consommateur appliquée là où elle ne vaut pas. Le kit local
  * étant passé à 0.1.6, npm ne pouvait plus satisfaire ce pin avec le workspace :
  * il a téléchargé **0.1.0 depuis le registre** dans
- * `packages/plugin/node_modules/`, et le plugin a construit, typé et testé
+ * `packages/plugin-exporter/node_modules/`, et le plugin a construit, typé et testé
  * contre une copie vieille de six versions. Tout était vert.
  *
  * C'est le pire genre de défaut de ce projet : deux autorités pour la même
@@ -17,7 +17,7 @@
  * consommateur installe : une plage y laisserait npm choisir une version que
  * personne n'a essayée. Elle ne dit rien d'un frère dans le même dépôt, qui
  * n'installe pas : il lit la source d'à côté, et doit la lire toujours.
- * `packages/plugin` est privé et ne se publie jamais : `*` y est la bonne
+ * `packages/plugin-exporter` est privé et ne se publie jamais : `*` y est la bonne
  * réponse. `packages/cli`, lui, se publie et garde son pin exact, c'est
  * pourquoi ce test vérifie la résolution plutôt que le texte du pin : la
  * question porte sur ce que Node ouvre, non sur ce qui est écrit.

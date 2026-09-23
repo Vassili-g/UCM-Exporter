@@ -14,7 +14,7 @@
 Sources de preuve : `packages/kit/src/format/types.ts` et
 `packages/kit/schema/ucm-contract.schema.json` pour ce qu'un champ peut porter,
 `packages/kit/src/lecteurs/` pour ce que le kit sait résoudre et juger,
-`packages/plugin/src/contract/` pour ce que l'export produit, et les quatre
+`packages/plugin-exporter/src/contract/` pour ce que l'export produit, et les quatre
 contrats du Playground avec leurs implémentations de référence.
 
 Les chemins du Playground sont cités sans lien : ce repository voisin n'est pas
@@ -46,8 +46,8 @@ Six champs ferment quelque chose, et la lecture de leur autorité dit quoi.
 
 | Ligne | Condition | Sens |
 |---|---|---|
-| [`extractLayout.ts:487`](../../../../../packages/plugin/src/contract/extractLayout.ts) | Une visibilité est résolue sur ce slot | Une prop montre ou masque le slot, et `visibilityProp` la nomme |
-| [`extractLayout.ts:568`](../../../../../packages/plugin/src/contract/extractLayout.ts) | Aucune dépendance et aucun texte sous le calque | Le calque est un dessin, et rien ne le masque |
+| [`extractLayout.ts:487`](../../../../../packages/plugin-exporter/src/contract/extractLayout.ts) | Une visibilité est résolue sur ce slot | Une prop montre ou masque le slot, et `visibilityProp` la nomme |
+| [`extractLayout.ts:568`](../../../../../packages/plugin-exporter/src/contract/extractLayout.ts) | Aucune dépendance et aucun texte sous le calque | Le calque est un dessin, et rien ne le masque |
 
 `TileLink` exerce le second cas : son slot `icon` porte `optional: true` et aucun
 `visibilityProp` (`TileLink.contract.json:18`). Le genre `visibilite` du plan,
@@ -75,7 +75,7 @@ rend. C'est la seconde adresse qui est utilisable sans table de correspondance.
 Ce que le champ ajoute vraiment est ailleurs. Son `target` ouvre `characters` et
 `mainComponent` ([`types.ts:1023`](../../../../../packages/kit/src/format/types.ts)),
 et l'export sait produire les trois
-([`propertyBindings.ts:87`](../../../../../packages/plugin/src/contract/propertyBindings.ts)).
+([`propertyBindings.ts:87`](../../../../../packages/plugin-exporter/src/contract/propertyBindings.ts)).
 Une liaison `characters` nomme la prop qui écrit le texte d'un calque, et ferme
 alors le genre `contenu` pour ce slot. Aucun des quatre contrats n'en porte une,
 et aucun ne déclare de prop de type `string` : le format ouvre ce genre, le
@@ -398,7 +398,7 @@ concordent : le commentaire du type
 description du schéma (`ucm-contract.schema.json`, définition `StateModel`), et
 la table qui le construit,
 `STATE_PRECEDENCE = ['disable', 'disabled', 'press', 'focus', 'hover', 'default']`
-([`semantics.ts:38`](../../../../../packages/plugin/src/contract/semantics.ts)).
+([`semantics.ts:38`](../../../../../packages/plugin-exporter/src/contract/semantics.ts)).
 `Button.stateModel.precedence` vaut `disable, press, focus, hover, default`, et
 l'implémentation de référence le lit dans ce sens (`Button.tsx:156-157`, puis
 `Button.tsx:209`).
@@ -412,7 +412,7 @@ fort. L'émission doit parcourir `precedence` à l'envers.
 
 `default` figure dans `precedence` et ne porte pas de `selector` : la table des
 déclencheurs lui donne la chaîne vide, et le descripteur publié n'écrit alors
-rien ([`semantics.ts:28-34`](../../../../../packages/plugin/src/contract/semantics.ts)).
+rien ([`semantics.ts:28-34`](../../../../../packages/plugin-exporter/src/contract/semantics.ts)).
 Puisqu'il est le dernier de `precedence`, l'émission inversée l'écrit en
 premier, sans partie d'état dans le sélecteur. Sa règle a donc une spécificité
 plus basse d'un cran que celle des états, ce qui va dans le bon sens.
@@ -420,9 +420,9 @@ plus basse d'un cran que celle des états, ce qui va dans le bon sens.
 Un second cas porte la même absence, et lui pose un problème. Un état dont le
 nom ne figure pas dans la table reçoit lui aussi une chaîne vide et donc aucun
 `selector`, sous un avertissement
-([`semantics.ts:125-131`](../../../../../packages/plugin/src/contract/semantics.ts)),
+([`semantics.ts:125-131`](../../../../../packages/plugin-exporter/src/contract/semantics.ts)),
 et il est rangé en queue de `precedence`
-([`semantics.ts:138-142`](../../../../../packages/plugin/src/contract/semantics.ts)).
+([`semantics.ts:138-142`](../../../../../packages/plugin-exporter/src/contract/semantics.ts)).
 L'émission inversée l'écrirait donc juste après `default`, avec un sélecteur
 identique au sien. Deux règles de même sélecteur et de même spécificité se
 départagent par l'ordre d'écriture, et l'état inconnu écraserait `default` sur

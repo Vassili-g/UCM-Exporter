@@ -20,9 +20,9 @@ réexport le rendrait inutile, puisqu'il cesserait d'être la forme d'origine.
 
 ## Provenance
 
-Produit par `handleExportTokens` (`packages/plugin/src/tokens/exportTokens.ts`)
+Produit par `handleExportTokens` (`packages/plugin-exporter/src/tokens/exportTokens.ts`)
 à l'état du commit `c574c00` de `UCM-Exporter`, sur le fichier de variables de
-`packages/plugin/tests/fichierDeVariables.ts`, sous le profil `SRGB`. Le
+`packages/plugin-exporter/tests/fichierDeVariables.ts`, sous le profil `SRGB`. Le
 contenu est celui que la commande rend, sans ligne finale ajoutée.
 
 Il couvre des couleurs opaques, transparentes et de précision élevée, des

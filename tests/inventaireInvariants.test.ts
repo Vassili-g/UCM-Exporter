@@ -10,7 +10,7 @@
  * attrape : un document appauvri, ou un document qui nomme ce qui a été
  * renommé.
  *
- * `docs/format/FORMAT.md` et `packages/plugin/SPEC.md` portent la règle et son
+ * `docs/format/FORMAT.md` et `packages/plugin-exporter/SPEC.md` portent la règle et son
  * pourquoi, et rien ne les tenait. Deux listes les couvrent : leur vocabulaire,
  * qui voit un nom disparaître, et leur squelette de titres et d'énoncés, qui
  * voit partir une règle entière.
@@ -145,7 +145,7 @@ const AUTORITES = [
   'packages/couleur/src/rampe.ts',
   'packages/couleur/tests/loiDePurete.test.ts',
   'packages/kit/src/format/names.ts',
-  'packages/plugin/tests/lois.ts',
+  'packages/plugin-exporter/tests/lois.ts',
   'padding.x',
   'padding.y',
   'paintPlacements',
@@ -217,7 +217,7 @@ function sectionDesInvariants() {
  * Le même contrôle, porté sur les deux spécifications.
  *
  * `AGENTS.md` était seul tenu, alors que la règle et son pourquoi vivent dans
- * `docs/format/FORMAT.md` et `packages/plugin/SPEC.md` : un raccourcissement pouvait y
+ * `docs/format/FORMAT.md` et `packages/plugin-exporter/SPEC.md` : un raccourcissement pouvait y
  * retirer une règle entière sans qu'un lien ne meure ni qu'un invariant ne
  * bouge. Chaque terme est un nom que la spécification employait quand la liste
  * a été relevée, donc un endroit où elle dit quelque chose.
@@ -532,7 +532,7 @@ test('chaque autorite citee par un invariant existe encore dans le code', () => 
 /** Les deux spécifications, avec la liste que chacune doit encore nommer. */
 const SPECIFICATIONS: [string, string[]][] = [
   ['docs/format/FORMAT.md', AUTORITES_FORMAT],
-  ['packages/plugin/SPEC.md', AUTORITES_SPEC],
+  ['packages/plugin-exporter/SPEC.md', AUTORITES_SPEC],
 ];
 
 for (const [chemin, attendues] of SPECIFICATIONS) {
@@ -555,7 +555,7 @@ for (const [chemin, attendues] of SPECIFICATIONS) {
 /** Les deux specifications, avec le squelette que chacune doit encore porter. */
 const SQUELETTES: [string, string[]][] = [
   ['docs/format/FORMAT.md', ENONCES_FORMAT],
-  ['packages/plugin/SPEC.md', ENONCES_SPEC],
+  ['packages/plugin-exporter/SPEC.md', ENONCES_SPEC],
 ];
 
 for (const [chemin, attendus] of SQUELETTES) {

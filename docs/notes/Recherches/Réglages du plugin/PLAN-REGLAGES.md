@@ -1288,20 +1288,20 @@ par décision du mainteneur.
 
 | Fichier | Lots |
 |---|---|
-| `packages/plugin/SPEC.md` | 0 (E3), 2, 3a, 4 |
+| `packages/plugin-exporter/SPEC.md` | 0 (E3), 2, 3a, 4 |
 | `AGENTS.md` | 3a (jeton), 3b (galerie) |
 | `CONTRIBUTING.md` | 2 |
-| `packages/plugin/README.md` | 2, 3b |
+| `packages/plugin-exporter/README.md` | 2, 3b |
 | `docs/guides/POUR-LES-DESIGNERS.md` | 2, 3b, 4 |
 | `README.md`, `docs/README.md` | 2, si « deux commandes » devient conditionnel |
-| `packages/plugin/galerie/etats.cjs` | 0 à 4 |
-| `packages/plugin/tests/config.test.ts` | 3a |
-| `packages/plugin/tests/connexion.test.ts` | 2, 3a, 3b, 3c, 4 |
-| `packages/plugin/tests/prevol.test.ts`, `exportTokens.test.ts` | 1, 3c |
-| `packages/plugin/tests/code.test.ts` | 0, 2, 3a, 3b, 4 |
-| `packages/plugin/tests/interface/interface.test.mjs` | 0, 2, 3a, 3b, 3c, 4 |
-| `packages/plugin/tests/galerie.test.ts` | 3a, 3b (C13) |
-| `packages/plugin/tests/stylesUi.test.ts` | Sans changement : chaque classe nouvelle reçoit sa règle |
+| `packages/plugin-exporter/galerie/etats.cjs` | 0 à 4 |
+| `packages/plugin-exporter/tests/config.test.ts` | 3a |
+| `packages/plugin-exporter/tests/connexion.test.ts` | 2, 3a, 3b, 3c, 4 |
+| `packages/plugin-exporter/tests/prevol.test.ts`, `exportTokens.test.ts` | 1, 3c |
+| `packages/plugin-exporter/tests/code.test.ts` | 0, 2, 3a, 3b, 4 |
+| `packages/plugin-exporter/tests/interface/interface.test.mjs` | 0, 2, 3a, 3b, 3c, 4 |
+| `packages/plugin-exporter/tests/galerie.test.ts` | 3a, 3b (C13) |
+| `packages/plugin-exporter/tests/stylesUi.test.ts` | Sans changement : chaque classe nouvelle reçoit sa règle |
 | `tests/inventaireInvariants.test.ts` | 3a |
 
 Vérification, depuis la racine :

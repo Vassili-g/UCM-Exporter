@@ -10,7 +10,7 @@
  * soit le nom du préréglage, et `LINEAR` en a une par définition. Un ressort
  * n'en a pas, `HOLD` non plus, et un préréglage dont l'API tait les points
  * n'en donne aucune. `easingsSansCourbe` relève ces cas avant la première
- * feuille, et `packages/plugin/SPEC.md` dit ce que l'export en fait.
+ * feuille, et `packages/plugin-exporter/SPEC.md` dit ce que l'export en fait.
  */
 import type { CourbeDeToken, DureeDeToken } from '@ucm-kit/core/format';
 

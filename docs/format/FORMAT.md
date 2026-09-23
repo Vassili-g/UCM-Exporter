@@ -4,7 +4,7 @@ Ce que le repository consommateur doit savoir pour lire un `*.contract.json` et
 un `tokens.json` : la forme de chaque champ, ce que son absence signifie, et ce
 que le contrat garantit, ou refuse de garantir. [CONCEPT.md](../../CONCEPT.md)
 porte le pourquoi des responsabilités ;
-[packages/plugin/SPEC.md](../../packages/plugin/SPEC.md) décrit la façon dont le
+[packages/plugin-exporter/SPEC.md](../../packages/plugin-exporter/SPEC.md) décrit la façon dont le
 plugin lit Figma pour produire tout ceci.
 
 Le vocabulaire est celui du contrat : « le moteur » désigne le plugin qui
@@ -347,7 +347,7 @@ reproduit les mêmes états via des événements.
 
 Comment un text style est lu dans Figma, et ce dont le moteur avertit quand une
 propriété n'est pas liée, est décrit par [5.
-Typographie](../../packages/plugin/SPEC.md#5-typographie).
+Typographie](../../packages/plugin-exporter/SPEC.md#5-typographie).
 
 Chaque `variantViews.*.typography` liste `{ slotPath, style }` pour situer le
 style de chaque texte dans la structure de cette même vue. `slotPath` est une
@@ -1328,7 +1328,7 @@ composant.** Quand il expose un axe de tailles, `sizes` porte l'ensemble de ses
 `sizes` n'a pas à consulter le niveau haut, et un lecteur qui ne le trouve pas
 n'a pas à craindre qu'une valeur lui échappe ailleurs. Ce que le moteur en
 déduit pour ses propres avertissements est [de son
-ressort](../../packages/plugin/SPEC.md#ce-que-lexport-écrit).
+ressort](../../packages/plugin-exporter/SPEC.md#ce-que-lexport-écrit).
 
 La typographie suit la même discipline d'adresse unique : rien n'en est écrit
 dans `structure`. Le catalogue `textStyles` porte les styles, et
@@ -1442,7 +1442,7 @@ ne le dégrade pas.
 **`meta.figma.url` est optionnel, et son absence est un état normal.** Les
 contrats produits aujourd’hui ne le portent pas, la raison tient au mode de
 distribution du plugin, décrit [dans la spécification du
-moteur](../../packages/plugin/SPEC.md#métadonnées). Ce qu’un lecteur doit en
+moteur](../../packages/plugin-exporter/SPEC.md#métadonnées). Ce qu’un lecteur doit en
 retenir tient en une règle : **accepter les deux formes.** Des contrats
 antérieurs portent l’URL, les contrats courants ne la portent pas, et cet écart
 n’a jamais incrémenté `contractVersion` : un champ qui passe de « presque
@@ -1522,14 +1522,14 @@ la variable Figma :
   valeur littérale est alors publiée en poids. Un nom libre et la chaîne
   `"700"`, qui n'est pas un nom, restent en `string`, valeur inchangée. La
   règle complète, alias compris, est dans la
-  [spécification du moteur](../../packages/plugin/SPEC.md#partie-2--export-tokens).
+  [spécification du moteur](../../packages/plugin-exporter/SPEC.md#partie-2--export-tokens).
 - **Famille.** Une `STRING` devient `fontFamily` quand sa composante d'alias
   porte une preuve d'usage et aucun conflit : un text style local relie l'un de
   ses membres par son champ `fontFamily`, ou un membre n'offre que le scope
   `FONT_FAMILY`. Le nom du token ne décide jamais. La valeur publiée est le nom
   de la famille tel que Figma le donne, sans guillemets ni repli. La règle
   complète est dans la
-  [spécification du moteur](../../packages/plugin/SPEC.md#partie-2--export-tokens).
+  [spécification du moteur](../../packages/plugin-exporter/SPEC.md#partie-2--export-tokens).
 - **Durée.** Figma compte une `TIMING` en secondes, et l'unité publiée est `s`.
   Le nombre est recopié sans conversion ni arrondi, bruit flottant compris :
   deux exports du même fichier restent identiques à l'octet. Le module admet

@@ -835,7 +835,7 @@ Une palette compte 28 paires : quatorze par mode.
 
 - `[VER-09]` Chaque message a trois parties séparées : où, quoi, geste. Il se
   rédige avec la skill `rediger-diagnostics-ucm`, et le modèle de
-  `packages/plugin/src/contract/localisation.ts` sert de patron, sans import.
+  `packages/plugin-exporter/src/contract/localisation.ts` sert de patron, sans import.
   Tous les textes destinés au designer sont dans un seul module de l'interface
   (D14).
 
@@ -1116,17 +1116,17 @@ du chemin qui le précède.
 
 | Élément d'UCM Exporter | Sort | Raison |
 |---|---|---|
-| `packages/plugin/scripts/build-ui.cjs` | Extrait dans le socle | Les deux plugins produisent un HTML autonome, et le piège de `String.replace` y est déjà traité |
-| `packages/plugin/scripts/build-manifest.cjs`, `packages/plugin/scripts/run-tests.cjs` | Extraits | Identiques d'un plugin à l'autre |
-| `packages/plugin/src/fenetre.ts` | Extrait, clé et bornes en paramètres | Les bornes diffèrent, la logique est la même |
-| `packages/plugin/src/ui/styles.css`, variables et replis de thème | Socle extrait ; les règles propres à UCM Exporter restent dans son paquet | Une seule autorité sur le rendu dans les thèmes de Figma |
-| `Button`, `Onglets`, `Interrupteur`, `ResizeGrip` de `packages/plugin/src/ui/components/` | Extraits ; `ResizeGrip` reçoit sa fonction d'envoi | Aucun ne dépend d'un message d'UCM Exporter, sauf l'envoi |
-| `packages/plugin/src/ui/components/Header.ts`, le bouton de configuration | La bascule entre la vue de travail et la configuration est extraite ; ce qu'affiche l'en-tête reste à chaque plugin | Les deux plugins ouvrent leur configuration du même geste |
-| `packages/plugin/galerie/build-galerie.cjs`, `capturer.cjs`, `theme-figma.css` | Extraits, `ETATS` passé en paramètre | Le banc est générique, les états ne le sont pas |
-| `packages/plugin/tests/stylesUi.test.ts`, `buildUi.test.ts`, `manifestDistribution.test.ts` | Leur logique devient des fonctions du socle, appelées par un test dans chaque plugin | Chaque plugin garde un test à son nom, qui échoue chez lui |
-| `packages/plugin/src/messages.ts`, `packages/plugin/src/ui/pont.ts` | Patron recopié, pas de code partagé | Le vocabulaire des messages est propre à chaque plugin |
-| `packages/plugin/src/contract/localisation.ts` | Patron recopié | Les constats du plugin de palettes ne portent pas sur un contrat |
-| `packages/plugin/tests/loiDuDocumentIntact.test.ts` | Patron recopié, sens inversé | Le plugin de palettes écrit par nature ; sa loi borne les fichiers qui écrivent |
+| `packages/plugin-exporter/scripts/build-ui.cjs` | Extrait dans le socle | Les deux plugins produisent un HTML autonome, et le piège de `String.replace` y est déjà traité |
+| `packages/plugin-exporter/scripts/build-manifest.cjs`, `packages/plugin-exporter/scripts/run-tests.cjs` | Extraits | Identiques d'un plugin à l'autre |
+| `packages/plugin-exporter/src/fenetre.ts` | Extrait, clé et bornes en paramètres | Les bornes diffèrent, la logique est la même |
+| `packages/plugin-exporter/src/ui/styles.css`, variables et replis de thème | Socle extrait ; les règles propres à UCM Exporter restent dans son paquet | Une seule autorité sur le rendu dans les thèmes de Figma |
+| `Button`, `Onglets`, `Interrupteur`, `ResizeGrip` de `packages/plugin-exporter/src/ui/components/` | Extraits ; `ResizeGrip` reçoit sa fonction d'envoi | Aucun ne dépend d'un message d'UCM Exporter, sauf l'envoi |
+| `packages/plugin-exporter/src/ui/components/Header.ts`, le bouton de configuration | La bascule entre la vue de travail et la configuration est extraite ; ce qu'affiche l'en-tête reste à chaque plugin | Les deux plugins ouvrent leur configuration du même geste |
+| `packages/plugin-exporter/galerie/build-galerie.cjs`, `capturer.cjs`, `theme-figma.css` | Extraits, `ETATS` passé en paramètre | Le banc est générique, les états ne le sont pas |
+| `packages/plugin-exporter/tests/stylesUi.test.ts`, `buildUi.test.ts`, `manifestDistribution.test.ts` | Leur logique devient des fonctions du socle, appelées par un test dans chaque plugin | Chaque plugin garde un test à son nom, qui échoue chez lui |
+| `packages/plugin-exporter/src/messages.ts`, `packages/plugin-exporter/src/ui/pont.ts` | Patron recopié, pas de code partagé | Le vocabulaire des messages est propre à chaque plugin |
+| `packages/plugin-exporter/src/contract/localisation.ts` | Patron recopié | Les constats du plugin de palettes ne portent pas sur un contrat |
+| `packages/plugin-exporter/tests/loiDuDocumentIntact.test.ts` | Patron recopié, sens inversé | Le plugin de palettes écrit par nature ; sa loi borne les fichiers qui écrivent |
 
 - `[ARC-09]` L'extraction vient avant le squelette du plugin Palettes, qui
   naît sur le socle. Elle ne change rien à UCM Exporter : sa suite passe, et pour chaque

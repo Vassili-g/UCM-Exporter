@@ -73,7 +73,7 @@ au build, conformément au concept.
 ### 1.1. Décrire les propriétés visuelles manquantes
 
 **Besoin et appui dans le code.**
-[unsupportedProperties.ts](../../../../packages/plugin/src/contract/unsupportedProperties.ts)
+[unsupportedProperties.ts](../../../../packages/plugin-exporter/src/contract/unsupportedProperties.ts)
 signale les propriétés à effet visuel que le contrat n’écrit pas : effets,
 opacité partielle, mask, peinture non unie, blend mode, pointillé, et pour un
 texte `listSpacing`, `hangingList` et `hangingPunctuation`. Le texte publie une
@@ -102,7 +102,7 @@ au-delà de la seule extraction Figma.
 ### 1.2. Publier la localisation des diagnostics
 
 **Besoin et appui dans le code.**
-[localisation.ts](../../../../packages/plugin/src/contract/localisation.ts) conserve
+[localisation.ts](../../../../packages/plugin-exporter/src/contract/localisation.ts) conserve
 déjà les cibles Figma et les parties des messages pour l’interface. Le type
 [ContractDiagnostic](../../../../packages/kit/src/format/types.ts) accepte `figma`
 et `contractPath`, et cette information est effectivement portée par le
@@ -116,7 +116,7 @@ produisent le même texte. Un collecteur d’objets typés pourrait conserver
 l’identité du constat, ses occurrences et ses adresses jusqu’à la publication.
 Cette seconde voie demanderait de revoir les quatre dédoublonnages qui vivent de
 l’identité par phrase (`localisation.ts`) et les deux lois de
-`packages/plugin/tests/loiDesParties.test.ts`.
+`packages/plugin-exporter/tests/loiDesParties.test.ts`.
 
 **Direction proposée.** Spécifier d’abord ce que représente une occurrence :
 un calque, plusieurs variants, un champ absent du contrat ou un problème sans
@@ -141,7 +141,7 @@ permet, `meta.figma.url`, ce qui suffit pour retrouver la source Figma depuis un
 rapport ou un contrôle. Les recherches restantes portent sur la meilleure
 association entre un contrat et une revue externe, pas sur l’existence de la
 traçabilité.
-[Métadonnées de l’export](../../../../packages/plugin/src/contract/exportComponent.ts),
+[Métadonnées de l’export](../../../../packages/plugin-exporter/src/contract/exportComponent.ts),
 [API Figma](https://developers.figma.com/docs/plugins/api/figma/).
 
 **Solutions à comparer.** Un réglage du plugin pourrait recevoir l’URL du
@@ -166,8 +166,8 @@ l’intégration n’aurait pas de bénéfice établi.
 
 **Besoin et appui dans le code.** Les vues exactes, les grilles et `composes`
 permettent déjà de décrire des assemblages. En revanche,
-[la cible d’export](../../../../packages/plugin/src/cible.ts) et
-[l’exporteur](../../../../packages/plugin/src/contract/exportComponent.ts)
+[la cible d’export](../../../../packages/plugin-exporter/src/cible.ts) et
+[l’exporteur](../../../../packages/plugin-exporter/src/contract/exportComponent.ts)
 n’acceptent que `COMPONENT` et `COMPONENT_SET`. Un écran dessiné comme simple
 `FRAME` n’est pas directement exportable.
 
@@ -192,7 +192,7 @@ Un nouveau format ne serait étudié que pour les manques observés.
 ### 1.5. Diagnostiquer les lenteurs et les échecs de l’exporteur
 
 **Besoin et appui dans le code.** Les lectures et résolutions Figma de
-[l’exporteur](../../../../packages/plugin/src/contract/exportComponent.ts) peuvent
+[l’exporteur](../../../../packages/plugin-exporter/src/contract/exportComponent.ts) peuvent
 être difficiles à reproduire. Les limites de performance connues sont suivies
 dans la [roadmap](../../../../ROADMAP.md#fragilités-connues).
 
@@ -269,7 +269,7 @@ dont l’occupation visuelle diffère malgré un carré identique.
 ### 2.3. Produire les ressources de tokens
 
 **Besoin et appui dans le code.**
-[buildLeaf](../../../../packages/plugin/src/tokens/exportTokens.ts) écrit le mode
+[buildLeaf](../../../../packages/plugin-exporter/src/tokens/exportTokens.ts) écrit le mode
 par défaut dans `$value` et les modes nommés dans `com.ucm.modes`.
 [indexerTokensDtcg](../../../../packages/kit/src/lecteurs/tokens-dtcg.mjs) indexe les
 feuilles et leurs types ; il ne compose pas des thèmes et ne valide pas tous
@@ -329,7 +329,7 @@ collection qui en compte plusieurs, sans condition sur leur nom, et conserve
 leurs valeurs et alias sous `com.ucm.modes` ; une collection mono-mode ne
 publie que `$value`. Cette lecture générique couvre donc le principe de
 clair/sombre. Les
-[tests d’export](../../../../packages/plugin/tests/exportTokens.test.ts) éprouvent
+[tests d’export](../../../../packages/plugin-exporter/tests/exportTokens.test.ts) éprouvent
 notamment la conservation et les collisions de noms de modes. La piste est
 ainsi déjà validée dans le moteur et le CLI ; l’étude restante concerne la
 sortie de ressource et la sélection de contexte par projet, plus que le support
@@ -898,7 +898,7 @@ expliquant ce qui manque. Elle ne serait pas réactivée implicitement.
 | Nouvelle révision | Invalidation et nouvelle exécution des modules concernés | Relire les résultats qui ont changé |
 | Livraison retenue | Ressources et documentation dérivées | Autoriser la publication selon les règles du projet |
 
-Le [plugin](../../../../packages/plugin/src/depot.ts) publie un artefact par pull
+Le [plugin](../../../../packages/plugin-exporter/src/depot.ts) publie un artefact par pull
 request. Le workflow ne présumerait donc pas que contrat et nouveaux tokens
 arrivent ensemble. Un contrat pourrait aussi précéder le code. L’état proposé
 du repository déterminerait les modules exécutables.
@@ -914,7 +914,7 @@ de pull request soumises à approbation lorsqu’elles proviennent de
 `GITHUB_TOKEN`. Ce parcours devrait être testé avec l’identité retenue.
 [Déclenchement des workflows](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
 
-Le [jeton local du plugin](../../../../packages/plugin/src/config.ts) pourrait
+Le [jeton local du plugin](../../../../packages/plugin-exporter/src/config.ts) pourrait
 rester adapté à certains projets. Une organisation pourrait préférer une
 GitHub App pour l’automatisation ou un intermédiaire imposé par sa politique.
 Cette décision porterait sur l’authentification et l’exploitation du service ;

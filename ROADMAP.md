@@ -2,7 +2,7 @@
 
 L'état du projet et ce qu'il reste à valider. [CONCEPT.md](./CONCEPT.md) porte
 les principes, [docs/format/FORMAT.md](./docs/format/FORMAT.md) la forme publiée,
-[packages/plugin/SPEC.md](./packages/plugin/SPEC.md) le comportement du plugin,
+[packages/plugin-exporter/SPEC.md](./packages/plugin-exporter/SPEC.md) le comportement du plugin,
 et [PISTES-EVOLUTION.md](./docs/notes/Recherches/Evolutions%20globales/PISTES-EVOLUTION.md) les
 options non engagées.
 
@@ -33,7 +33,7 @@ un composant composé. Couvrir un catalogue entier n'en fait pas partie.
 | Domaine | État |
 |---|---|
 | Forme du contrat | Vues exactes publiées sous cinq catalogues de parties, plus un `samples` récursif non normatif. Valeurs neutres élidées, une entrée par ligne sur deux niveaux |
-| Lois du moteur | `packages/plugin/tests/lois.ts` les porte, `exportComponent.test.ts` les applique à chaque contrat fabriqué. Aucune ne cite le nom d'un composant |
+| Lois du moteur | `packages/plugin-exporter/tests/lois.ts` les porte, `exportComponent.test.ts` les applique à chaque contrat fabriqué. Aucune ne cite le nom d'un composant |
 | Export DTCG | Variables locales, alias et modes exportés dans la version 2 du format de tokens : couleurs, dimensions, durées et courbes du module `2025.10`, graisses reconnues en nombre, familles prouvées typées, marque et axes à la racine. `ucm tokens css` projette ces axes et les collections étendues en attributs. La cascade passe dans Chromium, Firefox et WebKit |
 | Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition, tous couverts par le vocabulaire du contrat |
 | Position et rotation | Un calque hors du flux est placé par `constraints` et `inset`, sa `rotation` écrite en vocabulaire CSS |
