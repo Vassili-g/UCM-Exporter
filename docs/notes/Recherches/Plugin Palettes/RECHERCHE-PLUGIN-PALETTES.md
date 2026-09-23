@@ -1180,7 +1180,7 @@ test qui la tient.
 | Le plugin ne touche aucune variable | Loi d'écriture : `figma.variables` absent de `src/` |
 | Le plugin n'écrit que dans les cadres qu'il possède et dans la recette | Tests du modèle et de l'écriture |
 | Le manifest n'ouvre aucun domaine | Test du manifest |
-| Aucun des deux plugins n'importe l'autre | Loi d'import, dans chaque plugin |
+| Aucun des deux plugins n'importe l'autre | Loi d'import à la racine du dépôt, `tests/pluginsSepares.test.ts`, qui lit les deux sens |
 
 ## 15. Les lots
 

@@ -1,0 +1,37 @@
+/*
+ * Les règles propres à UCM Palettes. L'échelle de texte, la trame, les rôles de
+ * couleur et les composants communs sont dans le socle.css de
+ * packages/plugin-socle, que le build place avant cette feuille.
+ */
+
+/* Rang 3 : l'état de la lecture informe sans rien demander. */
+.etat-lecture {
+  color: var(--texte-second);
+}
+
+/* Un constat garde ses trois parties séparées : où, quoi, geste. */
+.constat {
+  display: grid;
+  gap: var(--espace-serre);
+  padding: var(--espace-controle);
+  border-radius: 0 var(--rayon) var(--rayon) 0;
+}
+
+/* Un bloquant porte le filet de sévérité du danger, jamais une puce. */
+.constat-bloquant {
+  border-left: 2px solid var(--texte-danger);
+  background: var(--fond-danger);
+}
+
+.constat-ou {
+  font-weight: 600;
+}
+
+.constat-quoi {
+  overflow-wrap: anywhere;
+}
+
+/* Le geste garde la couleur de lecture ; son rang vient de sa position, la dernière. */
+.constat-geste {
+  color: var(--texte);
+}

@@ -169,14 +169,19 @@ ${modes}
 `;
 }
 
-/** Le dossier où la galerie d'un plugin s'écrit. */
+/**
+ * Le dossier où la galerie d'un plugin s'écrit : `dist/galerie`, ou
+ * `dist/<dossier>` pour un plugin qui construit une galerie par taille de
+ * fenêtre.
+ */
 function sortieDe(galerie) {
-  return path.join(galerie.racine, 'dist', 'galerie');
+  return path.join(galerie.racine, 'dist', galerie.dossier ?? 'galerie');
 }
 
 /**
  * Construit la galerie d'un plugin : `galerie` porte `racine` (le dossier du
- * paquet), `etats`, `largeur` et `hauteur` de sa fenêtre.
+ * paquet), `etats`, `largeur` et `hauteur` de sa fenêtre, et `dossier`
+ * quand elle ne s'écrit pas dans `dist/galerie`.
  */
 function construireGalerie(galerie) {
   const dist = path.join(galerie.racine, 'dist');

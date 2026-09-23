@@ -205,8 +205,20 @@ packages/plugin-socle/   ce que les plugins partagent : ucm-plugin-socle, privé
   src/ui/socle.css         échelle de texte, trame, rôles de couleur et replis sombres, avant la feuille de chaque plugin
   src/ui/                  bouton, onglets, interrupteur, poignée de redimensionnement, engrenage et bascule de l'en-tête
   galerie/                 le banc de galerie, sa capture et le décalque du thème Figma
-  lois/                    la loi des styles, les repères du gabarit et le manifest, que le test de chaque plugin appelle
+  lois/                    les lois des styles, du gabarit, du manifest et de la galerie, que le test de chaque plugin appelle
   tests/                   le build, le manifest, la fenêtre et le banc, pour un plugin quelconque
+
+packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
+  src/code.ts              routage des demandes de l'interface, une porte par geste d'écriture
+  src/messages.ts          les deux sens de la frontière sandbox ↔ interface
+  src/lecture.ts           la recette rangée, classée, son empreinte, et le profil du document
+  src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
+  src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
+  src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
+  src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
+  galerie/                 les états de l'interface, à la taille par défaut et à la taille minimale
+  tests/                   dont la loi d'écriture, et interface/ pour Chromium
+  manifest.json            identifiant provisoire jusqu'au point M1
 
 docs/                    la documentation classée par sujet
   README.md              le sommaire par profil de lecteur, et la table des autorités
@@ -240,6 +252,7 @@ tests/                   les tests du monorepo lui-même
   registrePortableDocuments.test.ts  aucun document portable ne promet une stack
   versionSuitLeContenu.test.mjs  un numéro publié annonce bien ce qu'il publie
   monorepoCoherent.test.mjs  chaque paquet lit le kit d'à côté, jamais le registre
+  pluginsSepares.test.ts  aucun des deux plugins n'importe l'autre
 ```
 
 ## Invariants
@@ -829,6 +842,32 @@ La spécification en lien porte le raisonnement.
   quelle que soit la dérive. `teinteA` (`packages/couleur/src/rampe.ts`) en est
   l'unique autorité, et `proprietes.test.ts` l'éprouve sur vingt mille tirages.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#64-la-teinte-dun-cran)
+
+### Écriture d'UCM Palettes
+
+- Seuls les fichiers de `packages/plugin-palettes/src/ecriture/` écrivent dans
+  le document. `packages/plugin-palettes/tests/loiDEcriture.test.ts` cherche
+  ailleurs, ligne à ligne, une liste explicite de motifs : `figma.create*`,
+  `.remove(`, `setPluginData`, `setSharedPluginData`, `appendChild`,
+  `insertChild`, l'affectation de `fills`, `strokes`, `name`, `characters`,
+  `x`, `y`, `layoutMode`, `fontName` et `fontSize`, et `.resize(` hors de
+  `figma.ui.resize`. `src/ui/` en est exclu : l'iframe n'a pas de global
+  `figma`. Borne : une affectation absente de la liste lui échappe.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#143-le-plugin)
+- Aucun fichier de `src/`, interface et écriture comprises, n'appelle
+  `figma.variables`, `loadAllPagesAsync` ni une API de style. La même loi le
+  tient.
+- `src/code.ts` est le seul fichier qui importe `src/ecriture/`, avec une porte
+  par geste d'écriture. La demande `ranger-recette` est aujourd'hui la seule ;
+  « dessiner » s'y ajoute avec la planche.
+- La recette se range sous la clé partagée `ucm_palettes/recette`, en JSON
+  canonique, si elle passe la validation et si la recette rangée porte encore
+  l'empreinte que l'interface a lue. `commitUndo` suit l'écriture. Un refus
+  n'écrit rien. `packages/plugin-palettes/tests/rangement.test.ts` le tient.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#73-rangement-et-version)
+- Le manifest n'ouvre aucun domaine et ne déclare pas `enablePrivatePluginApi`.
+- Aucun des deux plugins n'importe l'autre : `tests/pluginsSepares.test.ts` lit
+  les deux sens, à la racine, sans qu'un paquet lise les sources de l'autre.
 
 ## Vérification
 

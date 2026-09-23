@@ -9,7 +9,7 @@
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p tsconfig.json",
     "test": "npm run build --workspace @ucm-kit/core && npm run test --workspaces --if-present && node scripts/run-tests.cjs",
-    "build": "npm run build --workspace @ucm-kit/core && npm run build --workspace ucm-exporter-plugin",
+    "build": "npm run build --workspace @ucm-kit/core && npm run build --workspace ucm-exporter-plugin && npm run build --workspace ucm-palettes-plugin",
     "schema": "npm run schema --workspace @ucm-kit/core",
     "pins": "node scripts/pins-servis.mjs",
     "cascade": "npm run build --workspace @ucm-kit/core && node --test packages/cli/tests/cascade/cascade.test.mjs",

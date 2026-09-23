@@ -374,33 +374,36 @@ Spécification : [section 13](./RECHERCHE-PLUGIN-PALETTES.md#13-linterface),
 [section 14](./RECHERCHE-PLUGIN-PALETTES.md#14-architecture-du-code).
 Paquet `packages/plugin-palettes`, nom `ucm-palettes-plugin`.
 
-- [ ] **L3.1** Paquet, `tsconfig` avec les chemins de types d'UCM Exporter,
+- [x] **L3.1** Paquet, `tsconfig` avec les chemins de types d'UCM Exporter,
   dépendances `ucm-couleur` et `ucm-plugin-socle`, lock commité.
-- [ ] **L3.2** Scripts du socle : build de l'interface, manifest, découvreur
+- [x] **L3.2** Scripts du socle : build de l'interface, manifest, découvreur
   de tests et banc de galerie, appelés avec les paramètres du plugin : taille
   de la galerie (600 × 720 et 440 × 520), étapes `survol` et `touche` en plus
   de message, clic, saisie et erreurUi. Une étape qui manque au banc s'ajoute
-  au socle, sous la preuve de L8.1.
-- [ ] **L3.3** Manifest [ARC-05] avec un identifiant provisoire ; test du
+  au socle, sous la preuve de L8.1. Fait pour les deux tailles, par un
+  paramètre `dossier` du banc ; `survol` et `touche` entrent au banc avec le
+  premier état qui les joue (L4.6), une étape qu'aucun état ne joue ne pouvant
+  se voir rouge.
+- [x] **L3.3** Manifest [ARC-05] avec un identifiant provisoire ; test du
   manifest : aucun domaine, aucune `enablePrivatePluginApi`, `documentAccess`
   exact.
-- [ ] **L3.4** `messages.ts` [UI-07] [UI-08], réduit aux messages que ce lot
+- [x] **L3.4** `messages.ts` [UI-07] [UI-08], réduit aux messages que ce lot
   produit et met en scène : état lu, erreur de lecture. Un message entre dans
   ce fichier au lot qui le joue dans la galerie ; le test de la galerie
   l'exige.
-- [ ] **L3.5** `lecture.ts` : recette rangée, classement [REC-03], profil du
+- [x] **L3.5** `lecture.ts` : recette rangée, classement [REC-03], profil du
   document. `ecriture/recette.ts` : [REC-01], [REC-04], contrôle d'empreinte
   d'E13, `commitUndo` d'E12. `code.ts` : deux portes d'écriture [ARC-14].
-- [ ] **L3.6** Fenêtre [UI-01] : celle du socle, avec les bornes du plugin et
+- [x] **L3.6** Fenêtre [UI-01] : celle du socle, avec les bornes du plugin et
   une clé propre.
-- [ ] **L3.7** Interface : deux onglets vides et l'en-tête du socle, dont le
+- [x] **L3.7** Interface : deux onglets vides et l'en-tête du socle, dont le
   bouton en forme d'engrenage ouvre une configuration vide [UI-02] ;
   `textes.ts` pour tous les textes du designer (D-J).
-- [ ] **L3.8** Galerie : `etats.cjs` avec Premier lancement, Recette future,
+- [x] **L3.8** Galerie : `etats.cjs` avec Premier lancement, Recette future,
   Recette illisible ; les autres états de §13.3 déclarés `existe: false` avec
   l'identifiant de la case qui les créera dans `attendu`. Test de la galerie :
   la logique du socle, appelée par un test au nom du plugin.
-- [ ] **L3.9** Loi d'écriture ([ARC-12], [ARC-13]) : liste explicite des
+- [x] **L3.9** Loi d'écriture ([ARC-12], [ARC-13]) : liste explicite des
   motifs (`figma.create*`, `.remove(`, `setPluginData`, `setSharedPluginData`,
   `appendChild`, `insertChild`, `.fills =`, `.strokes =`, `.name =`,
   `.characters =`, `.resize(`, `.x =`, `.y =`, `.layoutMode =`, `.fontName =`,
@@ -409,16 +412,18 @@ Paquet `packages/plugin-palettes`, nom `ucm-palettes-plugin`.
   la loi dit sa borne : lecture ligne à ligne. La navigation
   (`setCurrentPageAsync`, `scrollAndZoomIntoView`, `selection`) vit dans
   `src/navigation.ts`, hors de la loi.
-- [ ] **L3.10** Loi d'import, dans les deux plugins : aucun n'importe l'autre.
-- [ ] **L3.11** Racine : `npm run build` construit le plugin après le kit
+- [x] **L3.10** Loi d'import : aucun des deux plugins n'importe l'autre. Elle
+  vit à la racine, `tests/pluginsSepares.test.ts`, et lit les deux sens : le
+  critère du lot laisse `packages/plugin-exporter` intact.
+- [x] **L3.11** Racine : `npm run build` construit le plugin après le kit
   ([ARC-06]). `ci.yml`, job `cascade` : une ligne
   `npm run test:ui --workspace ucm-palettes-plugin`.
-- [ ] **L3.12** `tests/interface/interface.test.mjs` du plugin, avec un premier
+- [x] **L3.12** `tests/interface/interface.test.mjs` du plugin, avec un premier
   cas : la fenêtre s'ouvre sur l'onglet Palettes.
-- [ ] **L3.13** AGENTS.md : carte du code, invariants d'écriture du nouveau
+- [x] **L3.13** AGENTS.md : carte du code, invariants d'écriture du nouveau
   plugin. Nouveau domaine d'invariants ajouté à `DOMAINES` dans
   `tests/inventaireInvariants.test.ts`, dans le même commit.
-- [ ] **L3.14** Ouvrir M1.
+- [x] **L3.14** Ouvrir M1.
 
 Critère : suite, typecheck et build verts ; lois vues rouges ; galerie
 construite ; UCM Exporter inchangé (`git diff --stat packages/plugin-exporter` vide).
@@ -442,7 +447,8 @@ avec E22.
   L2.3, avec les textes provisoires.
 - [ ] **L4.5** Ligne repliée de la dérive (E22), sans l'éditeur.
 - [ ] **L4.6** Galerie : Palette en saisie, promesses manquées, alertes seules,
-  couleur presque grise, notice `LEGACY`.
+  couleur presque grise, notice `LEGACY`. Étapes `survol` et `touche` au banc
+  du socle, jouées par ces états, sous la preuve de L8.1.
 - [ ] **L4.7** `test:ui` : à 440 × 520, verdict, « Dessiner » et première
   promesse manquée visibles sans défiler.
 
@@ -637,6 +643,21 @@ dossier « Archi Tokens Multi-marques », cinq fichiers n'étaient pas suivis
 style passé sur ces fichiers, sans faute.
 
 Réponse du mainteneur : tout commiter. Traité par `bcc4f27`.
+
+### M1 : identifiant du plugin
+
+Question : créer le plugin UCM Palettes dans Figma (Plugins, Development, New
+plugin), donner l'identifiant que Figma attribue, puis importer
+`packages/plugin-palettes/manifest.json` et dire ce que la fenêtre montre.
+
+Préparé : le manifest porte l'identifiant provisoire `ucm-palettes-provisoire`.
+Ce qui ne se prouve pas hors de Figma : l'ouverture à 600 × 720, la lecture de
+la recette sous la clé partagée, le thème de Figma servi à l'interface. Sur un
+fichier neuf, l'onglet Palettes doit annoncer « Aucune recette dans ce
+fichier ».
+
+Réponse du mainteneur : accord pour créer le plugin au lot 3 ; l'identifiant
+reste à donner.
 
 ### M2 : textes destinés au designer
 

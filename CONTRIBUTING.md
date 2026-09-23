@@ -239,6 +239,13 @@ npm run galerie --workspace ucm-exporter-plugin           # dist/galerie/index.h
 npm run galerie:captures --workspace ucm-exporter-plugin  # les planches, en PNG
 ```
 
+UCM Palettes construit deux galeries, `dist/galerie/` à la taille par défaut de
+sa fenêtre et `dist/galerie-minimale/` à sa taille minimale, par les mêmes
+commandes sur `--workspace ucm-palettes-plugin`. Une capture par état
+(`--etats`) plus étroite que 500 px est rognée par Chrome headless, qui
+impose cette largeur minimale à sa fenêtre : la planche, où chaque état vit
+dans une iframe à la bonne taille, fait foi.
+
 Les couleurs viennent d’un décalque des variables `--figma-color-*`, pas de
 l’hôte : la galerie sert à juger une hiérarchie, une densité et une place, et
 jamais à conclure sur un contraste. Un état ajouté sans entrée dans `etats.cjs`
@@ -301,9 +308,10 @@ Les interactions du plugin se vérifient dans Chromium :
 
 ```sh
 npm run test:ui --workspace ucm-exporter-plugin
+npm run test:ui --workspace ucm-palettes-plugin
 ```
 
-Cette commande reconstruit l'interface. Elle demande le navigateur installé par
+Chaque commande reconstruit l'interface de son plugin. Elle demande le navigateur installé par
 `npx playwright install chromium` ; le job `cascade` de la CI l'exécute après
 les vérifications de la feuille de tokens.
 
