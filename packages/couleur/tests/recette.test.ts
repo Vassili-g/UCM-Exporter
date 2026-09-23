@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  CRANS_DES_EMPLOIS,
   FORMAT_RECETTE,
   classerRecette,
   recetteParDefaut,
@@ -57,9 +58,8 @@ const CAS: [RegleRecette, string, (r: any) => void][] = [
   ['origine-inconnue', 'palettes[0].parts.origine', (r) => { r.palettes[0].parts = { soft: 0.4, vivid: 0.5, origine: 'auto' }; }],
   ['identifiant-forme', 'palettes[0].id', (r) => { r.palettes[0].id = 'p-1'; }],
   ['identifiants-uniques', 'palettes[1].id', (r) => { r.palettes[1].id = r.palettes[0].id; }],
-  ['role-absent', 'cablage.focus', (r) => delete r.cablage.focus],
-  ['cible-forme', 'cablage.text', (r) => { r.cablage.text = { profil: 'vivid' }; }],
-  ['cible-cran-inconnu', 'palettes[0].cablage.surface.cran', (r) => { r.palettes[0].cablage = { surface: { profil: 'soft', cran: 750 } }; }],
+  ['cle-inconnue', 'cablage', (r) => { r.cablage = { solid: { profil: 'vivid', cran: 700 } }; }],
+  ['cle-inconnue', 'palettes[0].cablage', (r) => { r.palettes[0].cablage = { surface: { profil: 'soft', cran: 200 } }; }],
 ];
 
 for (const [regle, chemin, alterer] of CAS) {
@@ -72,6 +72,17 @@ for (const [regle, chemin, alterer] of CAS) {
       resultat.refus.some((refus) => refus.regle === regle && refus.chemin === chemin),
       `refus attendu ${regle} en ${chemin}, obtenus : ${JSON.stringify(resultat.refus)}`,
     );
+  });
+}
+
+for (const cran of CRANS_DES_EMPLOIS) {
+  test(`[REC-05] crans-emplois : refusé quand ${cran} manque`, () => {
+    const recette = valide();
+    // Le cran devient son voisin à +25 : la liste reste croissante et garde sa longueur.
+    recette.crans[recette.crans.indexOf(cran)] = cran + 25;
+    const resultat = validerRecette(recette);
+    assert.ok('refus' in resultat, 'la recette altérée a été acceptée');
+    assert.deepEqual(resultat.refus, [{ regle: 'crans-emplois', chemin: 'crans', valeur: cran }]);
   });
 }
 

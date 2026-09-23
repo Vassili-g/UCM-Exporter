@@ -7,6 +7,7 @@ export * from './plafond';
 export * from './rampe';
 export * from './tailwind';
 export * from './contraste';
+export * from './emplois';
 export * from './recette';
 export * from './empreinte';
 export * from './palette';

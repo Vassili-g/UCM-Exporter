@@ -1,13 +1,13 @@
 /**
- * Une palette lue contre sa recette : ses parts, ses rampes, son câblage
- * résolu, et les parts propres d'une référence presque grise ([ENT-09]).
+ * Une palette lue contre sa recette : ses parts, ses rampes, et les parts
+ * propres d'une référence presque grise ([ENT-09]).
  *
  * Chaque fonction reçoit une recette déjà validée ([REC-05]).
  */
 import { lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
 import { partDeChroma } from './contraste';
 import { arrondir, fabriquerPalette, partsEffectives, type Parts, type Rampes } from './rampe';
-import type { Cablage, Palette, Recette } from './recette';
+import type { Palette, Recette } from './recette';
 
 /** La couleur de référence d'une palette validée. */
 export function referenceDe(palette: Palette): Rgb8 {
@@ -33,11 +33,6 @@ export function rampesDe(recette: Recette, palette: Palette): Rampes {
     derives: { soft: palette.derive.soft, vivid: palette.derive.vivid },
     gamut: recette.gamut,
   });
-}
-
-/** Le câblage d'une palette : le câblage commun, que ses propres cibles remplacent rôle par rôle. */
-export function cablageDe(recette: Recette, palette: Palette): Cablage {
-  return { ...recette.cablage, ...palette.cablage };
 }
 
 /** Vrai quand la chroma de la référence est sous `seuils.chromaGrise` ([MOT-18]). */

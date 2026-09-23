@@ -7,39 +7,12 @@
  * règle et le chemin du champ fautif ; l'interface les met en mots.
  */
 import { lireHexa } from './conversions';
-import { DERIVE_MAXIMALE, type Profil } from './rampe';
+import { CRANS_DES_EMPLOIS } from './emplois';
+import { DERIVE_MAXIMALE } from './rampe';
 import { RELEVE_TAILWIND, type PaireDeDerive } from './tailwind';
 
 /** La version de la forme de la recette que ce paquet écrit. */
 export const FORMAT_RECETTE = 1;
-
-export type Role =
-  | 'solid'
-  | 'on-solid'
-  | 'text'
-  | 'surface'
-  | 'border-control'
-  | 'border-decorative'
-  | 'focus';
-
-/** Les sept rôles, dans l'ordre où la planche les liste (section 9.4). */
-export const ROLES: readonly Role[] = [
-  'solid',
-  'on-solid',
-  'text',
-  'surface',
-  'border-control',
-  'border-decorative',
-  'focus',
-];
-
-/** Ce qu'un rôle vise : un cran d'un profil, le fond de référence du mode, ou la référence. */
-export type Cible =
-  | { readonly profil: Profil; readonly cran: number }
-  | { readonly fond: true }
-  | { readonly reference: true };
-
-export type Cablage = { readonly [R in Role]: Cible };
 
 export type OrigineDerive = 'tailwind' | 'constante' | 'libre';
 
@@ -67,7 +40,6 @@ export interface Palette {
     readonly vivid: DeriveRangee;
   };
   readonly parts?: PartsPropres;
-  readonly cablage?: { readonly [R in Role]?: Cible };
 }
 
 export interface Seuils {
@@ -87,7 +59,6 @@ export interface Recette {
   readonly fonds: { readonly light: string; readonly dark: string };
   readonly seuils: Seuils;
   readonly derives: readonly PaireDeDerive[];
-  readonly cablage: Cablage;
   readonly palettes: readonly Palette[];
 }
 
@@ -105,15 +76,6 @@ export function recetteParDefaut(): Recette {
     fonds: { light: '#F7F7F7', dark: '#121212' },
     seuils: { texte: 4.5, nonTexte: 3, profilsConfondus: 0.02, palettesProches: 0.05, chromaGrise: 0.03 },
     derives: RELEVE_TAILWIND.map(([nom, clair, sombre]) => [nom, clair, sombre] as PaireDeDerive),
-    cablage: {
-      solid: { profil: 'vivid', cran: 700 },
-      'on-solid': { fond: true },
-      text: { profil: 'vivid', cran: 700 },
-      surface: { profil: 'vivid', cran: 100 },
-      'border-control': { profil: 'vivid', cran: 600 },
-      'border-decorative': { profil: 'vivid', cran: 300 },
-      focus: { profil: 'vivid', cran: 600 },
-    },
     palettes: [],
   };
 }
@@ -141,9 +103,7 @@ export type RegleRecette =
   | 'origine-inconnue'
   | 'identifiant-forme'
   | 'identifiants-uniques'
-  | 'role-absent'
-  | 'cible-forme'
-  | 'cible-cran-inconnu';
+  | 'crans-emplois';
 
 /** Un refus : la règle, le chemin du champ fautif, et la valeur lue quand elle se montre. */
 export interface Refus {
@@ -211,6 +171,7 @@ function validerCrans(releve: Releve, crans: unknown): number[] | null {
       releve.refuser('crans-croissants', `crans[${rang}]`, cran);
     }
   });
+  for (const cran of CRANS_DES_EMPLOIS) if (!crans.includes(cran)) releve.refuser('crans-emplois', 'crans', cran);
   return crans;
 }
 
@@ -267,33 +228,6 @@ function validerDerives(releve: Releve, derives: unknown): void {
   });
 }
 
-function validerCible(releve: Releve, cible: unknown, chemin: string, crans: number[] | null): void {
-  if (!estObjet(cible)) {
-    releve.refuser('cible-forme', chemin);
-    return;
-  }
-  const cles = Object.keys(cible).sort().join(',');
-  if (cles === 'fond' && cible.fond === true) return;
-  if (cles === 'reference' && cible.reference === true) return;
-  if (cles === 'cran,profil' && (cible.profil === 'soft' || cible.profil === 'vivid') && estNombre(cible.cran)) {
-    if (crans !== null && !crans.includes(cible.cran)) releve.refuser('cible-cran-inconnu', `${chemin}.cran`, cible.cran);
-    return;
-  }
-  releve.refuser('cible-forme', chemin);
-}
-
-function validerCablage(releve: Releve, cablage: unknown, chemin: string, crans: number[] | null, complet: boolean): void {
-  if (!estObjet(cablage)) {
-    releve.refuser('forme', chemin);
-    return;
-  }
-  for (const role of Object.keys(cablage)) {
-    if (!(ROLES as readonly string[]).includes(role)) releve.refuser('cle-inconnue', joindre(chemin, role));
-    else validerCible(releve, cablage[role], joindre(chemin, role), crans);
-  }
-  if (complet) for (const role of ROLES) if (!(role in cablage)) releve.refuser('role-absent', joindre(chemin, role));
-}
-
 const ORIGINES_DERIVE: readonly string[] = ['tailwind', 'constante', 'libre'];
 const ORIGINES_PARTS: readonly string[] = ['designer', 'grise'];
 
@@ -310,13 +244,8 @@ function validerDerivePalette(releve: Releve, derive: unknown, chemin: string): 
   }
 }
 
-function validerPalette(
-  releve: Releve,
-  palette: unknown,
-  chemin: string,
-  crans: number[] | null,
-): void {
-  if (!releve.objet(palette, chemin, ['id', 'reference', 'derive'], ['nom', 'parts', 'cablage'])) return;
+function validerPalette(releve: Releve, palette: unknown, chemin: string): void {
+  if (!releve.objet(palette, chemin, ['id', 'reference', 'derive'], ['nom', 'parts'])) return;
   if (typeof palette.id !== 'string' || !MOTIF_IDENTIFIANT.test(palette.id)) {
     releve.refuser('identifiant-forme', `${chemin}.id`, palette.id);
   }
@@ -344,8 +273,6 @@ function validerPalette(
       }
     }
   }
-
-  if ('cablage' in palette) validerCablage(releve, palette.cablage, `${chemin}.cablage`, crans, false);
 }
 
 const CLES_RECETTE = [
@@ -357,7 +284,6 @@ const CLES_RECETTE = [
   'fonds',
   'seuils',
   'derives',
-  'cablage',
   'palettes',
 ] as const;
 
@@ -399,7 +325,6 @@ export function validerRecette(entree: unknown): { recette: Recette } | { refus:
   }
 
   validerDerives(releve, entree.derives);
-  validerCablage(releve, entree.cablage, 'cablage', crans, true);
 
   if (!Array.isArray(entree.palettes)) {
     releve.refuser('forme', 'palettes');
@@ -407,7 +332,7 @@ export function validerRecette(entree: unknown): { recette: Recette } | { refus:
     const identifiants = new Set<unknown>();
     entree.palettes.forEach((palette, rang) => {
       const chemin = `palettes[${rang}]`;
-      validerPalette(releve, palette, chemin, crans);
+      validerPalette(releve, palette, chemin);
       const id = estObjet(palette) ? palette.id : undefined;
       if (identifiants.has(id)) releve.refuser('identifiants-uniques', `${chemin}.id`, id as string);
       identifiants.add(id);

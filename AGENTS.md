@@ -186,10 +186,11 @@ packages/couleur/        le moteur de couleur d'UCM Palettes : ucm-couleur, priv
   src/rampe.ts             un cran, la teinte pivotée, les quatre rampes d'une palette
   src/tailwind.ts          le préréglage Tailwind et son relevé
   src/contraste.ts         contraste WCAG 2, ΔEok, part de chroma, écriture à virgule
+  src/emplois.ts           la table fixe des emplois et les crans que la recette doit porter
   src/recette.ts           la forme de la recette, sa validation, son classement à la lecture
   src/empreinte.ts         JSON canonique, encodeur UTF-8 et FNV-1a
   src/palette.ts           une palette lue contre sa recette, et ses parts grises
-  src/promesses.ts         les quatorze paires, leur verdict et le cran proposé
+  src/promesses.ts         les quatorze paires, jugées par mode et par profil
   src/alertes.ts           les alertes de conception et la notice
   src/constats.ts          les sévérités et leur ordre d'affichage
   src/index.ts             la porte du paquet

@@ -1,16 +1,21 @@
-/** Les alertes de la section 11.3 ([VER-08], [VER-10], [VER-11], [ENT-06], [ENT-09]). */
+/** Les alertes de la section 11.3 ([VER-08], [VER-10] à [VER-12], [ENT-06], [ENT-09]). */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  CRANS_DES_EMPLOIS,
   ajusterPartsGrises,
   alertesDePalette,
   alertesDeRecette,
   distanceDePalettes,
+  ecrireHexa,
+  lireHexa,
+  rampesDe,
+  rangsDesEmplois,
   recetteParDefaut,
+  rgb8VersOklch,
   severiteDeLAlerte,
   type Alerte,
-  type Cible,
   type Palette,
 } from '../src/index';
 import { paletteTailwind, recetteAvec } from './fabrique';
@@ -27,10 +32,28 @@ test('[VER-08] profils confondus : sonne au cran 100 clair de #1E6FD9, avec la m
   assert.equal(alerte.seuil, 0.02);
 });
 
-test('[VER-11] profils confondus : se tait quand le câblage ne vise plus le cran confondu', () => {
-  // surface passe au cran 200 : le cran 100 n'est plus visé, et le cran 50, confondu lui aussi, ne l'a jamais été.
-  const palette = { ...BLEU, cablage: { surface: { profil: 'vivid', cran: 200 } as Cible } };
-  assert.ok(!codes(dePalette(palette)).includes('profils-confondus'));
+test('[VER-11] profils confondus : ne regarde que les crans de la table des emplois, états compris', () => {
+  const recette = recetteParDefaut();
+  assert.deepEqual(rangsDesEmplois(recette).map((rang) => recette.crans[rang]), [...CRANS_DES_EMPLOIS]);
+});
+
+test('[VER-12] référence plus claire que le bouton : sonne pour #FACC15, avec le cran 700 vivid clair', () => {
+  const jaune = paletteTailwind('p-00000012', '#FACC15');
+  const alerte = dePalette(jaune).find((a) => a.code === 'reference-plus-claire-que-bouton');
+  assert.ok(alerte && alerte.code === 'reference-plus-claire-que-bouton');
+  const recette = recetteAvec(jaune);
+  const cran700 = rampesDe(recette, jaune).vivid.light[recette.crans.indexOf(700)].couleur;
+  assert.deepEqual([alerte.reference, alerte.bouton], ['#FACC15', ecrireHexa(cran700)]);
+  assert.ok(rgb8VersOklch(lireHexa(alerte.bouton)!).L < rgb8VersOklch(lireHexa(alerte.reference)!).L);
+});
+
+test('[VER-12] référence plus claire que le bouton : se mesure sur la courbe claire, 0,5 au cran 700', () => {
+  // #1E6FD9 a une clarté de 0,555 : au-dessus du 700 clair (0,5), sous le 700 sombre (0,67).
+  assert.ok(codes(dePalette(BLEU)).includes('reference-plus-claire-que-bouton'));
+});
+
+test('[VER-12] référence plus claire que le bouton : se tait pour #1D4ED8, plus sombre que le cran 700', () => {
+  assert.ok(!codes(dePalette(paletteTailwind('p-00000013', '#1D4ED8'))).includes('reference-plus-claire-que-bouton'));
 });
 
 test('[ENT-09] profils confondus : se tait pour une palette aux parts grises', () => {

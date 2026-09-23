@@ -338,30 +338,30 @@ Exécuté après le lot 8 et avant le lot 3 (D-O, M7). Spécification :
 `packages/couleur`. Aucune recette n'est rangée dans un fichier :
 `FORMAT_RECETTE` reste à 1, sans migration.
 
-- [ ] **L2b.1** `recette.ts` : retirer `cablage` de `Recette`, de `Palette`, de
+- [x] **L2b.1** `recette.ts` : retirer `cablage` de `Recette`, de `Palette`, de
   `recetteParDefaut` et de la liste des clés connues. Retirer `Cible`,
   `Cablage`, `validerCible`, `validerCablage` et les règles `role-absent`,
   `cible-forme`, `cible-cran-inconnu`. Une clé `cablage` devient une
   `cle-inconnue`. Ajouter la règle `crans-emplois` ([VER-05]) : `crans`
   contient 100, 200, 300, 600, 700, 800 et 900.
-- [ ] **L2b.2** Table des emplois : `Role` devient `Emploi`, et une constante
+- [x] **L2b.2** Table des emplois : `Role` devient `Emploi`, et une constante
   exportée donne son cran à chaque emploi (§11.2), `on-solid` valant le fond.
   Le nom la range là où `promesses.ts` et `alertes.ts` la lisent, sans cycle
   d'import.
-- [ ] **L2b.3** `palette.ts` : retirer `cablageDe`.
-- [ ] **L2b.4** `promesses.ts` : les quatorze paires sur la table fixe, pour
+- [x] **L2b.3** `palette.ts` : retirer `cablageDe`.
+- [x] **L2b.4** `promesses.ts` : les quatorze paires sur la table fixe, pour
   chaque mode et chaque profil, 56 par palette. Retirer `Proposition`, la
   recherche du cran proposé et le verdict `non-verifiable` ([VER-06]). Une
   promesse porte son profil.
-- [ ] **L2b.5** `alertes.ts` : `rangsCables` devient les crans de la table, états
+- [x] **L2b.5** `alertes.ts` : `rangsCables` devient les crans de la table, états
   compris ([VER-11]) ; alerte `reference-plus-claire-que-bouton` ([VER-12]),
   mesurée sur `courbes.light` au cran 700, portant la référence et l'hexa du
   cran 700 `vivid` en clair.
-- [ ] **L2b.6** Tests : ceux du câblage et du cran proposé retirés ; chaque
+- [x] **L2b.6** Tests : ceux du câblage et du cran proposé retirés ; chaque
   paire vue tenir et échouer pour chaque profil ; `crans-emplois` vue refuser ;
   `[VER-12]` vue sonner pour `#FACC15` (yellow-400 de Tailwind, clarté 0,86) et
   se taire pour `#1D4ED8` (blue-700, clarté 0,49). Les vecteurs de §6.8 restent verts.
-- [ ] **L2b.7** `TEXTES-A-VALIDER.md` est déjà à jour pour ce lot (M7) : ne pas
+- [x] **L2b.7** `TEXTES-A-VALIDER.md` est déjà à jour pour ce lot (M7) : ne pas
   le réécrire. AGENTS.md : carte du code de `packages/couleur` si un fichier
   change de rôle.
 
@@ -686,6 +686,9 @@ l'extraction, sur 23 067 éléments. La suite, le typecheck, le build et
 `test:ui` sont verts. Ce qui ne se prouve pas hors de Figma : le sandbox
 (la fenêtre lit et range sa taille par le socle) et une publication réelle.
 
+Réponse du mainteneur : UCM Exporter réimporté depuis le nouveau manifest ;
+l'analyse d'un composant et la publication fonctionnent.
+
 ### M7 : rôles câblés et table des emplois
 
 Ouvert par le mainteneur après le lot 8, pendant la mise à jour de
@@ -716,3 +719,6 @@ Réponses du mainteneur :
 Préparé pour le lot 2b : la spécification, ce plan et
 [TEXTES-A-VALIDER.md](./TEXTES-A-VALIDER.md), dont les textes des promesses et
 de `[VER-12]` attendent le choix du mainteneur, comme ceux de M2.
+
+Traité dans le moteur par le commit du lot 2b. Les textes restent ouverts
+avec M2.

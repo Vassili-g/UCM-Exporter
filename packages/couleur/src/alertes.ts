@@ -1,15 +1,16 @@
 /**
  * Les alertes de la section 11.3 : une mesure qui franchit un seuil de
- * conception ([VER-08], [VER-10], [VER-11], [ENT-06]). Une alerte n'empêche
+ * conception ([VER-08], [VER-10] à [VER-12], [ENT-06]). Une alerte n'empêche
  * rien ; elle porte la mesure, le seuil et ce qu'ils visent, et l'interface
  * les met en mots.
  */
-import { lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
+import { ecrireHexa, lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
 import { distanceOk, partDeChroma } from './contraste';
-import { cablageDe, estPresqueGrise, partsDe, rampesDe, referenceDe } from './palette';
-import { decalagesDuRole } from './promesses';
+import { EMPLOIS, TABLE_DES_EMPLOIS } from './emplois';
+import { estPresqueGrise, partsDe, rampesDe, referenceDe } from './palette';
+import { decalagesDeLEmploi } from './promesses';
 import { arrondir, boutsDe, MODES, type Mode } from './rampe';
-import { ROLES, type Palette, type Recette } from './recette';
+import type { Palette, Recette } from './recette';
 
 /** Un cran où `soft` et `vivid` se confondent. */
 export interface Confusion {
@@ -20,6 +21,7 @@ export interface Confusion {
 
 export type Alerte =
   | { readonly code: 'profils-confondus'; readonly palette: string; readonly crans: readonly Confusion[]; readonly seuil: number }
+  | { readonly code: 'reference-plus-claire-que-bouton'; readonly palette: string; readonly reference: string; readonly bouton: string }
   | { readonly code: 'palettes-proches'; readonly palettes: readonly [string, string]; readonly distance: number; readonly seuil: number }
   | { readonly code: 'couleur-presque-grise'; readonly palette: string; readonly chroma: number; readonly seuil: number }
   | { readonly code: 'reference-plus-terne'; readonly palette: string; readonly part: number; readonly partSoft: number }
@@ -34,18 +36,17 @@ export const TOLERANCE_FOND = 0.005;
 export const CRANS_PALETTES_PROCHES: readonly number[] = [500, 600, 700];
 
 /**
- * Les rangs de crans que le câblage d'une palette vise, états `+1` et `+2`
- * compris quand le rôle les prend dans une paire ([VER-11]).
+ * Les rangs des crans que la table des emplois vise dans `crans`, états `+1`
+ * et `+2` compris quand l'emploi les prend dans une paire ([VER-11]).
  */
-export function rangsCables(recette: Recette, palette: Palette): number[] {
-  const cablage = cablageDe(recette, palette);
+export function rangsDesEmplois(recette: Recette): number[] {
   const rangs = new Set<number>();
-  for (const role of ROLES) {
-    const cible = cablage[role];
-    if (!('cran' in cible)) continue;
-    const rang = recette.crans.indexOf(cible.cran);
-    for (const decalage of decalagesDuRole(role)) {
-      if (rang + decalage < recette.crans.length) rangs.add(rang + decalage);
+  for (const nom of EMPLOIS) {
+    const cible = TABLE_DES_EMPLOIS[nom];
+    if (cible === 'fond') continue;
+    const rang = recette.crans.indexOf(cible);
+    for (const decalage of decalagesDeLEmploi(nom)) {
+      if (rang >= 0 && rang + decalage < recette.crans.length) rangs.add(rang + decalage);
     }
   }
   return [...rangs].sort((a, b) => a - b);
@@ -57,7 +58,7 @@ function profilsConfondus(recette: Recette, palette: Palette): Alerte | null {
   const rampes = rampesDe(recette, palette);
   const crans: Confusion[] = [];
   for (const mode of MODES) {
-    for (const rang of rangsCables(recette, palette)) {
+    for (const rang of rangsDesEmplois(recette)) {
       const distance = distanceOk(rampes.soft[mode][rang].couleur, rampes.vivid[mode][rang].couleur);
       if (distance < recette.seuils.profilsConfondus) crans.push({ mode, cran: recette.crans[rang], distance });
     }
@@ -65,6 +66,23 @@ function profilsConfondus(recette: Recette, palette: Palette): Alerte | null {
   return crans.length > 0
     ? { code: 'profils-confondus', palette: palette.id, crans, seuil: recette.seuils.profilsConfondus }
     : null;
+}
+
+/**
+ * Une référence plus claire que le cran du fond plein en clair ([VER-12]) :
+ * le bouton prend ce cran, plus foncé qu'elle. Le mode sombre n'est pas
+ * regardé : le bouton y est clair et porte un texte foncé.
+ */
+function boutonPlusFonce(recette: Recette, palette: Palette): Alerte | null {
+  const rang = recette.crans.indexOf(TABLE_DES_EMPLOIS.solid);
+  const reference = referenceDe(palette);
+  if (rgb8VersOklch(reference).L <= recette.courbes.light[rang]) return null;
+  return {
+    code: 'reference-plus-claire-que-bouton',
+    palette: palette.id,
+    reference: ecrireHexa(reference),
+    bouton: ecrireHexa(rampesDe(recette, palette).vivid.light[rang].couleur),
+  };
 }
 
 /** Les alertes et la notice qui portent sur une palette seule, dans l'ordre de la table 11.3. */
@@ -79,6 +97,8 @@ export function alertesDePalette(recette: Recette, palette: Palette): Alerte[] {
 
   const confondus = profilsConfondus(recette, palette);
   if (confondus) alertes.push(confondus);
+  const bouton = boutonPlusFonce(recette, palette);
+  if (bouton) alertes.push(bouton);
   if (estPresqueGrise(recette, palette)) {
     alertes.push({ code: 'couleur-presque-grise', palette: palette.id, chroma: lue.C, seuil: recette.seuils.chromaGrise });
   }
