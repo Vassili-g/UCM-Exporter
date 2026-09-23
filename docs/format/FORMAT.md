@@ -763,6 +763,11 @@ nom du composant documenté. Le rapprochement ignore la casse et les espaces
 pas une intention de design, et ne doit donc bloquer aucun export. Le nom de
 l'instance elle-même n'entre dans aucune lecture.
 
+Les maîtres `.componentRules`, `.rulesSection` et `.ruleItem` sont publiés sur
+la Figma Community dans le [kit de
+règles](https://www.figma.com/community/file/1684536749543631522), pour une
+équipe qui ne les a pas ([KIT-DE-REGLES.md](../guides/KIT-DE-REGLES.md)).
+
 Chaque règle est une instance de `.ruleItem` dont un calque nommé `@usage`,
 `@prop`, `@boolean`, `@do`, `@dont`, `@pairs`, `@icons` ou `@default` porte le
 tag, et dont le calque `content` porte le texte. Le tag se lit sur ce calque

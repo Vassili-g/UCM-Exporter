@@ -14,7 +14,10 @@ quel ordre.
    d'un composant, comment exporter, comment relire la pull request ou la merge
    request, et le
    vocabulaire du projet.
-3. [../README.md](../README.md) si vous voulez la vue d'ensemble du projet.
+3. [guides/KIT-DE-REGLES.md](./guides/KIT-DE-REGLES.md) si votre fichier ne
+   porte aucun `.componentRules` : le kit publié sur la Community vous donne
+   les maîtres des règles d'usage.
+4. [../README.md](../README.md) si vous voulez la vue d'ensemble du projet.
 
 Vous n'avez besoin d'aucun autre document.
 
@@ -74,6 +77,7 @@ autorité. Les autres y renvoient.
 | [../ROADMAP.md](../ROADMAP.md) | L'état du projet et ses limites |
 | [guides/POUR-LES-DESIGNERS.md](./guides/POUR-LES-DESIGNERS.md) | Le geste du designer. Il définit le vocabulaire par renvoi, jamais par une seconde définition |
 | [guides/RECETTE.md](./guides/RECETTE.md) | Comment éprouver le produit à la main, de Figma à la pull request |
+| [guides/KIT-DE-REGLES.md](./guides/KIT-DE-REGLES.md) | Le contenu du kit de règles publié sur la Community, ses vérifications et sa republication |
 
 ## Ce qui n'est pas décidé
 

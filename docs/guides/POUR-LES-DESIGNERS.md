@@ -59,6 +59,11 @@ d'usage](../../packages/plugin/README.md#documenter-les-règles-dusage), et ce q
 chaque règle devient dans [7. Intention et documentation des
 props](../format/FORMAT.md#7-intention-et-documentation-des-props).
 
+Si votre fichier ne porte aucun `.componentRules`, dupliquez le [kit de
+règles](https://www.figma.com/community/file/1684536749543631522) depuis la
+Community, puis copiez ses trois maîtres sur la page de vos composants. Le
+[guide du kit](./KIT-DE-REGLES.md) détaille ce geste.
+
 ## 3. Exporter
 
 Ajoutez-le depuis la Figma Community :

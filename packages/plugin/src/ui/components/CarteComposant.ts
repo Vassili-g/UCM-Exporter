@@ -25,12 +25,10 @@ export interface OptionsCarteComposant extends OptionsCarteConcrete {
  * Où mène la note d'une page sans source.
  *
  * Une équipe qui vient d'installer le plugin n'a aucune instance de
- * « .componentRules » à copier, et le kit de la Community sera sa source. Tant
- * qu'il n'est pas publié, la grammaire des règles dit au moins ce qu'un
- * conteneur doit porter.
+ * « .componentRules » à copier : le kit de règles publié sur la Community lui
+ * donne les trois maîtres (`docs/guides/KIT-DE-REGLES.md`).
  */
-// TODO(kit-community) : remplacer par l'URL du kit publié sur la Community (lot 8).
-const LIEN_DE_SECOURS = 'https://github.com/Vassili-g/UCM-Exporter/blob/main/docs/format/FORMAT.md#7-intention-et-documentation-des-props';
+const LIEN_DU_KIT = 'https://www.figma.com/community/file/1684536749543631522';
 
 function memeCible(avant: Cible | null, apres: Cible | null): boolean {
   if (!avant || !apres) return avant === apres;
@@ -76,24 +74,24 @@ export function createCarteComposant({
     + 'Collez-en une sur cette page, depuis un fichier qui en porte, pour créer '
     + 'les règles de ce composant. ';
 
-  /** Le lien vers la grammaire, que les deux notes portent. */
-  function lienDeSecours(): HTMLAnchorElement {
+  /** Le lien vers le kit, que les deux notes portent. */
+  function lienDuKit(): HTMLAnchorElement {
     const lien = document.createElement('a');
     lien.className = 'creation-lien';
-    lien.href = LIEN_DE_SECOURS;
-    lien.textContent = 'Lire la grammaire des règles';
+    lien.href = LIEN_DU_KIT;
+    lien.textContent = 'Ouvrir le kit de règles';
     // Une iframe de plugin n'a pas de navigateur : seul le sandbox ouvre un lien.
     lien.addEventListener('click', (evenement) => {
       evenement.preventDefault();
-      parent.postMessage({ pluginMessage: { type: 'open-external', url: LIEN_DE_SECOURS } }, '*');
+      parent.postMessage({ pluginMessage: { type: 'open-external', url: LIEN_DU_KIT } }, '*');
     });
     return lien;
   }
 
   // La recherche porte le même lien : une équipe qui n'a aucune source attend
   // sinon la fin du parcours avant de savoir quoi faire.
-  recherche.append(' ', lienDeSecours());
-  sansSource.append(lienDeSecours());
+  recherche.append(' ', lienDuKit());
+  sansSource.append(lienDuKit());
 
   carte.analyser.after(creer, recherche, sansSource);
 

@@ -56,7 +56,11 @@ Ctrl+Z aussi.
 
 Le bouton n'apparaît que si ce composant n'a pas déjà son conteneur. Sur une
 page d'où aucune instance de `.componentRules` n'est joignable, il reste inactif
-et la note dessous dit quoi copier.
+et la note dessous dit quoi copier. Si votre équipe n'a aucun `.componentRules`,
+copiez les trois maîtres du [kit de
+règles](https://www.figma.com/community/file/1684536749543631522), publié sur la
+Community ; [KIT-DE-REGLES.md](../../docs/guides/KIT-DE-REGLES.md) décrit les
+deux façons de l'employer.
 
 Chaque règle est une instance de `.ruleItem`. Choisissez son variant : il
 affiche le tag qui dit ce que la règle remplit. Les sections qui les regroupent,

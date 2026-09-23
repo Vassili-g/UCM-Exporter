@@ -215,10 +215,10 @@ test('le lien de la note sans source passe par le sandbox, sans quitter l’inte
   try {
     await envoyer(cible('b', 'sans-source'));
     const avant = page.url();
-    await page.getByRole('link', { name: 'Lire la grammaire des règles' }).click();
+    await page.getByRole('link', { name: 'Ouvrir le kit de règles' }).click();
     const demande = await derniere(page, 'open-external');
     assert.equal(demande.type, 'open-external');
-    assert.match(demande.url, /^https:\/\//);
+    assert.match(demande.url, /^https:\/\/www\.figma\.com\/community\/file\//);
     assert.equal(page.url(), avant);
   } finally {
     await page.close();
