@@ -542,6 +542,12 @@ Référence : [phase 7](PLAN-TEMPLATE-REGLES.md#phase-7-recette-dans-figma).
       `tests/interface/interface.test.mjs`, état de galerie
       `creation-imbriques-sans-regles`. Constat dans le
       [compte rendu](#7-recette-dans-figma-1).
+- [x] **Correction 7.3** : une icône n'est pas un composant à documenter, un
+      calque masqué ne demande aucun geste, et un composant de bibliothèque
+      renvoie à son fichier. Plan soumis à une revue indépendante, qui a arrêté
+      un premier critère faux ; sept tests dans `tests/code.test.ts`, deux
+      mutations, deux états de galerie. Constat, revue comprise, dans le
+      [compte rendu](#7-recette-dans-figma-1).
 
 ## 8. Kit Community
 
@@ -1346,3 +1352,84 @@ points et la liste de sept propriétés qui a motivé le changement.
 **Rouge du dépôt, étranger à ce lot.** `npm run test:ui` rend 21 verts sur 22 ;
 l'épreuve du bouton de création échoue sur un `.creation-sans-source` résolu en
 deux éléments. Mesuré : elle échoue de la même façon sans ce lot.
+
+#### Correction 7.3 : trente points sur `StressTest`, dont vingt-sept icônes
+
+**L'écart.** La création sur `StressTest` rend **30 points bloquants**. Trois
+sont justes (`Alert`, `Button`, `TileLink`) ; les vingt-sept autres nomment des
+icônes (`circle-info`, `check`, `duck`, `skull`, `wrench`…). Le compteur affiche
+« À corriger dans Figma (30) », et les trois points utiles sont noyés.
+
+**Ce que le point faisait vraiment.** Il ne se contentait pas d'être bavard. Le
+geste qu'il demandait pour `skull` était faux, et nuisible : poser un
+`.componentRules` nommant `skull` le fait entrer dans les contractés, son entrée
+`icons` quitte le contrat au profit d'une dépendance, et
+`warnUndeclaredDrawing` (`extractLayout.ts`) **se tait**. Le designer
+fabriquerait un contrat faux en croyant corriger celui-ci, et perdrait
+l'avertissement qui le lui aurait dit. Le bon geste, une règle `@icons` dans le
+conteneur de `StressTest`, existe déjà dans le plugin.
+
+**Le premier critère proposé était faux, et la revue l'a arrêté.** Écarter tout
+imbriqué « dont le sous-arbre n'est qu'un dessin » aurait écarté `TileLink` :
+la fixture `12.0/TileLink.contract.json` n'a pas de `textStyles`, et son unique
+enfant de structure est `{"slot":"icon","figmaLayer":"chess"}`. Avec lui
+seraient partis tous les composants atomiques sans texte, un Button à icône
+seule, un Checkbox, un Switch.
+
+**Le critère retenu, que le relevé du mainteneur donnait déjà.** Les vingt-sept
+cartes d'icônes sont exactement celles **sans liste de propriétés** ; les trois
+utiles, exactement celles **avec**. Un imbriqué est donc écarté quand il réunit
+les deux conditions : il ne déclare aucune propriété publique, **et** son
+sous-arbre n'est qu'un dessin au sens d'`estUnDessinNonDeclare`. Aucune ne
+suffit seule, et les deux mutations le prouvent : retirer la première rend rouge
+le test de `TileLink`, retirer la seconde rend rouge celui du `Divider`.
+
+Le verdict emploie la fonction du moteur, jamais une copie : deux prédicats
+jumeaux se remettraient à diverger au premier changement.
+
+**Ce que la revue a fait ajouter, au-delà de l'écart signalé.**
+
+- **Les calques masqués.** Le relevé partait d'un `findAll` brut, là où tout le
+  moteur passe par `getAllNodes`, qui élague les sous-arbres statiquement
+  masqués. Un composant que personne ne rendra recevait un point bloquant, avec
+  un bouton qui allait sélectionner un calque invisible.
+- **La bibliothèque distante.** `indexContractedNamesInDocument` ne lit que le
+  document courant. Un composant consommé depuis une bibliothèque publiée
+  n'aura jamais son conteneur ici : son point était inguérissable pour l'équipe
+  consommatrice. Il garde son constat et change de geste.
+- **Le relevé de composition.** Le verdict d'icône reçoit un `composed`
+  construit depuis les porteurs et l'index, et non une carte vide : `getAllNodes`
+  s'arrête sur une dépendance contractée, et sans lui un cadre qui compose
+  passerait pour un dessin.
+- **Le maillon.** `aQuiAppartient` rend l'instance du composant publié le plus
+  proche, et plus seulement son porteur : sans elle, le verdict se calculerait
+  sur le sous-arbre d'une pièce interne.
+- **Le coût.** `getMainComponentAsync` passe en `Promise.all`, comme partout
+  ailleurs dans le moteur, et le verdict d'icône se prend une fois par
+  composant.
+
+**Trois rouges avant le code**, sur les trois comportements nouveaux : l'icône
+tue, le calque masqué muet, le geste distant. Les quatre autres tests sont des
+gardes de non-régression, passantes dès l'écriture, et les deux mutations
+ci-dessus les rendent rouges à la demande. Le banc emploie les vrais
+`exportableNodes` et `structureTree` : les doubler ferait juger le tri sur autre
+chose que ce que le contrat applique.
+
+**Ce qui reste ouvert, et écrit dans `SPEC.md`.**
+
+- Une instance **détachée** est un `FRAME` : le relevé ne la voit pas.
+- Les gestes **en cascade** ne sont pas ordonnés.
+- Le point liste encore `disabled` parmi les propriétés non documentées d'un
+  `Button` dont l'axe d'états porte la valeur Disable, alors que le template ne
+  lui posera pas de règle. Le corriger demande de rendre publique la projection
+  de `modele.ts` plutôt que de la recopier dans `code.ts` ; une ligne sur sept,
+  laissée en l'état.
+- Le relevé que l'analyse a déjà construit (`mainByInstanceId`) ne remonte pas
+  de `ComponentExport`. L'y faire remonter éviterait tout le prologue du relevé,
+  au prix d'un changement de l'enveloppe du moteur.
+
+**La galerie passe de 60 à 61 états.** `creation-imbriques-sans-regles` montre
+les quatre formes du point côte à côte, liste longue, liste d'une ligne, aucune
+liste, geste distant. `creation-imbriques-nombreux` montre six points empilés :
+c'est l'écran à regarder si un fichier passe la dizaine, pour décider si la forme
+tient encore.

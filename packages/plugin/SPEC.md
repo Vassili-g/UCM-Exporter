@@ -954,13 +954,55 @@ déclarent ses propres pièces internes : sans conteneur, pas une ligne n'en est
 documentée. Il porte la sévérité `danger`, parce que le contrat décrit déjà le
 composant de travers.
 
-Ce qu'un composant **contracté** abrite est élagué : le contrat s'arrête à cette
-dépendance, et rien de ce qu'elle contient n'entre dans celui du parent. Un
-composant contracté est un composant dont un `.componentRules` écrit le nom,
-c'est-à-dire le même index que celui de la composition.
+Le relevé part de `getAllNodes`, comme le contrat : un composant rangé sous un
+calque statiquement masqué n'entre dans aucun contrat et ne demande aucun geste.
+
+**Ce que le relevé écarte.**
+
+| Cas | Écarté | Pourquoi |
+|---|---|---|
+| Un composant **contracté** et tout ce qu'il abrite | oui | le contrat s'arrête à cette dépendance. Contracté veut dire : un `.componentRules` écrit son nom, le même index que celui de la composition |
+| Une **icône** : aucune propriété publique déclarée **et** un sous-arbre qui n'est qu'un dessin (`estUnDessinNonDeclare`) | oui | voir ci-dessous |
+| Une **pièce interne** du composant sélectionné | oui | ses propriétés sont documentées par le parent |
+
+**Pourquoi une icône n'est pas un composant à documenter.** Lui réclamer ses
+règles n'est pas seulement un geste inutile : le conteneur posé la ferait entrer
+dans les contractés, son entrée `icons` quitterait le contrat au profit d'une
+dépendance, et l'avertissement qui demande une règle `@icons`
+(`extractLayout.ts`, `warnUndeclaredDrawing`) **se tairait**. Le designer
+fabriquerait un contrat faux en croyant corriger celui-ci. Son geste est une
+règle `@icons` dans le conteneur du composant qui l'affiche.
+
+Les deux conditions sont exigées ensemble. La première seule tairait un
+séparateur fait de rectangles, qui mérite ses règles ; la seconde seule tairait
+un `TileLink`, qui n'a pas de texte mais déclare ses propriétés. Un porteur dont
+la lecture des propriétés lève n'est jamais écarté : ne rien savoir n'est pas
+savoir qu'il n'y a rien.
+
+**Un composant venu d'une bibliothèque** garde son point, mais change de geste :
+l'index ne lit que le document courant, et ses règles vivent dans le fichier de
+sa bibliothèque. Lui demander un conteneur ici serait demander l'impossible.
 
 Un dernier point, sans nom de composant, rassemble ce que le contrat publie sans
 qu'aucun imbriqué lisible le revendique.
+
+**Un point par composant, contre la forme agrégée.**
+[`CONTRIBUTING.md`](../../CONTRIBUTING.md#messages-destinés-au-designer) prescrit
+pour un diagnostic agrégé un seul titre suivi de la liste des composants
+concernés. Le point de la création y déroge, et c'est délibéré : le geste vise un
+composant à la fois, et un point agrégé perdrait le bouton « Sélectionner les
+calques », seul moyen d'aller voir celui qui est en cause. Aucun plafond
+n'agrège la pile ; l'état de galerie `creation-imbriques-nombreux` montre ce que
+six donnent, et sert à rouvrir la question si un fichier passe la dizaine.
+
+**Deux angles morts, assumés.**
+
+- Une instance **détachée** est un `FRAME` : le relevé ne la voit pas, et le
+  contrat en décrira les internes sans qu'un mot soit dit.
+- Les gestes **en cascade** ne sont pas ordonnés. Un composé qui abrite un
+  `Alert` sans règles, lui-même abritant un `Button` sans règles, rend deux
+  points, alors que créer les règles de l'`Alert` change ce que le second
+  devient.
 
 L'écriture vit dans un seul fichier, `src/template/ecriture.ts`, atteint par
 une seule porte, la demande `creer-regles`. `loiDuDocumentIntact.test.ts`

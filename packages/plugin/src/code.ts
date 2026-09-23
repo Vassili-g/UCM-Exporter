@@ -14,6 +14,10 @@ import {
   hasUsableRules,
   MARQUEUR_A_COMPLETER,
 } from './contract/extractRules';
+import { getAllNodes } from './contract/exportableNodes';
+import type { ComposedInstances } from './contract/exportableNodes';
+import { estUnDessinNonDeclare } from './contract/structureTree';
+import type { ComposedDependency } from '@ucm-kit/core/format';
 import type { ExtractedRules, ReleveDeSource } from './contract/extractRules';
 import handleExportComponent, { getSelectedComponent } from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
@@ -982,7 +986,13 @@ function enumerer(mots: readonly string[]): string {
 }
 
 /** Un composant imbriqué sans règles, ses propriétés et ses instances. */
-type ImbriqueSansRegles = { nom: string; cles: string[]; nodeIds: string[] };
+type ImbriqueSansRegles = {
+  nom: string;
+  /** Vrai d'un composant venu d'une bibliothèque : ses règles vivent ailleurs. */
+  distant: boolean;
+  cles: string[];
+  nodeIds: string[];
+};
 
 /** Ce que le parcours du composant sélectionné apprend de ses imbriqués. */
 type ReleveDesImbriques = {
@@ -1035,7 +1045,15 @@ function estUnePieceInterne(nom: string): boolean {
  * parent ce qui n'est peut-être pas à lui.
  */
 type Appartenance =
-  | { composant: ComponentNode | ComponentSetNode }
+  | {
+      composant: ComponentNode | ComponentSetNode;
+      /**
+       * L'instance de ce composant sur le chemin. Le verdict d'icône se prend
+       * sur son sous-arbre : sans elle, une pièce interne ferait juger le
+       * composant qui l'abrite sur le contenu du wrapper.
+       */
+      maillon: InstanceNode;
+    }
   | null
   | 'elaguee'
   | 'illisible';
@@ -1056,15 +1074,48 @@ function aQuiAppartient(
   } catch {
     return 'illisible';
   }
-  let proche: ComponentNode | ComponentSetNode | null = null;
+  let proche: { composant: ComponentNode | ComponentSetNode; maillon: InstanceNode } | null = null;
   for (const maillon of chaine) {
     const porteur = porteurs.get(maillon.id);
     if (!porteur) return 'illisible';
     if (estUnePieceInterne(porteur.name)) continue;
     if (contractes.has(compactName(porteur.name))) return 'elaguee';
-    proche = porteur;
+    proche = { composant: porteur, maillon };
   }
-  return proche ? { composant: proche } : null;
+  return proche;
+}
+
+/**
+ * Vrai d'un imbriqué qui est une icône, donc qui n'aura jamais de règles.
+ *
+ * Deux conditions, et aucune ne suffit seule. Il ne déclare **aucune propriété
+ * publique** : une icône de jeu n'a pas d'API, alors qu'un `TileLink` sans
+ * texte déclare `variant` et `chessName`. Et son sous-arbre **n'est qu'un
+ * dessin**, au sens où le moteur l'entend déjà : un séparateur fait de
+ * rectangles ne déclare rien non plus, et le contrat en décrit bien les
+ * internes.
+ *
+ * Lui réclamer ses propres règles ne serait pas seulement un geste inutile.
+ * Le conteneur posé le ferait entrer dans les contractés, son entrée `icons`
+ * quitterait le contrat au profit d'une dépendance, et l'avertissement qui
+ * demande une règle `@icons` se tairait : le designer fabriquerait un contrat
+ * faux en croyant corriger celui-ci.
+ *
+ * `iconNames` vide n'est pas un écart mais une identité : au moment de la
+ * création, le conteneur n'existe pas encore, et l'analyse que `creerRegles`
+ * vient de lancer tourne elle-même sans aucune règle `@icons`.
+ *
+ * Un porteur dont la lecture lève n'est jamais écarté : ne rien savoir n'est
+ * pas savoir qu'il n'y a rien.
+ */
+function estUneIcone(
+  maillon: InstanceNode,
+  porteur: ComponentNode | ComponentSetNode,
+  composed: ComposedInstances,
+): boolean {
+  const declarees = clesDeclareesParLePorteur(porteur);
+  if (declarees === null || declarees.length > 0) return false;
+  return estUnDessinNonDeclare(maillon, new Set(), composed);
 }
 
 /**
@@ -1121,17 +1172,36 @@ async function releverLesImbriques(
   horsDuParent: readonly string[],
 ): Promise<ReleveDesImbriques> {
   const restantes = new Set(horsDuParent);
-  const instances = composant.findAll((node) => node.type === 'INSTANCE') as InstanceNode[];
+  // `getAllNodes` plutôt qu'un `findAll` brut : il élague les sous-arbres
+  // statiquement masqués, comme le fait le contrat. Un composant que personne
+  // ne rendra ne demande aucun geste, et le bouton du point enverrait le
+  // designer sélectionner un calque qu'il ne voit pas.
+  const instances = getAllNodes(composant).filter(
+    (node): node is InstanceNode => node.type === 'INSTANCE',
+  );
+  // En parallèle, comme partout ailleurs dans le moteur : une file de
+  // cinquante allers-retours se sentirait sur le fil unique de l'UI.
+  const maitres = await Promise.all(
+    instances.map((instance) => instance.getMainComponentAsync().catch(() => null)),
+  );
   const porteurs = new Map<string, ComponentNode | ComponentSetNode>();
-  for (const instance of instances) {
-    const main = await instance.getMainComponentAsync().catch(() => null);
+  instances.forEach((instance, rang) => {
+    const main = maitres[rang];
     if (main) porteurs.set(instance.id, porteurDeLInstance(main));
-  }
+  });
   const contractes = await indexContractedNamesInDocument().catch(() => new Set<string>());
+  // Le relevé de composition que le verdict d'icône attend : une dépendance
+  // contractée arrête le parcours, et ce qu'elle contient n'est pas un dessin
+  // du composant qui l'abrite.
+  const composed = new Map<string, ComposedDependency>();
+  for (const [id, porteur] of porteurs) {
+    if (!contractes.has(compactName(porteur.name))) continue;
+    composed.set(id, { component: porteur.name, figmaLayer: porteur.name });
+  }
 
   const auParent: string[] = [];
   const sansRegles: ImbriqueSansRegles[] = [];
-  const parComposant = new Map<string, ImbriqueSansRegles>();
+  const parComposant = new Map<string, ImbriqueSansRegles | 'icone'>();
   const sansPorteur: string[] = [];
   for (const instance of instances) {
     const porteur = porteurs.get(instance.id);
@@ -1151,8 +1221,15 @@ async function releverLesImbriques(
     }
     const proprietaire = appartenance.composant;
     const connu = parComposant.get(proprietaire.id);
+    if (connu === 'icone') continue;
     if (connu) {
       for (const cle of declarees) if (!connu.cles.includes(cle)) connu.cles.push(cle);
+      continue;
+    }
+    // Le verdict porte sur le composant, pas sur l'instance : il se prend une
+    // fois, à l'ouverture du groupe, et vaut pour toutes ses instances.
+    if (estUneIcone(appartenance.maillon, proprietaire, composed)) {
+      parComposant.set(proprietaire.id, 'icone');
       continue;
     }
     // Toutes ses instances que rien de publié n'abrite : la carte offre d'aller
@@ -1163,7 +1240,12 @@ async function releverLesImbriques(
       const sienne = aQuiAppartient(autre, composant, porteurs, contractes);
       return typeof sienne === 'object' && sienne !== null && sienne.composant === proprietaire;
     }).map((autre) => autre.id);
-    const groupe: ImbriqueSansRegles = { nom: proprietaire.name, cles: [...declarees], nodeIds };
+    const groupe: ImbriqueSansRegles = {
+      nom: proprietaire.name,
+      distant: proprietaire.remote === true,
+      cles: [...declarees],
+      nodeIds,
+    };
     parComposant.set(proprietaire.id, groupe);
     sansRegles.push(groupe);
   }
@@ -1188,7 +1270,7 @@ function signalerLesImbriques(
   releve: ReleveDesImbriques,
   provenance: Partial<Provenance>,
 ): void {
-  for (const { nom, cles, nodeIds } of releve.sansRegles) {
+  for (const { nom, distant, cles, nodeIds } of releve.sansRegles) {
     const compte = cles.length === 1
       ? 'dont une propriété n’est pas documentée'
       : `dont ${cles.length} propriétés ne sont pas documentées`;
@@ -1201,8 +1283,13 @@ function signalerLesImbriques(
       ...(cles.length > 0 ? { elements: [...cles] } : {}),
       impact: `Sans les règles de « ${nom} », le contrat de « ${parent} » décrit les internes `
         + `de « ${nom} » au lieu de le réutiliser.`,
-      action: `Créez et complétez les règles de « ${nom} », puis relancez l’analyse de `
-        + `« ${parent} » avant de l’exporter.`,
+      // Un composant venu d'une bibliothèque ne peut pas recevoir son conteneur
+      // ici : le geste demandé serait impossible à faire dans ce fichier.
+      action: distant
+        ? `Les règles de « ${nom} » vivent dans le fichier de sa bibliothèque. Créez-les `
+          + `là-bas, republiez la bibliothèque, puis relancez l’analyse de « ${parent} ».`
+        : `Créez et complétez les règles de « ${nom} », puis relancez l’analyse de `
+          + `« ${parent} » avant de l’exporter.`,
       ...(nodeIds.length > 0 ? { nodeIds } : {}),
       ...provenance,
     });

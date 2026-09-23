@@ -98,6 +98,33 @@ const IMBRIQUE_SANS_REGLES_ICONE = {
   impact: 'Sans les règles de « Icon », le contrat de « Alert » décrit les internes de « Icon » au lieu de le réutiliser.',
   action: 'Créez et complétez les règles de « Icon », puis relancez l’analyse de « Alert » avant de l’exporter.',
 };
+/** Un imbriqué qui ne déclare rien : le point n'a aucune liste à poser. */
+const IMBRIQUE_SANS_REGLES_NU = {
+  severite: 'danger',
+  titre: 'Le composant « Alert » intègre « Divider », qui n’a pas ses règles d’usage.',
+  impact: 'Sans les règles de « Divider », le contrat de « Alert » décrit les internes de « Divider » au lieu de le réutiliser.',
+  action: 'Créez et complétez les règles de « Divider », puis relancez l’analyse de « Alert » avant de l’exporter.',
+};
+/** Un imbriqué venu d'une bibliothèque : le geste se fait dans un autre fichier. */
+const IMBRIQUE_SANS_REGLES_DISTANT = {
+  severite: 'danger',
+  titre: 'Le composant « Alert » intègre « Chip », dont 2 propriétés ne sont pas documentées :',
+  elements: ['tone', 'removable'],
+  impact: 'Sans les règles de « Chip », le contrat de « Alert » décrit les internes de « Chip » au lieu de le réutiliser.',
+  action: 'Les règles de « Chip » vivent dans le fichier de sa bibliothèque. Créez-les là-bas, republiez la bibliothèque, puis relancez l’analyse de « Alert ».',
+};
+
+/** Six points bloquants : la pile que le pire composé d'un fichier peut rendre. */
+function sixImbriques() {
+  const noms = ['Button', 'TileLink', 'Divider', 'Chip', 'Avatar', 'Badge'];
+  return noms.map((nom, rang) => diagnostic({
+    severite: 'danger',
+    titre: `Le composant « Écran » intègre « ${nom} », dont ${rang + 1} propriétés ne sont pas documentées :`,
+    elements: Array.from({ length: rang + 1 }, (_, index) => `prop${index + 1}`),
+    impact: `Sans les règles de « ${nom} », le contrat de « Écran » décrit les internes de « ${nom} » au lieu de le réutiliser.`,
+    action: `Créez et complétez les règles de « ${nom} », puis relancez l’analyse de « Écran » avant de l’exporter.`,
+  }, [`12:${400 + rang}`]));
+}
 
 const AVERTISSEMENT_PROFIL = { // exportTokens.ts, avertissementDeProfil
   titre: 'Fichier « Design System » : aucun profil de couleur n’est choisi.',
@@ -488,17 +515,34 @@ const ETATS = [
   },
   {
     id: 'creation-imbriques-sans-regles',
-    titre: 'Les règles sont posées, deux imbriqués n’en ont pas',
+    titre: 'Les règles sont posées, quatre imbriqués n’en ont pas',
     quand:
-      'Le composant en intègre deux autres qui n’ont pas encore leurs règles d’usage. Le contrat décrira leurs internes au lieu de les réutiliser.',
+      'Le composant en intègre quatre autres qui n’ont pas encore leurs règles d’usage. Le contrat décrira leurs internes au lieu de les réutiliser.',
     regarder:
-      'Un point par composant, et non un seul qui les mêlerait : le geste vise un composant à la fois. Le titre nomme les deux composants, celui qu’on a sélectionné et celui sur lequel agir. Les propriétés viennent en liste, parce qu’on va les relever une à une dans Figma ; sept d’entre elles dans une phrase ne se reliraient pas. Le fond rouge et la pastille « Bloquant » disent que le contrat est déjà faux, et la note du succès reste au-dessus : la création, elle, a réussi.',
+      'Un point par composant, et non un seul qui les mêlerait : le geste vise un composant à la fois. Le titre nomme les deux composants, celui qu’on a sélectionné et celui sur lequel agir. Les quatre formes du point sont ici côte à côte : une liste de sept propriétés, une liste d’une seule, un composant qui n’en déclare aucune et ne pose donc aucune liste, et un composant de bibliothèque dont le geste se fait dans un autre fichier. Le fond rouge et la pastille « Bloquant » disent que le contrat est déjà faux, et la note du succès reste au-dessus : la création, elle, a réussi.',
     existe: true,
     atteinte: [
       ...lancerLaCreation(),
       { message: { type: 'status', state: 'success', text: CREATION_FAITE } },
       diagnostic(IMBRIQUE_SANS_REGLES_BOUTON, ['12:350', '12:351']),
       diagnostic(IMBRIQUE_SANS_REGLES_ICONE, ['12:352']),
+      diagnostic(IMBRIQUE_SANS_REGLES_NU, ['12:353']),
+      diagnostic(IMBRIQUE_SANS_REGLES_DISTANT, ['12:354']),
+      aCreer(null, COMPOSANT_LONG, REGLES_A_REDIGER),
+    ],
+  },
+  {
+    id: 'creation-imbriques-nombreux',
+    titre: 'Six imbriqués sans règles, la pile entière',
+    quand:
+      'Un écran composé de six composants dont aucun n’a ses règles. C’est le pire cas qu’un fichier réel produise, une fois les icônes écartées du relevé.',
+    regarder:
+      'Le compteur du titre dit six, et la pile se parcourt au défilement sans repli. Aucun plafond ne les agrège : un point agrégé perdrait le bouton « Sélectionner les calques », seul moyen d’aller voir le composant en cause. C’est l’écran à regarder si un fichier passe la dizaine, pour décider si la forme tient encore.',
+    existe: true,
+    atteinte: [
+      ...lancerLaCreation(),
+      { message: { type: 'status', state: 'success', text: CREATION_FAITE } },
+      ...sixImbriques(),
       aCreer(null, COMPOSANT_LONG, REGLES_A_REDIGER),
     ],
   },

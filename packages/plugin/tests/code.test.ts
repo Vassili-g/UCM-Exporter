@@ -13,6 +13,8 @@ import * as fenetre from '../src/fenetre';
 import * as prevol from '../src/prevol';
 import * as sources from '../src/template/sources';
 import * as modele from '../src/template/modele';
+import * as exportableNodes from '../src/contract/exportableNodes';
+import * as structureTree from '../src/contract/structureTree';
 import * as termes from '../src/forges/termes';
 import type { ReleveDeSource } from '../src/contract/extractRules';
 import type { ModeleDeRegles } from '../src/template/modele';
@@ -40,16 +42,32 @@ const resultat = (nom: string) => ({ filename: nom, content: '{}', warningCount:
 const setDe = (nom: string, definitions: Record<string, unknown>) =>
   ({ id: `set-${nom}`, type: 'COMPONENT_SET', name: nom, componentPropertyDefinitions: definitions });
 
+/** Un node du sous-arbre d'une instance, réduit à ce que le parcours en lit. */
+const nodeDe = (id: string, type: string) => ({ id, type });
+
 /**
  * Une instance d'un variant de ce set, telle que le parcours la rencontre.
+ *
  * `parent` la range sous une autre instance ; son absence la met directement
- * sous le composant sélectionné.
+ * sous le composant sélectionné. `contenu` est son sous-arbre, que seul le
+ * verdict de dessin parcourt. `visible: false` la masque statiquement.
  */
-const instanceDe = (id: string, set: ReturnType<typeof setDe>, parent?: unknown) => ({
+const instanceDe = (
+  id: string,
+  set: ReturnType<typeof setDe>,
+  options: {
+    parent?: unknown;
+    contenu?: ReturnType<typeof nodeDe>[];
+    visible?: boolean;
+  } = {},
+) => ({
   id,
   type: 'INSTANCE',
   name: `${set.name} imbriqué`,
-  parent,
+  parent: options.parent,
+  ...(options.visible === false ? { visible: false } : {}),
+  findAll: (predicat: (n: { type: string }) => boolean) =>
+    (options.contenu ?? []).filter(predicat),
   getMainComponentAsync: async () => ({ id: `main-${id}`, name: 'Size=Small', parent: set }),
 });
 
@@ -68,8 +86,25 @@ const enfantsImbriques = [
   // Sous le composant sélectionné : sa propre architecture.
   instanceDe('int-1', setInterne),
   // Sous le Button : l'architecture du Button, pas celle du parent.
-  instanceDe('int-2', setInterneDuBouton, premierBouton),
+  instanceDe('int-2', setInterneDuBouton, { parent: premierBouton }),
 ];
+
+/**
+ * Le composant sélectionné du banc : ce qu'il déclare, et ce qu'il abrite.
+ * Un test qui éprouve le tri des imbriqués remplace la liste.
+ */
+const selectionDe = (
+  id: string,
+  imbriques: ReturnType<typeof instanceDe>[],
+  parent?: { type: string },
+) => ({
+  id,
+  type: 'COMPONENT',
+  name: 'Exemple',
+  componentPropertyDefinitions: { severity: {} },
+  findAll: (predicat: (n: { type: string }) => boolean) => imbriques.filter(predicat),
+  parent,
+});
 const globalFigma = globalThis as unknown as { figma?: unknown };
 const figmaInitial = globalFigma.figma;
 afterEach(() => { globalFigma.figma = figmaInitial; });
@@ -108,14 +143,9 @@ function ouvrir() {
     showUI() {}, notify() {}, openExternal() {},
     viewport: { scrollAndZoomIntoView() {} },
     currentPage: {
-      selection: [{
-        id: 'a', type: 'COMPONENT', name: 'Exemple',
-        componentPropertyDefinitions: { severity: {} },
-        // Deux enfants imbriqués, chacun dans son component set : c'est là que
-        // le signalement des propriétés écartées va chercher leur porteur.
-        findAll: (predicat: (n: { type: string }) => boolean) => enfantsImbriques.filter(predicat),
-        parent: undefined as { type: string } | undefined,
-      }],
+      // Les enfants imbriqués du banc, chacun dans son component set : c'est là
+      // que le relevé des imbriqués va chercher leur porteur.
+      selection: [selectionDe('a', enfantsImbriques)],
     },
     ui: { postMessage: (message: PluginMessage) => messages.push(message), resize() {}, onmessage: async (_message: UiRequest) => {} },
     on: (nom: string, rappel: () => void) => evenements.set(nom, rappel),
@@ -144,6 +174,11 @@ function ouvrir() {
       // Les composants dont le test dit qu'ils ont déjà leurs règles.
       indexContractedNamesInDocument: async () => new Set(contractes.noms),
     },
+    // Les vraies autorités du moteur : élagage des calques masqués et verdict
+    // de dessin. Les doubler ferait juger le tri des imbriqués sur autre chose
+    // que ce que le contrat applique.
+    './contract/exportableNodes': exportableNodes,
+    './contract/structureTree': structureTree,
     // Le vrai relevé lit les définitions Figma ; ici la clé publique vaut le
     // nom brut, ce qui suffit à dire quelles props le parent déclare.
     './contract/parsers': {
@@ -191,13 +226,12 @@ function ouvrir() {
     messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, regles, contractes, resolution, creation, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string, parent?: { type: string }) {
-      runtime.currentPage.selection = [{
-        id, type: 'COMPONENT', name: 'Exemple',
-        componentPropertyDefinitions: { severity: {} },
-        findAll: (predicat: (n: { type: string }) => boolean) => enfantsImbriques.filter(predicat),
-        parent,
-      }];
+      runtime.currentPage.selection = [selectionDe(id, enfantsImbriques, parent)];
       evenements.get('selectionchange')!();
+    },
+    /** Remplace ce que le composant sélectionné abrite, avant la création. */
+    abriter(imbriques: ReturnType<typeof instanceDe>[]) {
+      runtime.currentPage.selection = [selectionDe('a', imbriques)];
     },
     connecter() {
       stockage.set('depots', [{ repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' }]);
@@ -1378,6 +1412,126 @@ test('une propriété qu’aucun imbriqué ne revendique est nommée quand même
   );
   assert.deepEqual([...points(h)[0].elements ?? []], ['orpheline']);
   assert.equal(points(h)[0].nodeIds, undefined);
+});
+
+/* Le tri des imbriqués : ce qui mérite un point, et ce qui n'en est pas un. */
+
+/** Un set sans aucune propriété publique, comme un composant d'icône. */
+const setSansProps = (nom: string) => setDe(nom, {});
+
+test('une icône ne demande pas ses propres règles', async () => {
+  // Aucune propriété publique, et rien que des tracés sous elle : le moteur la
+  // traite déjà comme un dessin et demande une règle @icons dans le conteneur
+  // du composant qui l'affiche. Lui réclamer un conteneur à elle ferait poser un
+  // marqueur qui la sortirait du contrat et éteindrait cet avertissement.
+  const h = ouvrir();
+  h.contractes.noms = [];
+  h.abriter([instanceDe('ico-2', setSansProps('duck'), {
+    contenu: [nodeDe('v1', 'VECTOR'), nodeDe('v2', 'BOOLEAN_OPERATION')],
+  })]);
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(points(h), []);
+});
+
+test('un imbriqué tout en tracés qui déclare une propriété garde son point', async () => {
+  // Un composant peut n'avoir ni texte ni rien d'autre qu'une icône, et rester
+  // un composant : son API le prouve. Le dessin seul ne décide pas.
+  const h = ouvrir();
+  h.contractes.noms = [];
+  h.abriter([instanceDe('tile-1', setDe('TileLink', { variant: {} }), {
+    contenu: [nodeDe('v1', 'VECTOR')],
+  })]);
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(points(h).map((point) => point.titre), [
+    'Le composant « Exemple » intègre « TileLink », dont une propriété n’est pas documentée :',
+  ]);
+});
+
+test('un imbriqué sans propriété et sans tracé garde son point', async () => {
+  // Un séparateur fait de rectangles ne déclare rien, mais le contrat en décrit
+  // bien les internes : la garde des icônes ne doit pas mordre dessus.
+  const h = ouvrir();
+  h.contractes.noms = [];
+  h.abriter([instanceDe('div-1', setSansProps('Divider'), {
+    contenu: [nodeDe('r1', 'RECTANGLE')],
+  })]);
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(points(h).map((point) => point.titre), [
+    'Le composant « Exemple » intègre « Divider », qui n’a pas ses règles d’usage.',
+  ]);
+});
+
+test('un imbriqué dont les propriétés ne se lisent pas garde son point', async () => {
+  // Ne rien savoir n'est pas savoir qu'il n'y a rien : une lecture qui lève ne
+  // fait jamais passer un composant pour une icône.
+  const h = ouvrir();
+  h.contractes.noms = [];
+  const illisible = setDe('Mystere', {});
+  Object.defineProperty(illisible, 'componentPropertyDefinitions', {
+    get() { throw new Error('node retiré'); },
+  });
+  h.abriter([instanceDe('mys-1', illisible, { contenu: [nodeDe('v1', 'VECTOR')] })]);
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(points(h).map((point) => point.titre), [
+    'Le composant « Exemple » intègre « Mystere », qui n’a pas ses règles d’usage.',
+  ]);
+});
+
+test('un imbriqué tout en tracés qui abrite une dépendance garde son point', async () => {
+  // `getAllNodes` s'arrête sur une dépendance contractée, et le verdict de
+  // dessin avec lui. Sans le relevé de composition, ce cadre passerait pour une
+  // icône alors qu'il compose.
+  const h = ouvrir();
+  h.contractes.noms = ['icon'];
+  const dependance = instanceDe('dep-1', setIcone);
+  const cadre = instanceDe('cad-1', setSansProps('Cadre'), {
+    contenu: [nodeDe('v1', 'VECTOR'), dependance],
+  });
+  h.abriter([cadre, instanceDe('dep-1', setIcone, { parent: cadre })]);
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(points(h).map((point) => point.titre), [
+    'Le composant « Exemple » intègre « Cadre », qui n’a pas ses règles d’usage.',
+  ]);
+});
+
+test('un imbriqué rangé sous un calque masqué ne demande aucun geste', async () => {
+  // Statiquement masqué, il n'entre dans aucun contrat. Lui réclamer ses règles
+  // enverrait le designer sélectionner un calque qu'il ne voit pas.
+  const h = ouvrir();
+  h.contractes.noms = [];
+  h.abriter([instanceDe('btn-3', setBouton, { visible: false })]);
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(points(h), []);
+});
+
+test('un imbriqué venu d’une bibliothèque renvoie au fichier de cette bibliothèque', async () => {
+  // Ses règles vivent dans le fichier de sa bibliothèque, et l'index ne lit que
+  // le document courant : le geste demandé ici serait impossible à faire.
+  const h = ouvrir();
+  h.contractes.noms = [];
+  const distant = setDe('Alert', { severity: {} });
+  (distant as { remote?: boolean }).remote = true;
+  h.abriter([instanceDe('alr-1', distant)]);
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.equal(
+    points(h)[0].action,
+    'Les règles de « Alert » vivent dans le fichier de sa bibliothèque. Créez-les là-bas, '
+    + 'republiez la bibliothèque, puis relancez l’analyse de « Exemple ».',
+  );
 });
 
 test('un template qui documente tout ne rend aucun point', async () => {
