@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokens multi-marques</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#F4F5F7; --surface:#FFFFFF; --ink:#16181D; --muted:#5A6170; --line:#D7DBE3;
+  --lane:#ECEEF2; --lane-strong:#E3E6EC;
+  --brand-c:#A95404; --brand-bg:#FBEEDF;
+  --theme-c:#0A726D; --theme-bg:#DDF2EF;
+  --accent:#3040C0; --accent-bg:#E6E8FA;
+  --warn:#9A2B2B;
+  --fig-bg:#FFFFFF; --fig-side:#F5F5F5; --fig-line:#E6E6E6; --fig-sel:#E5F0FF; --fig-ink:#1E1E1E; --fig-muted:#7A7A7A;
+  --sans:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#101217; --surface:#181B22; --ink:#E7E9EE; --muted:#9BA2AF; --line:#2C313B;
+    --lane:#1A1E26; --lane-strong:#20252E;
+    --brand-c:#F2A456; --brand-bg:#33261A;
+    --theme-c:#45C4BA; --theme-bg:#15302E;
+    --accent:#98A3FF; --accent-bg:#222746;
+    --warn:#F08A8A;
+    --fig-bg:#2C2C2C; --fig-side:#252525; --fig-line:#3D3D3D; --fig-sel:#23384F; --fig-ink:#F0F0F0; --fig-muted:#A0A0A0;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#101217; --surface:#181B22; --ink:#E7E9EE; --muted:#9BA2AF; --line:#2C313B;
+  --lane:#1A1E26; --lane-strong:#20252E;
+  --brand-c:#F2A456; --brand-bg:#33261A;
+  --theme-c:#45C4BA; --theme-bg:#15302E;
+  --accent:#98A3FF; --accent-bg:#222746;
+  --warn:#F08A8A;
+  --fig-bg:#2C2C2C; --fig-side:#252525; --fig-line:#3D3D3D; --fig-sel:#23384F; --fig-ink:#F0F0F0; --fig-muted:#A0A0A0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;padding:0 16px}
+main{max-width:1000px;margin:0 auto;padding-block:40px 80px}
+.prose{max-width:68ch}
+h1{font-size:2.1rem;line-height:1.15;margin:0 0 12px;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:1.4rem;line-height:1.25;margin:56px 0 12px;text-wrap:balance;scroll-margin-top:16px}
+h3{font-size:1.05rem;margin:28px 0 8px}
+p{margin:0 0 12px}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,.m{font-family:var(--mono);font-size:.86em}
+code{background:var(--lane);padding:1px 5px;border-radius:3px}
+.lede{font-size:1.1rem;color:var(--muted);max-width:66ch}
+.b{color:var(--brand-c);font-weight:600}
+.t{color:var(--theme-c);font-weight:600}
+.pill{display:inline-block;font-size:.78rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
+.pill.b{background:var(--brand-bg)}
+.pill.t{background:var(--theme-bg)}
+.jump{display:flex;flex-wrap:wrap;gap:8px 18px;margin:14px 0 0;font-size:.95rem}
+
+.thesis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:24px 0 8px}
+.thesis div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.thesis strong{display:block;margin-bottom:4px}
+
+figure{margin:20px 0 8px}
+.scroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px}
+figure svg{display:block;width:100%;min-width:780px;height:auto}
+figcaption{color:var(--muted);font-size:.9rem;margin-top:8px;max-width:72ch}
+
+.lane{fill:var(--lane)} .lane-b{fill:var(--brand-bg)} .lane-t{fill:var(--theme-bg)}
+.ln{font-family:var(--mono);font-size:13px;font-weight:600;fill:var(--ink)}
+.lm{font-family:var(--sans);font-size:12px;fill:var(--muted)}
+.lm-b{font-family:var(--sans);font-size:12px;fill:var(--brand-c);font-weight:600}
+.lm-t{font-family:var(--sans);font-size:12px;fill:var(--theme-c);font-weight:600}
+.node{fill:var(--surface);stroke:var(--ink);stroke-width:1.2}
+.node-alt{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3}
+.node-acc{fill:var(--accent-bg);stroke:var(--accent);stroke-width:1.4}
+.nt{font-family:var(--mono);font-size:12px;fill:var(--ink)}
+.nt-alt{font-family:var(--mono);font-size:12px;fill:var(--muted)}
+.ar{stroke:var(--ink);stroke-width:1.3;fill:none}
+.ar-b{stroke:var(--brand-c);stroke-width:1.6;fill:none}
+.ar-t{stroke:var(--theme-c);stroke-width:1.6;fill:none}
+.dash{stroke-dasharray:5 4}
+.ah{fill:var(--ink)} .ah-b{fill:var(--brand-c)} .ah-t{fill:var(--theme-c)}
+.al{font-family:var(--sans);font-size:12px;fill:var(--muted)}
+.al-b{font-family:var(--sans);font-size:12px;fill:var(--brand-c);font-weight:600}
+.al-t{font-family:var(--sans);font-size:12px;fill:var(--theme-c);font-weight:600}
+.flow{stroke:var(--muted);fill:none;stroke-linecap:round}
+.flow-t{stroke:var(--theme-c);fill:none;stroke-linecap:round}
+.flow-b{stroke:var(--brand-c);fill:none;stroke-linecap:round}
+.sep{stroke:var(--line);stroke-width:1}
+.h{font-family:var(--sans);font-size:14px;font-weight:700;fill:var(--ink)}
+.warn{font-family:var(--sans);font-size:12px;fill:var(--warn);font-weight:600}
+
+/* Figma mock */
+.fig{display:grid;grid-template-columns:190px 1fr;background:var(--fig-bg);color:var(--fig-ink);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:12.5px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.fig-side{background:var(--fig-side);border-right:1px solid var(--fig-line);padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.fig-side .cap{font-size:11px;color:var(--fig-muted);padding:4px 8px 6px;font-weight:600}
+.fig-side button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:4px;font-family:var(--sans);font-size:12.5px;color:var(--fig-ink)}
+.fig-side button:hover{background:var(--fig-line)}
+.fig-side button[aria-selected="true"]{background:var(--fig-sel);font-weight:600}
+.fig-side button span:last-child{color:var(--fig-muted);font-weight:400}
+.fig-main{min-width:0}
+.fig-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--fig-line)}
+.fig-head b{font-size:14px}
+.fig-head span{color:var(--fig-muted)}
+.fig-tw{overflow-x:auto}
+.fig table{font-size:12.5px;min-width:520px}
+.fig th{font-size:11.5px;text-transform:none;letter-spacing:0;color:var(--fig-muted);font-weight:500;border-bottom:1px solid var(--fig-line);padding:7px 12px;white-space:nowrap}
+.fig td{border-bottom:1px solid var(--fig-line);padding:6px 12px;vertical-align:middle}
+.fig tr.g td{font-weight:600;padding-top:12px;color:var(--fig-ink);border-bottom:none;font-family:var(--mono);font-size:11.5px}
+.fig tr.g.res td{color:var(--fig-muted);font-weight:500}
+.fig tr.more td{color:var(--fig-muted);font-style:italic;font-size:12px}
+.fig td.nm{font-family:var(--mono);font-size:12px;padding-left:24px;white-space:nowrap}
+.val{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-family:var(--mono);font-size:11.5px}
+.sq{width:14px;height:14px;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);flex:none}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--fig-side);border:1px solid var(--fig-line);border-radius:4px;padding:1px 6px 1px 3px;white-space:nowrap;font-family:var(--mono);font-size:11.5px}
+.txt{font-family:var(--mono);font-size:11.5px}
+
+/* ramps */
+.ramps{min-width:720px}
+.ramp{display:grid;grid-template-columns:78px repeat(11,1fr);gap:3px;margin-bottom:3px}
+.ramp .lab{font-size:.8rem;color:var(--muted);align-self:center}
+.sw{height:52px;border-radius:3px;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:var(--mono);font-size:11px;line-height:1.3}
+.sw b{font-weight:600}
+.marks{display:grid;grid-template-columns:78px repeat(11,1fr);gap:3px;margin-top:6px;font-size:.78rem;color:var(--muted)}
+.marks span{text-align:center;line-height:1.25}
+.marks .on{color:var(--ink);font-weight:600;border-top:2px solid var(--accent);padding-top:4px}
+
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+.tw{overflow-x:auto;margin:12px 0}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+td code{white-space:nowrap}
+td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+.pre{font-family:var(--mono);font-size:.84rem;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;white-space:pre;line-height:1.6}
+.pre .x{color:var(--muted)}
+.pre .b,.pre .t{font-weight:600}
+
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:12px}
+.split > div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.split h3{margin-top:0}
+.split ul{margin:0;padding-left:18px}
+.split li{margin-bottom:6px}
+.split .mine{border-color:var(--accent)}
+
+ol.ladder{padding-left:22px}
+ol.ladder li{margin-bottom:10px}
+.rules{counter-reset:r;list-style:none;padding:0;margin:14px 0;display:grid;gap:10px}
+.rules li{counter-increment:r;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 16px 12px 48px;position:relative}
+.rules li::before{content:counter(r);position:absolute;left:16px;top:11px;font-family:var(--mono);font-weight:600;color:var(--accent)}
+
+.open li{margin-bottom:8px}
+.done{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 16px}
+.done span{font-size:.85rem;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:3px 10px}
+.note{border-left:3px solid var(--brand-c);padding:8px 14px;background:var(--surface);margin:14px 0;border-radius:0 4px 4px 0}
+
+/* cheat sheet */
+.memo{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin-top:14px}
+.memo section{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.memo h3{margin:0 0 8px;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.memo ul{margin:0;padding-left:18px}
+.memo li{margin-bottom:5px;font-size:.95rem}
+.memo .never li::marker{content:"✕  ";color:var(--warn)}
+.crans{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:.93rem}
+.crans b{font-family:var(--mono);font-weight:600;text-align:right}
+.crans .hl{color:var(--accent);font-weight:600}
+
+@media (max-width:640px){
+  .fig{grid-template-columns:1fr}
+  .fig-side{flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--fig-line)}
+  .fig-side .cap{width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+</head>
+<body>
+<main>
+<h1>Tokens multi-marques : l'architecture cible</h1>
+<p class="lede">Six marques, clair et sombre, deux profils de couleur <code>soft</code> et <code>vivid</code>. Cette page reprend <a href="./ARCHITECTURE-FINALE-MULTIMARQUES.md">ARCHITECTURE-FINALE-MULTIMARQUES.md</a>, la montre telle qu'elle apparaîtra dans Figma et liste ce qu'il faut changer dans le <span class="m">tokens.json</span> actuel.</p>
+<nav class="jump" aria-label="Raccourcis">
+  <a href="#figma">Vue Figma</a>
+  <a href="#memo">Aide-mémoire</a>
+  <a href="#fichier">Ce qui change dans le fichier</a>
+  <a href="#reste">Décidé et à décider</a>
+</nav>
+
+<div class="thesis">
+  <div><strong>Deux interrupteurs indépendants</strong><span class="pill b">marque</span> sur la collection <code>brand</code>, <span class="pill t">thème</span> sur la collection <code>theme</code>. Figma et la CSS les règlent séparément.</div>
+  <div><strong>Les composants ne citent que <code>theme</code></strong>Pour une couleur, jamais <code>brand</code> ni <code>primitives</code>. C'est le seul endroit où clair et sombre se décident.</div>
+  <div><strong>Un numéro de cran vaut un contraste</strong>Toutes les rampes suivent la même courbe de clarté : <code>700</code> se lit en texte dans toutes les marques, les deux thèmes et les deux profils.</div>
+</div>
+
+<h2>Les quatre collections et le chemin d'un token</h2>
+<p class="prose">Chaque bande est une collection Figma. On lit de haut en bas : un composant cite <code>theme</code>, qui choisit clair ou sombre. Le nom visé est ensuite résolu soit dans <code>brand</code>, qui choisit la marque, soit dans <code>primitives</code>, commun à toutes.</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 990 462" role="img" aria-label="Quatre collections empilées : components, theme à deux modes, brand à six modes, primitives. Le fond du bouton traverse theme puis brand ; le fond d'alerte traverse theme puis primitives, en clair comme en sombre, sans passer par brand.">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-b" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-t" d="M0,0 L10,5 L0,10 z"/></marker>
+  </defs>
+
+  <rect class="lane" x="0" y="10" width="990" height="76" rx="6"/>
+  <rect class="lane-t" x="0" y="96" width="990" height="76" rx="6"/>
+  <rect class="lane-b" x="0" y="182" width="990" height="150" rx="6"/>
+  <rect class="lane" x="0" y="342" width="990" height="110" rx="6"/>
+
+  <text class="ln" x="16" y="40">components</text>
+  <text class="lm" x="16" y="60">aucun mode</text>
+  <text class="ln" x="16" y="126">theme</text>
+  <text class="lm-t" x="16" y="146">2 modes : light · dark</text>
+  <text class="ln" x="16" y="212">brand</text>
+  <text class="lm-b" x="16" y="232">6 modes : marque A … F</text>
+  <text class="lm" x="16" y="252">rampes,</text>
+  <text class="lm" x="16" y="268">couleur exacte</text>
+  <text class="ln" x="16" y="372">primitives</text>
+  <text class="lm" x="16" y="392">aucun mode</text>
+  <text class="lm" x="16" y="412">neutre, utilitaires</text>
+
+  <!-- trace 1 : bouton -->
+  <rect class="node" x="210" y="32" width="260" height="32" rx="4"/>
+  <text class="nt" x="340" y="52" text-anchor="middle">button.primary.background</text>
+  <rect class="node-acc" x="210" y="118" width="260" height="32" rx="4"/>
+  <text class="nt" x="340" y="138" text-anchor="middle">primary.vivid.700</text>
+  <rect class="node" x="210" y="206" width="260" height="32" rx="4"/>
+  <text class="nt" x="340" y="226" text-anchor="middle">palette.primary.vivid.light.700</text>
+  <rect class="node-alt" x="520" y="206" width="260" height="32" rx="4"/>
+  <text class="nt-alt" x="650" y="226" text-anchor="middle">palette.primary.vivid.dark.700</text>
+  <rect class="node" x="210" y="276" width="120" height="32" rx="4"/>
+  <text class="nt" x="270" y="296" text-anchor="middle">hexa de A</text>
+  <rect class="node-alt" x="350" y="276" width="120" height="32" rx="4"/>
+  <text class="nt-alt" x="410" y="296" text-anchor="middle">hexa de B</text>
+  <text class="al" x="210" y="325">la valeur de la colonne de chaque marque</text>
+
+  <line class="ar" x1="340" y1="64" x2="340" y2="116" marker-end="url(#a)"/>
+  <text class="al" x="350" y="95">cite</text>
+  <line class="ar-t" x1="340" y1="150" x2="340" y2="204" marker-end="url(#at)"/>
+  <text class="al-t" x="350" y="180">light</text>
+  <line class="ar-t dash" x1="440" y1="150" x2="598" y2="204" marker-end="url(#at)"/>
+  <text class="al-t" x="540" y="166">dark</text>
+  <line class="ar-b" x1="270" y1="238" x2="270" y2="274" marker-end="url(#ab)"/>
+  <text class="al-b" x="220" y="261" text-anchor="end">marque A</text>
+  <line class="ar-b dash" x1="410" y1="238" x2="410" y2="274" marker-end="url(#ab)"/>
+  <text class="al-b" x="420" y="261">marque B</text>
+
+  <!-- trace 2 : alerte -->
+  <rect class="node" x="790" y="32" width="160" height="32" rx="4"/>
+  <text class="nt" x="870" y="52" text-anchor="middle">alert.info.background</text>
+  <rect class="node-acc" x="790" y="118" width="160" height="32" rx="4"/>
+  <text class="nt" x="870" y="138" text-anchor="middle">info.soft.100</text>
+  <rect class="node" x="790" y="356" width="146" height="32" rx="4"/>
+  <text class="nt" x="863" y="376" text-anchor="middle">info.soft.light.100</text>
+  <rect class="node-alt" x="790" y="400" width="146" height="32" rx="4"/>
+  <text class="nt-alt" x="863" y="420" text-anchor="middle">info.soft.dark.100</text>
+  <line class="ar" x1="870" y1="64" x2="870" y2="116" marker-end="url(#a)"/>
+  <line class="ar-t" x1="870" y1="150" x2="870" y2="354" marker-end="url(#at)"/>
+  <path class="ar-t dash" d="M946,150 L946,416 L940,416" marker-end="url(#at)"/>
+  <text class="al-t" x="860" y="244" text-anchor="end">light</text>
+  <text class="al-t" x="953" y="244">dark</text>
+  <text class="al" x="860" y="262" text-anchor="end">traverse brand</text>
+  <text class="al" x="860" y="278" text-anchor="end">sans s'y arrêter</text>
+</svg>
+</div>
+<figcaption>Deux chemins. Le fond du bouton passe par les deux interrupteurs : <span class="t">theme</span> choisit la rampe claire ou sombre, puis <span class="b">brand</span> donne l'hexa de la marque affichée. Le cran, 700, est le même pour toutes les marques. Le fond d'alerte est commun aux marques : il change avec le thème mais ne dépend pas de la marque. En pointillé, ce qu'on obtient avec l'autre thème ou l'autre marque. Les nœuds surlignés sont les seuls noms que les composants voient.</figcaption>
+</figure>
+
+<h3>Pourquoi deux collections plutôt qu'une à douze modes</h3>
+<p class="prose">Une seule collection « marque × thème » compterait douze modes, alors que Figma Professional plafonne à dix modes par collection. Avec deux collections, chacune reste sous le plafond (6 et 2 modes), et une maquette peut poser un encart sombre sans toucher à la marque. Tout ce qui dépend de la marque reste dans <code>brand</code> : si les réglages vivaient dans une autre collection à six modes, Figma pourrait afficher la palette de A avec les réglages de B. L'export dérive l'attribut HTML du nom de la collection : <code>brand</code> donne <code>data-brand</code>, <code>theme</code> donne <code>data-theme</code>.</p>
+
+<h2 id="figma">Ce que tu verras dans Figma</h2>
+<p class="prose">Le panneau des variables, collection par collection. Dans Figma, les points d'un chemin deviennent des groupes : <code>theme.primary.vivid.700</code> s'affiche <code>primary/vivid/700</code> dans la collection <code>theme</code>. Clique sur une collection à gauche.</p>
+
+<figure>
+<div class="fig">
+  <div class="fig-side" role="tablist" aria-label="Collections" id="fig-tabs">
+    <div class="cap">Collections</div>
+  </div>
+  <div class="fig-main">
+    <div class="fig-head" id="fig-head"></div>
+    <div class="fig-tw"><table id="fig-table"></table></div>
+  </div>
+</div>
+<figcaption>Extrait : chaque collection montre quelques lignes de chaque groupe, et le reste est résumé en italique. Les couleurs sont calculées avec les courbes et les parts de chroma du document, à teinte constante et sans dérive. Ce sont des illustrations : le plugin Palettes produira les vraies valeurs. Les colonnes de <code>brand</code> s'arrêtent à la marque C ; D, E et F suivent le même modèle. Une puce est un alias, avec en couleur sa valeur résolue en marque A et en clair.</figcaption>
+</figure>
+
+<h2>Ce qui casse aujourd'hui</h2>
+<p class="prose">Dans le fichier actuel, les couleurs des composants visent directement leurs rampes. Un axe clair/sombre n'a donc aucun point d'appui : il faudrait le poser sur une collection que tous les composants traversent, et il n'en existe pas.</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 960 270" role="img" aria-label="Aujourd'hui, 256 des 306 citations de couleur des composants visent des collections sans mode. Demain, les 306 passent par theme.">
+  <text class="h" x="10" y="18">Aujourd'hui</text>
+  <text class="h" x="510" y="18">Demain</text>
+  <line class="sep" x1="480" y1="6" x2="480" y2="262"/>
+
+  <rect class="node" x="130" y="34" width="200" height="34" rx="4"/>
+  <text class="nt" x="230" y="55" text-anchor="middle">components · 306</text>
+  <path class="flow" d="M200,68 C200,120 80,120 80,172" stroke-width="13"/>
+  <path class="flow" d="M230,68 L230,172" stroke-width="2.4"/>
+  <path class="flow-b" d="M260,68 C260,120 380,120 380,172" stroke-width="3"/>
+  <text class="al" x="92" y="120">217</text>
+  <text class="al" x="238" y="130">39</text>
+  <text class="al-b" x="352" y="120">50</text>
+  <rect class="node" x="10" y="172" width="140" height="44" rx="4"/>
+  <text class="nt" x="80" y="190" text-anchor="middle">color-utilities</text>
+  <text class="al" x="80" y="207" text-anchor="middle">aucun mode</text>
+  <rect class="node" x="165" y="172" width="130" height="44" rx="4"/>
+  <text class="nt" x="230" y="190" text-anchor="middle">primitives.colors</text>
+  <text class="al" x="230" y="207" text-anchor="middle">valeurs brutes</text>
+  <rect class="node" x="310" y="172" width="150" height="44" rx="4"/>
+  <text class="nt" x="385" y="190" text-anchor="middle">color-brand-tokens</text>
+  <text class="al-b" x="385" y="207" text-anchor="middle">axe marque</text>
+  <text class="warn" x="10" y="246">256 citations sur 306 (84 %) : aucun mode ne peut les changer</text>
+
+  <rect class="node" x="630" y="34" width="200" height="34" rx="4"/>
+  <text class="nt" x="730" y="55" text-anchor="middle">components · 306</text>
+  <path class="flow-t" d="M730,68 L730,106" stroke-width="13"/>
+  <text class="al" x="746" y="92">306</text>
+  <rect class="node-acc" x="630" y="106" width="200" height="40" rx="4"/>
+  <text class="nt" x="730" y="124" text-anchor="middle">theme</text>
+  <text class="al-t" x="730" y="140" text-anchor="middle">light · dark</text>
+  <path class="flow" d="M690,146 C690,170 610,170 610,190" stroke-width="3"/>
+  <path class="flow" d="M770,146 C770,170 850,170 850,190" stroke-width="3"/>
+  <rect class="node" x="530" y="190" width="160" height="44" rx="4"/>
+  <text class="nt" x="610" y="208" text-anchor="middle">brand</text>
+  <text class="al-b" x="610" y="225" text-anchor="middle">6 marques</text>
+  <rect class="node" x="770" y="190" width="160" height="44" rx="4"/>
+  <text class="nt" x="850" y="208" text-anchor="middle">primitives</text>
+  <text class="al" x="850" y="225" text-anchor="middle">neutre + utilitaires</text>
+  <text class="al" x="510" y="258">Toutes les couleurs traversent l'interrupteur clair/sombre</text>
+</svg>
+</div>
+<figcaption>Où vont les 306 couleurs de <code>components</code>. L'épaisseur des traits suit le nombre de citations. Les 306 citations visent 55 cibles distinctes : c'est le vrai volume de repointage. L'exemple type est <code>alert.info.standard.background</code>, qui vise <code>primitives.colors.sky.50</code> en dur.</figcaption>
+</figure>
+
+<h2>Le socle : une courbe de clarté commune</h2>
+<p class="prose">Toutes les rampes ont onze crans, de 50 à 950, et partagent la même clarté OKLCH à chaque cran. La teinte et la vivacité bougent peu le contraste, donc le numéro suffit à le garantir. Le sombre a sa propre courbe avec les mêmes numéros : le cran 50 est toujours le fond de page.</p>
+
+<figure>
+<div class="scroll">
+<div class="ramps">
+  <div class="ramp" id="r-light"><span class="lab">Clair</span></div>
+  <div class="ramp" id="r-dark"><span class="lab">Sombre</span></div>
+  <div class="marks" id="r-marks"><span></span></div>
+</div>
+</div>
+<figcaption>Les vingt-deux clartés du document, rendues en gris à clarté exacte (<code>oklch(L 0 0)</code>). Contre le cran 50, le 600 garantit 3:1 (3,63 à 4,72) et le 700 garantit 4,5:1 (5,23 à 6,79), sur les 360 teintes, les deux profils et les deux thèmes. Ces courbes se règlent dans la configuration du plugin Palettes, qui avertit si l'une d'elles ne tient plus ces seuils.</figcaption>
+</figure>
+
+<h3>Les deux profils</h3>
+<p class="prose"><code>soft</code> et <code>vivid</code> ont la même clarté, donc les mêmes contrastes : seule la vivacité change (45 % et 95 % du maximum que l'écran affiche). <code>soft</code> sert à un élément répété ou secondaire, comme un badge présent vingt fois à l'écran ; <code>vivid</code> sert à ce qui doit se remarquer. Les rampes de marque et les quatre utilitaires ont les deux profils, le neutre n'en a qu'un. Aux crans 50, 100 et 950, l'écran n'affiche presque pas de vivacité : les deux profils s'y ressemblent.</p>
+
+<h2>Les emplois et les états</h2>
+<p class="prose">Un composant cite un cran fixe, le même dans toutes les marques. Aucune marque ne choisit un autre cran : chaque cran garantit son contraste, et chaque état avance d'un cran, écrit une seule fois dans <code>components</code>. La table vaut pour toutes les rampes et les deux profils.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Emploi</th><th>Repos</th><th>Survol</th><th>Appui</th><th>Garantie (minimum mesuré)</th></tr></thead>
+<tbody>
+<tr><td><code>solid</code> fond plein d'un bouton, d'un badge</td><td>700</td><td>800</td><td>900</td><td>texte <code>neutral.50</code> à 4,5:1 (5,23 · 7,45 · 10,50)</td></tr>
+<tr><td><code>text</code> texte de marque sur la page</td><td>700</td><td></td><td></td><td>4,5:1 (5,23)</td></tr>
+<tr><td><code>surface</code> fond teinté discret</td><td>100</td><td>200</td><td>300</td><td>texte 700, 800, 900 à 4,5:1 (4,99 · 6,32 · 7,28)</td></tr>
+<tr><td><code>border-control</code> contour d'un champ</td><td>600</td><td>700</td><td>800</td><td>3:1 contre la surface (3,46 · 4,46 · 5,25)</td></tr>
+<tr><td><code>border-decorative</code> filet</td><td>300</td><td></td><td></td><td>aucune</td></tr>
+<tr><td><code>focus</code> anneau, décollé du contrôle</td><td>600</td><td></td><td></td><td>3:1 contre la page (3,63)</td></tr>
+<tr><td>bouton texte</td><td>texte 700, sans fond</td><td>fond 200, texte 800</td><td>fond 300, texte 900</td><td>4,5:1</td></tr>
+<tr><td>désactivé</td><td colspan="3">neutres : fond 200, texte 500</td><td>hors seuil, WCAG ne l'exige pas</td></tr>
+</tbody></table></div>
+
+<p class="prose">Le bouton actuel cite <code>color-brand-tokens.primary.default</code> pour trois emplois qui n'ont pas le même seuil. Il devient :</p>
+<div class="pre"><span class="x">button…contained.default.background</span>  → theme.primary.vivid.700
+<span class="x">button…contained.hover.background</span>    → theme.primary.vivid.800
+<span class="x">button…contained.press.background</span>    → theme.primary.vivid.900
+<span class="x">button…contained.*.foreground</span>       → theme.neutral.50
+<span class="x">button…outlined.default.border</span>       → theme.primary.vivid.600</div>
+
+<p class="prose" style="margin-top:14px"><strong>La couleur de charte</strong> se place au cran dont elle est la plus proche, et le plugin l'affiche. Elle reste disponible telle quelle (<code>brand.identity.primary</code>) pour le logo et les aplats de charte. Le bouton, lui, est toujours au 700 : une couleur plus claire que le 700 donne un bouton plus foncé qu'elle, et le plugin le signale. Material 3 fait de même : la couleur choisie donne la teinte, et le bouton prend toujours le même ton.</p>
+<p class="prose"><strong>Une marque qui mène avec sa deuxième couleur</strong> la place dans sa palette <code>primary</code> au moment de la générer. <code>primary</code> désigne la couleur des actions, pas l'ordre de la charte.</p>
+
+<h2>Quand une marque voudra autre chose</h2>
+<p class="prose">Aujourd'hui, aucune marque ne diverge. Rien n'est donc créé, mais la place est prévue. Le jour venu, prendre le premier échelon qui suffit :</p>
+<ol class="ladder prose">
+  <li><strong>Changer la couleur de sa palette <code>primary</code></strong>, si la marque veut une autre couleur partout. Aucune variable de plus.</li>
+  <li><strong>Un réglage de marque</strong>, <code>brand.params.*</code>, si la différence n'est pas une couleur : boutons en pilule, police des titres. Le thème ne le change pas, donc il ne passe pas par <code>theme</code>.</li>
+  <li><strong>Une exception</strong>, si la différence ne vaut que dans un thème : bouton gris foncé en sombre chez B seulement. <code>brand.exception.light.*</code> et <code>brand.exception.dark.*</code> portent les deux valeurs de chaque marque, et <code>theme.exception.*</code> choisit entre elles. Une exception sur un fond porte aussi ses états, survol et appui.</li>
+  <li><strong>Une variante de composant</strong>, si c'est le dessin qui change et pas une valeur.</li>
+</ol>
+<p class="prose">Trois règles permettent de franchir ces échelons sans toucher à un composant publié :</p>
+<ol class="rules prose">
+  <li><code>brand</code> reste la seule collection qui porte l'axe des marques. Un réglage ou une exception s'y ajoute ; aucune seconde collection à six modes.</li>
+  <li>Chaque propriété d'un composant Figma est liée à une variable de <code>components</code>. Ajouter un réglage ou une exception, c'est repointer cette seule variable.</li>
+  <li>Un réglage ou une exception se crée le jour où une marque le demande, pas avant.</li>
+</ol>
+
+<h2 id="fichier">Ce qui change dans le fichier de tokens</h2>
+<p class="prose">Collection par collection, du <code>tokens.json</code> actuel à la cible. Les nombres comptent les variables de couleur par colonne de mode.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Aujourd'hui</th><th>Demain</th><th>Ce que ça demande</th><th>Variables</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>color-brands</code> (une marque par dossier, 44)<br><code>color-brand-tokens</code> (axe marque, 10 rôles)</td>
+  <td><code>brand</code>, <span class="b">6 modes</span></td>
+  <td>Fusionner les deux. Les dossiers <code>intencial</code> et <code>marque-2</code> disparaissent : la marque devient une colonne. On y range :<br>• <code>palette</code> : primaire et secondaire × <code>soft</code> et <code>vivid</code> × clair et sombre × 11 crans ;<br>• <code>identity.primary</code>, la couleur exacte ;<br>• <code>params</code> et <code>exception</code>, réservés et vides.<br>Les 10 rôles de <code>color-brand-tokens</code> disparaissent, sans remplaçant.</td>
+  <td class="n">89 × 6</td>
+</tr>
+<tr>
+  <td><code>color-utilities</code> (54 : neutre sur 14 crans, 4 utilitaires sur 10)<br><code>primitives.colors</code> (9 teintes brutes)</td>
+  <td><code>primitives</code>, sans mode</td>
+  <td>Le neutre devient un gris fixe en deux jeux, <code>light</code> et <code>dark</code>. Les 4 utilitaires passent en <code>soft</code> et <code>vivid</code>, chacun en <code>light</code> et <code>dark</code>. Tout est renuméroté sur 11 crans : le neutre abandonne 1000, 1100, <code>white</code> et <code>black</code>, et les utilitaires gagnent un 950. Plus aucun composant ne cite les 9 teintes brutes.</td>
+  <td class="n">198</td>
+</tr>
+<tr>
+  <td>—</td>
+  <td><code>theme</code>, <span class="t">light · dark</span></td>
+  <td>Nouvelle collection. Chaque nom pointe vers sa valeur claire ou sombre :<br>• <code>neutral.*</code> (11) ;<br>• <code>success</code>, <code>warning</code>, <code>info</code>, <code>danger</code> × <code>soft</code> et <code>vivid</code> (88) ;<br>• <code>primary</code> et <code>secondary</code> × <code>soft</code> et <code>vivid</code> (44) ;<br>• <code>exception.*</code>, réservé et vide.</td>
+  <td class="n">143 × 2</td>
+</tr>
+<tr>
+  <td><code>components</code> (306 couleurs)</td>
+  <td><code>components</code>, sans mode</td>
+  <td>Repointer les 306 citations de couleur sur des crans de <code>theme</code> (55 cibles distinctes), selon la table des emplois : chaque état, survol, appui, focus, désactivé, reçoit son cran. Aucune variable par marque.</td>
+  <td class="n">306 alias</td>
+</tr>
+<tr>
+  <td><code>typography</code>, <code>layouts</code>, dimensions, <code>tests</code></td>
+  <td>inchangées</td>
+  <td>Rien aujourd'hui. Le jour où une marque veut sa propre police ou ses propres rayons, la valeur part dans <code>brand.params</code> et la variable de <code>components</code> est repointée.</td>
+  <td class="n">—</td>
+</tr>
+</tbody></table></div>
+
+<div class="note prose">Dans Figma, une nouvelle colonne de mode recopie les valeurs de la première. Une marque qui n'est pas encore renseignée paraît donc couverte. Relire chacune de ses variables avant de la publier.</div>
+
+<h2>Le plugin Palettes, et le reste</h2>
+<div class="split">
+  <div class="mine">
+    <h3>Ce que le plugin couvre</h3>
+    <ul>
+      <li>La recette versionnée : courbes, parts de chroma, teintes de bout, crans retouchés, sortie en sRGB.</li>
+      <li>Les réglages derrière l'engrenage : les deux courbes, les parts <code>soft</code> et <code>vivid</code>, le seuil des profils confondus. Une alerte « courbe hors garantie » signale une courbe qui ne tient plus 600 à 3:1 ou 700 à 4,5:1.</li>
+      <li>Les quatre rampes de chaque palette, marques et utilitaires, et l'éditeur de dérive.</li>
+      <li>La vérification de la table des emplois, états compris, sur les deux profils.</li>
+      <li>Le cran le plus proche de chaque couleur de charte, et l'alerte quand elle est plus claire que le bouton au 700.</li>
+      <li>La planche, faite de cadres Figma. <strong>Aucune variable.</strong></li>
+    </ul>
+  </div>
+  <div>
+    <h3>Ce qui reste à faire à côté</h3>
+    <ul>
+      <li>Créer <code>brand</code> (6 modes) et <code>theme</code> (2 modes), puis saisir les hexas des palettes.</li>
+      <li>Remplir <code>theme</code> : un nom, deux pointeurs.</li>
+      <li>Repointer <code>components</code> sur les crans de la table des emplois, état par état.</li>
+      <li>Écrire les contrôles sur <code>tokens.json</code> : graphe d'alias, couverture marque × thème, paires texte et fond lues dans les contrats. Aucun n'existe.</li>
+      <li>Côté code, poser <code>data-brand</code> et <code>data-theme</code> ; <code>ucm tokens css</code> produit la feuille.</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="reste">Décidé, et à décider</h2>
+<div class="done" aria-label="Décisions prises">
+  <span>Collection <code>theme</code></span>
+  <span>Profils <code>soft</code> et <code>vivid</code></span>
+  <span>Sortie en sRGB</span>
+  <span>Utilitaires communs, deux profils, commutés par le thème</span>
+  <span>Chemin : famille, profil, thème, cran</span>
+  <span><code>params</code> et <code>exception</code> réservés</span>
+  <span>Aucun rôle câblé : table des emplois fixe</span>
+  <span>Bouton au 700 dans toutes les marques</span>
+  <span>Couleur de charte au cran le plus proche</span>
+  <span>Pas d'inversion du texte</span>
+</div>
+<ul class="open prose">
+  <li>Les valeurs des deux courbes, des parts de chroma et du seuil de 0,02 : à régler à l'œil dans le plugin, sur de vraies palettes.</li>
+  <li>Les teintes de bout sombre proposées par défaut, famille par famille.</li>
+  <li>Les contrôles automatiques sur <code>tokens.json</code>.</li>
+</ul>
+<p class="prose">Avant d'étendre la cible à la bibliothèque, un prototype à six marques éprouve les cas limites : un jaune clair, un bleu très sombre, une teinte très vive, une marque presque grise. Il y pose un bouton plein et son survol, une alerte, un champ avec focus, une exception en sombre, et un élément <code>soft</code> à côté d'un élément <code>vivid</code>.</p>
+
+<h2 id="memo">Aide-mémoire du designer</h2>
+<p class="prose">Ce qu'il faut savoir au quotidien dans Figma, et rien d'autre.</p>
+
+<div class="memo">
+  <section>
+    <h3>Poser le contexte</h3>
+    <ul>
+      <li>Sélectionne le cadre, puis règle ses modes de variables dans le panneau de droite : <code>brand</code> pour la marque, <code>theme</code> pour clair ou sombre.</li>
+      <li>Un encart sombre dans une page claire : change <code>theme</code> sur cet encart seulement.</li>
+    </ul>
+  </section>
+  <section>
+    <h3>Lier une couleur</h3>
+    <ul>
+      <li>Dans une maquette : une variable de <code>theme</code>.</li>
+      <li>Dans un composant : une variable de <code>components</code>, qui pointe vers <code>theme</code>.</li>
+      <li>Toujours famille, profil, cran : <code>primary/vivid/700</code>, <code>danger/soft/100</code>.</li>
+      <li>Le cran vient de la table des emplois, le même pour toutes les marques.</li>
+    </ul>
+  </section>
+  <section>
+    <h3>Choisir le cran</h3>
+    <div class="crans">
+      <b>50</b><span>fond de page</span>
+      <b>100</b><span>fond teinté discret</span>
+      <b>200</b><span>ce fond, survolé</span>
+      <b>300</b><span>séparateur, filet</span>
+      <b>600</b><span class="hl">bordure de champ, focus (3:1)</span>
+      <b>700</b><span class="hl">texte, bouton plein (4,5:1)</span>
+      <b>800</b><span>bouton survolé, texte appuyé</span>
+      <b>900</b><span>bouton appuyé</span>
+    </div>
+  </section>
+  <section>
+    <h3>Profils et états</h3>
+    <ul>
+      <li><code>soft</code> : répété, secondaire. <code>vivid</code> : à remarquer.</li>
+      <li>Le profil ne change pas le contraste. Aux crans 50, 100 et 950, il ne se voit pas.</li>
+      <li>Survol +1 cran, appui +2, fond et texte ensemble.</li>
+      <li>Texte sur un fond plein : <code>neutral/50</code>, dans toutes les marques.</li>
+      <li>Anneau de focus au 600, décollé du contrôle.</li>
+      <li>Désactivé : neutres, fond 200 et texte 500.</li>
+    </ul>
+  </section>
+  <section class="never">
+    <h3>Jamais</h3>
+    <ul>
+      <li>Un texte sous le cran 600.</li>
+      <li>Une couleur liée à <code>brand</code> ou <code>primitives</code>.</li>
+      <li>Un hexa posé à la main sur un calque.</li>
+      <li><code>identity.primary</code> ailleurs que pour le logo ou un aplat de charte.</li>
+    </ul>
+  </section>
+  <section>
+    <h3>Une marque veut autre chose</h3>
+    <ul>
+      <li>Dans l'ordre : changer la couleur de sa palette, un réglage <code>params</code>, une exception, une variante.</li>
+      <li>Nouvelle marque : sa colonne recopie la première. Relis tout avant de publier.</li>
+    </ul>
+  </section>
+</div>
+</main>
+
+<script>
+(function(){
+  var crans=[50,100,200,300,400,500,600,700,800,900,950];
+  var L={light:[.975,.95,.905,.845,.76,.67,.585,.5,.42,.34,.27],dark:[.18,.225,.275,.33,.4,.49,.58,.67,.76,.85,.93]};
+
+  /* rampes grises */
+  function fill(id,arr){
+    var row=document.getElementById(id);
+    arr.forEach(function(l,i){
+      var d=document.createElement('div');d.className='sw';
+      d.style.background='oklch('+l+' 0 0)';
+      d.style.color=l>0.6?'#111':'#fff';
+      d.innerHTML='<b>'+crans[i]+'</b>'+String(l).replace(/^0?\./,'0,');
+      row.appendChild(d);
+    });
+  }
+  fill('r-light',L.light);fill('r-dark',L.dark);
+  var notes={50:'fond de page',600:'bordure, focus ≥ 3:1',700:'texte ≥ 4,5:1',800:'texte appuyé'};
+  var mk=document.getElementById('r-marks');
+  crans.forEach(function(c){var s=document.createElement('span');if(notes[c]){s.textContent=notes[c];if(c>=600&&c<=700)s.className='on';}mk.appendChild(s);});
+
+  /* OKLCH -> sRGB, chroma en part du maximum affichable */
+  function lin(Lv,C,h){
+    var a=C*Math.cos(h*Math.PI/180),b=C*Math.sin(h*Math.PI/180);
+    var l=Math.pow(Lv+.3963377774*a+.2158037573*b,3),m=Math.pow(Lv-.1055613458*a-.0638541728*b,3),s=Math.pow(Lv-.0894841775*a-1.291485548*b,3);
+    return [4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s];
+  }
+  function inG(v){return v.every(function(x){return x>=-1e-4&&x<=1+1e-4});}
+  function maxC(Lv,h){var lo=0,hi=.4;for(var i=0;i<24;i++){var mid=(lo+hi)/2;if(inG(lin(Lv,mid,h)))lo=mid;else hi=mid;}return lo;}
+  function hex(Lv,C,h){
+    return '#'+lin(Lv,C,h).map(function(x){x=Math.min(1,Math.max(0,x));x=x<=.0031308?12.92*x:1.055*Math.pow(x,1/2.4)-.055;return ('0'+Math.round(x*255).toString(16)).slice(-2);}).join('').toUpperCase();
+  }
+  var PART={soft:.45,vivid:.95};
+  function ramp(h,prof,th,cran){var Lv=L[th][crans.indexOf(cran)];return hex(Lv,prof?maxC(Lv,h)*PART[prof]:0,h);}
+  var HU={success:150,warning:75,info:245,danger:25};
+  var BR={A:{primary:262,secondary:185},B:{primary:330,secondary:45},C:{primary:95,secondary:262}};
+  var N=function(th,c){return ramp(0,null,th,c);};
+  var U=function(f,p,th,c){return ramp(HU[f],p,th,c);};
+  var P=function(br,r,p,th,c){return ramp(BR[br][r],p,th,c);};
+  var IDC=hex(.85,maxC(.85,95)*.9,95);
+
+  function V(h){return {v:h};}
+  function A(name,h){return {a:name,h:h};}
+  function cell(c){
+    if(!c)return '';
+    if(c.t)return '<span class="txt">'+c.t+'</span>';
+    if(c.v)return '<span class="val"><span class="sq" style="background:'+c.v+'"></span>'+c.v+'</span>';
+    return '<span class="chip">'+(c.h?'<span class="sq" style="background:'+c.h+'"></span>':'')+c.a+'</span>';
+  }
+
+  var C={
+    primitives:{modes:['Valeur'],info:'aucun mode · 198 couleurs, plus dimensions, typographie, durées',rows:[
+      {g:'neutral / light'},
+      {n:'50',c:[V(N('light',50))]},{n:'500',c:[V(N('light',500))]},{n:'700',c:[V(N('light',700))]},{n:'950',c:[V(N('light',950))]},
+      {more:'+ 7 autres crans'},
+      {g:'neutral / dark'},
+      {n:'50',c:[V(N('dark',50))]},{n:'700',c:[V(N('dark',700))]},
+      {more:'+ 9 autres crans'},
+      {g:'success / soft / light'},
+      {n:'100',c:[V(U('success','soft','light',100))]},{n:'700',c:[V(U('success','soft','light',700))]},
+      {g:'success / vivid / light'},
+      {n:'100',c:[V(U('success','vivid','light',100))]},{n:'700',c:[V(U('success','vivid','light',700))]},
+      {g:'success / vivid / dark'},
+      {n:'700',c:[V(U('success','vivid','dark',700))]},
+      {more:'+ success/soft/dark, puis warning, info et danger sur le même modèle'},
+      {g:'dimensions, fontsize, fontweight…',res:true},
+      {more:'inchangés'}
+    ]},
+    brand:{modes:['Marque A','Marque B','Marque C'],info:'6 modes · 89 variables par marque',rows:[
+      {g:'palette / primary / vivid / light'},
+      {n:'100',c:['A','B','C'].map(function(b){return V(P(b,'primary','vivid','light',100));})},
+      {n:'700',c:['A','B','C'].map(function(b){return V(P(b,'primary','vivid','light',700));})},
+      {g:'palette / primary / soft / light'},
+      {n:'700',c:['A','B','C'].map(function(b){return V(P(b,'primary','soft','light',700));})},
+      {g:'palette / primary / vivid / dark'},
+      {n:'700',c:['A','B','C'].map(function(b){return V(P(b,'primary','vivid','dark',700));})},
+      {more:'+ les autres crans, primary/soft/dark et secondary : 88 couleurs par marque'},
+      {g:'identity'},
+      {n:'primary',c:[V(P('A','primary','vivid','light',600)),V(P('B','primary','vivid','light',500)),V(IDC)]},
+      {more:'la couleur exacte de la charte : logo et aplats, jamais citée par un composant'},
+      {g:'params · réservé, aucune variable',res:true},
+      {g:'exception / light · exception / dark · réservé, aucune variable',res:true}
+    ]},
+    theme:{modes:['Light','Dark'],info:'2 modes · 143 variables',rows:[
+      {g:'neutral'},
+      {n:'50',c:[A('neutral/light/50',N('light',50)),A('neutral/dark/50',N('dark',50))]},
+      {n:'700',c:[A('neutral/light/700',N('light',700)),A('neutral/dark/700',N('dark',700))]},
+      {more:'+ 9 autres crans'},
+      {g:'success / soft'},
+      {n:'100',c:[A('success/soft/light/100',U('success','soft','light',100)),A('success/soft/dark/100',U('success','soft','dark',100))]},
+      {n:'700',c:[A('success/soft/light/700',U('success','soft','light',700)),A('success/soft/dark/700',U('success','soft','dark',700))]},
+      {g:'success / vivid'},
+      {n:'700',c:[A('success/vivid/light/700',U('success','vivid','light',700)),A('success/vivid/dark/700',U('success','vivid','dark',700))]},
+      {more:'+ warning, info, danger : 88 variables pour les utilitaires'},
+      {g:'primary / vivid'},
+      {n:'700',c:[A('palette/primary/vivid/light/700',P('A','primary','vivid','light',700)),A('palette/primary/vivid/dark/700',P('A','primary','vivid','dark',700))]},
+      {n:'800',c:[A('palette/primary/vivid/light/800',P('A','primary','vivid','light',800)),A('palette/primary/vivid/dark/800',P('A','primary','vivid','dark',800))]},
+      {more:'+ les autres crans, primary/soft et secondary : 44 variables de marque'},
+      {g:'exception · réservé, aucune variable',res:true}
+    ]},
+    components:{modes:['Valeur'],info:'aucun mode · cite theme',rows:[
+      {g:'button / primary / contained'},
+      {n:'default/background',c:[A('primary/vivid/700',P('A','primary','vivid','light',700))]},
+      {n:'hover/background',c:[A('primary/vivid/800',P('A','primary','vivid','light',800))]},
+      {n:'press/background',c:[A('primary/vivid/900',P('A','primary','vivid','light',900))]},
+      {n:'foreground',c:[A('neutral/50',N('light',50))]},
+      {g:'button / primary / outlined'},
+      {n:'default/border',c:[A('primary/vivid/600',P('A','primary','vivid','light',600))]},
+      {n:'default/foreground',c:[A('primary/vivid/700',P('A','primary','vivid','light',700))]},
+      {g:'badge / success'},
+      {n:'background',c:[A('success/soft/100',U('success','soft','light',100))]},
+      {n:'foreground',c:[A('success/soft/700',U('success','soft','light',700))]},
+      {g:'alert / danger'},
+      {n:'background',c:[A('danger/vivid/700',U('danger','vivid','light',700))]},
+      {n:'foreground',c:[A('neutral/50',N('light',50))]},
+      {g:'button / radius'},
+      {n:'radius',c:[{t:'→ radius/md, plus tard brand/params/radius/button'}]},
+      {more:'+ les autres composants, sur le même principe'}
+    ]}
+  };
+  var order=['primitives','brand','theme','components'];
+  var tabs=document.getElementById('fig-tabs'),head=document.getElementById('fig-head'),table=document.getElementById('fig-table');
+  var modesLabel={primitives:'—',brand:'6',theme:'2',components:'—'};
+  function show(k){
+    var col=C[k];
+    head.innerHTML='<b>'+k+'</b><span>'+col.info+'</span>';
+    var h='<thead><tr><th>Nom</th>'+col.modes.map(function(m){return '<th>'+m+'</th>';}).join('')+'</tr></thead><tbody>';
+    var span=col.modes.length+1;
+    col.rows.forEach(function(r){
+      if(r.g)h+='<tr class="g'+(r.res?' res':'')+'"><td colspan="'+span+'">'+r.g+'</td></tr>';
+      else if(r.more)h+='<tr class="more"><td colspan="'+span+'" style="padding-left:24px">'+r.more+'</td></tr>';
+      else h+='<tr><td class="nm">'+r.n+'</td>'+r.c.map(function(c){return '<td>'+cell(c)+'</td>';}).join('')+'</tr>';
+    });
+    table.innerHTML=h+'</tbody>';
+    Array.prototype.forEach.call(tabs.querySelectorAll('button'),function(b){b.setAttribute('aria-selected',b.dataset.k===k?'true':'false');});
+  }
+  order.forEach(function(k){
+    var b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.dataset.k=k;
+    b.innerHTML='<span>'+k+'</span><span>'+(modesLabel[k]==='—'?'1 mode':modesLabel[k]+' modes')+'</span>';
+    b.addEventListener('click',function(){show(k);});
+    tabs.appendChild(b);
+  });
+  ['typography','layouts'].forEach(function(k){
+    var b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.dataset.k=k;
+    b.innerHTML='<span>'+k+'</span><span>inchangée</span>';
+    b.addEventListener('click',function(){
+      head.innerHTML='<b>'+k+'</b><span>aucun mode · inchangée</span>';
+      table.innerHTML='<tbody><tr class="more"><td style="padding:16px">Cette collection ne change pas. Si une marque veut un jour sa propre valeur (police, rayon), la valeur part dans brand/params et la variable de components qui la citait est repointée.</td></tr></tbody>';
+      Array.prototype.forEach.call(tabs.querySelectorAll('button'),function(x){x.setAttribute('aria-selected',x===b?'true':'false');});
+    });
+    tabs.appendChild(b);
+  });
+  show('theme');
+})();
+</script>
+</body>
+</html>

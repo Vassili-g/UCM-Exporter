@@ -8,6 +8,11 @@ critique](./SYNTHESE-CRITIQUE-ARCHI-MULTIMARQUES.md), qui emploient encore
 l'ancien nom `scheme` de la collection `theme`. L'outil qui fabrique les
 palettes fait l'objet d'une [recherche séparée](../Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md).
 
+[VUE-ILLUSTREE-MULTIMARQUES.html](./VUE-ILLUSTREE-MULTIMARQUES.html) montre
+la même architecture en schémas, à ouvrir dans un navigateur : le chemin d'un
+token, l'aperçu du panneau des variables de Figma et l'aide-mémoire du
+designer.
+
 Chaque nombre cité se rejoue avec un script de ce dossier :
 
 ```sh
