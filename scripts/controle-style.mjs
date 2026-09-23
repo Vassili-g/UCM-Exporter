@@ -40,13 +40,13 @@ const TIRET_CADRATIN = '—';
  * `CONTRACT_VERSION` et `L'` compris.
  */
 export const ACRONYMES = [
-  'API', 'ASCII', 'BASE', 'BOM', 'BOOLEAN', 'CI', 'CLI', 'COLOR', 'COMPONENT',
+  'AA', 'APCA', 'API', 'ASCII', 'BASE', 'BOM', 'BOOLEAN', 'CI', 'CLI', 'COLOR', 'COMPONENT',
   'CRLF', 'CSS', 'DOM', 'DS', 'DTCG', 'EACCES', 'EASING', 'ENOTDIR', 'ESM',
   'FIXED',
   'FLOAT', 'FRAME', 'GET', 'GIT', 'GNU', 'GRID', 'GROUP', 'HTML', 'HTTP',
   'HTTPS', 'HUG', 'IA', 'ID', 'ISO', 'JS', 'JSON', 'JSX', 'JWT', 'LF', 'LGPL',
   'LINE', 'LTR', 'MAX', 'MB', 'MCP', 'MD', 'MIN', 'MIT', 'MVP', 'NODE', 'NONE',
-  'NPM', 'OIDC', 'OK', 'PAT', 'PATH', 'PDF', 'POLYGON', 'POST', 'PR', 'PUT',
+  'NPM', 'OIDC', 'OK', 'OKLAB', 'OKLCH', 'PAT', 'PATH', 'PDF', 'POLYGON', 'POST', 'PR', 'PUT',
   'RECTANGLE',
   'REST', 'RTL', 'SET', 'SHA', 'SLOT', 'SSH', 'SOLID', 'SPEC', 'STAR', 'STRETCH',
   // `TODO(sujet)` est le marqueur conventionnel d'un point à reprendre, que les
@@ -54,7 +54,7 @@ export const ACRONYMES = [
   // le retirera.
   'STRING', 'SVG', 'TAP', 'TAR', 'TEXT', 'TIMING', 'TODO', 'TS', 'UCM', 'UI', 'URI',
   'URL', 'USD',
-  'UTF', 'VECTOR', 'WRAP', 'YAML', 'ZIP', 'ELLIPSE', 'AUTO',
+  'UTF', 'VECTOR', 'WCAG', 'WRAP', 'YAML', 'ZIP', 'ELLIPSE', 'AUTO',
   // Les documents du dépôt, cités par leur nom sans extension.
   'AGENTS', 'CONCEPT', 'CONTRIBUTING', 'LICENSE', 'README', 'ROADMAP',
 ];
