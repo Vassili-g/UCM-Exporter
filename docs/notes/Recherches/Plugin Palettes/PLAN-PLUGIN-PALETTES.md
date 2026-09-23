@@ -499,15 +499,15 @@ avec D-C, E20 et E21.
 
 ### 5a : géométrie et dessin
 
-- [ ] **L5.1** `src/ui/derive/geometrie.ts`, pur : position d'un cran par son
+- [x] **L5.1** `src/ui/derive/geometrie.ts`, pur : position d'un cran par son
   rang, position du pivot entre deux rangs selon sa clarté, angle d'une
   ordonnée et l'inverse, repères tous les 15°.
-- [ ] **L5.2** Graphe SVG [DER-01] à [DER-05] : ligne brisée, pivot, poignées,
+- [x] **L5.2** Graphe SVG [DER-01] à [DER-05] : ligne brisée, pivot, poignées,
   bande de teintes et rampe alignées sur les mêmes onze positions.
-- [ ] **L5.3** Loi des styles du plugin : elle reconnaît
+- [x] **L5.3** Loi des styles du plugin : elle reconnaît
   `setAttribute('class', …)` et `classList.add`, que les éléments SVG emploient
   à la place de `className`.
-- [ ] **L5.4** Galerie : dérive liée Tailwind, déliée libre, référence hors de
+- [x] **L5.4** Galerie : dérive liée Tailwind, déliée libre, référence hors de
   la rampe, référence presque grise.
 
 ### 5b : interactions

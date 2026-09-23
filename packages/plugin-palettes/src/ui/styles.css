@@ -409,3 +409,96 @@
 .champ-ligne .champ-nombre {
   flex: 0 0 72px;
 }
+
+/* Un geste secondaire posé dans une ligne de texte : « Régler ». */
+.bouton-discret {
+  height: var(--hauteur-secondaire);
+  flex-shrink: 0;
+  padding: 0 var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+  color: var(--texte);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.bouton-discret:hover:not(:disabled) {
+  background: var(--fond-survol);
+}
+
+.bouton-discret:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.bouton-discret:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.editeur-derive {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+/* Le graphe suit la largeur de la colonne : son viewBox est celui de la fenêtre minimale. */
+.derive-graphe {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.derive-repere {
+  stroke: var(--bordure);
+  stroke-width: 1;
+}
+
+.derive-axe {
+  stroke: var(--texte-second);
+  stroke-width: 1;
+}
+
+.derive-graduation {
+  fill: var(--texte-second);
+  font-size: 9px;
+}
+
+.derive-trait {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+/* Deux profils déliés : un trait plein, un trait tireté, lisibles sans la couleur ([DER-05]). */
+.derive-trait-vivid {
+  stroke: var(--texte);
+}
+
+.derive-trait-soft {
+  stroke: var(--texte-second);
+  stroke-dasharray: 4 3;
+}
+
+.derive-pivot {
+  fill: var(--fond);
+  stroke: var(--texte);
+  stroke-width: 1.5;
+}
+
+.derive-poignee {
+  cursor: ns-resize;
+}
+
+.derive-poignee-rond {
+  fill: var(--fond);
+  stroke: var(--bordure-marque);
+  stroke-width: 2;
+}
+
+.derive-poignee-lettre {
+  fill: var(--texte);
+  font-size: 8px;
+  font-weight: 600;
+}

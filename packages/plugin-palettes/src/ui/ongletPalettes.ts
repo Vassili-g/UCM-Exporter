@@ -8,7 +8,7 @@
  * range à la fin de chaque geste : valider un champ, créer, dupliquer,
  * réordonner ou supprimer une palette (D-D). Jamais pendant la saisie.
  */
-import type { Classement, Palette, Recette, Refus } from 'ucm-couleur';
+import { estPresqueGrise, type Classement, type Palette, type Recette, type Refus } from 'ucm-couleur';
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
 import { analyserPalette } from '../analyse';
@@ -28,12 +28,14 @@ import type { LectureDeSelection, ProfilDuDocument } from '../lecture';
 import { createApercu } from './apercu';
 import { blocDeConstat, listeDesConstats } from './constats';
 import { createCreation } from './creation';
+import { createEditeur } from './derive/editeur';
 import type { StatutDuRangement } from './frontiere';
 import { createMenuPalette, type GesteDePalette } from './menuPalette';
 import { createSelecteur } from './selecteur';
 import {
   STATUTS_DU_RANGEMENT,
   TEXTES,
+  TEXTES_DE_LA_DERIVE,
   confirmationDeSuppression,
   couleurRamenee,
   hexaInvalide,
@@ -179,9 +181,21 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const infos = document.createElement('p');
   infos.className = 'ligne-secondaire ligne-infos';
   infos.append(part, indication);
-  const derive = document.createElement('p');
-  derive.className = 'ligne-secondaire';
-  const apercu = createApercu();
+  const derive = document.createElement('span');
+  const regler = document.createElement('button');
+  regler.type = 'button';
+  regler.className = 'bouton-discret';
+  regler.setAttribute('aria-expanded', 'false');
+  regler.addEventListener('click', () => {
+    editeurOuvert = !editeurOuvert;
+    rendre();
+  });
+  const ligneDeDerive = document.createElement('div');
+  ligneDeDerive.className = 'ligne-secondaire ligne-infos';
+  ligneDeDerive.append(derive, regler);
+  const editeur = createEditeur();
+  let editeurOuvert = false;
+  const apercu = createApercu(() => rendre());
   const constats = document.createElement('div');
 
   function ouverte(): Palette | null {
@@ -299,7 +313,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   vide.append(ligneVide);
   const vue = document.createElement('div');
   vue.className = 'page-stack colonne';
-  vue.append(barre, confirmation, zoneDeLaNote, reference, erreurHexa, infos, derive, apercu.element, constats);
+  vue.append(barre, confirmation, zoneDeLaNote, reference, erreurHexa, infos, ligneDeDerive, editeur.element, apercu.element, constats);
   element.append(zoneDuRefus, zoneDuBloquant, vide, vue);
 
   /** Le panneau de création suit la vue montrée : seul, ou sous la barre. */
@@ -331,6 +345,15 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     nom.placeholder = courante.reference;
     part.textContent = ligneDeLaPart(analyse.part, analyse.parts.soft, analyse.parts.vivid, analyse.cranProche);
     derive.textContent = ligneDeLaDerive(courante);
+    // Une référence presque grise n'a pas de teinte : l'éditeur se désactive ([DER-15]).
+    const grise = estPresqueGrise(lue, courante);
+    if (grise) editeurOuvert = false;
+    regler.disabled = grise;
+    regler.title = grise ? TEXTES_DE_LA_DERIVE.grisDesactive : '';
+    regler.textContent = editeurOuvert ? TEXTES_DE_LA_DERIVE.replier : TEXTES_DE_LA_DERIVE.regler;
+    regler.setAttribute('aria-expanded', String(editeurOuvert));
+    editeur.element.hidden = !editeurOuvert;
+    if (editeurOuvert) editeur.afficher(lue, courante, analyse.rampes.vivid[apercu.mode()]);
     apercu.afficher(lue, analyse.rampes);
     const nomDe = (id: string) => {
       const trouvee = lue.palettes.find((candidate) => candidate.id === id);

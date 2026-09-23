@@ -23,10 +23,16 @@ import {
 const dossierUi = path.resolve(__dirname, '..', 'src', 'ui');
 const lire = (fichier: string): string => fs.readFileSync(fichier, 'utf8');
 
-const source = [
-  ...fs.readdirSync(dossierUi).filter((nom) => nom.endsWith('.ts')).map((nom) => path.join(dossierUi, nom)),
-  ...sourcesDuSocle(),
-].map(lire).join('\n');
+/** Les sources de l'interface, sous-dossiers compris : l'éditeur de dérive vit dans `derive/`. */
+function sourcesUi(dossier: string): string[] {
+  return fs.readdirSync(dossier, { withFileTypes: true }).flatMap((entree) => {
+    const chemin = path.join(dossier, entree.name);
+    if (entree.isDirectory()) return sourcesUi(chemin);
+    return entree.name.endsWith('.ts') ? [chemin] : [];
+  });
+}
+
+const source = [...sourcesUi(dossierUi), ...sourcesDuSocle()].map(lire).join('\n');
 const feuilleDuPlugin = lire(path.join(dossierUi, 'styles.css'));
 
 const ENTREES: EntreesLoiDesStyles = {

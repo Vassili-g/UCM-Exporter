@@ -23,9 +23,12 @@ import { TEXTES, detailDuCran } from './textes';
 export interface ApercuUi {
   element: HTMLDivElement;
   afficher(recette: Recette, rampes: Rampes): void;
+  /** Le mode que la bascule montre. */
+  mode(): Mode;
 }
 
-export function createApercu(): ApercuUi {
+/** `surMode` suit la bascule : l'éditeur de dérive peint la rampe du mode montré. */
+export function createApercu(surMode: () => void = () => {}): ApercuUi {
   const element = document.createElement('div');
   element.className = 'apercu';
 
@@ -57,6 +60,7 @@ export function createApercu(): ApercuUi {
     bouton.addEventListener('click', () => {
       mode = valeur;
       dessiner();
+      surMode();
     });
     bascule.append(bouton);
     return { valeur, bouton };
@@ -151,6 +155,7 @@ export function createApercu(): ApercuUi {
 
   return {
     element,
+    mode: () => mode,
     afficher(recette, rampes) {
       donnees = { recette, rampes };
       dessiner();

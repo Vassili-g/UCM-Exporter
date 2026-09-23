@@ -208,7 +208,7 @@ packages/plugin-socle/   ce que les plugins partagent : ucm-plugin-socle, privé
   src/ui/                  bouton, onglets, interrupteur, poignée de redimensionnement, engrenage et bascule de l'en-tête
   galerie/                 le banc de galerie, sa capture et le décalque du thème Figma
   lois/                    les lois des styles, du gabarit, du manifest et de la galerie, que le test de chaque plugin appelle
-  tests/                   le build, le manifest, la fenêtre et le banc, pour un plugin quelconque
+  tests/                   le build, le manifest, la fenêtre, le banc et la loi des styles, pour un plugin quelconque
 
 packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/code.ts              routage des demandes de l'interface, une porte par geste d'écriture
@@ -227,6 +227,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
   src/ui/frontiere.ts      la numérotation des demandes, et un seul rangement en vol
   src/ui/configuration.ts  courbes, parts et seuil derrière l'engrenage, avec la garantie des courbes
+  src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG, éditeur replié sous « Régler »
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
   galerie/                 les états de l'interface, à la taille par défaut et à la taille minimale
   tests/                   dont la loi d'écriture, et interface/ pour Chromium

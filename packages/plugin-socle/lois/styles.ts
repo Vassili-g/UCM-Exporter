@@ -53,6 +53,18 @@ export function classesPosees({ source, valeursDeGabarit }: EntreesLoiDesStyles)
   for (const affectation of source.matchAll(/className = '([^']+)'/g)) {
     for (const classe of affectation[1].split(/\s+/)) posees.add(classe);
   }
+  // Un élément SVG n'a pas de `className` modifiable : il reçoit sa classe par
+  // `setAttribute('class', …)` ou `classList.add(…)`, littéraux seulement.
+  for (const attribut of source.matchAll(/setAttribute\('class', '([^']+)'\)/g)) {
+    for (const classe of attribut[1].split(/\s+/)) posees.add(classe);
+  }
+  for (const ajout of source.matchAll(/classList\.(?:add|toggle)\(([^)]*)\)/g)) {
+    const [premiere, ...autres] = [...ajout[1].matchAll(/'([^']+)'/g)].map((trouve) => trouve[1]);
+    // `toggle` ne prend qu'une classe ; `add` les prend toutes.
+    for (const classe of ajout[0].startsWith('classList.toggle') ? [premiere] : [premiere, ...autres]) {
+      if (classe) posees.add(classe);
+    }
+  }
   // Les gabarits : `btn btn-${variant}` donne `btn`, puis une classe par valeur.
   for (const gabarit of source.matchAll(/className = `([^`]+)`/g)) {
     for (const morceau of gabarit[1].split(/\s+/)) {

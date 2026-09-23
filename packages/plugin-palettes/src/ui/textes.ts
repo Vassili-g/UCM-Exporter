@@ -93,6 +93,36 @@ export function constatDeGarantie(manque: ManqueDeGarantie): Constat {
   };
 }
 
+/** Les libellés de l'éditeur de dérive (section 12). */
+export const TEXTES_DE_LA_DERIVE = {
+  regler: 'Régler',
+  replier: 'Replier',
+  grisDesactive: 'La référence est presque grise : sa dérive ne se voit pas.',
+  sansSegmentClair: 'La référence est plus claire que le bout clair de la rampe : la dérive claire n’a pas de segment à régler.',
+  sansSegmentSombre: 'La référence est plus sombre que le bout sombre de la rampe : la dérive sombre n’a pas de segment à régler.',
+} as const;
+
+/** Un angle signé, au dixième : « −7,5° », « +5,1° », « 0,0° ». */
+export function angleEcrit(degres: number): string {
+  const signe = degres > 0 ? '+' : degres < 0 ? '−' : '';
+  return `${signe}${ecrireArrondi(Math.abs(degres), 1)}°`;
+}
+
+/** Une graduation du graphe : « +30° », « 0° ». */
+export function graduation(degres: number): string {
+  return `${degres > 0 ? '+' : degres < 0 ? '−' : ''}${Math.abs(degres)}°`;
+}
+
+/** L'étiquette d'une poignée ([DER-03]) : l'angle signé et la teinte absolue. */
+export function etiquetteDePoignee(angle: number, teinte: number): string {
+  return `${angleEcrit(angle)} · ${Math.round(teinte) % 360}°`;
+}
+
+/** L'infobulle du pivot ([DER-02]). */
+export function infobulleDuPivot(teinte: number): string {
+  return `couleur de référence, teinte fixe, ${Math.round(teinte) % 360}°`;
+}
+
 /** L'indication discrète de rangement, au rang 3 (D-D). */
 export const STATUTS_DU_RANGEMENT = {
   lu: '',
@@ -170,13 +200,8 @@ export function ligneDeLaPart(part: number, soft: number, vivid: number, cranPro
 
 const ORIGINES: Record<DeriveRangee['origine'], string> = { tailwind: 'Tailwind', constante: 'Constante', libre: 'Libre' };
 
-function angle(degres: number): string {
-  const signe = degres > 0 ? '+' : degres < 0 ? '−' : '';
-  return `${signe}${ecrireArrondi(Math.abs(degres), 1)}°`;
-}
-
 function uneDerive(derive: DeriveRangee): string {
-  return `${ORIGINES[derive.origine]} · clair ${angle(derive.clair)} · sombre ${angle(derive.sombre)}`;
+  return `${ORIGINES[derive.origine]} · clair ${angleEcrit(derive.clair)} · sombre ${angleEcrit(derive.sombre)}`;
 }
 
 /** La ligne repliée de la dérive (E22) : une seule quand les profils sont liés. */

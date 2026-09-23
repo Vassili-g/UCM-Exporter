@@ -1,0 +1,167 @@
+/**
+ * Le graphe de l'éditeur de dérive, en SVG ([DER-01] à [DER-05], [ARC-08]) :
+ * la ligne brisée de chaque profil, le pivot, les deux poignées, puis la bande
+ * de teintes et la rampe, alignées sur les onze colonnes des crans.
+ *
+ * Les couleurs de trait viennent des rôles de la feuille ; seules les couleurs
+ * des crans, qui sont des données, s'écrivent dans le SVG.
+ */
+import {
+  PROFILS,
+  boutsDe,
+  fabriquerCran,
+  normaliserTeinte,
+  rgb8VersOklch,
+  referenceDe,
+  teinteA,
+  type Cran,
+  type Palette,
+  type Profil,
+  type Recette,
+} from 'ucm-couleur';
+
+import { REPERES, abscisse, ligneBrisee, ordonnee, rangDuPivot, type Cadre } from './geometrie';
+import { etiquetteDePoignee, graduation, infobulleDuPivot } from '../textes';
+
+const SVG = 'http://www.w3.org/2000/svg';
+
+/** Le viewBox : 396 unités, la largeur utile de la fenêtre minimale, pour 24 px par cran au moins ([DER-16]). */
+export const CADRE: Cadre = { largeur: 396, hauteur: 150, gauche: 36, droite: 8, haut: 10, bas: 10 };
+const Y_CRANS = 164;
+const Y_BANDE = 172;
+const Y_RAMPE = 192;
+const HAUTEUR_DE_CASE = 16;
+const HAUTEUR_TOTALE = Y_RAMPE + HAUTEUR_DE_CASE;
+
+/**
+ * La clarté à laquelle la bande peint chaque teinte : celle d'un cran moyen,
+ * où la chroma de `vivid` montre la teinte sans la noyer dans le blanc ou le
+ * noir ([DER-04]).
+ */
+const CLARTE_DE_LA_BANDE = 0.7;
+
+/** Ce que le graphe dessine. */
+export interface EntreesDuGraphe {
+  readonly recette: Recette;
+  readonly palette: Palette;
+  /** Le profil dont les poignées se règlent. */
+  readonly profil: Profil;
+  /** La rampe que l'aperçu montre, peinte sous la bande. */
+  readonly rampe: readonly Cran[];
+}
+
+function element<K extends keyof SVGElementTagNameMap>(nom: K, attributs: Record<string, string | number>): SVGElementTagNameMap[K] {
+  const noeud = document.createElementNS(SVG, nom);
+  for (const [cle, valeur] of Object.entries(attributs)) noeud.setAttribute(cle, String(valeur));
+  return noeud;
+}
+
+export interface GrapheUi {
+  element: SVGSVGElement;
+  afficher(entrees: EntreesDuGraphe): void;
+  /** Les poignées dessinées, par bout ; absente quand la référence n'a pas de segment de ce côté ([DER-14]). */
+  poignees(): { clair: SVGGElement | null; sombre: SVGGElement | null };
+}
+
+export function createGraphe(): GrapheUi {
+  const svg = element('svg', { viewBox: `0 0 ${CADRE.largeur} ${HAUTEUR_TOTALE}`, role: 'group' });
+  svg.setAttribute('class', 'derive-graphe');
+  let poignees: { clair: SVGGElement | null; sombre: SVGGElement | null } = { clair: null, sombre: null };
+
+  function repere(angle: number): SVGGElement {
+    const groupe = element('g', {});
+    const y = ordonnee(angle, CADRE);
+    const trait = element('line', { x1: CADRE.gauche, x2: CADRE.largeur - CADRE.droite, y1: y, y2: y });
+    if (angle === 0) trait.setAttribute('class', 'derive-axe');
+    else trait.setAttribute('class', 'derive-repere');
+    groupe.append(trait);
+    if (angle % 30 === 0) {
+      const texte = element('text', { x: CADRE.gauche - 4, y: y + 3, 'text-anchor': 'end' });
+      texte.setAttribute('class', 'derive-graduation');
+      texte.textContent = graduation(angle);
+      groupe.append(texte);
+    }
+    return groupe;
+  }
+
+  function poignee(bout: 'clair' | 'sombre', rang: number, angle: number, teinte: number, initiale: string, total: number): SVGGElement {
+    const groupe = element('g', {});
+    groupe.setAttribute('class', 'derive-poignee');
+    groupe.dataset.bout = bout;
+    const x = abscisse(rang, CADRE, total);
+    const y = ordonnee(angle, CADRE);
+    const rond = element('circle', { cx: x, cy: y, r: 7 });
+    rond.setAttribute('class', 'derive-poignee-rond');
+    const lettre = element('text', { x, y: y + 3, 'text-anchor': 'middle' });
+    lettre.setAttribute('class', 'derive-poignee-lettre');
+    lettre.textContent = initiale;
+    const etiquette = element('text', { x: bout === 'clair' ? x + 11 : x - 11, y: y - 10, 'text-anchor': bout === 'clair' ? 'start' : 'end' });
+    etiquette.setAttribute('class', 'derive-graduation');
+    etiquette.textContent = etiquetteDePoignee(angle, teinte);
+    groupe.append(rond, lettre, etiquette);
+    return groupe;
+  }
+
+  return {
+    element: svg,
+    poignees: () => poignees,
+    afficher({ recette, palette, profil, rampe }) {
+      const courbe = recette.courbes.light;
+      const total = courbe.length;
+      const bouts = boutsDe(recette.courbes);
+      const reference = rgb8VersOklch(referenceDe(palette));
+      const lie = palette.derive.lien;
+      const enfants: SVGElement[] = REPERES.map(repere);
+
+      // Deux profils déliés tracent deux lignes, pleine et tiretée ([DER-05]).
+      for (const trace of lie ? (['vivid'] as const) : PROFILS) {
+        const points = ligneBrisee(courbe, reference, palette.derive[trace], bouts)
+          .map(({ rang, angle }) => `${abscisse(rang, CADRE, total)},${ordonnee(angle, CADRE)}`);
+        const ligne = element('polyline', { points: points.join(' ') });
+        if (trace === 'soft') ligne.setAttribute('class', 'derive-trait derive-trait-soft');
+        else ligne.setAttribute('class', 'derive-trait derive-trait-vivid');
+        enfants.push(ligne);
+      }
+
+      const pivot = rangDuPivot(reference.L, courbe);
+      if (pivot !== null) {
+        const x = abscisse(pivot, CADRE, total);
+        const y = ordonnee(0, CADRE);
+        const losange = element('path', { d: `M ${x} ${y - 6} L ${x + 6} ${y} L ${x} ${y + 6} L ${x - 6} ${y} Z` });
+        losange.setAttribute('class', 'derive-pivot');
+        const titre = element('title', {});
+        titre.textContent = infobulleDuPivot(reference.H);
+        losange.append(titre);
+        enfants.push(losange);
+      }
+
+      // Un bout que la référence dépasse n'a pas de segment à régler ([DER-14]).
+      const derive = palette.derive[profil];
+      const initiale = lie ? '' : profil[0];
+      poignees = {
+        clair: reference.L > courbe[0] ? null
+          : poignee('clair', 0, derive.clair, teinteA(courbe[0], reference, derive, bouts), initiale, total),
+        sombre: reference.L < courbe[total - 1] ? null
+          : poignee('sombre', total - 1, derive.sombre, teinteA(courbe[total - 1], reference, derive, bouts), initiale, total),
+      };
+      if (poignees.clair) enfants.push(poignees.clair);
+      if (poignees.sombre) enfants.push(poignees.sombre);
+
+      const largeur = (CADRE.largeur - CADRE.gauche - CADRE.droite) / total;
+      courbe.forEach((clarte, rang) => {
+        const x = abscisse(rang, CADRE, total);
+        const numero = element('text', { x, y: Y_CRANS, 'text-anchor': 'middle' });
+        numero.setAttribute('class', 'derive-graduation');
+        numero.textContent = String(recette.crans[rang]);
+        const teinte = normaliserTeinte(teinteA(clarte, reference, palette.derive.vivid, bouts));
+        const bande = element('rect', { x: x - largeur / 2, y: Y_BANDE, width: largeur, height: HAUTEUR_DE_CASE });
+        bande.setAttribute('fill', fabriquerCran(CLARTE_DE_LA_BANDE, teinte, recette.profils.vivid.part, recette.gamut).hexa);
+        const cran = element('rect', { x: x - largeur / 2 + 1, y: Y_RAMPE, width: largeur - 2, height: HAUTEUR_DE_CASE, rx: 3 });
+        cran.setAttribute('fill', rampe[rang].hexa);
+        enfants.push(numero, bande, cran);
+      });
+
+      svg.replaceChildren(...enfants);
+    },
+  };
+}

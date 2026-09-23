@@ -437,3 +437,63 @@ test('[ENT-07] chaque groupe de la configuration compte les palettes qu’il tou
     await page.close();
   }
 });
+
+const deplier = (page) => page.getByRole('button', { name: 'Régler' }).click();
+
+test('[DER-01] « Régler » déplie le graphe : une ligne, le pivot, deux poignées, onze colonnes alignées', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    assert.equal(await page.locator('.derive-graphe').isVisible(), false, 'replié par défaut (E22)');
+    await deplier(page);
+    assert.equal(await page.locator('.derive-trait').count(), 1);
+    assert.equal(await page.locator('.derive-pivot').count(), 1);
+    assert.equal(await page.locator('.derive-poignee').count(), 2);
+    const colonnes = await page.evaluate(() => {
+      const cases = [...document.querySelectorAll('.derive-graphe rect')];
+      return cases.map((rect) => Number(rect.getAttribute('x')) + Number(rect.getAttribute('width')) / 2);
+    });
+    assert.equal(colonnes.length, 22, 'onze cases de bande, onze crans');
+    for (let rang = 0; rang < 11; rang += 1) assert.ok(Math.abs(colonnes[2 * rang] - colonnes[2 * rang + 1]) < 1e-6);
+    assert.equal(await page.getByRole('button', { name: 'Replier' }).getAttribute('aria-expanded'), 'true');
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-05] deux profils déliés tracent deux lignes, et les poignées portent l’initiale du profil', async () => {
+  const page = await ouvrir();
+  try {
+    await envoyer(page, messageDe('derive-deliee-libre'));
+    await deplier(page);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.derive-trait')].map((trait) => trait.getAttribute('class'))), [
+      'derive-trait derive-trait-soft',
+      'derive-trait derive-trait-vivid',
+    ]);
+    assert.deepEqual(await page.locator('.derive-poignee-lettre').allTextContents(), ['v', 'v']);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-14] une référence plus sombre que le bout sombre masque la poignée sombre et le dit', async () => {
+  const page = await ouvrir();
+  try {
+    await envoyer(page, messageDe('reference-hors-rampe'));
+    await deplier(page);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.derive-poignee')].map((poignee) => poignee.dataset.bout)), ['clair']);
+    assert.equal(await page.locator('.derive-pivot').count(), 0);
+    assert.match(await page.locator('.editeur-derive > .ligne-secondaire').textContent(), /plus sombre que le bout sombre/);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-15] une référence presque grise désactive l’éditeur', async () => {
+  const page = await ouvrir();
+  try {
+    await envoyer(page, messageDe('couleur-presque-grise'));
+    assert.equal(await page.getByRole('button', { name: 'Régler' }).isDisabled(), true);
+  } finally {
+    await page.close();
+  }
+});
