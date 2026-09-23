@@ -7,7 +7,9 @@
   "exports": {
     "./build/*": "./build/*",
     "./src/*": "./src/*.ts",
-    "./socle.css": "./src/ui/socle.css"
+    "./socle.css": "./src/ui/socle.css",
+    "./galerie/*": "./galerie/*",
+    "./lois/*": "./lois/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

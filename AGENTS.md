@@ -203,7 +203,9 @@ packages/plugin-socle/   ce que les plugins partagent : ucm-plugin-socle, privé
   src/fenetre.ts           la taille bornée de la fenêtre, rangée dans clientStorage
   src/ui/socle.css         échelle de texte, trame, rôles de couleur et replis sombres, avant la feuille de chaque plugin
   src/ui/                  bouton, onglets, interrupteur, poignée de redimensionnement, engrenage et bascule de l'en-tête
-  tests/                   le build, le manifest et la fenêtre, pour des bornes quelconques
+  galerie/                 le banc de galerie, sa capture et le décalque du thème Figma
+  lois/                    la loi des styles, les repères du gabarit et le manifest, que le test de chaque plugin appelle
+  tests/                   le build, le manifest, la fenêtre et le banc, pour un plugin quelconque
 
 docs/                    la documentation classée par sujet
   README.md              le sommaire par profil de lecteur, et la table des autorités

@@ -230,7 +230,9 @@ Quatre bornes, sans quoi la table ne tient pas :
 `packages/plugin-exporter/galerie/` rend chaque état de l’interface atteignable hors de
 Figma : `etats.cjs` déclare, pour chacun, la suite exacte de messages qui le
 produit, et la galerie rejoue cette suite dans l’interface réelle que le build
-vient de produire. Rien n’y est redessiné.
+vient de produire. Rien n’y est redessiné. Le banc qui la construit et la
+capture, et le décalque du thème, sont dans `packages/plugin-socle/galerie/` :
+chaque plugin n’écrit que ses états et la taille de sa fenêtre.
 
 ```sh
 npm run galerie --workspace ucm-exporter-plugin           # dist/galerie/index.html

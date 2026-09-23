@@ -13,6 +13,8 @@ import test from 'node:test';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
+import { reperesManquants } from 'ucm-plugin-socle/lois/distribution';
+
 const require_ = createRequire(import.meta.url);
 const { inlineAssets, STYLE_MARKER, SCRIPT_MARKER } = require_('../scripts/build-ui.cjs') as {
   inlineAssets: (template: string, css: string, javascript: string) => string;
@@ -49,13 +51,10 @@ test('le gabarit réel porte les deux repères que le build remplace', () => {
     'utf8',
   );
 
-  assert.ok(
-    gabarit.includes(STYLE_MARKER),
-    `src/ui/index.html ne contient pas ${STYLE_MARKER} : le CSS ne serait pas inliné.`,
-  );
-  assert.ok(
-    gabarit.includes(SCRIPT_MARKER),
-    `src/ui/index.html ne contient pas ${SCRIPT_MARKER} : le bundle ne serait pas inliné, `
+  assert.deepEqual(
+    reperesManquants(gabarit),
+    [],
+    'src/ui/index.html ne contient pas ces repères : le CSS ou le bundle ne serait pas inliné, '
       + `et le plugin s'ouvrirait vide sans qu'aucun contrôle échoue.`,
   );
 });

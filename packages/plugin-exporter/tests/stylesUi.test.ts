@@ -1,5 +1,5 @@
 /**
- * Le DOM de l'interface et sa feuille de style doivent parler des mêmes classes.
+ * Le DOM de l'interface et ses feuilles de style doivent parler des mêmes classes.
  *
  * **Ce test existe parce que les deux avaient déjà divergé, dans les deux
  * sens.** `styles.css` portait une règle `.config-title-row` qu'aucun élément
@@ -9,27 +9,29 @@
  * distinction qu'on croit faire et qu'on ne fait pas est pire qu'une
  * distinction absente : elle se lit comme faite.
  *
- * Les deux sens sont vérifiés. Les classes fabriquées par gabarit (`btn-` et
- * `log-`) ne sont pas énumérées ici : leurs valeurs sont lues à leur source,
- * pour qu'un niveau de journal ajouté à `LogLevel` réclame sa règle du même
- * geste.
+ * La loi est celle du socle ; ce test lui donne les sources d'UCM Exporter, ses
+ * feuilles et les valeurs de ses gabarits de classe. Les classes fabriquées par
+ * gabarit (`btn-` et `log-`) ne sont pas énumérées ici : leurs valeurs sont
+ * lues à leur source, pour qu'un niveau de journal ajouté à `LogLevel` réclame
+ * sa règle du même geste.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 
+import {
+  classesSansRegle,
+  couleursHorsDesRoles,
+  feuilleDuSocle,
+  reglesMortes,
+  sourcesDuSocle,
+  variantesDeBouton,
+  type EntreesLoiDesStyles,
+} from 'ucm-plugin-socle/lois/styles';
+
 const racine = path.resolve(__dirname, '..');
 const dossierUi = path.join(racine, 'src/ui');
-/**
- * Le socle porte les composants communs et la feuille qui les stylise : la loi
- * lit les deux côtés, sans quoi une règle du socle passerait pour morte et une
- * classe d'un composant du socle pour non stylisée.
- */
-const dossierUiDuSocle = path.dirname(require.resolve('ucm-plugin-socle/socle.css'));
-
-/** `figma-dark` est posée par l'hôte sur `html`, jamais par ce code. */
-const POSEES_PAR_FIGMA = new Set(['figma-dark']);
 
 function sourcesUi(): string {
   const fichiers = [
@@ -37,18 +39,10 @@ function sourcesUi(): string {
     ...fs
       .readdirSync(path.join(dossierUi, 'components'))
       .map((nom) => path.join(dossierUi, 'components', nom)),
-    ...fs
-      .readdirSync(dossierUiDuSocle)
-      .filter((nom) => nom.endsWith('.ts'))
-      .map((nom) => path.join(dossierUiDuSocle, nom)),
+    ...sourcesDuSocle(),
   ];
   return fichiers.map((fichier) => fs.readFileSync(fichier, 'utf8')).join('\n');
 }
-
-const source = sourcesUi();
-/** Les deux feuilles, dans l'ordre où le build les concatène. */
-const feuille = fs.readFileSync(path.join(dossierUiDuSocle, 'socle.css'), 'utf8')
-  + fs.readFileSync(path.join(dossierUi, 'styles.css'), 'utf8');
 
 /** Les littéraux d'une déclaration, lus au fichier qui la porte. */
 function litterauxDe(motif: RegExp, quoi: string, fichier = 'src/messages.ts'): string[] {
@@ -58,80 +52,33 @@ function litterauxDe(motif: RegExp, quoi: string, fichier = 'src/messages.ts'): 
   return [...declaration[1].matchAll(/'([^']+)'/g)].map((trouve) => trouve[1]);
 }
 
-/**
- * Ce que vaut la variable d'un gabarit de classe, LUE à sa source.
- *
- * Une liste écrite ici serait une deuxième déclaration des mêmes valeurs : un
- * niveau de journal ajouté là-bas réclame sa règle sans que personne ait à y
- * penser ici.
- */
-const VALEURS_DE_GABARIT: Record<string, () => string[]> = {
-  level: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
-  niveau: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
-  variant: () => variantesDeBouton(),
-  ton: () => litterauxDe(/ {2}ton:([^;]+);/, 'ResumeDepot.ton', 'src/connexion.ts'),
+const source = sourcesUi();
+
+const ENTREES: EntreesLoiDesStyles = {
+  source,
+  /** Les deux feuilles, dans l'ordre où le build les concatène. */
+  feuille: feuilleDuSocle() + fs.readFileSync(path.join(dossierUi, 'styles.css'), 'utf8'),
+  valeursDeGabarit: {
+    level: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
+    niveau: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
+    variant: () => variantesDeBouton(source),
+    ton: () => litterauxDe(/ {2}ton:([^;]+);/, 'ResumeDepot.ton', 'src/connexion.ts'),
+  },
+  /** `figma-dark` est posée par l'hôte sur `html`, jamais par ce code. */
+  poseesParLHote: new Set(['figma-dark']),
 };
 
-/** Les variantes de bouton : leur défaut, et chaque valeur passée à `createButton`. */
-function variantesDeBouton(): string[] {
-  const defaut = /variant = '([^']+)'/.exec(source);
-  const passees = [...source.matchAll(/variant: '([^']+)'/g)].map((trouve) => trouve[1]);
-  return [...new Set([...(defaut ? [defaut[1]] : []), ...passees])];
-}
-
-/** Toutes les classes que l'UI peut poser : littérales, puis fabriquées. */
-function classesPosees(): Set<string> {
-  const posees = new Set<string>();
-  for (const affectation of source.matchAll(/className = '([^']+)'/g)) {
-    for (const classe of affectation[1].split(/\s+/)) posees.add(classe);
-  }
-  // Les gabarits : `btn btn-${variant}` donne `btn`, puis une classe par valeur.
-  for (const gabarit of source.matchAll(/className = `([^`]+)`/g)) {
-    for (const morceau of gabarit[1].split(/\s+/)) {
-      const fabrique = /^([a-z-]+)-\$\{(\w+)\}$/.exec(morceau);
-      if (!fabrique) {
-        posees.add(morceau);
-        continue;
-      }
-      const valeurs = VALEURS_DE_GABARIT[fabrique[2]]?.() ?? [];
-      assert.ok(valeurs.length > 0, `aucune valeur trouvée pour ${morceau}`);
-      for (const valeur of valeurs) posees.add(`${fabrique[1]}-${valeur}`);
-    }
-  }
-  return posees;
-}
-
-/** Les classes que la feuille stylise, hors pseudo-classes et sélecteurs d'attribut. */
-function classesStylisees(): Set<string> {
-  const sansCommentaires = feuille.replace(/\/\*[\s\S]*?\*\//g, '');
-  const stylisees = new Set<string>();
-  for (const selecteur of sansCommentaires.matchAll(/\.([a-z][\w-]*)/g)) stylisees.add(selecteur[1]);
-  return stylisees;
-}
-
 test('toute classe posée par l’interface a une règle dans les feuilles', () => {
-  const stylisees = classesStylisees();
-  const sansRegle = [...classesPosees()].filter((classe) => !stylisees.has(classe));
-  assert.deepEqual(
-    sansRegle,
-    [],
-    `Classes posées que rien ne stylise : ${sansRegle.join(', ')}`,
-  );
+  const sansRegle = classesSansRegle(ENTREES);
+  assert.deepEqual(sansRegle, [], `Classes posées que rien ne stylise : ${sansRegle.join(', ')}`);
 });
 
 test('toute classe stylisée est posée quelque part par l’interface', () => {
-  const posees = classesPosees();
-  const mortes = [...classesStylisees()].filter(
-    (classe) => !posees.has(classe) && !POSEES_PAR_FIGMA.has(classe),
-  );
+  const mortes = reglesMortes(ENTREES);
   assert.deepEqual(mortes, [], `Règles visant une classe que rien ne pose : ${mortes.join(', ')}`);
 });
 
 test('la feuille n’écrit aucune couleur en dur hors de ses rôles', () => {
-  // Les replis vivent dans le bloc de rôles, en tête de fichier, et nulle part
-  // ailleurs : une couleur écrite dans une règle est un repli que
-  // personne ne relira au moment de vérifier les deux thèmes.
-  const apresLesRoles = feuille.slice(feuille.indexOf('* {'));
-  const couleurs = [...apresLesRoles.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((trouve) => trouve[0]);
+  const couleurs = couleursHorsDesRoles(ENTREES.feuille);
   assert.deepEqual(couleurs, [], `Couleurs en dur hors du bloc de rôles : ${couleurs.join(', ')}`);
 });

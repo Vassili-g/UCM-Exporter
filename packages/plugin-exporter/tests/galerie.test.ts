@@ -255,7 +255,8 @@ test('le décalque sert toutes les variables de thème que les feuilles demanden
   );
   assert.ok(demandees.size > 0, 'aucune variable de thème trouvée dans les feuilles');
 
-  const decalque = lire('galerie/theme-figma.css');
+  // Le décalque est celui du banc du socle, commun aux plugins.
+  const decalque = fs.readFileSync(require_.resolve('ucm-plugin-socle/galerie/theme-figma.css'), 'utf8');
   for (const selecteur of [':root', '.figma-dark']) {
     const declarees = variablesDeclarees(decalque, selecteur);
     const manquantes = [...demandees].filter((variable) => !declarees.has(variable));

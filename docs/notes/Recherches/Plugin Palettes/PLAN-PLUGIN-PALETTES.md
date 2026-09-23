@@ -311,14 +311,14 @@ reproductibles.
 
 ### 8c : galerie et tests communs
 
-- [ ] **L8.7** Banc de galerie dans le socle, `ETATS`, tailles et étapes en
+- [x] **L8.7** Banc de galerie dans le socle, `ETATS`, tailles et étapes en
   paramètres ; `capturer.cjs` reste appelable depuis `packages/plugin-exporter/galerie`,
   où `galerie.test.ts` le cherche. Logique des tests de styles, de gabarit et
   de manifest en fonctions du socle ; UCM Exporter garde ses tests, qui les
   appellent.
-- [ ] **L8.8** Relevé après, `npm run test:ui --workspace ucm-exporter-plugin`.
+- [x] **L8.8** Relevé après, `npm run test:ui --workspace ucm-exporter-plugin`.
   Commit.
-- [ ] **L8.9** AGENTS.md et CONTRIBUTING.md : carte du code, commandes de
+- [x] **L8.9** AGENTS.md et CONTRIBUTING.md : carte du code, commandes de
   galerie. Ouvrir M5.
 
 Critère : pour chaque état de la galerie d'UCM Exporter, `innerHTML` et styles
@@ -630,3 +630,16 @@ Réponses du mainteneur :
   (D-B).
 
 Traité par le commit qui porte cette entrée, avant le lot 8.
+
+### M5 : UCM Exporter après l'extraction du socle
+
+Question : ouvrir UCM Exporter dans Figma, analyser un composant, publier, et
+dire si quelque chose a changé. Le plugin de développement se réimporte
+depuis `packages/plugin-exporter/manifest.json` : le dossier a été renommé
+(D-N).
+
+Préparé : pour chaque sous-lot 8a, 8b et 8c, les 186 pages de la galerie
+d'UCM Exporter ont le même innerHTML et le même style calculé qu'avant
+l'extraction, sur 23 067 éléments. La suite, le typecheck, le build et
+`test:ui` sont verts. Ce qui ne se prouve pas hors de Figma : le sandbox
+(la fenêtre lit et range sa taille par le socle) et une publication réelle.
