@@ -147,6 +147,9 @@ décision correcte sur un cas réel.
   visibilité des repositories ;
 - installer UCM chez une première équipe consommatrice, sur gitlab.com, et
   relever ce que son `.gitlab-ci.yml` existant demande à la main ;
+- demander à cette équipe si ses designers ont le droit de modifier ses
+  fichiers de composants : la création des règles d'usage y pose un conteneur
+  à côté de chaque composant ;
 - faire relire de vraies pull requests d'export par un designer et un
   développeur ;
 - vérifier que chaque diagnostic est compréhensible sans ouvrir les logs ;

@@ -4,9 +4,8 @@
  * Seul fichier du moteur qui écrit dans Figma, et seul exclu de la loi du
  * document intact. Ce qu'il pose se défait d'un geste : supprimer le conteneur.
  *
- * Trois règles d'écriture viennent des essais de la phase 1
- * (`docs/notes/Recherches/Template-REGLES/ESSAI-TEMPLATE-REGLES.md`), et aucune
- * n'est négociable :
+ * Trois règles d'écriture, mesurées dans Figma (`SPEC.md`, « Comment l'écriture
+ * range une règle »), et aucune n'est négociable :
  *
  * - une règle s'écrit hors de l'arbre, puis se range d'un seul geste. Un ajout
  *   dans un slot déjà imbriqué laisse une coquille à l'ancien chemin du node,

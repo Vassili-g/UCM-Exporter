@@ -941,6 +941,39 @@ mieux : `getPublishStatusAsync` dit tout le monde non publié sur une
 bibliothèque qui ne l'a jamais été, et le vrai défaut passerait alors sous
 silence.
 
+### Comment l'écriture range une règle
+
+Trois contraintes de l'API Figma, mesurées dans Figma sur un fichier de tests,
+fixent l'ordre de `src/template/ecriture.ts`.
+
+**L'id d'un sous-calque d'instance est un chemin** (`I<instance>;<…>`). Ranger
+un node dans un slot change ce chemin. Un handle pris avant ne résout plus, et
+une écriture reçue par un handle périmé est perdue sans lever : `characters`
+relu rend l'ancien texte, et le texte d'aide du maître partirait dans le
+contrat. L'écriture retrouve donc chaque calque juste avant d'écrire, relit ce
+qu'elle a écrit, et recommence une fois sur un calque retrouvé.
+
+**Un ajout dans un slot déjà imbriqué laisse une coquille.** Une règle rangée
+dans le slot d'une section, elle-même rangée dans le slot du conteneur, laisse
+un calque mort à son ancien chemin. Tout parcours du conteneur qui lit le nom
+de ce calque lève « The node … does not exist », jusqu'à la fin de la session du
+plugin. Le relevé de sélection parcourt la page juste après la création, dans
+cette session. L'écriture remplit donc chaque section hors de l'arbre, puis la
+range d'un seul geste dans le slot du conteneur. Ce geste laisse une coquille
+par section, qui répond `removed` sans lever.
+
+**Une règle rangée garde la largeur de son variant.** Les slots de
+`.componentRules` et de `.rulesSection` ont un `slotSettings` nul : sans
+`layoutSizingHorizontal = 'FILL'`, la règle reste en largeur fixe et déborde du
+slot. L'écriture pose `FILL` sur chaque règle rangée.
+
+Le conteneur se pose à 80 px à droite du component set, dans la section ancêtre
+la plus proche quand elle n'est pas en auto layout, et glisse vers la droite
+tant qu'un voisin occupe la place.
+Une création interrompue supprime le conteneur qu'elle a posé, et le message
+d'échec dit si la suppression a réussi. Une instance vierge que le designer a
+collée n'est jamais supprimée.
+
 ### Les points rouges de la création
 
 La création rend un point à corriger par **composant publié imbriqué qui n'a pas
@@ -1003,6 +1036,18 @@ six donnent, et sert à rouvrir la question si un fichier passe la dizaine.
   `Alert` sans règles, lui-même abritant un `Button` sans règles, rend deux
   points, alors que créer les règles de l'`Alert` change ce que le second
   devient.
+
+Le point d'un `Button` dont l'axe d'états porte la valeur `Disable` liste
+encore `disabled` parmi ses propriétés non documentées, alors que le template
+ne lui posera aucune règle `@boolean`. Le corriger demande d'exporter la
+projection de `src/template/modele.ts` au lieu de la recopier dans `code.ts`.
+
+**Ce que la création ne pose pas.** Aucune règle pour une propriété `TEXT`,
+`SLOT` ou `INSTANCE_SWAP` : la grammaire de FORMAT.md, section 7, n'a pas de tag
+qui les documente. La règle `@icons` est posée vide, sans les noms de dessins
+que l'analyse signale comme non déclarés. Un conteneur existant n'est jamais
+complété : une propriété ajoutée au composant après la création attend une
+règle écrite à la main.
 
 L'écriture vit dans un seul fichier, `src/template/ecriture.ts`, atteint par
 une seule porte, la demande `creer-regles`. `loiDuDocumentIntact.test.ts`

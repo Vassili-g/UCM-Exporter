@@ -785,7 +785,7 @@ La spécification en lien porte le raisonnement.
 - Aucun handle de sous-calque ne se garde d'une écriture à l'autre : son id est
   un chemin, et le chemin bouge. Toute écriture se relit, une écriture perdue
   ne levant pas.
-  → [essais](./docs/notes/Recherches/Template-REGLES/ESSAI-TEMPLATE-REGLES.md)
+  → [spec](./packages/plugin/SPEC.md#comment-lécriture-range-une-règle)
 
 ## Vérification
 
