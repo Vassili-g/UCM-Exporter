@@ -1414,6 +1414,26 @@ test('une propriété qu’aucun imbriqué ne revendique est nommée quand même
   assert.equal(points(h)[0].nodeIds, undefined);
 });
 
+test('la prop qu’une règle @icons du composant fabrique ne cherche aucun porteur', async () => {
+  // `iconLeftName` n'existe pas dans Figma : la règle @icons de Button la
+  // fabrique. L'analyse la réclamait à un composant imbriqué introuvable.
+  const h = ouvrir();
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    content: JSON.stringify({
+      props: {
+        severity: { type: 'enum', values: ['info'] },
+        iconLeftName: { type: 'icon', policy: 'modifiable', visibilityProp: 'iconLeft' },
+        orpheline: { type: 'boolean', default: true },
+      },
+    }),
+  });
+
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+
+  assert.deepEqual(points(h).map((point) => [...point.elements ?? []]), [['orpheline']]);
+});
+
 /* Le tri des imbriqués : ce qui mérite un point, et ce qui n'en est pas un. */
 
 /** Un set sans aucune propriété publique, comme un composant d'icône. */

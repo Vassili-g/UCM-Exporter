@@ -994,6 +994,25 @@ function clesDeclareesPar(
   }
 }
 
+/**
+ * Les clés que le contrat publie sans que le composant sélectionné les déclare
+ * dans Figma : le relevé des imbriqués leur cherche un porteur.
+ *
+ * Une prop `icon` en est exclue. `mergeIconRules`, seul à produire ce type, la
+ * fabrique depuis une règle `@icons` du composant sélectionné : elle n'existe
+ * pas dans Figma, et aucun imbriqué ne la déclare. La garder ferait réclamer au
+ * designer les règles d'un composant imbriqué introuvable.
+ */
+function clesHorsDuParent(
+  clesDuParent: ReadonlySet<string> | null,
+  contrat: ContratLu,
+): string[] {
+  if (!clesDuParent) return [];
+  return Object.entries(contrat.props ?? {})
+    .filter(([cle, prop]) => !clesDuParent.has(cle) && prop.type !== 'icon')
+    .map(([cle]) => cle);
+}
+
 /** Une énumération lisible : « a », « b » et « c ». */
 function enumerer(mots: readonly string[]): string {
   const cites = mots.map((mot) => `« ${mot} »`);
@@ -1362,10 +1381,7 @@ async function signalerLesImbriquesDuContrat(
   } catch {
     return 0;
   }
-  const clesDuParent = clesDeclareesPar(composant);
-  const horsDuParent = clesDuParent
-    ? Object.keys(contrat.props ?? {}).filter((cle) => !clesDuParent.has(cle))
-    : [];
+  const horsDuParent = clesHorsDuParent(clesDeclareesPar(composant), contrat);
   const imbriques = await releverLesImbriques(composant, horsDuParent);
   return signalerLesImbriques(composant.name, imbriques, provenance);
 }
@@ -1400,9 +1416,7 @@ async function creerRegles(operation: number): Promise<void> {
     // composant imbriqué. La place de ce composant dit s'il revient au parent :
     // sa propre architecture lui prête ses propriétés pour de bon, un composant
     // publié reprendra les siennes dès qu'il aura ses règles.
-    const horsDuParent = clesDuParent
-      ? Object.keys(contrat.props ?? {}).filter((cle) => !clesDuParent.has(cle))
-      : [];
+    const horsDuParent = clesHorsDuParent(clesDuParent, contrat);
     const imbriques = await releverLesImbriques(composant, horsDuParent);
     const surface = clesDuParent ? new Set([...clesDuParent, ...imbriques.auParent]) : null;
     const propre = surface ? restreindreAuParent(contrat, surface) : contrat;
