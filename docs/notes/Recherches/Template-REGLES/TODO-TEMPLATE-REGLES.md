@@ -1205,8 +1205,9 @@ verts.
 ### 7. Recette dans Figma
 
 `packages/plugin/dist/` est bâti sur `2d28f1d` : `code.js`, `ui.html` et
-`manifest.json`. Le mainteneur importe ce manifeste dans Figma, comme pour le
-plugin d'essai, et joue les huit épreuves ci-dessous. Chacune se regarde contre
+`manifest.json`, rebâti sur `dd418cd` avec la correction 7.1. Le mainteneur
+importe ce manifeste dans Figma, comme pour le plugin d'essai, et joue les huit
+épreuves ci-dessous. Chacune se regarde contre
 l'état de galerie qui lui correspond ; un écart entre l'écran de Figma et la
 capture est un écart à rapporter.
 
