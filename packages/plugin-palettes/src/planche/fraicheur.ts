@@ -22,6 +22,24 @@ export interface FraicheurDeLaPlanche {
 }
 
 /**
+ * L'état du cadre d'une seule palette, et le cadre qui le porte : ce que
+ * l'onglet Palettes montre à côté de « Générer sur Figma » ([UI-05]). Le
+ * calcul reconstruit le modèle de ce seul cadre.
+ */
+export function fraicheurDUnePalette(
+  recette: Recette,
+  profil: ProfilDuDocument,
+  planche: EtatDeLaPlanche,
+  id: string,
+): { readonly etat: EtatDuCadre; readonly cadre: string | null } {
+  const palette = recette.palettes.find((candidate) => candidate.id === id);
+  const cadre = planche.cadres.find((candidat) => candidat.possede && candidat.palette === id);
+  if (!palette || !cadre) return { etat: 'jamais-dessinee', cadre: null };
+  const attendue = empreinteDuModele(recette, palette, profil, { grille: cadre.grille });
+  return { etat: attendue === cadre.empreinte ? 'a-jour' : 'perimee', cadre: cadre.cadre };
+}
+
+/**
  * Le modèle se recalcule avec la grille du cadre : elle entre dans
  * l'empreinte, et un cadre dessiné avec elle n'est pas périmé pour autant.
  */

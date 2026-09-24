@@ -12,6 +12,8 @@ export interface MenuPaletteUi {
   element: HTMLDivElement;
   /** Désactive « Monter » sur la première palette et « Descendre » sur la dernière. */
   afficher(rang: number, nombre: number): void;
+  /** Rend le focus au bouton du menu, après une confirmation annulée. */
+  focaliser(): void;
 }
 
 const GESTES: readonly { geste: GesteDePalette; libelle: string }[] = [
@@ -96,6 +98,7 @@ export function createMenuPalette(onGeste: (geste: GesteDePalette) => void): Men
 
   return {
     element,
+    focaliser: () => bouton.focus(),
     afficher(rang, nombre) {
       for (const option of options) {
         const bloquee = (option.dataset.geste === 'monter' && rang === 0)

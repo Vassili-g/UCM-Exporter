@@ -41,6 +41,41 @@ export const PAIRES: readonly Paire[] = [
   { numero: 14, premier: emploi('solid', 1), second: FOND, seuil: 'nonTexte' },
 ];
 
+/**
+ * Une association (section 9.4) : les paires de même premier emploi et de même
+ * second membre, emploi ou fond. `text` sur `surface` réunit les paires 2, 3 et
+ * 4.
+ */
+export interface Association {
+  readonly premier: Emploi;
+  readonly second: Emploi | 'fond';
+}
+
+/** L'état d'une paire : le plus grand décalage de ses membres, 0 au repos, 1 au survol, 2 à l'appui. */
+export type EtatDePaire = 0 | 1 | 2;
+
+const emploiDuMembre = (membre: MembrePaire): Emploi | 'fond' => ('fond' in membre ? 'fond' : membre.emploi);
+const decalageDuMembre = (membre: MembrePaire): EtatDePaire => ('fond' in membre ? 0 : membre.decalage);
+
+/** L'association d'une paire. `on-solid` vise le fond du mode, mais reste un emploi. */
+export function associationDe(paire: Paire): Association {
+  const premier = emploiDuMembre(paire.premier);
+  if (premier === 'fond') throw new Error(`Paire ${paire.numero} : le premier membre est le fond.`);
+  return { premier, second: emploiDuMembre(paire.second) };
+}
+
+export function etatDeLaPaire(paire: Paire): EtatDePaire {
+  return Math.max(decalageDuMembre(paire.premier), decalageDuMembre(paire.second)) as EtatDePaire;
+}
+
+/** La clé d'une association, `text/surface` ou `border-control/fond`, pour grouper et comparer. */
+export const cleDeLAssociation = (association: Association): string => `${association.premier}/${association.second}`;
+
+/** Les huit associations, dans l'ordre de leur première paire. */
+export const ASSOCIATIONS: readonly Association[] = PAIRES
+  .map(associationDe)
+  .filter((association, rang, toutes) => toutes.findIndex((autre) => cleDeLAssociation(autre) === cleDeLAssociation(association)) === rang);
+
 /** Les décalages qu'un emploi prend dans les paires, 0 compris. */
 export function decalagesDeLEmploi(nom: Emploi): number[] {
   const vus = new Set<number>([0]);

@@ -1,14 +1,22 @@
 /**
- * L'onglet Palettes (section 13.2) : la barre du haut porte le sélecteur, la
- * création, les gestes de la palette, le verdict et « Dessiner », au rang 1 ;
- * viennent ensuite la référence et le nom, la ligne repliée de la dérive,
- * l'aperçu, et les constats.
+ * L'onglet Palettes (section 13.2), en deux sections à filet : le choix ou la
+ * création d'une palette, puis la configuration de la palette ouverte. La
+ * configuration porte la référence et le nom, le nuancier, les intensités, la
+ * dérive, les messages, et se ferme sur « Générer sur Figma ».
  *
- * Une saisie recalcule l'aperçu dans l'interface ([ENT-02]). La recette se
- * range à la fin de chaque geste : valider un champ, créer, dupliquer,
- * réordonner ou supprimer une palette (D-D). Jamais pendant la saisie.
+ * Une saisie recalcule l'aperçu dans l'interface ([ENT-02]). La recette
+ * s'enregistre à la fin de chaque geste : valider un champ, relâcher un
+ * curseur, créer, dupliquer, réordonner ou supprimer une palette (D-D). Jamais
+ * pendant la saisie.
  */
-import { estPresqueGrise, type Classement, type Palette, type Recette, type Refus } from 'ucm-couleur';
+import {
+  alertesDePalette,
+  estPresqueGrise,
+  type Classement,
+  type Palette,
+  type Recette,
+  type Refus,
+} from 'ucm-couleur';
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
 import { analyserPalette } from '../analyse';
@@ -24,21 +32,29 @@ import {
   renommer,
   supprimer,
 } from '../edition';
-import type { LectureDeSelection, ProfilDuDocument } from '../lecture';
-import { createApercu } from './apercu';
-import { createAvance } from './avance';
-import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
-import { blocDeConstat, listeDesConstats } from './constats';
+import type { EtatDeLaPlanche, LectureDeSelection, ProfilDuDocument } from '../lecture';
+import { fraicheurDUnePalette } from '../planche/fraicheur';
+import { CIBLES_COMMUNES, type CibleDAction, type GroupeDePromesses } from '../presentation';
+import { blocDeConstat, listeDesMessages } from './constats';
 import { createCreation } from './creation';
-import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dessin';
 import { createEditeur } from './derive/editeur';
+import type { EtatDuDessin, GestesDuResultat } from './dessin';
 import type { StatutDuRangement } from './frontiere';
+import { createGeneration, type CadreDeLaPalette } from './generation';
+import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
+import { createIntensites } from './intensites';
 import { createMenuPalette, type GesteDePalette } from './menuPalette';
+import { messagesDeLaPalette } from './messagesDePalette';
+import { createNuancier } from './nuancier';
+import type { OptionsDeGeneration } from './optionsDeGeneration';
 import { createSelecteur } from './selecteur';
 import {
   STATUTS_DU_RANGEMENT,
   TEXTES,
+  TEXTES_AVANCES,
   TEXTES_DE_LA_DERIVE,
+  TEXTES_DE_L_ONGLET,
+  bilanDesPromesses,
   confirmationDeSuppression,
   couleurRamenee,
   hexaInvalide,
@@ -47,7 +63,6 @@ import {
   nomDeLaCopie,
   nomDeLaPalette,
   palettesDuFichier,
-  progressionDuDessin,
   rangementInvalide,
   recetteFuture,
   recetteIllisible,
@@ -56,36 +71,42 @@ import {
   type Constat,
 } from './textes';
 
-/** Ce que l'onglet demande au sandbox, par la frontière. */
+/** Ce que l'onglet demande au sandbox, par la frontière, et au reste de l'interface. */
 export interface DemandesDeLOnglet {
   ranger(recette: Recette): void;
   lireLaSelection(): void;
   recharger(): void;
   /** Un entier de 32 bits tiré au hasard, pour les identifiants de palette (D-K). */
   tirer(): number;
-  /** Dessine la palette ouverte ([UI-05]). */
+  /** Génère la palette ouverte ([UI-05]). */
   dessiner(palettes: readonly string[], noms: { readonly [id: string]: string }): void;
-  /** Les gestes du résultat d'un dessin. */
+  /** Les gestes du résultat d'une génération. */
   resultat: GestesDuResultat;
-  /** Les gestes de la recette en fichier, que le bloquant d'une recette illisible ou future offre ([REC-11]). */
+  /** Les gestes de la recette en fichier, que le blocage d'une recette illisible ou future offre ([REC-11]). */
   recetteEnFichier: GestesDeLaRecetteUi;
+  /** Ouvre les Réglages communs sur le groupe qu'un message nomme ([VER-15]). */
+  ouvrirReglages(cible: CibleDAction): void;
+  /** Les options de génération, partagées avec l'onglet Planche. */
+  options: OptionsDeGeneration;
 }
 
 export interface OngletPalettesUi {
   element: HTMLDivElement;
-  afficher(classement: Classement, profil: ProfilDuDocument): void;
+  afficher(classement: Classement, profil: ProfilDuDocument, planche: EtatDeLaPlanche): void;
   recevoirSelection(lecture: LectureDeSelection): void;
   poserStatut(statut: StatutDuRangement, refus: readonly Refus[]): void;
   /** La recette affichée, `null` quand elle ne se lit pas. */
   recette(): Recette | null;
-  /** Une recette en cours de saisie ailleurs, dans la configuration : l'aperçu la suit. */
+  /** Une recette en cours de saisie ailleurs, dans les Réglages communs : l'aperçu la suit. */
   previsualiser(recette: Recette): void;
-  /** Une recette validée ailleurs : elle se range. */
+  /** Une recette validée ailleurs : elle s'enregistre. */
   appliquer(recette: Recette): void;
-  /** Une recette importée, ou la recette par défaut : elle remplace celle du fichier, même illisible, et se range. */
+  /** Une recette importée, ou la recette par défaut : elle remplace celle du fichier, même illisible, et s'enregistre. */
   importer(recette: Recette): void;
-  /** Le dessin en cours ou fini, que la barre et la zone du résultat montrent. */
+  /** La génération en cours ou finie, que la ligne de l'action montre. */
   afficherDessin(etat: EtatDuDessin, noms: { readonly [id: string]: string }): void;
+  /** Ouvre une palette, depuis la fiche de l'onglet Planche. */
+  ouvrirLaPalette(id: string): void;
 }
 
 function ligneDEtat(texte: string): HTMLParagraphElement {
@@ -95,14 +116,21 @@ function ligneDEtat(texte: string): HTMLParagraphElement {
   return ligne;
 }
 
-function champ(libelle: string, saisie: HTMLInputElement): HTMLLabelElement {
+function champ(libelle: string, ...saisies: HTMLElement[]): HTMLLabelElement {
   const etiquette = document.createElement('label');
   etiquette.className = 'champ-ligne';
   const texte = document.createElement('span');
   texte.className = 'field-label';
   texte.textContent = libelle;
-  etiquette.append(texte, saisie);
+  etiquette.append(texte, ...saisies);
   return etiquette;
+}
+
+function titreDeSection(texte = ''): HTMLHeadingElement {
+  const titre = document.createElement('h2');
+  titre.className = 'titre-de-section';
+  titre.textContent = texte;
+  return titre;
 }
 
 export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalettesUi {
@@ -112,16 +140,21 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   let recette: Recette | null = null;
   let classementLu: Classement | null = null;
   let profil: ProfilDuDocument = 'SRGB';
+  let planche: EtatDeLaPlanche = { page: null, cadres: [] };
   let idOuvert = '';
   let creationOuverte = false;
   let suppressionDemandee = false;
   let note: Constat | null = null;
   let statut: StatutDuRangement = 'lu';
   let refus: Constat | null = null;
+  let editeurOuvert = false;
+  let dernierDessin: { etat: EtatDuDessin; noms: { readonly [id: string]: string } } = { etat: { phase: 'repos' }, noms: {} };
 
+  // Section 1 : choisir ou créer une palette.
   const selecteur = createSelecteur((id) => {
     idOuvert = id;
     suppressionDemandee = false;
+    recalculerLeCadre();
     rendre();
   });
   const plus = document.createElement('button');
@@ -129,34 +162,20 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   plus.className = 'icon-button';
   plus.textContent = '+';
   plus.setAttribute('aria-label', TEXTES.nouvellePalette);
+  plus.setAttribute('aria-expanded', 'false');
   plus.addEventListener('click', () => ouvrirLaCreation());
   const menu = createMenuPalette(agir);
-  const verdictDeLaPalette = document.createElement('span');
-  verdictDeLaPalette.className = 'verdict';
-  verdictDeLaPalette.setAttribute('aria-live', 'polite');
-  const dessiner = createButton({
-    label: TEXTES.dessiner,
-    onClick: () => {
-      const courante = ouverte();
-      if (courante) demandes.dessiner([courante.id], { [courante.id]: nomDeLaPalette(courante) });
-    },
-  });
-  const gauche = document.createElement('div');
-  gauche.className = 'barre-gestes';
-  gauche.append(selecteur.element, plus, menu.element);
-  const droite = document.createElement('div');
-  droite.className = 'barre-verdict';
-  droite.append(verdictDeLaPalette, dessiner);
   const barre = document.createElement('div');
-  barre.className = 'barre-palette';
-  barre.append(gauche, droite);
+  barre.className = 'barre-gestes';
+  barre.append(selecteur.element, plus, menu.element);
 
   const creation = createCreation({
-    onCreer: (saisie) => creer(saisie, null),
+    onCreer: (saisie, nom) => creer(saisie, nom, null),
     onSelection: () => demandes.lireLaSelection(),
     onAnnuler: () => {
       creationOuverte = false;
       rendre();
+      plus.focus();
     },
   });
 
@@ -165,11 +184,36 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const texteDeConfirmation = document.createElement('p');
   const gestesDeConfirmation = document.createElement('div');
   gestesDeConfirmation.className = 'confirmation-gestes';
+  const supprimerVraiment = createButton({ label: TEXTES.supprimer, onClick: () => confirmerLaSuppression() });
+  supprimerVraiment.classList.add('bouton-destructif');
   gestesDeConfirmation.append(
-    createButton({ label: TEXTES.supprimer, onClick: () => confirmerLaSuppression() }),
-    createButton({ label: TEXTES.annuler, variant: 'secondary', onClick: () => { suppressionDemandee = false; rendre(); } }),
+    supprimerVraiment,
+    createButton({
+      label: TEXTES.annuler,
+      variant: 'secondary',
+      onClick: () => {
+        suppressionDemandee = false;
+        rendre();
+        menu.focaliser();
+      },
+    }),
   );
   confirmation.append(texteDeConfirmation, gestesDeConfirmation);
+  const zoneDeLaNote = document.createElement('div');
+
+  const sectionPalette = document.createElement('section');
+  sectionPalette.className = 'section-onglet';
+  sectionPalette.setAttribute('aria-label', TEXTES_DE_L_ONGLET.palette);
+  sectionPalette.append(titreDeSection(TEXTES_DE_L_ONGLET.palette), barre, confirmation, zoneDeLaNote);
+
+  // Section 2 : configurer la palette ouverte.
+  const titreDeConfiguration = titreDeSection();
+  const verdictDeLaPalette = document.createElement('span');
+  verdictDeLaPalette.className = 'verdict';
+  verdictDeLaPalette.setAttribute('aria-live', 'polite');
+  const teteDeConfiguration = document.createElement('div');
+  teteDeConfiguration.className = 'tete-de-section';
+  teteDeConfiguration.append(titreDeConfiguration, verdictDeLaPalette);
 
   const pipette = document.createElement('input');
   pipette.type = 'color';
@@ -188,60 +232,129 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   nom.className = 'input';
   const reference = document.createElement('div');
   reference.className = 'ligne-reference';
-  const couleur = champ(TEXTES.reference, hexa);
-  couleur.insertBefore(pipette, hexa);
-  reference.append(couleur, champ(TEXTES.nom, nom));
+  reference.append(champ(TEXTES.reference, pipette, hexa), champ(TEXTES.nom, nom));
 
   const repereDeReference = document.createElement('span');
+  repereDeReference.className = 'repere-de-la-reference';
   const indication = document.createElement('span');
   indication.className = 'etat-rangement';
   indication.setAttribute('aria-live', 'polite');
   const infos = document.createElement('p');
-  infos.className = 'ligne-secondaire ligne-infos';
+  infos.className = 'ligne-infos';
   infos.append(repereDeReference, indication);
-  const derive = document.createElement('span');
+
+  const nuancier = createNuancier({
+    surMode: () => rendre(),
+    modifierLeFond: () => demandes.ouvrirReglages('fonds'),
+  });
+
+  const titreDesIntensites = document.createElement('p');
+  titreDesIntensites.className = 'field-label';
+  titreDesIntensites.textContent = TEXTES_AVANCES.avance;
+  const intensites = createIntensites({
+    previsualiser: (suivante) => modifier(suivante),
+    valider: (suivante) => {
+      if (recette) valider(remplacerPalette(recette, suivante));
+    },
+    ouvrir: (cible) => ouvrir(cible),
+  });
+
   const regler = document.createElement('button');
   regler.type = 'button';
-  regler.className = 'bouton-discret';
+  regler.className = 'bouton-deplier';
   regler.setAttribute('aria-expanded', 'false');
   regler.addEventListener('click', () => {
     editeurOuvert = !editeurOuvert;
     rendre();
   });
+  const resumeDeLaDerive = document.createElement('span');
+  resumeDeLaDerive.className = 'ligne-secondaire resume-de-la-derive';
   const ligneDeDerive = document.createElement('div');
-  ligneDeDerive.className = 'ligne-secondaire ligne-infos';
-  ligneDeDerive.append(derive, regler);
+  ligneDeDerive.className = 'ligne-de-derive';
+  ligneDeDerive.append(regler, resumeDeLaDerive);
   const editeur = createEditeur({
     previsualiser: (suivante) => modifier(suivante),
     valider: (suivante) => {
       if (recette) valider(remplacerPalette(recette, suivante));
     },
   });
-  let editeurOuvert = false;
-  const apercu = createApercu(() => rendre());
+
   const constats = document.createElement('div');
-  const avance = createAvance({
-    previsualiser: (suivante) => modifier(suivante),
-    valider: (suivante) => {
-      if (recette) valider(remplacerPalette(recette, suivante));
+  const generation = createGeneration({
+    ...demandes.resultat,
+    generer: () => {
+      const courante = ouverte();
+      if (courante) demandes.dessiner([courante.id], { [courante.id]: nomDeLaPalette(courante) });
     },
-  });
+  }, demandes.options);
+
+  const sectionConfiguration = document.createElement('section');
+  sectionConfiguration.className = 'section-onglet';
+  sectionConfiguration.append(
+    teteDeConfiguration,
+    reference,
+    erreurHexa,
+    infos,
+    nuancier.element,
+    titreDesIntensites,
+    intensites.element,
+    ligneDeDerive,
+    editeur.element,
+    constats,
+    generation.element,
+  );
+
+  /** Ouvre et focalise le réglage qu'un message nomme ([VER-15]) : dans l'onglet, ou dans les Réglages communs. */
+  function ouvrir(cible: CibleDAction): void {
+    if (CIBLES_COMMUNES.includes(cible)) {
+      demandes.ouvrirReglages(cible);
+      return;
+    }
+    if (cible === 'reference') {
+      hexa.focus();
+      hexa.select();
+    } else if (cible === 'intensites-palette') {
+      intensites.ouvrir();
+    } else if (!regler.disabled) {
+      editeurOuvert = true;
+      rendre();
+      editeur.focaliser();
+    }
+  }
+
+  function inspecter(groupe: GroupeDePromesses): void {
+    nuancier.inspecter(groupe);
+    rendre();
+  }
 
   function ouverte(): Palette | null {
     if (!recette || recette.palettes.length === 0) return null;
     return recette.palettes.find((candidate) => candidate.id === idOuvert) ?? recette.palettes[0];
   }
 
-  /** Remplace la recette affichée, sans la ranger : une saisie en cours. */
+  /**
+   * L'état du cadre de la palette ouverte. Le calcul reconstruit le modèle du
+   * cadre : il suit la fin d'un geste et chaque lecture, jamais un glisser.
+   */
+  let cadreOuvert: CadreDeLaPalette = { etat: 'jamais-dessinee', page: null, cadre: null };
+  function recalculerLeCadre(): void {
+    const courante = ouverte();
+    if (!recette || !courante) return;
+    const fraicheur = fraicheurDUnePalette(recette, profil, planche, courante.id);
+    cadreOuvert = { etat: fraicheur.etat, page: fraicheur.cadre ? planche.page : null, cadre: fraicheur.cadre };
+  }
+
+  /** Remplace la recette affichée, sans l'enregistrer : une saisie en cours. */
   function modifier(suivante: Palette): void {
     if (!recette) return;
     recette = remplacerPalette(recette, suivante);
     rendre();
   }
 
-  /** La fin d'un geste : la recette se range. */
+  /** La fin d'un geste : la recette s'enregistre. */
   function valider(suivante: Recette): void {
     recette = suivante;
+    recalculerLeCadre();
     rendre();
     demandes.ranger(suivante);
   }
@@ -251,9 +364,10 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     suppressionDemandee = false;
     creation.ouvrir(Boolean(recette && recette.palettes.length > 0));
     rendre();
+    creation.element.querySelector<HTMLInputElement>('.champ-creation')?.focus();
   }
 
-  function creer(saisie: string, notice: Constat | null): void {
+  function creer(saisie: string, nomSaisi: string, notice: Constat | null): void {
     if (!recette) return;
     const id = nouvelIdentifiant(recette, demandes.tirer);
     const palette = nouvellePalette(recette, id, saisie);
@@ -264,7 +378,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     idOuvert = id;
     creationOuverte = false;
     note = notice;
-    valider(ajouter(recette, palette));
+    valider(ajouter(recette, renommer(palette, nomSaisi)));
+    nom.focus();
   }
 
   function agir(geste: GesteDePalette): void {
@@ -282,6 +397,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       suppressionDemandee = true;
       creationOuverte = false;
       rendre();
+      supprimerVraiment.focus();
     }
   }
 
@@ -293,6 +409,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     idOuvert = suivante.palettes[Math.min(rang, suivante.palettes.length - 1)]?.id ?? '';
     suppressionDemandee = false;
     valider(suivante);
+    selecteur.focaliser();
   }
 
   /** Une saisie d'hexa : l'aperçu suit une valeur complète, une valeur impossible se signale. */
@@ -329,28 +446,25 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
 
   /*
    * La structure ne se reconstruit jamais : un champ retiré du DOM perd son
-   * focus, et `change` le rangerait en pleine saisie. Chaque zone se montre ou
-   * se cache ; seuls les blocs de texte se remplacent. Une zone vide se cache :
-   * la grille compterait sinon son espacement.
+   * focus, et `change` l'enregistrerait en pleine saisie. Chaque zone se montre
+   * ou se cache ; seuls les blocs de texte se remplacent. Une zone vide se
+   * cache : la grille compterait sinon son espacement.
    */
   const zoneDuRefus = document.createElement('div');
-  const zoneDuDessin = document.createElement('div');
-  zoneDuDessin.hidden = true;
   const zoneDuBloquant = document.createElement('div');
   zoneDuBloquant.className = 'page-stack';
-  const zoneDeLaNote = document.createElement('div');
   const ligneVide = ligneDEtat('');
   const vide = document.createElement('div');
   vide.className = 'page-stack colonne';
   vide.append(ligneVide);
   const vue = document.createElement('div');
   vue.className = 'page-stack colonne';
-  vue.append(barre, zoneDuDessin, confirmation, zoneDeLaNote, reference, erreurHexa, infos, ligneDeDerive, editeur.element, apercu.element, constats, avance.element);
+  vue.append(sectionPalette, sectionConfiguration);
   element.append(zoneDuRefus, zoneDuBloquant, vide, vue);
 
-  /** Le panneau de création suit la vue montrée : seul, ou sous la barre. */
+  /** Le panneau de création suit la vue montrée : seul, ou sous le sélecteur. */
   function placerLaCreation(parent: HTMLElement, avant: Node | null): void {
-    if (creation.element.parentElement !== parent) parent.insertBefore(creation.element, avant);
+    if (creation.element.parentElement !== parent || creation.element.nextSibling !== avant) parent.insertBefore(creation.element, avant);
   }
 
   function rendreRefus(): void {
@@ -369,36 +483,50 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     const analyse = analyserPalette(lue, courante);
     selecteur.afficher(lue.palettes, courante.id);
     menu.afficher(lue.palettes.indexOf(courante), lue.palettes.length);
-    verdictDeLaPalette.textContent = verdict(analyse.manquees);
+    placerLaCreation(sectionPalette, confirmation);
+    creation.element.hidden = !creationOuverte;
+    plus.setAttribute('aria-expanded', String(creationOuverte));
+    texteDeConfirmation.textContent = confirmationDeSuppression(nomDeLaPalette(courante));
+    confirmation.hidden = !suppressionDemandee;
+    zoneDeLaNote.replaceChildren(...(note ? [blocDeConstat(note, 'notice')] : []));
+    zoneDeLaNote.hidden = !note;
+
+    titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.configuration(nomDeLaPalette(courante));
+    verdictDeLaPalette.textContent = analyse.manquees === 0
+      ? `${verdict(0)} · ${bilanDesPromesses(analyse.promesses.length, analyse.promesses.length)}`
+      : verdict(analyse.manquees);
     verdictDeLaPalette.dataset.etat = analyse.manquees > 0 ? 'manque' : 'pret';
     poser(hexa, courante.reference);
     poser(pipette, courante.reference.toLowerCase());
     poser(nom, courante.nom ?? '');
     nom.placeholder = courante.reference;
-    repereDeReference.textContent = ligneDeLaReference(analyse.ancrage, apercu.mode());
-    derive.textContent = ligneDeLaDerive(courante);
+    repereDeReference.textContent = `◆ ${ligneDeLaReference(analyse.ancrage, nuancier.mode())}`;
+
+    const confusions = alertesDePalette(lue, courante).flatMap((alerte) => (alerte.code === 'profils-confondus' ? alerte.crans : []));
+    nuancier.afficher({ recette: lue, analyse, confondues: confusions });
+
+    const nomDe = (id: string) => {
+      const trouvee = lue.palettes.find((candidate) => candidate.id === id);
+      return trouvee ? nomDeLaPalette(trouvee) : id;
+    };
+    const messages = messagesDeLaPalette(analyse, courante, { recette: lue, nomDe }, nomDeLaPalette(courante), inspecter);
+    intensites.afficher(lue, courante, analyse.part, messages.intensite);
+    constats.replaceChildren(...(messages.liste.length > 0 ? [listeDesMessages(messages.liste, ouvrir)] : []));
+    constats.hidden = messages.liste.length === 0;
+
+    resumeDeLaDerive.textContent = ligneDeLaDerive(courante);
     // Une référence presque grise n'a pas de teinte : l'éditeur se désactive ([DER-15]).
     const grise = estPresqueGrise(lue, courante);
     if (grise) editeurOuvert = false;
     regler.disabled = grise;
     regler.title = grise ? TEXTES_DE_LA_DERIVE.grisDesactive : '';
-    regler.textContent = editeurOuvert ? TEXTES_DE_LA_DERIVE.replier : TEXTES_DE_LA_DERIVE.regler;
+    regler.textContent = `${editeurOuvert ? '▾' : '▸'} ${TEXTES_DE_LA_DERIVE.regler}`;
     regler.setAttribute('aria-expanded', String(editeurOuvert));
     editeur.element.hidden = !editeurOuvert;
-    if (editeurOuvert) editeur.afficher(lue, courante, analyse.rampes, analyse.ancrage);
-    apercu.afficher(lue, analyse.rampes);
-    const nomDe = (id: string) => {
-      const trouvee = lue.palettes.find((candidate) => candidate.id === id);
-      return trouvee ? nomDeLaPalette(trouvee) : id;
-    };
-    constats.replaceChildren(listeDesConstats(analyse, { recette: lue, nomDe }, nomDeLaPalette(courante)));
-    avance.afficher(lue, courante);
-    texteDeConfirmation.textContent = confirmationDeSuppression(nomDeLaPalette(courante));
-    confirmation.hidden = !suppressionDemandee;
-    placerLaCreation(vue, zoneDeLaNote);
-    creation.element.hidden = !creationOuverte;
-    zoneDeLaNote.replaceChildren(...(note ? [blocDeConstat(note, 'notice')] : []));
-    zoneDeLaNote.hidden = !note;
+    if (editeurOuvert) editeur.afficher(lue, courante, analyse.rampes, analyse.ancrage, analyse);
+
+    generation.afficherLeCadre(cadreOuvert);
+    generation.afficherDessin(dernierDessin.etat, dernierDessin.noms, courante.id);
   }
 
   /**
@@ -444,11 +572,13 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
 
   return {
     element,
-    afficher(classement, profilLu) {
+    afficher(classement, profilLu, plancheLue) {
       classementLu = classement;
       profil = profilLu;
+      planche = plancheLue;
       recette = classement.etat === 'future' || classement.etat === 'illisible' ? null : classement.recette;
       refus = null;
+      recalculerLeCadre();
       rendre();
     },
     recevoirSelection(lecture) {
@@ -456,7 +586,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
         creation.signaler(lecture.raison === 'vide' ? TEXTES.selectionVide : TEXTES.selectionSansRemplissage);
         return;
       }
-      creer(lecture.hexa, lecture.ramenee ? couleurRamenee(lecture.hexa) : null);
+      creer(lecture.hexa, creation.nom(), lecture.ramenee ? couleurRamenee(lecture.hexa) : null);
     },
     recette: () => recette,
     previsualiser(suivante) {
@@ -469,16 +599,21 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       valider(suivante);
     },
     afficherDessin(etat, noms) {
-      dessiner.disabled = etat.phase === 'en-cours';
-      dessiner.setLabel(etat.phase === 'en-cours' ? progressionDuDessin(etat.fait, etat.total, etat.nom) : TEXTES.dessiner);
-      const resultat = blocDuResultat(etat, noms, demandes.resultat);
-      zoneDuDessin.replaceChildren(...(resultat ? [resultat] : []));
-      zoneDuDessin.hidden = !resultat;
+      dernierDessin = { etat, noms };
+      const courante = ouverte();
+      if (courante) generation.afficherDessin(etat, noms, courante.id);
     },
     poserStatut(suivant, refusDuSandbox) {
       statut = suivant;
       if (suivant === 'refuse') refus = recetteModifieeAilleurs();
       else if (suivant === 'invalide') refus = rangementInvalide(refusDuSandbox);
+      rendre();
+    },
+    ouvrirLaPalette(id) {
+      idOuvert = id;
+      suppressionDemandee = false;
+      creationOuverte = false;
+      recalculerLeCadre();
       rendre();
     },
   };

@@ -15,42 +15,20 @@
 /* Rang 3 : ce qui informe sans rien demander. */
 .etat-lecture,
 .ligne-secondaire,
-.detail-cran,
 .constats-titre {
   color: var(--texte-second);
 }
 
-/*
- * Rang 1 : la barre du haut porte le sélecteur, le verdict et « Dessiner ».
- * Elle se lit sans défiler, à la plus petite taille de fenêtre.
- */
-.barre-palette {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--espace-controle);
-}
-
-.barre-gestes,
-.barre-verdict {
+/* Un nom de palette long se coupe dans le sélecteur : les gestes restent dans la fenêtre. */
+.barre-gestes {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: var(--espace-controle);
 }
 
-/* Un nom de palette long se coupe dans le sélecteur : les gestes restent dans la fenêtre. */
-.barre-gestes {
-  flex: 1 1 auto;
-}
-
 .barre-gestes .icon-button {
   flex-shrink: 0;
-}
-
-.barre-verdict {
-  margin-left: auto;
 }
 
 .menu-palette {
@@ -206,15 +184,13 @@
 .selecteur-bouton:focus-visible,
 .selecteur-liste:focus-visible,
 .bascule-option:focus-visible,
-.pastille:focus-visible,
 .pipette:focus-visible {
   outline: 2px solid var(--bordure-marque);
   outline-offset: 2px;
 }
 
 /* Les pastilles de couleur portent la couleur de la palette, jamais un rôle. */
-.pastille-reference,
-.pastille-exemple {
+.pastille-reference {
   display: inline-block;
   flex-shrink: 0;
   width: 12px;
@@ -223,16 +199,18 @@
   border-radius: 50%;
 }
 
-.pastille-exemple {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--rayon);
+.ligne-reference {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-controle);
 }
 
-.ligne-reference {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--espace-controle);
+.ligne-reference > .champ-ligne {
+  flex: 1 1 auto;
+}
+
+.ligne-reference .field-label {
+  white-space: nowrap;
 }
 
 .champ-ligne {
@@ -247,7 +225,8 @@
   flex: 1 1 auto;
 }
 
-.champ-ligne .champ-hexa {
+.champ-ligne .champ-hexa,
+.champ-ligne .champ-creation {
   width: 88px;
   flex: 0 0 88px;
   font-variant-numeric: tabular-nums;
@@ -262,11 +241,6 @@
   border-radius: var(--rayon);
   background: var(--fond);
   cursor: pointer;
-}
-
-.apercu {
-  display: grid;
-  gap: var(--espace-controle);
 }
 
 /* Deux segments, comme les onglets : le mode pressé porte le fond des blocs. */
@@ -291,32 +265,6 @@
   color: var(--texte);
 }
 
-.grille-apercu {
-  display: grid;
-  gap: var(--espace-serre);
-}
-
-.rampe {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.rampe-profil {
-  width: 40px;
-  flex-shrink: 0;
-  color: var(--texte-second);
-}
-
-/* [UI-04] : une pastille fait 24 × 24. */
-.pastille {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  cursor: default;
-}
-
 .constats {
   display: grid;
   gap: var(--espace-controle);
@@ -334,22 +282,26 @@
   border-radius: 0 var(--rayon) var(--rayon) 0;
 }
 
-/* La couleur ne dit que la sévérité : danger pour ce qui bloque ou manque sa promesse. */
+/*
+ * La couleur ne dit que la sévérité, et le poids suit sa gravité : un blocage
+ * et une promesse à corriger portent le filet et le fond du danger, un point à
+ * vérifier le seul filet d'avertissement ([VER-14]).
+ */
 .constat-bloquant {
-  border-left: 2px solid var(--texte-danger);
+  border-left: 3px solid var(--texte-danger);
   background: var(--fond-danger);
 }
 
 .constat-promesse {
   border-left: 2px solid var(--texte-danger);
+  background: var(--fond-danger);
 }
 
 .constat-alerte {
   border-left: 2px solid var(--texte-avertissement);
-  background: var(--fond-avertissement);
 }
 
-/* Rang 3 : une notice se lit en couleur secondaire, sans filet. */
+/* Rang 3 : une information se lit en couleur secondaire, sans filet. */
 .constat-notice {
   padding-left: 0;
   color: var(--texte-second);
@@ -359,13 +311,77 @@
   font-weight: 600;
 }
 
-.constat-quoi {
-  overflow-wrap: anywhere;
+/*
+ * Le titre d'un groupe porte une forme en plus de sa couleur : un carré plein
+ * pour ce qui est à corriger, un triangle pour ce qui est à vérifier, un rond
+ * creux pour ce qui informe. La forme se dessine en bordure : un lecteur
+ * d'écran ne la lit pas, le titre suffit.
+ */
+.constats-titre::before {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--espace-controle);
+  content: '';
+  vertical-align: baseline;
 }
 
-.constat-pastilles {
+.constats-titre-bloquant::before,
+.constats-titre-promesse::before {
+  background: var(--texte-danger);
+}
+
+.constats-titre-alerte::before {
+  width: 0;
+  height: 0;
+  border-right: 5px solid transparent;
+  border-bottom: 8px solid var(--texte-avertissement);
+  border-left: 5px solid transparent;
+}
+
+.constats-titre-notice::before {
+  border: 1px solid var(--texte-second);
+  border-radius: 50%;
+}
+
+.constat-mesures {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+  list-style: none;
+}
+
+.constat-liens {
   display: flex;
-  gap: var(--espace-serre);
+  flex-wrap: wrap;
+  gap: var(--espace-controle);
+}
+
+/* Un lien vers le réglage qu'un message nomme : une action, donc la couleur de marque. */
+.lien-de-constat {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texte-marque);
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.lien-de-constat:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.constat-detail summary {
+  color: var(--texte-second);
+  cursor: pointer;
+}
+
+.constat-quoi {
+  overflow-wrap: anywhere;
 }
 
 /* Le geste garde la couleur de lecture ; son rang vient de sa position, la dernière. */
@@ -532,13 +548,15 @@
 
 .reglette {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--espace-controle);
 }
 
 .reglette .field-label {
-  width: 72px;
+  width: 112px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .reglette .champ-nombre {
@@ -611,4 +629,405 @@
 .case-a-cocher {
   margin: 0;
   accent-color: var(--fond-marque);
+}
+
+/*
+ * L'onglet Palettes : deux sections à filet discret, le choix d'une palette
+ * puis sa configuration. Le titre, l'espacement et la densité les distinguent ;
+ * aucune n'a de fond propre.
+ */
+.section-onglet {
+  display: grid;
+  min-width: 0;
+  gap: var(--espace-controle);
+  padding: var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.titre-de-section {
+  margin: 0;
+  font-size: var(--libelle);
+  font-weight: 600;
+  line-height: var(--libelle-interligne);
+}
+
+.tete-de-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+.tete-de-section .titre-de-section {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.repere-de-la-reference {
+  color: var(--texte);
+}
+
+/* Une suppression est un geste destructif : le bouton porte la couleur du danger. */
+.btn.bouton-destructif {
+  border-color: var(--texte-danger);
+  background: var(--texte-danger);
+  color: var(--texte-sur-marque);
+}
+
+/*
+ * Le nuancier : l'en-tête garde le thème de Figma, la surface prend le fond du
+ * thème choisi. Ses encres viennent du script, calculées sur ce fond : elles
+ * sont des données, comme les couleurs des pastilles.
+ */
+.nuancier {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+.nuancier-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+.nuancier-fond {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-serre);
+}
+
+.pastille-du-fond {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--bordure);
+  border-radius: 4px;
+}
+
+/* Le fond du thème, membre d'une promesse choisie : la même marque que les pastilles désignées. */
+.pastille-du-fond[data-paire='true'] {
+  outline: 2px solid var(--texte);
+  outline-offset: 2px;
+}
+
+.nuancier-surface {
+  display: grid;
+  gap: var(--espace-controle);
+  padding: var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  color: var(--encre-surface);
+  --colonne-profil: 44px;
+}
+
+.nuancier-grille {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+/* Chaque rangée suit la même trame : les numéros restent alignés sur leurs pastilles. */
+.nuancier-rangee,
+.usage-ligne {
+  display: grid;
+  align-items: center;
+  column-gap: 4px;
+  grid-template-columns: var(--colonne-profil) repeat(var(--colonnes), minmax(0, 1fr));
+}
+
+.nuancier-numero {
+  color: var(--encre-surface-seconde);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.nuancier-profil {
+  grid-column: 1;
+  color: var(--encre-surface-seconde);
+  font-weight: 600;
+}
+
+.pastille {
+  display: flex;
+  height: 32px;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: var(--corps);
+}
+
+/*
+ * Quatre signes distincts ([UI-04]) : la référence porte ◆ dans sa pastille,
+ * le focus un contour tireté, la nuance choisie un double anneau, une paire
+ * inspectée un trait sous la pastille. Un indice ≈ marque une nuance où soft et
+ * vivid se confondent.
+ */
+.pastille:focus-visible {
+  outline: 2px dashed var(--encre-surface);
+  outline-offset: 3px;
+}
+
+.pastille[aria-selected='true'] {
+  box-shadow: 0 0 0 2px var(--bordure-surface), 0 0 0 4px var(--encre-surface);
+}
+
+.pastille[data-paire='true'] {
+  border-bottom: 4px solid var(--encre-surface);
+}
+
+.pastille[data-confondue='true']::after {
+  margin-left: 2px;
+  content: '≈';
+  font-size: 9px;
+  opacity: 0.8;
+}
+
+.usages {
+  display: grid;
+  gap: 2px;
+}
+
+.usages-familles {
+  display: none;
+}
+
+.usages-lignes {
+  display: grid;
+  gap: 2px;
+}
+
+/* Le sélecteur de famille vit sur la surface : il en prend les encres. */
+.nuancier-surface .bascule-option {
+  color: var(--encre-surface-seconde);
+}
+
+.nuancier-surface .bascule-option[aria-pressed='true'] {
+  background: var(--bordure-surface);
+  color: var(--encre-surface);
+}
+
+.usages-famille {
+  margin-top: var(--espace-serre);
+  color: var(--encre-surface-seconde);
+  font-size: var(--corps);
+  font-weight: 600;
+}
+
+/* Une barre teintée couvre la plage exacte de l'usage ; son nom peut déborder sur les colonnes libres de sa ligne. */
+.usage-barre {
+  height: 16px;
+  min-width: 0;
+  padding: 0 var(--espace-serre);
+  overflow: visible;
+  border: 0;
+  border-radius: 3px;
+  background: var(--bordure-surface);
+  color: var(--encre-surface);
+  cursor: pointer;
+  font-size: 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.usage-barre-fond {
+  grid-column: 2 / -1;
+  border: 1px dashed var(--bordure-surface);
+  background: none;
+}
+
+.usage-barre[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--encre-surface);
+}
+
+.usage-barre:focus-visible {
+  outline: 2px dashed var(--encre-surface);
+  outline-offset: 2px;
+}
+
+/* Le détail tient une place stable quand il s'ouvre, et grandit sans couper son texte. */
+.nuancier-detail {
+  display: grid;
+  gap: var(--espace-serre);
+  padding-top: var(--espace-controle);
+  border-top: 1px solid var(--bordure-surface);
+  overflow-wrap: anywhere;
+}
+
+.detail-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+.detail-titre,
+.detail-sous-titre {
+  font-weight: 600;
+}
+
+.detail-reference {
+  font-weight: 600;
+}
+
+.nuancier-detail .ligne-secondaire,
+.nuancier-detail .constat-detail summary {
+  color: var(--encre-surface-seconde);
+}
+
+.nuancier-detail .lien-de-constat {
+  color: var(--encre-surface);
+}
+
+.detail-association {
+  display: grid;
+  gap: 2px;
+}
+
+.specimen {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.specimen-echantillon {
+  flex-shrink: 0;
+  padding: 2px var(--espace-controle);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* Les intensités de la palette, sous le nuancier. */
+.intensites,
+.intensites-reglages {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.intensite {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.intensite .field-label {
+  width: 88px;
+  flex-shrink: 0;
+}
+
+.intensite .champ-nombre {
+  flex: 0 0 56px;
+  width: 56px;
+}
+
+/* L'intensité de la couleur de référence, un repère plein sur la piste du curseur. */
+.repere-de-reference {
+  background: var(--texte);
+}
+
+/* La dérive se déplie sous le nuancier ; à la largeur minimale, son résumé passe à la ligne. */
+.ligne-de-derive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espace-controle);
+}
+
+.bouton-deplier {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texte);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.bouton-deplier:disabled {
+  color: var(--texte-second);
+  cursor: not-allowed;
+}
+
+.bouton-deplier:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.resume-de-la-derive {
+  min-width: 0;
+}
+
+.derive-nom-de-courbe {
+  font-weight: 600;
+}
+
+.bilan-de-la-derive[data-etat='manque'] {
+  color: var(--texte-danger);
+}
+
+/* « Générer sur Figma » ferme la configuration ; son résultat reste sur la même ligne. */
+.generation {
+  display: grid;
+  gap: var(--espace-controle);
+  padding-top: var(--espace-controle);
+  border-top: 1px solid var(--bordure);
+}
+
+.generation-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.etat-du-cadre {
+  color: var(--texte-second);
+}
+
+.options-de-generation summary {
+  color: var(--texte-second);
+  cursor: pointer;
+}
+
+.options-de-generation .champ-ligne {
+  margin-top: var(--espace-serre);
+}
+
+/*
+ * À 440 px, le nom d'un profil passe au-dessus de sa rangée et les pastilles
+ * prennent toute la largeur ; un sélecteur de famille montre une famille
+ * d'usages à la fois.
+ */
+@media (max-width: 519px) {
+  .nuancier-surface {
+    --colonne-profil: 0px;
+  }
+
+  .nuancier-profil {
+    grid-column: 1 / -1;
+  }
+
+  .nuancier-numeros .nuancier-profil {
+    display: none;
+  }
+
+  .usages-familles {
+    display: flex;
+  }
+
+  .usages-famille {
+    display: none;
+  }
+
+  .usages[data-famille='fonds'] [data-famille]:not([data-famille='fonds']),
+  .usages[data-famille='bordures'] [data-famille]:not([data-famille='bordures']),
+  .usages[data-famille='pleins'] [data-famille]:not([data-famille='pleins']),
+  .usages[data-famille='textes'] [data-famille]:not([data-famille='textes']) {
+    display: none;
+  }
 }

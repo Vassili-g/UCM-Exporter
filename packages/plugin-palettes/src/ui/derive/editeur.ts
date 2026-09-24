@@ -24,9 +24,10 @@ import {
 
 import { lireNombre } from '../../configuration';
 import { appliquerPrereglage, lierLesProfils, prereglageDe, reglerBout } from '../../edition';
-import { TEXTES_DE_LA_DERIVE, repereTailwind, valeurDePoignee } from '../textes';
+import type { AnalyseDePalette } from '../../analyse';
+import { TEXTES_DE_LA_DERIVE, bilanDesPromesses, repereTailwind, valeurDePoignee, verdict } from '../textes';
 import { CADRE, HAUTEUR_TOTALE, createGraphe } from './graphe';
-import { angleDuGlisser } from './geometrie';
+import { angleDuGlisser, echelleDe } from './geometrie';
 
 /** Ce que l'éditeur demande à l'onglet. */
 export interface GestesDeLEditeur {
@@ -39,7 +40,9 @@ export interface GestesDeLEditeur {
 export interface EditeurUi {
   element: HTMLDivElement;
   /** Les rampes ancrées de la palette et son ancrage ([MOT-17]) : la rampe Light du profil réglé se peint sous la bande. */
-  afficher(recette: Recette, palette: Palette, rampes: Rampes, ancrage: Ancrage): void;
+  afficher(recette: Recette, palette: Palette, rampes: Rampes, ancrage: Ancrage, analyse: AnalyseDePalette): void;
+  /** Focalise le premier réglage de l'éditeur déplié, quand un message y mène ([VER-15]). */
+  focaliser(): void;
 }
 
 type Bout = 'clair' | 'sombre';
@@ -116,14 +119,23 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     const choisi = choixDuPrereglage.value;
     if (choisi === 'tailwind' || choisi === 'constante') terminer(appliquerPrereglage(recette, palette, profil, choisi));
   });
-  const lien = bouton(TEXTES_DE_LA_DERIVE.lien, 'bouton-discret');
-  lien.addEventListener('click', () => {
+  // Synchroniser se coche : l'état se lit sur la case, et la recocher confirme avant de remplacer soft ([DER-12]).
+  const lien = document.createElement('input');
+  lien.type = 'checkbox';
+  lien.className = 'case-a-cocher';
+  const etiquetteDuLien = document.createElement('label');
+  etiquetteDuLien.className = 'champ-ligne';
+  const texteDuLien = document.createElement('span');
+  texteDuLien.textContent = TEXTES_DE_LA_DERIVE.lien;
+  etiquetteDuLien.append(lien, texteDuLien);
+  lien.addEventListener('change', () => {
     if (!palette) return;
-    if (!palette.derive.lien) {
+    if (lien.checked) {
       const { soft, vivid } = palette.derive;
       const egales = soft.clair === vivid.clair && soft.sombre === vivid.sombre && soft.origine === vivid.origine;
       if (egales) terminer(lierLesProfils(palette, true));
       else {
+        lien.checked = false;
         confirmationOuverte = true;
         dessiner();
       }
@@ -144,7 +156,7 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     profils.append(choix);
     return { valeur, choix };
   });
-  entete.append(choixDuPrereglage, lien, profils);
+  entete.append(choixDuPrereglage, etiquetteDuLien, profils);
 
   const confirmation = document.createElement('div');
   confirmation.className = 'confirmation';
@@ -169,6 +181,11 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
   const graphe = createGraphe();
   const svg = graphe.element;
   let glisse: { bout: Bout; pointeur: number } | null = null;
+  /** L'échelle figée pendant un glisser : la poignée ne saute pas sous le pointeur ([DER-01]). */
+  let echelleFigee: number | null = null;
+  const echelleCourante = (): number => echelleFigee ?? (palette
+    ? echelleDe([palette.derive.soft.clair, palette.derive.soft.sombre, palette.derive.vivid.clair, palette.derive.vivid.sombre])
+    : 90);
   /** La capture du pointeur fait viser le SVG aux clics suivants : le double-clic lit le bout pressé. */
   let boutPresse: Bout | null = null;
   const boutDe = (cible: EventTarget | null): Bout | null => {
@@ -186,17 +203,19 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     evenement.preventDefault();
     // Le graphe se redessine à chaque mouvement : la capture tient sur le SVG, pas sur la poignée.
     svg.setPointerCapture(evenement.pointerId);
+    echelleFigee = echelleCourante();
     glisse = { bout, pointeur: evenement.pointerId };
     boutPresse = bout;
     avantLeGeste = palette;
   });
   svg.addEventListener('pointermove', (evenement) => {
     if (!glisse || evenement.pointerId !== glisse.pointeur) return;
-    regler(glisse.bout, angleDuGlisser(ordonneeDuPointeur(evenement), CADRE, evenement.shiftKey ? 5 : 1), false);
+    regler(glisse.bout, angleDuGlisser(ordonneeDuPointeur(evenement), CADRE, evenement.shiftKey ? 5 : 1, echelleCourante()), false);
   });
   const relacher = (evenement: PointerEvent) => {
     if (!glisse || evenement.pointerId !== glisse.pointeur) return;
     glisse = null;
+    echelleFigee = null;
     if (palette) terminer(palette);
   };
   svg.addEventListener('pointerup', relacher);
@@ -283,7 +302,11 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
   const note = document.createElement('p');
   note.className = 'ligne-secondaire';
 
-  element.append(entete, confirmation, svg, zoneDesReglettes, note);
+  // Le bilan suit le réglage ; il ne s'annonce qu'à la fin du geste, jamais à chaque mouvement ([DER-17]).
+  const bilan = document.createElement('p');
+  bilan.className = 'bilan-de-la-derive';
+  bilan.setAttribute('aria-live', 'polite');
+  element.append(entete, confirmation, svg, zoneDesReglettes, note, bilan);
 
   // Ctrl+Z ou Cmd+Z défait le dernier réglage, hors d'un champ texte (E21).
   element.addEventListener('keydown', (evenement) => {
@@ -296,6 +319,7 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
   });
 
   let rampes: Rampes | null = null;
+  let analyse: AnalyseDePalette | null = null;
   let ancrage: Ancrage | null = null;
 
   function dessiner(): void {
@@ -304,13 +328,17 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     const lie = palette.derive.lien;
     // Synchronisés, les deux profils se règlent ensemble : l'éditeur montre le porteur de la référence.
     if (lie) profil = ancrage.profil;
-    graphe.afficher({ recette, palette, profil, rampe: rampes[profil].light, ancrage });
+    graphe.afficher({ recette, palette, profil, rampe: rampes[profil].light, ancrage, echelle: echelleCourante() });
+    if (!glisse && analyse) {
+      bilan.textContent = analyse.manquees === 0 ? bilanDesPromesses(analyse.promesses.length, analyse.promesses.length) : verdict(analyse.manquees);
+      bilan.dataset.etat = analyse.manquees > 0 ? 'manque' : 'pret';
+    }
     // Le graphe s'est redessiné : la poignée qui avait le focus le reprend.
     if (focalisee) graphe.poignees()[focalisee]?.focus();
 
     const derive = palette.derive[profil];
     choixDuPrereglage.value = derive.origine;
-    lien.setAttribute('aria-pressed', String(lie));
+    lien.checked = lie;
     profils.hidden = lie;
     for (const { valeur, choix } of boutonsDeProfil) choix.setAttribute('aria-pressed', String(valeur === profil));
     confirmation.hidden = !confirmationOuverte;
@@ -340,7 +368,11 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
 
   return {
     element,
-    afficher(recetteLue, paletteLue, rampesLues, ancrageLu) {
+    focaliser() {
+      choixDuPrereglage.focus();
+    },
+    afficher(recetteLue, paletteLue, rampesLues, ancrageLu, analyseLue) {
+      analyse = analyseLue;
       if (palette && paletteLue.id !== palette.id) confirmationOuverte = false;
       recette = recetteLue;
       palette = paletteLue;

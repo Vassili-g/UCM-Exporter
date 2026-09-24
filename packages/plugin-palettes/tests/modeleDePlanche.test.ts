@@ -40,19 +40,19 @@ test('[PLA-02] un cadre par palette, nommé du nom de la palette ou de son hexa'
   assert.equal(modeleDeCadre(avec(sansNom), sansNom, 'SRGB').racine.nom, '#1E6FD9');
 });
 
-test('[PLA-07] l’en-tête donne le nom, la version, l’empreinte du modèle, l’espace et les promesses tenues', () => {
-  const [titre, recette] = (trouver(MODELE.racine, 'en-tête').enfants as NoeudTexte[]);
-  assert.equal(titre.contenu, 'Bleu');
-  assert.equal(titre.style, 'titre');
-  assert.equal(recette.contenu, `recette v1 · empreinte ${MODELE.empreinte} · sRGB · 56/56 promesses`);
+test('[PLA-07] l’en-tête donne le nom et le bilan des promesses, sans version, empreinte ni avertissement', () => {
+  const enTete = trouver(MODELE.racine, 'en-tête').enfants as NoeudTexte[];
+  assert.deepEqual(enTete.map((noeud) => noeud.contenu), ['Bleu', '56/56 promesses respectées']);
+  assert.equal(enTete[0].style, 'titre');
   assert.match(MODELE.empreinte, /^[0-9a-f]{8}$/);
+  assert.ok(!textes(MODELE.racine).some((noeud) => noeud.contenu.includes(MODELE.empreinte)), 'aucun texte n’imprime l’empreinte');
 });
 
 test('[PLA-08] la référence montre sa pastille, ses valeurs et la nuance qui la porte dans chaque thème', () => {
-  const reference = trouver(MODELE.racine, 'Référence');
+  const reference = trouver(MODELE.racine, 'Couleur de référence');
   assert.equal(reference.enfants[0].type === 'cadre' && reference.enfants[0].fond?.hexa, '#1E6FD9');
   const valeurs = (reference.enfants[1] as NoeudTexte).contenu;
-  assert.match(valeurs, /^#1E6FD9\nL 0,555 · C 0,179 · H 257°\nIntensité : 0,89 · Light : Vivid · nuance 600 · Dark : Vivid · nuance 600\nblanc /);
+  assert.match(valeurs, /^#1E6FD9\nLuminosité L : 0,555 · chroma C : 0,179 · teinte H : 257°\nIntensité : 0,89 · Thème Light : Vivid · nuance 600 · Thème Dark : Vivid · nuance 600\nAvec le blanc : /);
   assert.ok(!cadres(reference).some((noeud) => noeud.nom === 'bouton'), 'le bloc Boutons est retiré');
 });
 
@@ -74,21 +74,22 @@ test('[PLA-09] chaque section est peinte de son fond, et son texte s’y lit', (
   }
 });
 
-test('[PLA-10] une rangée porte à gauche son profil et la part de chroma employée', () => {
+test('[PLA-10] une rangée porte à gauche le nom de son profil, sans part de chroma', () => {
   const rangee = trouver(trouver(MODELE.racine, 'section light'), 'rangée vivid');
-  assert.equal((rangee.enfants[0] as NoeudTexte).contenu, 'vivid\npart 0,95');
+  assert.equal((rangee.enfants[0] as NoeudTexte).contenu, 'Vivid');
   assert.equal(rangee.enfants.length, 12);
 });
 
-test('[PLA-11] la légende dit que deux seuils sont des paramètres de conception', () => {
-  const legende = textes(trouver(MODELE.racine, 'Légende')).map((noeud) => noeud.contenu).join('\n');
-  assert.match(legende, /profilsConfondus 0,02 et palettesProches 0,05 sont des paramètres de conception, pas des seuils d’accessibilité/);
+test('[PLA-11] la légende ne nomme pas les seuils par leur nom interne', () => {
+  const legende = textes(trouver(MODELE.racine, 'Lire les valeurs')).map((noeud) => noeud.contenu).join('\n');
+  assert.match(legende, /Écarts minimums de couleur : 0,02 entre soft et vivid ; 0,05 entre palettes/);
+  assert.doesNotMatch(legende, /profilsConfondus|palettesProches/);
 });
 
-test('[PLA-12] une carte écrit le contraste au fond et le seuil tenu, ou un tiret', () => {
+test('[PLA-12] une carte écrit le contraste au fond et le minimum atteint, avec son unité', () => {
   const carte = (nom: string) => (trouver(MODELE.racine, nom).enfants[1] as NoeudTexte).contenu;
-  assert.match(carte('carte vivid.700'), /\nfond 5,76 4,5\n/);
-  assert.match(carte('carte vivid.50'), /\nfond 1,\d\d –\n/);
+  assert.match(carte('carte vivid.700'), /\nAvec le fond : 5,76:1 · minimum atteint : 4,5\n/);
+  assert.match(carte('carte vivid.50'), /\nAvec le fond : 1,\d\d:1 · minimum atteint : Aucun minimum atteint\n/);
 });
 
 test('[PLA-13] le numéro d’une pastille prend le noir ou le blanc, et s’y lit', () => {
@@ -107,15 +108,15 @@ test('[PLA-14] quarante-quatre pastilles nommées profil/mode/cran, chacune une 
   assert.equal(MODELE.peints.find(({ nom }) => nom === 'vivid/light/700')?.hexa, '#0E5DC6');
 });
 
-test('[PLA-15] une carte où les deux profils se confondent porte « ≈ », sur tout cran', () => {
+test('[PLA-15] une carte où les deux profils se confondent le dit, sur toute nuance', () => {
   const carte = (nom: string) => (trouver(MODELE.racine, nom).enfants[1] as NoeudTexte).contenu;
-  assert.match(carte('carte vivid.100'), /\n≈ soft$/);
-  assert.doesNotMatch(carte('carte vivid.700'), /≈/);
+  assert.match(carte('carte vivid.100'), /\nTrès proche de soft$/);
+  assert.doesNotMatch(carte('carte vivid.700'), /Très proche/);
 });
 
 test('[PLA-17] [PLA-18] quatre tables d’emplois, sept lignes et neuf paires d’état chacune, et leur note', () => {
-  const emplois = trouver(MODELE.racine, 'Emplois');
-  assert.ok(textes(emplois).some((noeud) => noeud.contenu === 'Ces crans sont ceux que les composants citent, dans toutes les marques.'));
+  const emplois = trouver(MODELE.racine, 'Usages des couleurs');
+  assert.ok(textes(emplois).some((noeud) => noeud.contenu === 'Chaque usage correspond au même numéro de nuance dans toutes les palettes de marque.'));
   for (const mode of ['light', 'dark']) {
     for (const profil of ['soft', 'vivid']) {
       const table = trouver(emplois, `emplois ${mode} ${profil}`);
@@ -125,7 +126,7 @@ test('[PLA-17] [PLA-18] quatre tables d’emplois, sept lignes et neuf paires d�
   }
   const text = trouver(trouver(emplois, 'emplois light vivid'), 'text');
   assert.deepEqual((text.enfants as Noeud[]).map((noeud) => noeud.type === 'texte' ? noeud.contenu : 'spécimen'), [
-    'text', 'Texte coloré sur le fond de page', '700', 'spécimen', '5,76', '4,5', 'tenu',
+    'text', 'Texte coloré sur le fond de la page', '700', 'spécimen', '5,76', '4,5', 'Respectée',
   ]);
 });
 
@@ -144,7 +145,7 @@ test('[PLA-22] trois styles de texte, et rien d’autre', () => {
 test('[PLA-23] les légendes hors des sections prennent les couleurs du plugin, jamais celles de la palette', () => {
   const constantes = new Set<string>(Object.values(COULEURS_DE_LA_PLANCHE));
   // Seul le spécimen d'une table d'emplois écrit dans les couleurs de la palette.
-  for (const nom of ['en-tête', 'Emplois', 'Alertes', 'Légende']) {
+  for (const nom of ['en-tête', 'Usages des couleurs', 'Points à vérifier', 'Lire les valeurs']) {
     for (const noeud of textes(trouver(MODELE.racine, nom)).filter((candidat) => candidat.nom !== 'spécimen')) {
       assert.ok(constantes.has(noeud.couleur.hexa), `${nom} ${noeud.nom} ${noeud.couleur.hexa}`);
     }

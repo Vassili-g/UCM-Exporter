@@ -1,7 +1,8 @@
 /**
- * Ce que l'onglet Palettes montre d'une palette, calculé par le moteur sans
- * aller-retour avec le sandbox ([ENT-02]) : ses rampes, ses promesses, ses
- * alertes et ses notices, dans l'ordre des sévérités (section 11.4).
+ * Ce que le moteur dit d'une palette, calculé dans l'interface sans
+ * aller-retour avec le sandbox ([ENT-02]) : ses rampes ancrées, ses promesses,
+ * les alertes qui la concernent, et l'ancrage de sa référence.
+ * `presentation.ts` en fait les messages de l'onglet.
  */
 import {
   alertesDePalette,
@@ -13,8 +14,6 @@ import {
   partsDe,
   rampesDe,
   referenceDe,
-  severiteDeLAlerte,
-  trierParSeverite,
   verifierPromesses,
   type Alerte,
   type Ancrage,
@@ -25,16 +24,12 @@ import {
   type Recette,
 } from 'ucm-couleur';
 
-/** Une ligne de la liste des constats, avant sa mise en mots. */
-export type ConstatDePalette =
-  | { readonly severite: 'promesse'; readonly promesse: Promesse }
-  | { readonly severite: 'alerte' | 'notice'; readonly alerte: Alerte };
-
 export interface AnalyseDePalette {
   readonly rampes: Rampes;
   readonly promesses: readonly Promesse[];
   readonly manquees: number;
-  readonly constats: readonly ConstatDePalette[];
+  /** Toutes les alertes qui concernent la palette, dans l'ordre du moteur : le rapport les garde toutes. */
+  readonly alertes: readonly Alerte[];
   /** La part de chroma de la référence, et celles que la palette emploie. */
   readonly part: number;
   readonly parts: Parts;
@@ -62,16 +57,11 @@ function alertesQuiLaConcernent(recette: Recette, palette: Palette): Alerte[] {
 /** Analyse une palette d'une recette validée. */
 export function analyserPalette(recette: Recette, palette: Palette): AnalyseDePalette {
   const promesses = verifierPromesses(recette, palette);
-  const constats: ConstatDePalette[] = [
-    ...promesses.filter((promesse) => promesse.verdict === 'manquee')
-      .map((promesse) => ({ severite: 'promesse' as const, promesse })),
-    ...alertesQuiLaConcernent(recette, palette).map((alerte) => ({ severite: severiteDeLAlerte(alerte), alerte })),
-  ];
   return {
     rampes: rampesDe(recette, palette),
     promesses,
     manquees: compterManquees(promesses),
-    constats: trierParSeverite(constats),
+    alertes: alertesQuiLaConcernent(recette, palette),
     part: partDeChroma(referenceDe(palette), recette.gamut),
     parts: partsDe(recette, palette),
     ancrage: ancrageDe(recette, palette),

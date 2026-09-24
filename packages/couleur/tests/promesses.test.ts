@@ -3,9 +3,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  ASSOCIATIONS,
   CRANS_DES_EMPLOIS,
   PAIRES,
   TABLE_DES_EMPLOIS,
+  associationDe,
+  cleDeLAssociation,
+  etatDeLaPaire,
   compterManquees,
   emploisDuCran,
   contraste,
@@ -195,4 +199,21 @@ test('section 9.3 : chaque cran porte les emplois que la table lui confie, état
     900: ['solid+2', 'text+2'],
     950: [],
   });
+});
+
+test('section 9.4 : les quatorze paires forment huit associations, avec leurs états', () => {
+  const decrites = ASSOCIATIONS.map((association) => {
+    const paires = PAIRES.filter((paire) => cleDeLAssociation(associationDe(paire)) === cleDeLAssociation(association));
+    return `${cleDeLAssociation(association)} ${paires.map((paire) => `${paire.numero}:${etatDeLaPaire(paire)}`).join(',')}`;
+  });
+  assert.deepEqual(decrites, [
+    'text/fond 1:0',
+    'text/surface 2:0,3:1,4:2',
+    'on-solid/solid 5:0,6:1,7:2',
+    'border-control/fond 8:0',
+    'border-control/surface 9:0,10:1,11:2',
+    'focus/fond 12:0',
+    'focus/surface 13:0',
+    'solid/fond 14:1',
+  ]);
 });

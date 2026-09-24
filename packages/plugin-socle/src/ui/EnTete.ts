@@ -25,24 +25,33 @@ function createSettingsIcon(): SVGSVGElement {
   return icon;
 }
 
+/** Les libellés de l'engrenage ; chaque plugin peut nommer sa configuration. */
+export interface LibellesDeLEngrenage {
+  readonly etiquette: string;
+  readonly infobulle: string;
+}
+
 /** Le bouton en forme d'engrenage qui ouvre la configuration. */
-export function createSettingsButton(onSettings: () => void): HTMLButtonElement {
+export function createSettingsButton(
+  onSettings: () => void,
+  libelles: LibellesDeLEngrenage = { etiquette: 'Ouvrir la configuration', infobulle: 'Configuration' },
+): HTMLButtonElement {
   const settingsButton = document.createElement('button');
   settingsButton.type = 'button';
   settingsButton.className = 'icon-button';
-  settingsButton.setAttribute('aria-label', 'Ouvrir la configuration');
-  settingsButton.title = 'Configuration';
+  settingsButton.setAttribute('aria-label', libelles.etiquette);
+  settingsButton.title = libelles.infobulle;
   settingsButton.appendChild(createSettingsIcon());
   settingsButton.addEventListener('click', () => onSettings());
   return settingsButton;
 }
 
 /** Le bouton qui ramène de la configuration à la vue de travail, masqué au départ. */
-export function createBackButton(onBack: () => void): HTMLButtonElement {
+export function createBackButton(onBack: () => void, libelle = 'Retour'): HTMLButtonElement {
   const backButton = document.createElement('button');
   backButton.type = 'button';
   backButton.className = 'header-back-button';
-  backButton.textContent = 'Retour';
+  backButton.textContent = libelle;
   backButton.hidden = true;
   backButton.addEventListener('click', () => onBack());
   return backButton;

@@ -33,7 +33,7 @@ import {
   hexaInvalide,
   nombreEcrit,
   nombreInvalide,
-  palettesTouchees,
+  palettesConcernees,
   texteDuRefus,
 } from './textes';
 
@@ -41,6 +41,8 @@ export interface ConfigurationUi {
   element: HTMLDivElement;
   /** Relit la recette ; un champ en cours de saisie garde sa valeur. */
   afficher(): void;
+  /** Fait défiler jusqu'au groupe et focalise son premier champ ([VER-15]). */
+  focaliser(groupe: GroupeDeConfiguration): void;
 }
 
 /** Ce que la configuration lit et modifie : la recette de l'onglet Palettes. */
@@ -284,6 +286,12 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
 
   return {
     element,
+    focaliser(nom) {
+      const trouve = comptes.find(([, cle]) => cle === nom);
+      if (!trouve) return;
+      trouve[0].element.scrollIntoView({ block: 'start' });
+      trouve[0].element.querySelector<HTMLInputElement>('input')?.focus();
+    },
     afficher() {
       const lue = recette.lire();
       sansRecette.hidden = lue !== null;
@@ -296,7 +304,7 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
       for (const { mode, saisie } of saisiesDesFonds) {
         if (document.activeElement !== saisie) saisie.value = lue.fonds[mode];
       }
-      for (const [dans, nom] of comptes) dans.compte.textContent = palettesTouchees(palettesModifiees(lue, nom));
+      for (const [dans, nom] of comptes) dans.compte.textContent = palettesConcernees(palettesModifiees(lue, nom));
       montrerLaGarantie(lue);
     },
   };

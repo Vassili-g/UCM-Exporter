@@ -82,7 +82,7 @@ export function rapportDeLaRecette(
         ancrage: analyse.ancrage,
         crans: { light: parMode('light'), dark: parMode('dark') },
         promesses: analyse.promesses,
-        alertes: analyse.constats.flatMap((constat) => ('alerte' in constat ? [constat.alerte] : [])),
+        alertes: analyse.alertes,
       };
     }),
     ecartsDuDernierDessin,

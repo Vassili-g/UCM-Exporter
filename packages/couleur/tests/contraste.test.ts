@@ -14,6 +14,7 @@ import {
   ecrireContraste,
   ecrireTronque,
   lireHexa,
+  niveauxWcag,
   partDeChroma,
 } from '../src/index';
 
@@ -84,4 +85,23 @@ test('[MOT-24] la part de chroma est bornée à [0, 1]', () => {
   assert.equal(partDeChroma(hexa('#0000FF')), 1);
   assert.equal(partDeChroma(hexa('#FFFFFF')), 0);
   assert.equal(partDeChroma(hexa('#000000')), 0);
+});
+
+test('[VER-13] les niveaux WCAG suivent leurs critères, aux bornes incluses', () => {
+  const lire = (valeur: number) => {
+    const { texte, grandTexte, graphique } = niveauxWcag(valeur);
+    return `${texte ?? '-'} ${grandTexte ?? '-'} ${graphique ? 'graphique' : '-'}`;
+  };
+  assert.equal(lire(7), 'AAA AAA graphique');
+  assert.equal(lire(6.99), 'AA AAA graphique');
+  assert.equal(lire(4.5), 'AA AAA graphique');
+  assert.equal(lire(4.49), '- AA graphique');
+  assert.equal(lire(3), '- AA graphique');
+  assert.equal(lire(2.99), '- - -');
+  assert.equal(lire(21), 'AAA AAA graphique');
+});
+
+test('[VER-13] un contraste affiché 4,50 est AA, comme son verdict', () => {
+  // 4,5 moins 1e-11 s'écrit 4,50 et tient le seuil de 4,5 ([MOT-22]).
+  assert.equal(niveauxWcag(4.5 - 1e-11).texte, 'AA');
 });

@@ -1,7 +1,8 @@
 /**
- * La création d'une palette : une référence saisie, ou la couleur de la
- * sélection ([ENT-03], [ENT-04]). Une palette n'a pas de référence par défaut :
- * la créer demande l'une ou l'autre.
+ * La création d'une palette, sous le sélecteur ([UI-06], [ENT-03], [ENT-04]) :
+ * une couleur de référence saisie ou prise dans la sélection Figma, et un nom
+ * facultatif. Une palette n'a pas de référence par défaut : la créer demande
+ * l'une ou l'autre.
  */
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
@@ -12,10 +13,12 @@ export interface CreationUi {
   /** Montre le panneau vide ; `annulable` montre « Annuler », absent quand aucune palette n'existe. */
   ouvrir(annulable: boolean): void;
   signaler(erreur: string | null): void;
+  /** Le nom saisi, que la couleur de la sélection reprend aussi. */
+  nom(): string;
 }
 
 export function createCreation(gestes: {
-  onCreer: (saisie: string) => void;
+  onCreer: (saisie: string, nom: string) => void;
   onSelection: () => void;
   onAnnuler: () => void;
 }): CreationUi {
@@ -26,6 +29,10 @@ export function createCreation(gestes: {
   titre.className = 'field-label';
   titre.textContent = TEXTES.nouvellePalette;
 
+  const pipette = document.createElement('input');
+  pipette.type = 'color';
+  pipette.className = 'pipette';
+  pipette.setAttribute('aria-label', TEXTES.reference);
   const saisie = document.createElement('input');
   saisie.type = 'text';
   saisie.className = 'input champ-creation';
@@ -33,24 +40,45 @@ export function createCreation(gestes: {
   saisie.spellcheck = false;
   saisie.maxLength = 7;
   saisie.setAttribute('aria-label', TEXTES.reference);
+  pipette.addEventListener('input', () => { saisie.value = pipette.value.toUpperCase(); });
 
-  const creer = createButton({ label: TEXTES.creer, onClick: () => gestes.onCreer(saisie.value) });
+  const couleur = document.createElement('label');
+  couleur.className = 'champ-ligne';
+  const libelleDeCouleur = document.createElement('span');
+  libelleDeCouleur.className = 'field-label';
+  libelleDeCouleur.textContent = TEXTES.reference;
+  couleur.append(libelleDeCouleur, pipette, saisie);
+
+  const champDuNom = document.createElement('input');
+  champDuNom.type = 'text';
+  champDuNom.className = 'input';
+  const nom = document.createElement('label');
+  nom.className = 'champ-ligne';
+  const libelleDuNom = document.createElement('span');
+  libelleDuNom.className = 'field-label';
+  libelleDuNom.textContent = TEXTES.nom;
+  nom.append(libelleDuNom, champDuNom);
+
+  const creer = createButton({ label: TEXTES.creer, onClick: () => gestes.onCreer(saisie.value, champDuNom.value) });
   const depuisLaSelection = createButton({ label: TEXTES.depuisLaSelection, variant: 'secondary', onClick: gestes.onSelection });
   depuisLaSelection.dataset.geste = 'selection';
   const annuler = createButton({ label: TEXTES.annuler, variant: 'secondary', onClick: gestes.onAnnuler });
-  saisie.addEventListener('keydown', (evenement) => {
-    if (evenement.key === 'Enter') gestes.onCreer(saisie.value);
-  });
+  for (const champ of [saisie, champDuNom]) {
+    champ.addEventListener('keydown', (evenement) => {
+      if (evenement.key === 'Enter') gestes.onCreer(saisie.value, champDuNom.value);
+      if (evenement.key === 'Escape' && !annuler.hidden) gestes.onAnnuler();
+    });
+  }
 
-  const ligne = document.createElement('div');
-  ligne.className = 'creation-ligne';
-  ligne.append(saisie, creer, depuisLaSelection, annuler);
+  const gestesDeCreation = document.createElement('div');
+  gestesDeCreation.className = 'creation-ligne';
+  gestesDeCreation.append(creer, depuisLaSelection, annuler);
 
   const erreur = document.createElement('p');
   erreur.className = 'field-error';
   erreur.hidden = true;
 
-  element.append(titre, ligne, erreur);
+  element.append(titre, couleur, nom, erreur, gestesDeCreation);
 
   function signaler(texte: string | null): void {
     erreur.textContent = texte ?? '';
@@ -62,9 +90,11 @@ export function createCreation(gestes: {
     element,
     ouvrir(annulable) {
       saisie.value = '';
+      champDuNom.value = '';
       annuler.hidden = !annulable;
       signaler(null);
     },
     signaler,
+    nom: () => champDuNom.value,
   };
 }

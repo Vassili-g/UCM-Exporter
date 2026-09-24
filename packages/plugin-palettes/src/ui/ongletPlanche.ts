@@ -14,6 +14,7 @@ import { fraicheurDeLaPlanche, type EtatDuCadre } from '../planche/fraicheur';
 import { blocDeConstat } from './constats';
 import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dessin';
 import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
+import type { OptionsDeGeneration } from './optionsDeGeneration';
 import {
   TEXTES_DU_DESSIN,
   cadreOrphelin,
@@ -35,8 +36,6 @@ export interface OngletPlancheUi {
   element: HTMLDivElement;
   afficher(classement: Classement, recette: Recette | null, planche: EtatDeLaPlanche, profil: ProfilDuDocument, empreinte: string | null): void;
   afficherDessin(etat: EtatDuDessin, noms: { readonly [id: string]: string }): void;
-  /** L'option de la grille de contraste, que « Dessiner » de l'onglet Palettes suit aussi. */
-  grille(): boolean;
 }
 
 export interface GestesDeLaPlanche extends GestesDuResultat {
@@ -44,6 +43,8 @@ export interface GestesDeLaPlanche extends GestesDuResultat {
   versLesPalettes(): void;
   /** Les gestes de la recette en fichier, au pied de l'onglet ([UI-02]). */
   recetteEnFichier: GestesDeLaRecetteUi;
+  /** Les options de génération, partagées avec l'onglet Palettes. */
+  options: OptionsDeGeneration;
 }
 
 export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi {
@@ -65,14 +66,6 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   gestesDeConfirmation.className = 'confirmation-gestes';
   confirmation.append(texteDeConfirmation, gestesDeConfirmation);
 
-  const grille = document.createElement('input');
-  grille.type = 'checkbox';
-  grille.className = 'case-a-cocher';
-  const etiquette = document.createElement('label');
-  etiquette.className = 'champ-ligne';
-  const texteDeLaGrille = document.createElement('span');
-  texteDeLaGrille.textContent = TEXTES_DU_DESSIN.grille;
-  etiquette.append(grille, texteDeLaGrille);
 
   const vide = document.createElement('div');
   vide.className = 'page-stack';
@@ -86,7 +79,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   function toutDessiner(): void {
     if (!recette) return;
     confirmationOuverte = false;
-    gestes.dessiner(recette.palettes.map((palette) => palette.id), grille.checked, noms());
+    gestes.dessiner(recette.palettes.map((palette) => palette.id), gestes.options.grille(), noms());
   }
 
   const dessinerTout = createButton({
@@ -114,10 +107,10 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   confirmation.hidden = true;
   const pied = document.createElement('div');
   pied.className = 'creation-ligne';
-  pied.append(dessinerTout, etiquette);
+  pied.append(dessinerTout);
 
   // Les notices ont le dernier rang : elles suivent « Dessiner toutes les palettes ».
-  element.append(enTete, zoneDuResultat, vide, liste, confirmation, pied, notices, gestes.recetteEnFichier.element);
+  element.append(enTete, zoneDuResultat, vide, liste, confirmation, pied, gestes.options.creerRepli(), notices, gestes.recetteEnFichier.element);
 
   function ligneDePalette(id: string, nom: string, etatDuCadre: EtatDuCadre): HTMLDivElement {
     const ligne = document.createElement('div');
@@ -135,8 +128,8 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     const geste = document.createElement('button');
     geste.type = 'button';
     geste.className = 'bouton-discret';
-    geste.textContent = etatDuCadre === 'perimee' ? TEXTES_DU_DESSIN.redessiner : TEXTES_DU_DESSIN.dessiner;
-    geste.addEventListener('click', () => gestes.dessiner([id], grille.checked, noms()));
+    geste.textContent = TEXTES_DU_DESSIN.dessiner;
+    geste.addEventListener('click', () => gestes.dessiner([id], gestes.options.grille(), noms()));
     ligne.append(geste);
     return ligne;
   }
@@ -157,7 +150,6 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
 
   return {
     element,
-    grille: () => grille.checked,
     afficher(classement, lue, planche, profil, empreinte) {
       recette = lue;
       gestes.recetteEnFichier.afficher(classement);
@@ -173,7 +165,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
       }
       const palettes = lue?.palettes ?? [];
       enTete.hidden = false;
-      enTete.textContent = enTeteDeLaPlanche(palettes.length, lue?.formatVersion ?? 1, empreinte, profil);
+      enTete.textContent = enTeteDeLaPlanche(palettes.length);
       pied.hidden = palettes.length === 0;
       vide.hidden = palettes.length > 0;
       if (palettes.length === 0) {

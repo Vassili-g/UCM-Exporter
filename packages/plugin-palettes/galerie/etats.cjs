@@ -36,12 +36,12 @@ const { modeleDeCadre } = compiler(path.resolve(__dirname, '../src/planche/model
 /** Une planche sans page, avant tout dessin. */
 const PLANCHE_VIDE = { page: null, cadres: [] };
 
-/** L'état que le sandbox envoie pour un texte rangé sous la clé de la recette. */
-function etatDuFichier(texte, profil = 'SRGB', planche = PLANCHE_VIDE) {
+/** L'état que le sandbox envoie pour un texte rangé sous la clé de la recette, en réponse à la demande `demande`. */
+function etatDuFichier(texte, profil = 'SRGB', planche = PLANCHE_VIDE, demande = 1) {
   return {
     message: {
       type: 'etat',
-      demande: 1,
+      demande,
       classement: classerRecette(texte),
       texte,
       empreinte: texte === '' ? null : fnv1a(octetsUtf8(texte)),
@@ -91,10 +91,10 @@ const PAGE_DE_LA_PLANCHE = '40:1';
 const ouvrirLaPlanche = { clic: '#onglet-planche' };
 
 /** Le designer choisit un fichier de recette dans l'onglet Planche. */
-const importer = (contenu) => ({ fichier: { dans: '#panneau-planche input[type="file"]', nom: 'palettes.recette.json', contenu } });
+const importer = (contenu) => ({ fichier: { dans: '#panneau-planche input[type="file"]', nom: 'palettes-et-reglages.json', contenu } });
 
-const ouvrirLaConfiguration = { clic: '[aria-label="Ouvrir la configuration"]' };
-const dessinerLaPalette = { clic: '.barre-verdict .btn' };
+const ouvrirLaConfiguration = { clic: '[aria-label="Ouvrir les réglages communs"]' };
+const dessinerLaPalette = { clic: '.generation-ligne .btn' };
 
 /** Sept palettes : une de plus que le seuil au-delà duquel tout dessiner se confirme. */
 const SEPT_PALETTES = [
@@ -151,12 +151,12 @@ const ETATS = [
     id: 'palette-en-saisie',
     titre: 'Palette en saisie',
     quand: 'Le designer tape une nouvelle référence : l’aperçu suit la saisie, rien n’est dessiné.',
-    regarder: 'L’aperçu recalculé pour #7C3AED, la ligne de part et de dérive, et le détail du cran 700 vivid au survol.',
+    regarder: 'Le nuancier recalculé pour #7C3AED, le résumé de la dérive, et le détail de la nuance Vivid 700 choisie.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU])),
       { saisie: { dans: '#panneau-palettes .champ-hexa', valeur: '#7C3AED' } },
-      { survol: '[aria-label^="vivid.700 "]' },
+      { clic: '[aria-label^="Profil Vivid, nuance 700,"]' },
     ],
   },
   {
@@ -167,7 +167,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU, JAUNE], cranSeptCentsPlusClair)),
-      { touche: { dans: '.grille-apercu [tabindex="0"]', cle: 'ArrowRight' } },
+      { touche: { dans: '.nuancier-grille [tabindex="0"]', cle: 'ArrowRight' } },
     ],
   },
   {
@@ -228,7 +228,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU]), 'DISPLAY_P3'),
-      { clic: '[aria-label="Nouvelle palette"]' },
+      { clic: '[aria-label="Ajouter une palette"]' },
       { clic: '[data-geste="selection"]' },
       { message: { type: 'selection', demande: 2, lecture: { hexa: '#FF2D1F', ramenee: true } } },
       { message: { type: 'rangement', demande: 3, issue: { issue: 'rangee', empreinte: '9b41d0e2' } } },
@@ -260,7 +260,7 @@ const ETATS = [
     quand: 'Le designer déplie l’éditeur d’une palette au préréglage, soft et vivid liés.',
     regarder: 'Une seule ligne brisée, le pivot sur 0° dans la colonne 600, qui porte #1E6FD9, les deux poignées et leurs étiquettes, la bande et la rampe sous les mêmes colonnes.',
     existe: true,
-    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '.ligne-infos .bouton-discret' }],
+    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '.bouton-deplier' }],
   },
   {
     id: 'derive-deliee-libre',
@@ -270,7 +270,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       etatDuFichier(rangee([{ ...BLEU, derive: { lien: false, soft: BLEU.derive.soft, vivid: { clair: 20, sombre: -25, origine: 'libre' } } }])),
-      { clic: '.ligne-infos .bouton-discret' },
+      { clic: '.bouton-deplier' },
     ],
   },
   {
@@ -279,7 +279,7 @@ const ETATS = [
     quand: 'La référence #0B1F4B est plus sombre que le bout sombre de la rampe.',
     regarder: 'La poignée sombre masquée, sa note sous le graphe, et le pivot dans la colonne 950, qui porte la référence.',
     existe: true,
-    atteinte: [etatDuFichier(rangee([palette('p-2b7e40c1', 'Nuit', '#0B1F4B')])), { clic: '.ligne-infos .bouton-discret' }],
+    atteinte: [etatDuFichier(rangee([palette('p-2b7e40c1', 'Nuit', '#0B1F4B')])), { clic: '.bouton-deplier' }],
   },
   {
     id: 'dessin-en-cours',
@@ -449,49 +449,54 @@ const ETATS = [
     id: 'creation-ouverte',
     titre: 'Création ouverte',
     quand: 'Le designer clique [+] : la création s’ouvre sous le sélecteur.',
-    regarder: null,
-    existe: false,
-    attendu: 'R3.2',
+    regarder: 'La création sous le sélecteur : couleur de référence, nom, sélection Figma, « Créer la palette » et « Annuler », le focus dans le code.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '[aria-label="Ajouter une palette"]' }],
   },
   {
     id: 'reference-soft',
     titre: 'Référence Soft',
     quand: 'Une référence peu intense, #A0B599 : Soft la porte, dans les deux thèmes. Le designer déplie la dérive.',
-    regarder: 'La ligne « Référence : Soft · nuance 400 », puis dans l’éditeur la ligne et la rampe de Soft, et le pivot dans la colonne 400.',
+    regarder: 'La ligne « Référence : Soft · nuance 400 », le ◆ dans la pastille Soft 400, puis dans l’éditeur la ligne et la rampe de Soft, et le pivot dans la colonne 400.',
     existe: true,
-    atteinte: [etatDuFichier(rangee([palette('p-6a0b5990', 'Sauge', '#A0B599')])), { clic: '.ligne-infos .bouton-discret' }],
+    atteinte: [etatDuFichier(rangee([palette('p-6a0b5990', 'Sauge', '#A0B599')])), { clic: '.bouton-deplier' }],
   },
   {
     id: 'reference-vivid',
     titre: 'Référence Vivid',
-    quand: 'Une référence intense, #A855F7 : Vivid la porte, en 600 en Light et en 700 en Dark.',
-    regarder: null,
-    existe: false,
-    attendu: 'R4.4',
+    quand: 'Une référence intense, #A855F7 : Vivid la porte, en 600 en Light et en 700 en Dark. Le designer passe au thème Dark.',
+    regarder: 'Le ◆ dans la pastille Vivid 700 du thème Dark, la ligne « Référence : Vivid · nuance 700 », et la promesse à corriger que l’ancrage fait apparaître.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([palette('p-a855f700', 'Violet', '#A855F7')])), { clic: '.nuancier-tete .bascule-option:nth-child(2)' }],
   },
   {
     id: 'promesse-choisie',
     titre: 'Promesse choisie',
-    quand: 'Le designer choisit « Texte sur fond plein » : ses deux couleurs sont désignées.',
-    regarder: null,
-    existe: false,
-    attendu: 'R4.7',
+    quand: 'Le designer clique « Voir les deux couleurs » sous « Texte coloré sur Fond léger » : ses deux couleurs sont désignées.',
+    regarder: 'Les deux pastilles marquées d’un trait par profil, et le détail : l’association, le minimum, un spécimen par profil et son résultat.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU, JAUNE], cranSeptCentsPlusClair)), { clic: '[data-geste="inspecter"]' }],
   },
   {
     id: 'fond-personnalise',
     titre: 'Fond personnalisé',
-    quand: 'Le fond du thème Light est un jaune saturé : le nuancier le porte.',
-    regarder: null,
-    existe: false,
-    attendu: 'R4.1',
+    quand: 'Le fond du thème Light est un jaune saturé, #FFD84D : le nuancier le porte.',
+    regarder: 'La surface peinte de #FFD84D, ses numéros et ses noms de profil lisibles dessus, et le point à vérifier sur le fond.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU], (recette) => ({ ...recette, fonds: { ...recette.fonds, light: '#FFD84D' } })))],
   },
   {
     id: 'generation-reussie',
     titre: 'Génération réussie',
-    quand: 'La palette ouverte vient d’être générée sur Figma.',
-    regarder: null,
-    existe: false,
-    attendu: 'R3.9',
+    quand: 'La palette ouverte vient d’être générée sur Figma, et l’état du fichier est relu.',
+    regarder: 'La ligne de l’action : « À jour » et « Afficher dans Figma », sans message de succès empilé.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU])),
+      dessinerLaPalette,
+      { message: { type: 'dessin', demande: 2, resultat: { issue: 'dessinee', page: PAGE_DE_LA_PLANCHE, cadres: [{ palette: BLEU.id, cadre: '40:2' }], peints: [] } } },
+      etatDuFichier(rangee([BLEU]), 'SRGB', { page: PAGE_DE_LA_PLANCHE, cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2')] }, 3),
+    ],
   },
   {
     id: 'generation-partielle',

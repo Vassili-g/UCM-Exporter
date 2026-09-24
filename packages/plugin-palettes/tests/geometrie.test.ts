@@ -5,7 +5,7 @@ import test from 'node:test';
 import { boutsDe, lireHexa, recetteParDefaut, rgb8VersOklch } from 'ucm-couleur';
 
 import {
-  REPERES,
+  echelleDe,
   abscisse,
   angleDe,
   angleDuGlisser,
@@ -13,6 +13,7 @@ import {
   ligneBrisee,
   ordonnee,
   rangDuPivot,
+  reperes,
   type Cadre,
 } from '../src/ui/derive/geometrie';
 
@@ -36,7 +37,8 @@ test('[DER-01] +90° en haut, 0° au milieu, -90° en bas, et des repères tous 
   assert.equal(ordonnee(90, CADRE), 10);
   assert.equal(ordonnee(0, CADRE), 100);
   assert.equal(ordonnee(-90, CADRE), 190);
-  assert.deepEqual(REPERES, [-90, -75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75, 90]);
+  assert.deepEqual(reperes(90), [-90, -75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75, 90]);
+  assert.deepEqual(reperes(30), [-30, -15, 0, 15, 30]);
 });
 
 test('une ordonnée rend son angle, borné à ±90°', () => {
@@ -82,4 +84,20 @@ test('[DER-02] la ligne du profil porteur passe à 0° sur le rang clair de sa r
   assert.ok(ligne.every((sommet) => Number.isInteger(sommet.rang)));
   assert.equal(ligne[6].angle, 0);
   assert.ok(Math.abs(ligne[7].angle - deriveDuCran(COURBE[7], BLEU, DERIVE, BOUTS)) < 1e-12);
+});
+
+test('[DER-01] l’échelle vaut ±30° quand les dérives y tiennent, puis s’élargit par paliers jusqu’à ±90°', () => {
+  assert.equal(echelleDe([-7.53, 5.11]), 30);
+  assert.equal(echelleDe([0, 0]), 30);
+  // Une poignée posée au bord élargit l’échelle : le glisser suivant peut aller plus loin.
+  assert.equal(echelleDe([30, 0]), 45);
+  assert.equal(echelleDe([-50]), 60);
+  assert.equal(echelleDe([75]), 90);
+  assert.equal(echelleDe([90]), 90);
+});
+
+test('[DER-07] un glisser reste borné par l’échelle figée du geste', () => {
+  assert.equal(angleDuGlisser(0, CADRE, 1, 30), 30);
+  assert.equal(angleDuGlisser(ordonnee(12, CADRE, 30), CADRE, 1, 30), 12);
+  assert.ok(Math.abs(angleDe(ordonnee(-22.5, CADRE, 45), CADRE, 45) + 22.5) < 1e-9);
 });

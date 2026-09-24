@@ -11,6 +11,7 @@ import { TEXTES, nomDeLaPalette } from './textes';
 export interface SelecteurUi {
   element: HTMLDivElement;
   afficher(palettes: readonly Palette[], idOuvert: string): void;
+  focaliser(): void;
 }
 
 function pastilleDe(palette: Palette): HTMLSpanElement {
@@ -97,6 +98,7 @@ export function createSelecteur(onChoix: (id: string) => void): SelecteurUi {
 
   return {
     element,
+    focaliser: () => bouton.focus(),
     afficher(palettes, idOuvert) {
       ouvert = idOuvert;
       const courante = palettes.find((palette) => palette.id === idOuvert);

@@ -13,7 +13,9 @@ import {
 import { createOnglets } from 'ucm-plugin-socle/src/ui/Onglets';
 import { createResizeGrip } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
+import type { GroupeDeConfiguration } from '../configuration';
 import { lireLImport } from '../importation';
+import type { CibleDAction } from '../presentation';
 import type { EcartDePeinture } from '../planche/peints';
 import { rapportDeLaRecette } from '../rapport';
 import type { PluginMessage } from '../messages';
@@ -24,6 +26,7 @@ import { createFrontiere } from './frontiere';
 import { createGestesDeLaRecette, type DemandesDeLaRecette } from './gestesDeLaRecette';
 import { createOngletPalettes } from './ongletPalettes';
 import { createOngletPlanche } from './ongletPlanche';
+import { createOptionsDeGeneration } from './optionsDeGeneration';
 import { telecharger } from './telechargement';
 import { versSandbox } from './pont';
 import { TEXTES } from './textes';
@@ -36,8 +39,15 @@ const titre = document.createElement('h1');
 titre.className = 'page-title';
 titre.textContent = TEXTES.titre;
 
-const settingsButton = createSettingsButton(ouvrirConfiguration);
-const backButton = createBackButton(ouvrirTravail);
+/** Le groupe des Réglages communs qu'une cible d'action ouvre ([VER-15]). */
+const GROUPE_DE_LA_CIBLE: Partial<Record<CibleDAction, GroupeDeConfiguration>> = {
+  'luminosite-commune': 'courbes',
+  fonds: 'fonds',
+  'intensites-communes': 'parts',
+};
+
+const settingsButton = createSettingsButton(ouvrirConfiguration, { etiquette: TEXTES.ouvrirLesReglages, infobulle: TEXTES.reglagesCommuns });
+const backButton = createBackButton(ouvrirTravail, TEXTES.retour);
 
 const enTete = document.createElement('div');
 enTete.className = 'header';
@@ -89,29 +99,38 @@ function remplacerLaRecette(recette: Recette): void {
 let ecartsDuDernierDessin: readonly EcartDePeinture[] | null = null;
 
 const demandesDeLaRecette: DemandesDeLaRecette = {
-  exporter: () => telecharger('palettes.recette.json', texteAExporter()),
+  exporter: () => telecharger('palettes-et-reglages.json', texteAExporter()),
   exporterLeRapport() {
     const recette = ongletPalettes.recette();
     if (!recette) return;
     const rapport = rapportDeLaRecette(recette, frontiere.empreinte(), dernierEtat?.profil ?? 'SRGB', ecartsDuDernierDessin);
-    telecharger('palettes.rapport.json', JSON.stringify(rapport, null, 2));
+    telecharger('rapport-palettes.json', JSON.stringify(rapport, null, 2));
   },
   lire: (texte) => lireLImport(texte, ongletPalettes.recette()),
   remplacer: remplacerLaRecette,
   recetteParDefaut,
 };
 
+/** Les options de génération, partagées par les deux onglets ([UI-05]). */
+const options = createOptionsDeGeneration();
+
 const ongletPalettes = createOngletPalettes({
   ranger: (recette) => frontiere.ranger(recette),
   lireLaSelection: () => frontiere.lireLaSelection(),
   recharger: () => frontiere.lireLEtat(),
   tirer: () => crypto.getRandomValues(new Uint32Array(1))[0],
-  dessiner: (palettes, noms) => suivi.dessiner(palettes, ongletPlanche.grille(), noms),
+  dessiner: (palettes, noms) => suivi.dessiner(palettes, options.grille(), noms),
+  options,
   resultat: gestesDuResultat,
   recetteEnFichier: createGestesDeLaRecette(demandesDeLaRecette),
+  ouvrirReglages(cible) {
+    ouvrirConfiguration();
+    panneauDeConfiguration.focaliser(GROUPE_DE_LA_CIBLE[cible] ?? 'courbes');
+  },
 });
 const ongletPlanche = createOngletPlanche({
   ...gestesDuResultat,
+  options,
   dessiner: (palettes, grille, noms) => suivi.dessiner(palettes, grille, noms),
   versLesPalettes: () => onglets.selectionner('palettes'),
   recetteEnFichier: createGestesDeLaRecette(demandesDeLaRecette),
@@ -164,7 +183,16 @@ function bascule(): ElementsDeBascule {
   return { travail, configuration, settingsButton, backButton };
 }
 
+/**
+ * Le point de lecture de la vue de travail quand les Réglages communs
+ * s'ouvrent : le retour y ramène le défilement et rend le focus au geste qui
+ * les a ouverts ([VER-15]). La palette, le thème et la nuance choisie restent,
+ * leurs éléments n'étant jamais reconstruits.
+ */
+let pointDeLecture: { defilement: number; focus: HTMLElement | null } | null = null;
+
 function ouvrirConfiguration(): void {
+  pointDeLecture = { defilement: document.scrollingElement?.scrollTop ?? 0, focus: document.activeElement as HTMLElement | null };
   panneauDeConfiguration.afficher();
   montrerConfiguration(bascule());
   titre.textContent = TEXTES.titreConfiguration;
@@ -173,6 +201,11 @@ function ouvrirConfiguration(): void {
 function ouvrirTravail(): void {
   montrerTravail(bascule());
   titre.textContent = TEXTES.titre;
+  const point = pointDeLecture;
+  pointDeLecture = null;
+  if (!point) return;
+  if (document.scrollingElement) document.scrollingElement.scrollTop = point.defilement;
+  if (point.focus?.isConnected && point.focus !== document.body) point.focus.focus({ preventScroll: true });
 }
 
 app.append(enTete, travail, configuration, createResizeGrip(versSandbox));
@@ -181,7 +214,7 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   const message = event.data.pluginMessage;
   if (!message) return;
   if (message.type === 'etat' && frontiere.accepterEtat(message)) {
-    ongletPalettes.afficher(message.classement, message.profil);
+    ongletPalettes.afficher(message.classement, message.profil, message.planche);
     panneauDeConfiguration.afficher();
     dernierEtat = message;
     afficherLaPlanche();

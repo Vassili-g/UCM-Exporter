@@ -90,7 +90,7 @@ export type Noeud = NoeudTexte | NoeudCadre;
 export interface ModeleDeCadre {
   readonly palette: string;
   readonly nom: string;
-  /** L'empreinte du modèle ([PLA-19], E2), que l'en-tête affiche et que le cadre range. */
+  /** L'empreinte du modèle ([PLA-19], E2), que le cadre range dans ses données de plugin. */
   readonly empreinte: string;
   readonly racine: NoeudCadre;
   /** Chaque pastille peinte, son nom de calque et son hexa : le rapport du dessin les compare à l'aperçu (L6.14). */
@@ -159,9 +159,6 @@ export const PAIRE_PRINCIPALE: { readonly [E in Emploi]: number | null } = {
 /** Les largeurs des colonnes d'une table d'emplois, dans l'ordre des titres. */
 const COLONNES = [112, 200, 40, 120, 64, 40, 56];
 
-/** Le texte que l'en-tête affiche pendant le calcul de l'empreinte, qu'il ne peut pas contenir. */
-const EMPREINTE_EN_ATTENTE = '········';
-
 interface Contexte {
   readonly recette: Recette;
   readonly palette: Palette;
@@ -217,7 +214,7 @@ function sectionDeMode(contexte: Contexte, mode: Mode, analyse: ReturnType<typeo
       return carteDeCran(contexte, mode, profil, rang, fond, encre, confondu, analyse.rampes);
     });
     return cadre(`rangée ${profil}`, 'HORIZONTAL', [
-      texte('profil', enTeteDeRangee(profil, analyse.parts[profil]), 'section', encre, 64),
+      texte('profil', enTeteDeRangee(profil), 'section', encre, 64),
       ...cartes,
     ]);
   });
@@ -295,10 +292,10 @@ function blocDeReference(contexte: Contexte, analyse: ReturnType<typeof analyser
       part: analyse.part,
       ancrage: analyse.ancrage,
       contrastes: [
-        contre('blanc', [255, 255, 255]),
-        contre('noir', [0, 0, 0]),
-        contre('fond clair', hexaLu(recette.fonds.light)),
-        contre('fond sombre', hexaLu(recette.fonds.dark)),
+        contre('le blanc', [255, 255, 255]),
+        contre('le noir', [0, 0, 0]),
+        contre('le fond du thème Light', hexaLu(recette.fonds.light)),
+        contre('le fond du thème Dark', hexaLu(recette.fonds.dark)),
       ],
     }), 'valeur', encre),
     texte('dérives', texteDesDerives(palette), 'valeur', encre),
@@ -323,7 +320,7 @@ function grilleDeContraste(contexte: Contexte, mode: Mode, profil: Profil, analy
   return cadre(`grille ${mode} ${profil}`, 'VERTICAL', lignes, { espacement: 0 });
 }
 
-function construire(contexte: Contexte, empreinteAffichee: string, grille: boolean): NoeudCadre {
+function construire(contexte: Contexte, grille: boolean): NoeudCadre {
   const { recette, palette } = contexte;
   const analyse = analyserPalette(recette, palette);
   const encre = peinture(hexaLu(COULEURS_DE_LA_PLANCHE.encre), contexte.profil);
@@ -333,10 +330,10 @@ function construire(contexte: Contexte, empreinteAffichee: string, grille: boole
     const trouvee = recette.palettes.find((candidate) => candidate.id === id);
     return trouvee ? nomDeLaPalette(trouvee) : id;
   };
-  const alertes = analyse.constats.flatMap((constat) => {
-    if ('promesse' in constat) return [];
-    return [texte('alerte', ligneDAlerte(constatDAlerte(constat.alerte, { recette, nomDe: nomDeRecette })), 'valeur', encre, 800)];
-  });
+  // Les repères d'intensité se lisent dans les réglages de la palette, pas sur la planche.
+  const alertes = analyse.alertes
+    .filter((alerte) => alerte.code !== 'reference-plus-terne' && alerte.code !== 'reference-plus-vive')
+    .map((alerte) => texte('alerte', ligneDAlerte(constatDAlerte(alerte, { recette, nomDe: nomDeRecette })), 'valeur', encre, 800));
   const emplois = MODES.map((mode) => cadre(`emplois ${mode}`, 'HORIZONTAL',
     PROFILS.map((profil) => tableDEmplois(contexte, mode, profil, analyse)), { espacement: 4 * TRAME }));
   const grilles = grille
@@ -345,8 +342,7 @@ function construire(contexte: Contexte, empreinteAffichee: string, grille: boole
   return cadre(nomDeLaPalette(palette), 'VERTICAL', [
     cadre('en-tête', 'VERTICAL', [
       texte('titre', nomDeLaPalette(palette), 'titre', encre),
-      texte('recette', enTeteDuCadre(recette.formatVersion, empreinteAffichee, contexte.profil, tenues, analyse.promesses.length), 'valeur', secondaire),
-      texte('avertissement', TEXTES_DE_LA_PLANCHE.avertissement, 'valeur', secondaire),
+      texte('bilan', enTeteDuCadre(tenues, analyse.promesses.length), 'valeur', secondaire),
     ]),
     blocDeReference(contexte, analyse),
     ...MODES.map((mode) => sectionDeMode(contexte, mode, analyse)),
@@ -368,22 +364,20 @@ function construire(contexte: Contexte, empreinteAffichee: string, grille: boole
 }
 
 /**
- * L'empreinte du modèle du cadre d'une palette ([PLA-19], E2). Elle porte sur
- * le modèle dont l'en-tête montre un texte d'attente à la place de
- * l'empreinte : l'empreinte ne peut pas se contenir. Elle change donc avec
- * tout ce que le cadre montre, et seulement avec cela. La fraîcheur n'a besoin
- * que d'elle, et ne construit pas le cadre affiché.
+ * L'empreinte du modèle du cadre d'une palette ([PLA-19], E2) : elle change
+ * avec tout ce que le cadre montre, et seulement avec cela. La fraîcheur n'a
+ * besoin que d'elle. Aucun texte du cadre ne l'imprime ([PLA-07]) : elle se
+ * range dans les données de plugin du cadre.
  */
 export function empreinteDuModele(recette: Recette, palette: Palette, profil: ProfilDuDocument, options: { grille: boolean } = { grille: false }): string {
-  return empreinte(construire({ recette, palette, profil, peints: [] }, EMPREINTE_EN_ATTENTE, options.grille));
+  return empreinte(construire({ recette, palette, profil, peints: [] }, options.grille));
 }
 
-/** Le modèle du cadre d'une palette, dont l'en-tête affiche l'empreinte. */
+/** Le modèle du cadre d'une palette, et son empreinte. */
 export function modeleDeCadre(recette: Recette, palette: Palette, profil: ProfilDuDocument, options: { grille: boolean } = { grille: false }): ModeleDeCadre {
-  const empreinteAffichee = empreinteDuModele(recette, palette, profil, options);
   const peints: { nom: string; hexa: string }[] = [];
-  const racine = construire({ recette, palette, profil, peints }, empreinteAffichee, options.grille);
-  return { palette: palette.id, nom: nomDeLaPalette(palette), empreinte: empreinteAffichee, racine, peints };
+  const racine = construire({ recette, palette, profil, peints }, options.grille);
+  return { palette: palette.id, nom: nomDeLaPalette(palette), empreinte: empreinte(racine), racine, peints };
 }
 
 /** Le nombre de calques qu'un modèle pose, racine comprise. */

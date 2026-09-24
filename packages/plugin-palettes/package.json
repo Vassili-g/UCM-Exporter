@@ -2,7 +2,7 @@
   "name": "ucm-palettes-plugin",
   "version": "0.1.0",
   "private": true,
-  "description": "Plugin Figma qui fabrique les palettes d'une marque, vérifie leurs contrastes et les dessine sur une planche. Il n'écrit que sa recette et les cadres qu'il possède.",
+  "description": "Créez vos palettes de couleurs dans Figma, vérifiez leurs contrastes et générez une planche pour les partager.",
   "license": "MIT",
   "scripts": {
     "typecheck": "tsc --noEmit",

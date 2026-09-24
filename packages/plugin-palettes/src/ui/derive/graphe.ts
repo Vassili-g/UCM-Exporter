@@ -21,8 +21,8 @@ import {
   type Recette,
 } from 'ucm-couleur';
 
-import { REPERES, abscisse, ligneBrisee, ordonnee, type Cadre } from './geometrie';
-import { TEXTES_DE_LA_DERIVE, etiquetteDePoignee, graduation, infobulleDuPivot, valeurDePoignee } from '../textes';
+import { abscisse, ligneBrisee, ordonnee, reperes, type Cadre } from './geometrie';
+import { NOM_DU_PROFIL, TEXTES_DE_LA_DERIVE, etiquetteDePoignee, graduation, infobulleDuPivot, valeurDePoignee } from '../textes';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -52,6 +52,8 @@ export interface EntreesDuGraphe {
   readonly rampe: readonly Cran[];
   /** Où la référence exacte se place ([MOT-17]) : le pivot tombe sur son rang clair. */
   readonly ancrage: Ancrage;
+  /** L'échelle de l'ordonnée, en degrés ([DER-01]) : l'éditeur la fige pendant un glisser. */
+  readonly echelle: number;
 }
 
 function element<K extends keyof SVGElementTagNameMap>(nom: K, attributs: Record<string, string | number>): SVGElementTagNameMap[K] {
@@ -72,14 +74,17 @@ export function createGraphe(): GrapheUi {
   svg.setAttribute('class', 'derive-graphe');
   let poignees: { clair: SVGGElement | null; sombre: SVGGElement | null } = { clair: null, sombre: null };
 
+  /** L'échelle du dernier dessin, que les repères et les poignées lisent. */
+  let echelle = 90;
+
   function repere(angle: number): SVGGElement {
     const groupe = element('g', {});
-    const y = ordonnee(angle, CADRE);
+    const y = ordonnee(angle, CADRE, echelle);
     const trait = element('line', { x1: CADRE.gauche, x2: CADRE.largeur - CADRE.droite, y1: y, y2: y });
     if (angle === 0) trait.setAttribute('class', 'derive-axe');
     else trait.setAttribute('class', 'derive-repere');
     groupe.append(trait);
-    if (angle % 30 === 0) {
+    if (angle % (echelle <= 45 ? 15 : 30) === 0) {
       const texte = element('text', { x: CADRE.gauche - 4, y: y + 3, 'text-anchor': 'end' });
       texte.setAttribute('class', 'derive-graduation');
       texte.textContent = graduation(angle);
@@ -102,14 +107,14 @@ export function createGraphe(): GrapheUi {
     groupe.setAttribute('class', 'derive-poignee');
     groupe.dataset.bout = bout;
     const x = abscisse(rang, CADRE, total);
-    const y = ordonnee(angle, CADRE);
+    const y = ordonnee(angle, CADRE, echelle);
     const rond = element('circle', { cx: x, cy: y, r: 7 });
     rond.setAttribute('class', 'derive-poignee-rond');
     const lettre = element('text', { x, y: y + 3, 'text-anchor': 'middle' });
     lettre.setAttribute('class', 'derive-poignee-lettre');
     lettre.textContent = initiale;
     // Près du haut du cadre, l'étiquette passe sous la poignée : au-dessus, elle sortirait du graphe.
-    const dessous = angle > 60;
+    const dessous = angle > echelle * 0.66;
     const etiquette = element('text', { x: bout === 'clair' ? x + 11 : x - 11, y: dessous ? y + 18 : y - 10, 'text-anchor': bout === 'clair' ? 'start' : 'end' });
     etiquette.setAttribute('class', 'derive-graduation');
     etiquette.textContent = etiquetteDePoignee(angle, teinte);
@@ -120,28 +125,38 @@ export function createGraphe(): GrapheUi {
   return {
     element: svg,
     poignees: () => poignees,
-    afficher({ recette, palette, profil, rampe, ancrage }) {
+    afficher(entrees) {
+      const { recette, palette, profil, rampe, ancrage } = entrees;
       const courbe = recette.courbes.light;
       const total = courbe.length;
       const bouts = boutsDe(recette.courbes);
       const reference = rgb8VersOklch(referenceDe(palette));
       const lie = palette.derive.lien;
-      const enfants: SVGElement[] = REPERES.map(repere);
+      echelle = entrees.echelle;
+      const enfants: SVGElement[] = reperes(echelle).map(repere);
 
       // Synchronisés, les profils partagent la ligne du porteur. Déliés, deux lignes, pleine et tiretée ([DER-05]).
       for (const trace of lie ? [ancrage.profil] : PROFILS) {
         const rangAncre = trace === ancrage.profil ? ancrage.rangs.light : null;
-        const points = ligneBrisee(courbe, reference, palette.derive[trace], bouts, rangAncre)
-          .map(({ rang, angle }) => `${abscisse(rang, CADRE, total)},${ordonnee(angle, CADRE)}`);
+        const sommets = ligneBrisee(courbe, reference, palette.derive[trace], bouts, rangAncre);
+        const points = sommets.map(({ rang, angle }) => `${abscisse(rang, CADRE, total)},${ordonnee(angle, CADRE, echelle)}`);
         const ligne = element('polyline', { points: points.join(' ') });
         if (!lie && trace === 'soft') ligne.setAttribute('class', 'derive-trait derive-trait-soft');
         else ligne.setAttribute('class', 'derive-trait derive-trait-vivid');
         enfants.push(ligne);
+        // Déliées, chaque courbe porte le nom de son profil, lisible sans la couleur ni le trait ([DER-05]).
+        if (!lie) {
+          const avantDernier = sommets.filter(({ rang }) => Number.isInteger(rang))[total - 2];
+          const nom = element('text', { x: abscisse(total - 2, CADRE, total), y: ordonnee(avantDernier.angle, CADRE, echelle) - 6, 'text-anchor': 'middle' });
+          nom.setAttribute('class', 'derive-graduation derive-nom-de-courbe');
+          nom.textContent = NOM_DU_PROFIL[trace];
+          enfants.push(nom);
+        }
       }
 
       // Le pivot est la référence exacte, sur son rang clair ([DER-02]).
       const x = abscisse(ancrage.rangs.light, CADRE, total);
-      const y = ordonnee(0, CADRE);
+      const y = ordonnee(0, CADRE, echelle);
       const losange = element('path', { d: `M ${x} ${y - 6} L ${x + 6} ${y} L ${x} ${y + 6} L ${x - 6} ${y} Z` });
       losange.setAttribute('class', 'derive-pivot');
       const titre = element('title', {});

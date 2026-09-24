@@ -18,7 +18,6 @@ import {
   dessinInterrompu,
   ecartDePeinture,
   dessinSurUneAutreRecette,
-  palettesDessinees,
   policeIndisponible,
 } from './textes';
 
@@ -111,11 +110,11 @@ export interface GestesDuResultat {
   renoncer(): void;
 }
 
-/** Les écarts de peinture, en une notice par palette (L6.14). */
+/** Les écarts de peinture, un point à vérifier par palette (L6.14). */
 function noticesDesEcarts(ecarts: readonly EcartDePeinture[], noms: { readonly [id: string]: string }): HTMLDivElement[] {
   const parPalette = new Map<string, EcartDePeinture[]>();
   for (const ecart of ecarts) parPalette.set(ecart.palette, [...(parPalette.get(ecart.palette) ?? []), ecart]);
-  return [...parPalette].map(([palette, liste]) => blocDeConstat(ecartDePeinture(noms[palette] ?? palette, liste), 'notice'));
+  return [...parPalette].map(([palette, liste]) => blocDeConstat(ecartDePeinture(noms[palette] ?? palette, liste), 'alerte'));
 }
 
 /** La confirmation qui nomme les calques étrangers de chaque cadre, et ses deux gestes (D-H). */
@@ -141,29 +140,21 @@ function confirmationDesEtrangers(
 
 /**
  * Le résultat d'un dessin en mots, avec son geste ; `null` au repos et pendant
- * le dessin. Un résultat réussi se lit au rang 3 et propose « Voir sur la
- * planche » (E18), suivi d'une notice par palette peinte autrement que
- * l'aperçu ; un échec est un bloquant.
+ * le dessin. Un résultat réussi se lit dans l'état du cadre de chaque palette,
+ * relu après le dessin, avec « Afficher dans Figma » (E18) : il ne garde ici
+ * qu'un point à vérifier par palette peinte autrement que l'aperçu. Un échec
+ * est un blocage.
  */
 export function blocDuResultat(etat: EtatDuDessin, noms: { readonly [id: string]: string }, gestes: GestesDuResultat): HTMLElement | null {
   if (etat.phase !== 'fini') return null;
   const { resultat } = etat;
   if (resultat.issue === 'etrangers') return confirmationDesEtrangers(resultat.cadres, noms, gestes);
   if (resultat.issue === 'dessinee') {
-    const ligne = document.createElement('div');
-    ligne.className = 'ligne-secondaire ligne-infos';
-    const texte = document.createElement('span');
-    texte.textContent = palettesDessinees(resultat.cadres.length);
-    const voir = document.createElement('button');
-    voir.type = 'button';
-    voir.className = 'bouton-discret';
-    voir.textContent = TEXTES_DU_DESSIN.voirSurLaPlanche;
-    voir.addEventListener('click', () => gestes.voirSurLaPlanche(resultat.page, resultat.cadres.map(({ cadre }) => cadre)));
-    ligne.append(texte, voir);
-    if (etat.ecarts.length === 0) return ligne;
+    // Réussi, le dessin se lit dans l'état du cadre, relu après lui ; seuls ses écarts de peinture restent ici.
+    if (etat.ecarts.length === 0) return null;
     const pile = document.createElement('div');
     pile.className = 'page-stack';
-    pile.append(ligne, ...noticesDesEcarts(etat.ecarts, noms));
+    pile.append(...noticesDesEcarts(etat.ecarts, noms));
     return pile;
   }
   if (resultat.issue === 'sans-recette') return null;

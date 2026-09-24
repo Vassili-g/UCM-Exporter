@@ -6,7 +6,7 @@ import { recetteParDefaut, type Recette } from 'ucm-couleur';
 
 import { lireNombre, palettesModifiees, poserFond, poserValeur, valeurDe } from '../src/configuration';
 import { ajouter, nouvellePalette } from '../src/edition';
-import { constatDeGarantie, palettesTouchees } from '../src/ui/textes';
+import { constatDeGarantie, palettesConcernees } from '../src/ui/textes';
 
 const DEFAUT = recetteParDefaut();
 
@@ -41,14 +41,14 @@ test('[ENT-07] une courbe touche toutes les palettes, une part épargne les part
   assert.deepEqual(groupes.map((groupe) => palettesModifiees(recette, groupe)), [3, 1, 3, 3, 2, 3, 2]);
   const seule = ajouter(DEFAUT, nouvellePalette(DEFAUT, 'p-0000000a', '#1E6FD9')!);
   assert.equal(palettesModifiees(seule, 'palettesProches'), 0, 'une palette seule n’a aucune voisine');
-  assert.deepEqual([palettesTouchees(0), palettesTouchees(1), palettesTouchees(3)], ['aucune palette touchée', '1 palette touchée', '3 palettes touchées']);
+  assert.deepEqual([palettesConcernees(0), palettesConcernees(1), palettesConcernees(3)], ['Aucune palette concernée', '1 palette concernée', '3 palettes concernées']);
 });
 
 test('[ENT-10] une courbe hors garantie nomme le cran, le mode, le profil, la teinte et le contraste', () => {
   const constat = constatDeGarantie({ mode: 'light', cran: 700, profil: 'soft', teinte: 147, contraste: 4.189, seuil: 4.5 });
-  assert.equal(constat.ou, 'Courbe claire, cran 700, soft');
-  assert.equal(constat.quoi, 'Contre le cran 50, le contraste descend à 4,18 à la teinte 147°, pour 4,5 garanti.');
-  assert.ok(constat.geste.includes('cran 700'));
+  assert.equal(constat.ou, 'Thème Light, nuance 700, profil soft');
+  assert.equal(constat.quoi, 'Cette courbe donne un contraste de 4,18:1 avec la nuance 50 pour une teinte de 147°. Le minimum demandé est de 4,5:1.');
+  assert.ok(constat.geste.includes('nuances 700 et 50'));
 });
 
 test('[ENT-05] un fond se saisit en hexa, s’écrit en majuscules, et une saisie qui n’est pas une couleur se refuse', () => {

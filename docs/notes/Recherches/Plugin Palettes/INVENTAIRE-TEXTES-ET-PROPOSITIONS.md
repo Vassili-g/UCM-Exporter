@@ -55,7 +55,7 @@ Les mots usuels qui conviennent déjà, comme « Annuler », sont conservés apr
 | [Rapport](../../../../packages/plugin-palettes/src/rapport.ts), [export des fichiers](../../../../packages/plugin-palettes/src/ui/index.ts) | Le rapport téléchargé contient des données JSON et des codes, sans phrases rédigées. Ses clés ne sont pas des textes d’interface à traduire. |
 | [Manifeste](../../../../packages/plugin-palettes/manifest.json), [HTML](../../../../packages/plugin-palettes/src/ui/index.html), [paquet](../../../../packages/plugin-palettes/package.json) | Nom du plugin, titre de fenêtre et description du paquet. |
 
-Les profils s’affichent notamment dans [l’aperçu](../../../../packages/plugin-palettes/src/ui/apercu.ts), [les réglages communs](../../../../packages/plugin-palettes/src/ui/configuration.ts), [les réglages de palette](../../../../packages/plugin-palettes/src/ui/avance.ts) et [l’éditeur de teinte](../../../../packages/plugin-palettes/src/ui/derive/editeur.ts). Les propositions H012 et H013 concernent tous ces usages.
+Les profils s’affichent notamment dans [le nuancier](../../../../packages/plugin-palettes/src/ui/nuancier.ts), [les réglages communs](../../../../packages/plugin-palettes/src/ui/configuration.ts), [les réglages de palette](../../../../packages/plugin-palettes/src/ui/intensites.ts) et [l’éditeur de teinte](../../../../packages/plugin-palettes/src/ui/derive/editeur.ts). Les propositions H012 et H013 concernent tous ces usages.
 
 ## Textes du fichier central
 
@@ -508,11 +508,11 @@ Les noms de calques sont visibles dans le panneau Figma. Ils sont donc inclus m�
 | H007 | [src/ui/ongletPalettes.ts · L130](../../../../packages/plugin-palettes/src/ui/ongletPalettes.ts) · ` plus.textContent ` | ` + ` | + | Le libellé accessible est T021. |
 | H008 | [src/ui/menuPalette.ts · L31](../../../../packages/plugin-palettes/src/ui/menuPalette.ts) · ` bouton.textContent ` | ` ⋯ ` | ⋯ | Le libellé accessible est T025. |
 | H009 | [src/ui/selecteur.ts · L109](../../../../packages/plugin-palettes/src/ui/selecteur.ts) · ` fleche.textContent ` | ` ▾ ` | ▾ | Symbole masqué aux lecteurs d’écran. |
-| H010 | [src/ui/avance.ts · L79](../../../../packages/plugin-palettes/src/ui/avance.ts) · ` deplier.textContent ` | `` `{▸ si replié, ▾ sinon} ${TEXTES_AVANCES.avance}` `` | {▸ ou ▾} Réglages de cette palette | Le titre vient de T057. |
+| H010 | [src/ui/ongletPalettes.ts · L253](../../../../packages/plugin-palettes/src/ui/ongletPalettes.ts) · ` deplier.textContent ` | `` `{▸ si replié, ▾ sinon} ${TEXTES_AVANCES.avance}` `` | {▸ ou ▾} Réglages de cette palette | Le titre vient de T057. |
 | H011 | [src/ui/derive/graphe.ts · L152](../../../../packages/plugin-palettes/src/ui/derive/graphe.ts) · ` initiale puis lettre.textContent, ligne 107 ` | `` `{vide si lié, sinon profil[0]} : s ou v` `` | s ou v | Repères graphiques de soft et vivid. Sans lettre quand les profils sont liés. |
 | H012 | [packages/couleur/src/rampe.ts · L20](../../../../packages/couleur/src/rampe.ts) · ` PROFILS · soft ` | ` soft ` | soft (doux) | Libellé d’affichage ; conserver la clé soft dans les données. |
 | H013 | [packages/couleur/src/rampe.ts · L20](../../../../packages/couleur/src/rampe.ts) · ` PROFILS · vivid ` | ` vivid ` | vivid (vif) | Libellé d’affichage ; conserver la clé vivid dans les données. |
-| H014 | [src/ui/apercu.ts · L77](../../../../packages/plugin-palettes/src/ui/apercu.ts) · ` nom et aria-label, ligne 137 ` | `` `${profil}.${recette.crans[rang]} ${cran.hexa}` `` | Profil {profil}, nuance {numéro}, couleur {hexa} | Le nom de détail ne contient que {profil}.{numéro}. |
+| H014 | [src/ui/nuancier.ts · L511](../../../../packages/plugin-palettes/src/ui/nuancier.ts) · ` nom et aria-label, ligne 137 ` | `` `${profil}.${recette.crans[rang]} ${cran.hexa}` `` | Profil {profil}, nuance {numéro}, couleur {hexa} | Le nom de détail ne contient que {profil}.{numéro}. |
 | H015 | [src/ui/ongletPalettes.ts · L377](../../../../packages/plugin-palettes/src/ui/ongletPalettes.ts) · ` nom.placeholder ` | ` courante.reference ` | {code hexadécimal de la couleur de référence} | Valeur de la palette, affichée telle quelle. |
 | H016 | [src/ui/textes.ts · L222](../../../../packages/plugin-palettes/src/ui/textes.ts) · ` nomDeLaPalette ` | ` palette.nom si non vide, sinon palette.reference ` | {nom de la palette, sinon code hexadécimal} | Le texte saisi par le designer reste sa donnée. |
 | H017 | [src/ui/index.ts · L92](../../../../packages/plugin-palettes/src/ui/index.ts) · ` telecharger ` | ` palettes.recette.json ` | palettes-et-reglages.json | Nom proposé au téléchargement, sans changement du format JSON. |
@@ -621,6 +621,20 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N011 | Niveaux WCAG d’un contraste mesuré | AAA · AA · Insuffisant · AA grand texte · Minimum 3:1 atteint · Minimum 3:1 non atteint | Plan |
 | N012 | Réglages communs, titres de groupe | Intensités · Minimums des promesses · Détection des couleurs proches | Plan |
 | N013 | Infobulle du pivot de la dérive, suite de T097 | Couleur de référence : teinte {teinte}°. {profil} · nuance {numéro} en Thème Light, {numéro} en Thème Dark. | À valider |
+| N014 | Titre d’un groupe de messages, avec son nombre | {titre du groupe} · {nombre} | À valider |
+| N015 | Liens d’un message vers le réglage qui agit | Intensités de la palette · Dérive de teinte · Luminosité des nuances · Couleurs de fond · Intensités communes · Couleur de référence | À valider |
+| N016 | Lien d’un message de promesse vers le nuancier | Voir les deux couleurs | À valider |
+| N017 | Repli qui porte l’exception de Figma ou l’exemple d’un écart | Détail technique | À valider |
+| N018 | Nuancier, bouton qui ramène au thème d’avant une promesse de l’autre thème | Revenir au thème {Light ou Dark} | À valider |
+| N019 | Détail d’une nuance, copie de son code | Copier le code · Code copié | À valider |
+| N020 | Détail de la nuance qui porte la référence | Cette nuance est votre couleur de référence exacte. | À valider |
+| N021 | Détail d’une nuance identique à sa voisine | Même couleur que la nuance {numéro}. | À valider |
+| N022 | Détail d’une nuance, repli des mesures OKLCH et WCAG | Mesures avancées | À valider |
+| N023 | Détail d’un usage sans promesse de contraste | Cet usage n’a pas de promesse de contraste. | À valider |
+| N024 | Détail d’une association, sous ses spécimens | Minimum demandé : {seuil}:1 | À valider |
+| N025 | Repère sur chaque curseur d’intensité, en infobulle | Intensité de la couleur de référence : {intensité} | À valider |
+| N026 | Résumé du repli N008 | Options de génération : sans grille des contrastes · Options de génération : avec la grille des contrastes | À valider |
+| N027 | Détail d’un usage peint sur le fond du thème | {usage} · Fond du thème | À valider |
 
 ## Points à conserver lors de l’application
 

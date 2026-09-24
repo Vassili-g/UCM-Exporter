@@ -50,6 +50,29 @@ export function atteintLeSeuil(valeur: number, seuil: number): boolean {
   return Number(aDixDecimales(valeur)) >= seuil;
 }
 
+/** Un niveau WCAG de contraste de texte, `null` quand le minimum AA n'est pas atteint. */
+export type NiveauDeTexte = 'AAA' | 'AA' | null;
+
+/** Les niveaux WCAG d'un contraste mesuré ([VER-13]). Aucun n'est enregistré : ils se déduisent de la mesure. */
+export interface NiveauxWcag {
+  /** Texte courant : AA à 4,5:1 (critère 1.4.3), AAA à 7:1 (critère 1.4.6). */
+  readonly texte: NiveauDeTexte;
+  /** Grand texte : AA à 3:1, AAA à 4,5:1. Un couple de couleurs ne dit pas la taille du texte. */
+  readonly grandTexte: NiveauDeTexte;
+  /** Éléments graphiques : le minimum 3:1 du critère 1.4.11, sans niveau AAA. */
+  readonly graphique: boolean;
+}
+
+/**
+ * Classe un contraste selon WCAG 2.2, par la même comparaison que le verdict
+ * d'une promesse ([MOT-22]) : l'affichage et le niveau concordent.
+ */
+export function niveauxWcag(valeur: number): NiveauxWcag {
+  const niveau = (aa: number, aaa: number): NiveauDeTexte =>
+    (atteintLeSeuil(valeur, aaa) ? 'AAA' : atteintLeSeuil(valeur, aa) ? 'AA' : null);
+  return { texte: niveau(4.5, 7), grandTexte: niveau(3, 4.5), graphique: atteintLeSeuil(valeur, 3) };
+}
+
 /** Remplace le point décimal par une virgule, sans `Intl` ni `toLocaleString`. */
 function avecVirgule(ecriture: string): string {
   return ecriture.replace('.', ',');

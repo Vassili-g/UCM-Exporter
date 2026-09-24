@@ -308,9 +308,36 @@ chaque lot précisent le type de preuve attendu lors de son implémentation.
   Les changements d’affichage ne renomment aucune clé enregistrée.
   Fait : l’inventaire reste la table T/H/A ; sa section « Ajouts de
   l’implémentation » porte les textes N, marqués « Plan » ou « À valider ».
-- [ ] **R0.6** Donner des exemples complets de messages assemblés :
+- [x] **R0.6** Donner des exemples complets de messages assemblés :
   sujet, explication, ratio et action. Examiner le rendu avec un nom long,
   le singulier et le pluriel.
+  Fait : assemblés par les fonctions de `src/ui/textes.ts`, avec le nom
+  « Bleu institutionnel des parcours de souscription ».
+
+  ```text
+  Texte coloré (text) sur Fond léger (surface) au survol · Bleu institutionnel
+  des parcours de souscription, thème Dark
+  Cette association n’atteint pas le contraste demandé, pour un minimum de 4,5:1.
+  • Soft : 4,62:1 · Respectée
+  • Vivid : 4,31:1 · À corriger
+  Ajustez l’intensité ou la dérive de teinte de cette palette, puis vérifiez
+  cette association. Le réglage de luminosité est disponible dans les réglages
+  communs.
+  [Intensités de la palette] [Dérive de teinte] [Luminosité des nuances]
+  [Voir les deux couleurs]
+
+  Génération interrompue : Bleu institutionnel des parcours de souscription
+  La génération s’est arrêtée : la présentation de cette palette n’a pas été
+  créée ; les 3 présentations déjà créées sont conservées.
+  Réessayez de générer la palette.
+  ▸ Détail technique
+  ```
+
+  Singulier et pluriel : « 1 promesse à corriger », « 3 promesses à
+  corriger » ; « 1 palette concernée », « 2 palettes concernées » ; « la
+  présentation créée juste avant est conservée » ; « 1 couleur ne correspond
+  pas », « 2 couleurs ne correspondent pas ». Un nom long passe à la ligne
+  dans le titre du message ; seul le sélecteur de palette l’abrège.
 
 Critère : l’agent peut désigner l’emplacement de chaque contrôle sans
 accumuler tous les états sur un seul écran. Les textes validés ne font pas
@@ -328,33 +355,56 @@ l’objet d’une nouvelle validation générale.
   techniques nécessaires au rapport.
   Fait avec R1b : l’analyse ne reçoit plus le profil du document ; la planche
   peint toujours `LEGACY` comme sRGB, et le rapport garde le profil.
-- [ ] **R1.3** Présenter la proximité Soft/Vivid près du réglage qui peut
+- [x] **R1.3** Présenter la proximité Soft/Vivid près du réglage qui peut
   agir : intensités locales si personnalisées, sinon Réglages communs.
   Garder un indice discret sur les nuances concernées. Ne pas déplacer
   systématiquement ce constat vers un réglage global inopérant.
-- [ ] **R1.4** Remplacer la notice répétée sur une référence plus vive par
+  Fait : `placeDeLAlerte` (`src/presentation.ts`) range les profils confondus
+  sous les curseurs d’intensité ; leur lien mène aux intensités de la palette
+  si elle a les siennes, sinon aux intensités communes. Les nuances
+  confondues portent le signe « ≈ » dans le nuancier.
+- [x] **R1.4** Remplacer la notice répétée sur une référence plus vive par
   un repère d’intensité. La référence exacte n’est jamais décrite comme
   plus terne qu’elle-même. Les nuances autour d’elle peuvent différer.
-- [ ] **R1.5** Regrouper les échecs par paire, thème et état ; montrer
+  Fait : un repère « Intensité de la couleur de référence » sur chaque
+  curseur. Les alertes plus terne et plus vive restent dans l’analyse et le
+  rapport ; ni la liste des messages ni la planche ne les montrent.
+- [x] **R1.5** Regrouper les échecs par paire, thème et état ; montrer
   séparément le résultat de Soft et de Vivid. Le compte reste celui des
   contrôles, pas celui des blocs de messages.
-- [ ] **R1.6** Définir des cibles d’action typées indépendantes des phrases :
+  Fait : `groupesManques` réunit les deux profils d’une même paire, d’un
+  thème et d’un état ; le groupe garde le résultat du profil qui tient.
+  Le verdict et le titre de groupe comptent les contrôles manqués.
+- [x] **R1.6** Définir des cibles d’action typées indépendantes des phrases :
   intensités locales, dérive, luminosité commune, fonds, intensités communes.
   Une fonction de présentation choisit l’action selon la cause connue et la
   portée du réglage. Les textes ne pilotent pas le routage.
-- [ ] **R1.7** Rattacher un écart entre couleurs générées et aperçu à la
+  Fait : `CibleDAction`, `ciblesDeLaPromesse` et `ciblesDeLAlerte`. Chaque
+  lien porte `data-cible` ; l’interface route sur cette valeur, jamais sur le
+  libellé (`[VER-15]`).
+- [x] **R1.7** Rattacher un écart entre couleurs générées et aperçu à la
   génération de la palette concernée. Résumé près de son action et état
   dans Planche ; détails dans le rapport. Ne pas cacher toute erreur dans
   un autre onglet après un clic sur Générer.
-- [ ] **R1.8** Réserver l’exception brute aux détails techniques et au
+  Fait : l’écart devient un point à vérifier sous « Générer sur Figma », avec
+  un exemple dans le détail technique. Le rapport garde la liste complète.
+  L’état dans Planche arrive avec R6.
+- [x] **R1.8** Réserver l’exception brute aux détails techniques et au
   rapport. Le message principal nomme l’arrêt et les palettes déjà créées.
   Préserver les cadres existants quand un remplacement échoue.
-- [ ] **R1.9** Afficher « Prête » avec le bilan lorsque toutes les promesses
+  Fait : `dessinInterrompu` compte les présentations conservées et range
+  l’exception de Figma dans le détail technique. Le sandbox retire déjà
+  l’ancien cadre après la réussite du nouveau (`ecriture/planche.ts`).
+- [x] **R1.9** Afficher « Prête » avec le bilan lorsque toutes les promesses
   sont respectées ; sinon le nombre de promesses à corriger. Une promesse
   en échec ne bloque pas la génération d’une planche de travail.
-- [ ] **R1.10** Conserver les données de diagnostic utiles au rapport même
+  Fait : verdict en tête de la configuration et sous l’éditeur de dérive ;
+  « Générer sur Figma » reste actif quel que soit le verdict.
+- [x] **R1.10** Conserver les données de diagnostic utiles au rapport même
   lorsqu’une notice disparaît de l’écran. Si le format du rapport change,
   définir sa compatibilité avant d’ajouter les détails d’erreur.
+  Fait : le rapport lit `analyse.alertes` en entier, repères d’intensité
+  compris. Son format reste `formatDuRapport` 2, posé par R1b.
 
 Critère : chaque message nomme un problème ou une information utile, situe
 la palette et mène au contrôle pertinent. Les mesures de proximité ne
@@ -450,18 +500,30 @@ décrivent les mêmes valeurs.
 
 ## Lot R2 : sévérités et repères
 
-- [ ] **R2.1** Distinguer blocage d’écriture, promesse à corriger, point à
+- [x] **R2.1** Distinguer blocage d’écriture, promesse à corriger, point à
   vérifier et information. Un échec de promesse a un signal de danger plus
   net qu’une proximité de couleurs, sans transformer tout le nuancier en
   surface rouge.
-- [ ] **R2.2** Donner à chaque groupe son titre et son nombre. Une
+  Fait : quatre sévérités dans `Message` (`src/ui/constats.ts`). Blocage et
+  promesse portent le filet de danger, le point à vérifier celui
+  d’avertissement, l’information aucun filet. Le nuancier ne prend aucune
+  couleur de sévérité.
+- [x] **R2.2** Donner à chaque groupe son titre et son nombre. Une
   information ordinaire reste secondaire ; aucune alerte permanente ne
   félicite la génération de couleurs attendues.
-- [ ] **R2.3** Employer texte, icône ou forme en plus de la couleur.
+  Fait : « Promesses à corriger · 3 », par exemple. Une génération réussie
+  sans écart n’ajoute aucun message.
+- [x] **R2.3** Employer texte, icône ou forme en plus de la couleur.
   Réserver `role="alert"` aux événements qui demandent une intervention
   immédiate ; ne pas l’annoncer à chaque mouvement de poignée.
-- [ ] **R2.4** Différencier référence, focus, sélection et paire inspectée
+  Fait : carré plein, triangle ou rond creux devant chaque titre de groupe.
+  Seul un blocage prend `role="alert"`. Le bilan de la dérive ne change qu’au
+  relâchement d’une poignée.
+- [x] **R2.4** Différencier référence, focus, sélection et paire inspectée
   dans les thèmes de l’hôte et sur les fonds personnalisés.
+  Fait : ◆ dans la pastille de référence, contour tireté pour le focus,
+  double anneau pour la sélection, trait sous la pastille pour la paire. Les
+  quatre signes prennent l’encre calculée sur le fond du nuancier.
 
 Critère : sans lire la couleur du signal, le designer distingue le résultat,
 l’objet sélectionné et la référence.
@@ -490,34 +552,57 @@ Promesses     bilan puis associations à corriger
 Options de génération ▸            À jour / À mettre à jour
 ```
 
-- [ ] **R3.1** Créer les deux sections décrites, en conservant les éléments
+- [x] **R3.1** Créer les deux sections décrites, en conservant les éléments
   DOM pendant les rendus. Un changement de résultat ne fait pas perdre le
   focus du champ en cours.
-- [ ] **R3.2** Ouvrir la création sous le sélecteur. Demander couleur et
+  Fait : sections « Palette » et « Configuration · {nom} » dans
+  `src/ui/ongletPalettes.ts`. Les éléments sont créés une fois ; chaque rendu
+  change leur contenu.
+- [x] **R3.2** Ouvrir la création sous le sélecteur. Demander couleur et
   nom, permettre la sélection Figma et l’annulation. Après création,
   sélectionner la palette et ouvrir sa configuration. Après annulation,
   rendre le focus au bouton plus.
-- [ ] **R3.3** Retirer les lignes de part de chroma, d’aide au survol et de
+  Fait : pipette, code couleur et nom (`src/ui/creation.ts`). La couleur de
+  la sélection Figma reprend le nom saisi.
+- [x] **R3.3** Retirer les lignes de part de chroma, d’aide au survol et de
   succès répétées. Conserver les informations utiles dans leur contrôle ou
   leur résultat.
-- [ ] **R3.4** Associer le nom, la référence et le bilan à la palette
+  Fait : la part passe dans l’infobulle du repère d’intensité ; le succès
+  d’une génération se lit dans l’état du cadre.
+- [x] **R3.4** Associer le nom, la référence et le bilan à la palette
   ouverte. Un résultat d’une autre palette ou d’une ancienne demande
   ne remplace jamais ce sujet.
-- [ ] **R3.5** Placer Générer sur Figma en fin de configuration. Une barre
+  Fait : titre, ligne « ◆ Référence » et verdict suivent la palette ouverte ;
+  le résultat d’une génération ne s’affiche que sous la palette qu’elle
+  concerne.
+- [x] **R3.5** Placer Générer sur Figma en fin de configuration. Une barre
   compacte peut rester visible pendant le défilement à la taille par défaut ;
   à la taille minimale, la laisser dans le flux si elle masque l’aperçu ou
   un champ. Une seule ligne forte : génération et accès au cadre.
-- [ ] **R3.6** Porter l’option de grille dans un état partagé, avec un
+  Fait : la ligne reste dans le flux aux deux tailles, sans barre collante.
+  Le test `[UI-03]` vérifie à 440 × 520 que le choix de palette, le verdict
+  et le nuancier se lisent sans défiler.
+- [x] **R3.6** Porter l’option de grille dans un état partagé, avec un
   résumé visible près des actions qui l’utilisent. Garder le détail des
   options replié ; ne pas dépendre d’une case cachée dans l’autre onglet.
-- [ ] **R3.7** Ouvrir et focaliser les réglages depuis les messages. Le
+  Fait : `src/ui/optionsDeGeneration.ts`. Chaque onglet pose son repli,
+  dont le résumé dit « sans » ou « avec la grille des contrastes ».
+- [x] **R3.7** Ouvrir et focaliser les réglages depuis les messages. Le
   retour conserve palette, thème, nuance sélectionnée et position de lecture.
-- [ ] **R3.8** Traiter la suppression en action destructive, confirmer ses
+  Fait : un lien de message ouvre les Réglages communs sur le groupe de sa
+  cible. Le retour rend le défilement et le focus d’avant l’ouverture ; les
+  éléments de l’onglet restent en place, donc palette, thème et nuance aussi.
+- [x] **R3.8** Traiter la suppression en action destructive, confirmer ses
   conséquences et préserver l’annulation accessible. Une suppression ne
   supprime pas silencieusement le cadre dessiné.
-- [ ] **R3.9** Après génération, remplacer l’état de l’action par son
+  Fait : la confirmation dit que la présentation reste sur la planche ;
+  « Annuler » rend le focus au menu.
+- [x] **R3.9** Après génération, remplacer l’état de l’action par son
   résultat et proposer l’accès au cadre. Rendre les erreurs dans cette même
   zone. Ne pas empiler une nouvelle bannière à chaque clic.
+  Fait : `src/ui/generation.ts`. L’état du cadre remplace la progression ;
+  « Afficher dans Figma » suit. Une interruption ou un écart remplace le
+  résultat précédent dans la même zone.
 
 Critère : à 440 × 520, le choix de palette et un nuancier lisible ont la
 priorité. Les contrôles supplémentaires s’atteignent par défilement, sans
@@ -525,41 +610,65 @@ barre flottante qui recouvre le contenu.
 
 ## Lot R4 : nuances, usages et intensités
 
-- [ ] **R4.1** Peindre le fond de prévisualisation et adapter tous les
+- [x] **R4.1** Peindre le fond de prévisualisation et adapter tous les
   éléments qu’il contient. Le lien Modifier ouvre Couleurs de fond dans les
   Réglages communs, avec retour vers l’aperçu initial.
-- [ ] **R4.2** Répartir les pastilles sur la largeur utile et conserver une
+  Fait : `src/ui/nuancier.ts` peint la surface du fond du thème et calcule
+  l’encre de ses textes et repères sur ce fond. « Modifier » ouvre le groupe
+  Couleurs de fond ; le retour suit R3.7.
+- [x] **R4.2** Répartir les pastilles sur la largeur utile et conserver une
   cible clavier par nuance. Sur petit écran, les noms de profils passent
   au-dessus des rangées.
-- [ ] **R4.3** Garder les numéros alignés entre Soft et Vivid et afficher
+  Fait : une grille `role="grid"` à onze colonnes égales ; sous 520 px, le
+  nom du profil prend sa propre ligne.
+- [x] **R4.3** Garder les numéros alignés entre Soft et Vivid et afficher
   leurs fonctions. Les plages d’états se déduisent de TABLE_DES_EMPLOIS et
   decalagesDeLEmploi ; aucune copie d’une seconde table métier.
-- [ ] **R4.4** Afficher l’ancrage exact fourni par R1b. Le libellé nomme
+  Fait : une ligne de numéros commune aux deux rangées ; `plageDe` lit les
+  deux fonctions du moteur.
+- [x] **R4.4** Afficher l’ancrage exact fourni par R1b. Le libellé nomme
   référence, profil et numéro ; le repère change de colonne avec le thème.
   Ne jamais contourer la simple nuance la plus proche comme si elle était
   identique à la référence.
-- [ ] **R4.5** Organiser les usages en familles Fonds, Bordures et focus,
+  Fait : ◆ sur la pastille de `analyse.ancrage` et la ligne « ◆ Référence :
+  Vivid · nuance 700 » sous le code couleur. Le numéro suit le thème du
+  nuancier.
+- [x] **R4.5** Organiser les usages en familles Fonds, Bordures et focus,
   Fonds pleins, Textes. À 600 px, montrer leurs plages dans des lignes
   compactes. À 440 px, un sélecteur de famille peut réduire les pistes
   simultanées ; le nom des familles et le lien vers chaque usage restent
   visibles. Focus, bordure décorative et bordure de contrôle ne fusionnent
   pas en une promesse fictive.
-- [ ] **R4.6** Au clic sur une nuance : hexa, usages, rôle éventuel de
+  Fait : `FAMILLES_D_USAGES` dans `src/ui/textes.ts`. Chaque usage garde sa
+  barre ; sous 520 px, quatre boutons de famille en montrent une à la fois.
+- [x] **R4.6** Au clic sur une nuance : hexa, usages, rôle éventuel de
   référence, mesures contextualisées. Au clic sur un usage : spécimen,
   états disponibles, partenaire de sa promesse et résultat Soft/Vivid.
   Les mesures avancées sont repliées.
-- [ ] **R4.7** Une promesse sélectionnée désigne ses deux couleurs et
+  Fait : le détail d’une nuance donne son nom, son hexa, sa copie, ses usages
+  et ses contrastes. Celui d’un usage donne sa description et chacune de ses
+  associations avec spécimens et résultats Soft et Vivid. Les niveaux WCAG
+  restent dans un repli.
+- [x] **R4.7** Une promesse sélectionnée désigne ses deux couleurs et
   montre un spécimen commun. Lorsque l’une est le fond du thème, désigner la
   pastille de fond. Une demande située dans l’autre thème bascule ce thème
   explicitement et conserve un chemin de retour.
-- [ ] **R4.8** Montrer les intensités Soft et Vivid près des rangées, avec
+  Fait : « Voir les deux couleurs » marque les deux pastilles, ou la pastille
+  du fond. Une promesse de l’autre thème bascule le nuancier et montre
+  « Revenir au thème Light » ou « Revenir au thème Dark ».
+- [x] **R4.8** Montrer les intensités Soft et Vivid près des rangées, avec
   curseur et saisie numérique. Un glisser prévisualise ; la fin du geste
   enregistre ; Échap restaure l’état avant geste. Soft ne dépasse pas Vivid.
   Afficher l’origine commune/personnalisée et un retour au réglage commun.
   La nuance de référence reste inchangée dans son profil porteur.
-- [ ] **R4.9** Conserver flèches, Origine, Fin, Entrée/Espace et focus
+  Fait : `src/ui/intensites.ts`, sous le nuancier. L’ancrage réinsère la
+  référence après chaque intensité ; le test `[ENT-09]` couvre le glisser,
+  Échap, la borne et le retour au réglage commun.
+- [x] **R4.9** Conserver flèches, Origine, Fin, Entrée/Espace et focus
   visible. Une copie de code est un geste distinct de la sélection : cliquer
   une pastille ne copie pas et ne navigue pas simultanément.
+  Fait : la copie est un bouton du détail. Cliquer une pastille la choisit
+  seulement.
 - [ ] **R4.10** Explorer séparément « Ajuster la référence ». Présenter la
   référence originale, la proposition, le numéro visé et un aperçu des
   promesses. Offrir de petits incréments/décréments, une saisie et une
@@ -575,30 +684,45 @@ de comparaison. L’exploration R4.10 ne retarde pas ces fonctions.
 
 ## Lot R5 : dérive de teinte
 
-- [ ] **R5.1** Placer Configuration de la dérive sous le nuancier, avec le
+- [x] **R5.1** Placer Configuration de la dérive sous le nuancier, avec le
   préréglage et un résumé à droite. À largeur minimale, le résumé passe sur
   une ligne suivante ; le titre reste entier.
+  Fait : ligne `.ligne-de-derive` sous les intensités, bouton de dépliage et
+  résumé ; le résumé passe à la ligne quand la largeur manque.
 - [x] **R5.2** Utiliser les désignations et courbes effectives de R1b. La
   référence est fixe dans son profil porteur pendant le déplacement des
   poignées. Une autre teinte pivot ne se présente pas comme une autre base.
   Fait avec R1b : la ligne du porteur passe à 0° sur son rang clair, où tombe
   le pivot, dont l’infobulle nomme la nuance de chaque thème ; synchronisé,
   l’éditeur montre la ligne et la rampe Light du porteur.
-- [ ] **R5.3** Utiliser ±30° comme amplitude initiale lorsque les valeurs y
+- [x] **R5.3** Utiliser ±30° comme amplitude initiale lorsque les valeurs y
   tiennent, puis des paliers lisibles jusqu’à ±90°. Figer l’échelle pendant
   un glisser ; réévaluer avant ou après le geste pour éviter un saut sous
   le pointeur. Les valeurs extrêmes restent accessibles au clavier et en
   saisie numérique.
-- [ ] **R5.4** Employer un contrôle coché « Synchroniser la dérive de soft
+  Fait : `ECHELLES` vaut 30, 45, 60 et 90 degrés dans
+  `src/ui/derive/geometrie.ts` ; `echelleDe` prend le premier palier qui
+  dépasse le plus grand angle. L’éditeur fige l’échelle au début d’un
+  glisser et la relâche à la fin.
+- [x] **R5.4** Employer un contrôle coché « Synchroniser la dérive de soft
   et vivid ». Décoché, montrer le sélecteur de profil et différencier les
   courbes par le trait et leur nom. Le recochage confirme le remplacement
   de Soft par Vivid si leurs réglages diffèrent.
-- [ ] **R5.5** Garder un bilan des promesses près de l’éditeur et actualiser
+  Fait : case à cocher ; décochée, Soft prend un trait tireté et chaque
+  courbe porte le nom de son profil.
+  La recocher ouvre la confirmation de `[DER-12]`.
+- [x] **R5.5** Garder un bilan des promesses près de l’éditeur et actualiser
   le spécimen choisi. Les annonces assistives sont regroupées à la fin du
   geste, sans lecture continue de chaque valeur.
-- [ ] **R5.6** Employer Nuances claires / Nuances sombres sur les poignées.
+  Fait : bilan sous le graphe, `aria-live="polite"`, mis à jour hors
+  glisser (`[DER-17]`). Le nuancier, et donc le spécimen choisi, suit
+  l’aperçu pendant le geste.
+- [x] **R5.6** Employer Nuances claires / Nuances sombres sur les poignées.
   Les champs et leurs unités restent lisibles à 440 px. Les boutons de
   préréglage restaurent le réglage annoncé, sans toucher à l’hexa de référence.
+  Fait : libellés des réglettes et infobulles des poignées. Le libellé de
+  réglette garde 112 px sans retour à la ligne. Un préréglage ne change que
+  la dérive du profil réglé.
 
 Critère : le déplacement reste prévisible, la désynchronisation se comprend
 par l’état du contrôle et la référence reste identifiable dans le graphe.
