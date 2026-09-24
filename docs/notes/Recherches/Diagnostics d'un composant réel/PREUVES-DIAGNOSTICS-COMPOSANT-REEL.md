@@ -2,9 +2,9 @@
 
 ## État
 
-- Lot courant : L5
-- Branche et `HEAD` : `main`, `fddd8bf`
-- Dernière porte franchie : H2
+- Lot courant : L10
+- Branche et `HEAD` : `main`, `0ecd01f`
+- Dernière porte franchie : H3
 
 La copie de travail partagée porte le travail non commité d'une autre session
 (`packages/couleur`, `packages/plugin-palettes`, `packages/plugin-socle`,
@@ -332,7 +332,9 @@ copiés ; le build y tourne étape par étape.
 
 ### L5 : les internes d'un imbriqué sans règles se taisent
 
-- Commit : ce commit, après `fddd8bf`.
+- Commit : `0ecd01f`, après `42a92cb` (commit d'une autre session, sur UCM
+  Palettes). Le commit passe par un index temporaire : `CONTRIBUTING.md`, que
+  l'autre session modifiait, n'y reçoit que l'ajout de ce lot.
 - Commandes :
   - tests écrits d'abord : le scénario, avec un composant imbriqué qui déclare
     sa variant property comme sur le composant réel, sort rouge (« la famille
@@ -369,3 +371,57 @@ copiés ; le build y tourne étape par étape.
   nom et de mêmes clés fusionnent en un seul point. Aucun test ne vérifie
   qu'une prop `icon` n'entre pas dans `horsDuParent` : le relevé précède
   `mergeIconRules`, seul producteur de ce type, par l'ordre du code.
+
+### L8 : recherche sur les propriétés visuelles non portées
+
+- Commit : ce commit, après `0ecd01f`.
+- Résultats : [DECISION-PROPRIETES-VISUELLES.md](./DECISION-PROPRIETES-VISUELLES.md)
+  compare deux formes par sujet (ombre, opacité, enfants d'un cadre sans auto
+  layout, masque), avec leur coût sur le format, le kit, le schéma, les
+  lecteurs et la compatibilité, la classe de chaque changement et la version de
+  contrat qui en découle.
+- Commandes : `controle-style.mjs` sur la note : conforme. `docLinks.test.ts` :
+  les liens de la note résolvent ; deux liens morts restent, dans des fichiers
+  d'une autre session (`Optimisation Tokens/README.md`, `docs/README.md`).
+- Écart ou réserve : aucun.
+
+### Porte H3 : évolution du format
+
+- Décidé : publier l'ombre (catalogue `effectStyles`), l'opacité (champ
+  tokenisé) et les enfants d'un cadre sans auto layout (`position: "absolute"`,
+  `constraints`, `inset`) ; garder l'avertissement du masque. La note porte la
+  table des décisions.
+- Ces décisions ouvrent un plan à part, relu par un agent indépendant avant son
+  exécution ; ce plan-ci ne les implémente pas.
+
+### L10 : fermeture
+
+- Commit : ce commit, après `0ecd01f`.
+- Commandes :
+  - worktree à `0ecd01f` avec les fichiers de L8 et de L10 : `npm ci` : 0.
+    `npm run typecheck` : 0. `npm test` : 0, dont 929 tests du moteur. Build
+    étape par étape, kit, `build:code`, `build:ui`, `build:manifest` et build
+    d'UCM Palettes : 0 à chaque étape. `test:ui` : 24 tests verts.
+  - copie partagée : `build:code`, `build:ui` et `build:manifest` refaits ;
+    `dist/code.js` contient `declarerLesRacinesDeVariants` (L6),
+    `releverLesImbriques` et `sousUnImbriqueSansRegles` (L5), et plus
+    `warnLayersOutsideLayoutNode` (L7).
+- Liste attendue sur le composant de la section 1 du plan, après L1 à L7 et L9,
+  dans l'ordre où `meta.diagnostics` la publie :
+  - en tête, le point bloquant de l'imbriqué sans règles (« Le composant … intègre
+    … dont 3 propriétés ne sont pas documentées : … ») ;
+  - le conteneur de règles en double ;
+  - trois lignes de règles marquées (`@usage`, `@prop`, `@boolean`) ;
+  - la règle `@icons « icon-name »`, posée avec le maître ancien ;
+  - une ligne « Propriété sans token associé » (`min width`, 140 cibles) et une
+    ligne « Propriété non supportée par le moteur » (ombre, 28 cibles) ;
+  - le corner radius et le stroke weight du wrapper ;
+  - les propriétés du calque d'onde que L8 n'a pas encore publiées : opacité,
+    masque, disposition sans auto layout, dimensions de ses rectangles ;
+  - la collision, si l'export vise le même dépôt de recette, avec le texte qui
+    nomme les deux fichiers Figma.
+- Ne sortent plus : les 140 et 28 lignes par variant, les 11 lignes « il n'est pas
+  à l'intérieur de », les deux messages de dessin dans l'imbriqué, la hauteur du
+  texte masqué, les états `focused` et `pressed`, l'intention absente.
+- Retour du mainteneur : en attente de sa relance de l'analyse sur le composant
+  réel.

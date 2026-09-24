@@ -692,9 +692,10 @@ La spécification en lien porte le raisonnement.
 - **Les trois parties voyagent séparées**, du site d’émission jusqu’à
   l’interface : un site écrit un `Constat` (`src/contract/localisation.ts`),
   jamais une phrase. Un point bloquant porte en plus la liste que son titre
-  annonce (`elements`), que la phrase écrit après le titre. La phrase compacte que publient `meta.diagnostics`, la
-  demande de fusion et le journal s’en dérive (`phraseDe`), sans seconde rédaction ;
-  l’interface, elle, met les parties en page et ne recoupe rien. Deux lois le
+  annonce (`elements`), que la phrase écrit après le titre. La phrase compacte
+  que publient `meta.diagnostics`, la demande de fusion et le journal s’en
+  dérive (`phraseDe`), sans seconde rédaction ; l’interface, elle, met les
+  parties en page et ne recoupe rien. Deux lois le
   tiennent (`tests/loiDesParties.test.ts`) : l’une lit la source et refuse
   qu’un message s’écrive ailleurs qu’à l’autorité, l’autre lit la sortie du
   moteur et refuse un message sans ses parties.
