@@ -220,6 +220,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/configuration.ts     les champs de la configuration, fonds et seuils compris, et les palettes que chacun touche
   src/importation.ts       un fichier importé, classé comme la recette rangée, et son écart avec elle
   src/rapport.ts           le rapport de vérification : crans, promesses, alertes, empreinte et écarts du dernier dessin
+  src/presentation.ts      les promesses manquées groupées, la place de chaque alerte et le réglage que chaque message ouvre
   src/planche/modele.ts    le modèle pur d'un cadre de planche : cadres, textes, peintures, noms de calque, empreinte
   src/planche/fraicheur.ts chaque cadre à jour, périmé ou jamais dessiné, et les cadres orphelins et copiés
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
@@ -229,7 +230,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
   src/ui/ongletPalettes.ts barre du verdict, référence, dérive repliée, aperçu et constats
-  src/ui/apercu.ts         les pastilles de 24 px en grille, et le détail du cran survolé
+  src/ui/nuancier.ts       l'aperçu peint du fond du thème : pastilles en grille, plages des usages, détail d'une nuance
   src/ui/selecteur.ts      la palette ouverte, en liste déroulante avec la pastille de chaque référence
   src/ui/creation.ts       une palette neuve, par sa référence ou par la couleur de la sélection
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
@@ -237,7 +238,9 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/ongletPlanche.ts  une ligne par palette et sa fraîcheur, « Dessiner toutes les palettes », la grille de contraste et les notices
   src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
   src/ui/configuration.ts  courbes, parts, fonds et seuils derrière l'engrenage, avec la garantie des courbes
-  src/ui/avance.ts         la section repliée « Avancé » d'une palette : ses parts propres et leur origine
+  src/ui/intensites.ts     les intensités de la palette : curseurs, repère de la référence, origine, retour aux réglages communs
+  src/ui/messagesDePalette.ts les messages de la palette ouverte : ceux de la liste, et ceux des intensités
+  src/ui/generation.ts     « Générer sur Figma », l'état du cadre et « Afficher dans Figma » sur une ligne
   src/ui/gestesDeLaRecette.ts exporter la recette ou le rapport, importer avec l'écart, repartir de la recette par défaut
   src/ui/telechargement.ts le fichier proposé au designer, par un lien vers un blob
   src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG ; glisser, clavier, réglettes, préréglage, lien, annulation

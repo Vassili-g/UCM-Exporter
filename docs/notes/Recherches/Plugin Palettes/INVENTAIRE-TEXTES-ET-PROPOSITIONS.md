@@ -633,6 +633,23 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N023 | Détail d’un usage sans promesse de contraste | Cet usage n’a pas de promesse de contraste. | À valider |
 | N024 | Détail d’une association, sous ses spécimens | Minimum demandé : {seuil}:1 | À valider |
 | N025 | Repère sur chaque curseur d’intensité, en infobulle | Intensité de la couleur de référence : {intensité} | À valider |
+| N026 | Onglet Palettes, titre de premier rang, remplace N004 et N005 | Configuration de la palette | Plan |
+| N027 | Titres des cartes de la configuration | Couleur de base · Aperçu · Garanties de contraste · Intensités · Dérive de teinte | Plan |
+| N028 | Carte Couleur de base, troisième colonne, et ses trois choix | Palette de base · Auto · Soft · Vivid | Plan |
+| N029 | Sous le choix de la palette de base, en Auto | Auto a choisi {profil} | Plan |
+| N030 | Nom français d’un rôle, sous son nom en police de code | `solid` fond plein · `on-solid` texte sur fond plein · `text` texte coloré · `surface` fond léger · `border-control` bordure de champ · `border-decorative` séparateur · `focus` anneau de focus | À valider |
+| N031 | Relation d’une garantie ; le fond de page s’écrit « fond » | {rôle} sur {rôle} · {rôle} sur fond | À valider |
+| N032 | Carte des garanties, titres des deux groupes et leur minimum | Textes lisibles · Éléments visibles · minimum {seuil}:1 | À valider |
+| N033 | Sous un spécimen : numéros, résultat et état | {numéro} / {numéro} · fond / {numéro} · ✓ {ratio} · ✗ {ratio} · repos · survol · appui | À valider |
+| N034 | Légende de la réglette des garanties | Trait plein : repos · tireté : survol · pointillé : appui. L’état avance d’une nuance, texte et fond ensemble. | À valider |
+| N035 | Résultat d’un profil, sur la bascule et dans l’en-tête replié | {profil} ✓ · {profil} ✗ {nombre} | À valider |
+| N036 | Ligne des garanties manquées de l’autre thème | Thème {mode} : 1 garantie manquée · Thème {mode} : {nombre} garanties manquées · Voir le thème {mode} | À valider |
+| N037 | Garantie `on-solid`, explication unique du fond de page | `on-solid` est le fond de page du thème, `neutral.50` du design system. | À valider |
+| N038 | Dernière ligne de la carte des garanties | `border-decorative` {numéro} · séparateur, sans minimum de contraste | À valider |
+| N039 | Détail d’une nuance | Sert à · Nuance libre : aucun usage prévu · Mesures détaillées · ◆ Votre couleur de référence exacte | À valider |
+| N040 | Résumé replié de la carte Intensités | Communes · Propres · Palette de base {profil} · Soft {intensité} · Vivid {intensité} | À valider |
+| N041 | Résumé replié de la carte Dérive de teinte | {préréglage} · synchronisée · {préréglage soft} et {préréglage vivid} · désynchronisée | À valider |
+| N042 | Sous les réglettes de la dérive, remplace le bilan | Garanties : {résultat soft} · {résultat vivid} · Voir les garanties | À valider |
 | N026 | Résumé du repli N008 | Options de génération : sans grille des contrastes · Options de génération : avec la grille des contrastes | À valider |
 | N027 | Détail d’un usage peint sur le fond du thème | {usage} · Fond du thème | À valider |
 

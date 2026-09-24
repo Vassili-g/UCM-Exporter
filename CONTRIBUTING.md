@@ -240,17 +240,22 @@ La table des rangs, la borne des deux moyens et le rôle de la couleur
 sémantique valent pour UCM Palettes. La règle des deux cartes décrit l’écran
 d’UCM Exporter ; l’onglet Palettes applique celles-ci :
 
-- l’onglet porte deux sections à filet discret : le choix ou la création d’une
-  palette, puis la configuration de la palette ouverte. Aucun autre objet de
-  l’onglet ne porte de filet de section ;
-- le nuancier est une surface d’aperçu à l’intérieur de la configuration,
-  peinte du fond du thème choisi. Il peut occuper la plus grande part du
-  panneau ;
-- « Générer sur Figma » ferme la configuration de la palette. Le résultat de
-  la génération et l’accès au cadre prennent la même ligne, et un nouveau
-  résultat remplace le précédent au même endroit ;
-- un message n’a pas de surface du poids du nuancier : il garde un filet de
-  sévérité, sans carte ;
+- le sélecteur de palette vient en tête, puis un seul titre de premier rang,
+  « Configuration de la palette ». Chaque sous-section de la configuration est
+  une carte de même facture : fond secondaire de Figma, bordure du socle,
+  rayon de 8 px, sans ombre. Trois niveaux de titre, pas davantage : le titre
+  de premier rang, le titre de carte et le libellé de champ ;
+- les cartes se suivent dans cet ordre : Couleur de base, Aperçu, Garanties de
+  contraste, Intensités, Dérive de teinte, puis la carte de génération. Les
+  cartes de réglage se replient ; leur en-tête est un bouton qui porte le
+  chevron, le titre et un résumé aligné à droite ;
+- l’aperçu est une surface peinte du fond du thème choisi, à l’intérieur de sa
+  carte. Il peut occuper la plus grande part du panneau ;
+- « Générer sur Figma » occupe seul la dernière carte, qui porte le fond du
+  panneau. Le résultat de la génération et l’accès au cadre prennent la même
+  ligne, et un nouveau résultat remplace le précédent au même endroit ;
+- un message qui n’est pas une garantie de contraste n’a pas de carte : il
+  garde un filet de sévérité, sous la carte qu’il concerne ;
 - un résultat nomme toujours la palette ouverte. Un résultat d’une autre
   palette, ou d’une demande plus ancienne, ne la remplace pas ;
 - à la taille minimale, aucun élément fixe ne recouvre l’aperçu ou un champ.

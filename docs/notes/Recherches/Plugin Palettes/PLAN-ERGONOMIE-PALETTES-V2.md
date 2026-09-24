@@ -156,24 +156,34 @@ une sauvegarde.
 
 ## Lot V0 : règles, documents et galerie
 
-- [ ] **V0.1** Réécrire « Les surfaces d’UCM Palettes » dans CONTRIBUTING.md :
+- [x] **V0.1** Réécrire « Les surfaces d’UCM Palettes » dans CONTRIBUTING.md :
   cartes de même facture pour chaque sous-section, un titre de premier rang,
   aperçu peint à l’intérieur de sa carte, génération dans la dernière carte.
   La règle des deux cartes d’UCM Exporter ne change pas.
-- [ ] **V0.2** Mettre à jour la spécification : `[UI-01]` (500 × 520),
+  Fait : l’ordre des cartes, leur facture et les trois niveaux de titre y
+  sont écrits.
+- [x] **V0.2** Mettre à jour la spécification : `[UI-01]` (500 × 520),
   `[UI-03]`, `[UI-04]` (accolades, pastille `on-solid`, ligne de la
   référence), `[UI-05]` (options retirées), `[VER-07]` (le bilan quitte la
   tête), sections 9.5 (grille toujours générée), 13.2 et 13.3. Ajouter les
   exigences de la carte des garanties et de la palette de base. Réviser
   l’abscisse de `[DER-01]` si V7 rend le nombre de nuances variable.
-- [ ] **V0.3** Ajouter à l’inventaire des textes les libellés de ce plan :
+  Fait : `[UI-01]`, `[UI-03]` à `[UI-05]`, `[VER-06]`, `[VER-07]`,
+  `[DER-17]`, sections 9.5, 12, 13.2 et 13.3 ; `[UI-09]` à `[UI-12]` ajoutées
+  pour les garanties, le détail d’une nuance, la couleur de base et les
+  réglages repliables. Le sens de la palette de base pour le moteur entre
+  avec V2 ; `[DER-01]` attend V7.
+- [x] **V0.3** Ajouter à l’inventaire des textes les libellés de ce plan :
   noms français des rôles, titres de carte, groupes de garanties, états,
   résumés des cartes repliées, « Auto a choisi Vivid », « Nuance libre ».
   Les marquer « À valider » ; ne pas redemander les textes déjà validés.
-- [ ] **V0.4** Déclarer dans `galerie/etats.cjs` les états de ce plan :
+  Fait : N026 à N042.
+- [x] **V0.4** Déclarer dans `galerie/etats.cjs` les états de ce plan :
   palette de base forcée, garanties respectées, garantie en échec, garantie
   choisie dans l’autre thème, carte repliée, nuance libre, référence.
   Chaque état annoncé nomme la case qui le rendra atteignable.
+  Fait : sept états annoncés ; la loi de la galerie accepte les cases V, et
+  « Génération partielle » et « Cadre déplacé » attendent V8.4 et V8.6.
 
 Critère : l’agent peut placer chaque élément de l’onglet sans relire ce plan,
 à partir de la spécification et de CONTRIBUTING.md.
