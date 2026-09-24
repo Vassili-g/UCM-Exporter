@@ -40,7 +40,7 @@ const TIRET_CADRATIN = '—';
  * `CONTRACT_VERSION` et `L'` compris.
  */
 export const ACRONYMES = [
-  'AA', 'APCA', 'API', 'ASCII', 'BASE', 'BOM', 'BOOLEAN', 'CI', 'CLI', 'COLOR', 'COMPONENT',
+  'AA', 'AAA', 'APCA', 'API', 'ASCII', 'BASE', 'BOM', 'BOOLEAN', 'CI', 'CLI', 'COLOR', 'COMPONENT',
   'CRLF', 'CSS', 'DOM', 'DS', 'DTCG', 'EACCES', 'EASING', 'ENOTDIR', 'ESM',
   'FIXED',
   'FLOAT', 'FRAME', 'GET', 'GIT', 'GNU', 'GRID', 'GROUP', 'HTML', 'HTTP',

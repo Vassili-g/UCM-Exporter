@@ -1,403 +1,326 @@
 # Revue d'ergonomie d'UCM Palettes
 
-Cette revue juge l'interface du plugin telle que le dépôt la livre au commit
-`98ddabf`, lots 0 à 7 : le parcours du designer, la hiérarchie de
-l'information de chaque écran, et ce que chaque message lui demande de faire.
-Elle part de la [spécification](./RECHERCHE-PLUGIN-PALETTES.md), de la
-[hiérarchie de l'information](../../../../CONTRIBUTING.md#la-hiérarchie-de-linformation)
-et du code de [`src/ui/`](../../../../packages/plugin-palettes/src/ui/).
+Ce rapport réunit deux sources sur l'interface du plugin et sur la planche
+qu'il dessine :
 
-Chaque constat se termine par une recommandation. Celles qui renversent une
-décision de la spécification le disent, et citent la décision.
+1. les retours du mainteneur, tirés de l'usage du plugin dans Figma. Ils font
+   autorité et sont reproduits sans modification ;
+2. la revue de l'interface faite sur la galerie des états et sur le code, au
+   commit `98ddabf`. Elle ne garde que les constats compatibles avec les
+   retours du mainteneur. Les recommandations qu'un retour écarte sont
+   listées à part, avec le retour qui les écarte.
 
-## Méthode
+Le texte du mainteneur est cité dans un bloc de texte brut : le contrôle de
+style du dépôt ne s'y applique pas, et le texte reste intact.
 
-- **Écrans regardés.** Les 30 états de la galerie, reconstruite au commit
-  revu, capturés à 600 × 720 et à 440 × 520, fenêtre visible et page entière,
-  thème clair.
-- **Textes relevés.** Le texte rendu de chaque état, pour compter les objets
-  et relire les messages dans leur contexte.
-- **Mesure.** Le moteur du plugin (`analyserPalette`) a analysé une palette
-  neuve pour chacune des dix-sept teintes 500 de Tailwind, puis des dix-sept
-  teintes 600, avec la recette par défaut. Le résultat fonde le constat 1.
-- **Code lu.** L'onglet Palettes, l'onglet Planche, la configuration,
-  l'éditeur de dérive, le suivi du dessin, la frontière et les constats.
+## Retours du mainteneur
 
-La revue ne juge pas le rendu dans Figma : ni le thème sombre de l'hôte, ni la
-planche dessinée, ni la fluidité du glisser. Ces points attendent M3 et M4.
-Les textes sont les rédactions provisoires de
-[TEXTES-A-VALIDER.md](./TEXTES-A-VALIDER.md) ; la revue en critique le rôle
-dans le parcours, pas la tournure.
+```text
+Revoir la hiérarchisation de l’UI globale : 
 
-## Verdict
+Il faut que les différentes sections soit identifiables :
+section 1 zone de création d’une nouvelle palette (encadré)
+Supprimer “1 palette dessinée sur la planche.”
+Transférer le tool de création de palette (“Nouvelle palette”) dans cette zone, directement en dessous du sélecteur de palette et du bouton “plus” car sinon on ne comprend pas le lien.
+Message “Planche, undefined 44 couleurs peintes diffèrent de l’aperçu, dont soft/light/50 : aperçu absent, planche #FAF5F5. Redessinez la palette. Si l’écart reste, signalez-le au mainteneur du plugin.” incompréhensible, si c’et une alerte ça devrait être signalé comme tel avec un séverity orange ou info en fonction de la gravité. Et ça n’a rien à faire à cet endroit. Et le message n’est pas compréhensible.
+Message “Prête” ? qu’est ce que ça veut dire ? qu’est ce qui est prête ? pour quoi faire ? 
+Bouton “Dessiner” → renommer en “Générer sur Figma” et ce bouton devrait appartenir à la section de la configuration de la palette car on veut exporter la palette quand on a fini de la configurer, ça ne va pas de le mettre en bouton d’action principal.
+La section “1 palette dessinée sur la planche.” et le bouton “Voir sur la planche” devrait être au même niveau que le bouton “Générer sur Figma” car ça concerne cette action
 
-Le plugin couvre chaque cas que la spécification énumère, et la galerie les
-rend tous visibles. Les cas limites sont traités avec soin : recette future
-ou illisible, calques étrangers, copie de cadre, couleur ramenée dans sRGB.
-Le parcours principal, lui, souffre de trois défauts qui touchent chaque
-session.
+section 2 Zone de configuration de la palette créée (encadré)
+supprimer “part de chroma 1,00 · soft 0,45 · vivid 0,95 · proche du cran 700” pas compréhensible en l’état
+Le bouton “Régler” devrait s’appeler “Configuration de la dérive” et à droite on met le texte “Dérive Tailwind · clair +0,8° · sombre −0,3°”
+On devrait pouvoir idenfier faiclement la couleur de base même dans la palette utilisée pour configurer la dérive, car c’est le centre immuable de la palette. c’est important de voir si le centre est en 300 ou en 600 ou autre.
+La section de réglage de la dérive devrait se situer en dessous de la visualisation des palettes
+La section des palettes devrait prendre plus de place horizontalement. Il faut grossir un peu les carrés.
+La section des palettes devrait être dans un encadré qui possède un background clair ou foncé, en fonction de si on est en mode light ou dark, et l’UI devrait s’adapter en conséquence (onglets, texte)
+La couleur de base fournie devrait être identifiée clairement comme la couleur de base (contour ?)
+Chaque rang de couleur devrait être identifié (50, 100 ,200 etc)
+Chaque rang de couleur devrait être identifié en tant que fonction tel que c’était défini dans le plan, avec des “range” si nécessaire (solid, on-solid) etc avec des explication plus détaillé quand on clique dessus.
+La visualisation des palettes est l’élément principal donc ça doit être une belle visualisation, bien faite, bien ordonnée avec de l’information bien structuré. 
+Il devrait y avoir un bouton ou lien qui dirige vers la config pour modifier les couleurs de fond dark/light
+Les onglets devraient s’appeler “Thème Light” Thème Dark” pour la nomenclature universelle
+Les différentes sections (Alertes / Notices / Document, profil de couleur etc) sont mal identifiables, il faut trouver un moyen pour mieux faire ressortir la fonction de chaque section au sein de la section de configuration des palettes
+Message “BdoubleO100, crans clair 100 soft et vivid ne s’écartent que de 0,012 ΔEok, sous 0,02.Éloignez les parts de chroma des deux profils dans la configuration.” On ne comprend rien, c’est trop technique : quel est le vrai problème et en quoi c’est un problème ? on parle à un designer ici
+Message “BdoubleO100, couleur de référence #B00100 Part de chroma 1,00, au-dessus de vivid (0,95) : la rampe vivid est un peu plus terne que la référence. Montez la part de vivid dans « Avancé » si la rampe doit l’égaler.” Même retour, quel est le problème ? on ne comprend rien.
+Message “Document, profil de couleurProfil non géré : Figma ne dit pas dans quel espace les couleurs de la planche seront peintes.Choisissez sRGB ou Display P3 dans les réglages de couleur du fichier.” A supprimer, pas utile.
+Le bouton “Soft = vivid” n’est pas clair. Le petit switch à coté pour configurer l’un ou l’autre séparement est bien. Mais il faut trouver une autre idée pour vraiment faire comprendre qu’on a la possibilité de désynchroniser le shift de couleur entre les deux palettes.
+Le fait qu’on ait une palette soft et une palette vivid n’est pas très bien expliqué. Je ne pense pas qu’il faille expliquer avec des phrases mais par exemple on pourrait avoir un réglage visible ergonomique pour augmenter ou diminuer la saturation de la palette vivid, ça permettrait d’expliquer la différence entre les deux (et d’avoir un reglage en plus) 
+Onglet “Planche”
+L’onglet planche est une bonne idée mais c’est très mal matérialisé, on devrait pouvoir ici visualiser toutes les palettes crées les unes en dessous des autres.
+Affichage type : 
+Nom de la palette
+Visualisation des palettes
+Action : 
+Accéder à la palette  (zoom sur figma)
+Modifier la palette (bascule onglet Palettes)
+Générer sur Figma
+Ajouter aux tokens du DS (pour plus tard)
+Les planches devrait être automatiquement trouvées et lues depuis le fichier sur lequel est lancé le plugin. (important)
+Terme “Recette” n’est pas du tout clair : ça veut dire quoi ?
+, 
+Panneau de configuration : 
+les typos ne correspondent pas aux normes utilisées sur le panneau principal, elles sont beaucoup trop grosses.
+pour la sélection des couleurs de fond de référence on pourrait avoir le choix d’un input hexa ou d’un color picker complet avec prévisualisation de la couleur
+Globalement il faudrait revoir la hierarchisation des sections pour mieux trouver l’info qu’on cherche
 
-1. **Toute palette neuve s'affiche en alerte.** Les 34 couleurs mesurées
-   déclenchent au moins une alerte. Le verdict « Prête » s'affiche au-dessus
-   de blocs jaunes, et une alerte qui sonne toujours cesse d'être lue.
-2. **La boucle régler, voir, dessiner est coupée à trois endroits.** La
-   configuration masque l'aperçu qu'elle modifie. L'onglet Palettes ne dit pas
-   si le cadre de la palette est à jour. Les constats nomment le geste qui les
-   lève sans y mener.
-3. **L'aperçu ne situe rien.** Les messages parlent en crans, « cran 700 »,
-   « crans clair 100 », « text sur surface ». L'aperçu montre onze pastilles
-   sans numéro, sans la couleur de référence et sans les crans des emplois.
+Planche générée sur Figma :
+Il faut globalement revoir le design, la hierarchisation des information n’est pas très bonne
+supprimer “Ce cadre est remplacé à chaque dessin.”
+La couleur de base devrait être textuellement identifiée comme telle
+Les informations de la couleur de base : “#A0B599 L 0,749 · C 0,046 · H 138° part de chroma 0,20 · proche du cran 400 blanc 2,19 – · noir 9,56 4,5 · fond clair 2,04 – · fond sombre 8,53 4,5” ne sont pas claire, il faut les recontextualiser, là on te balance de la donnée mais on ne sait pas de quoi tu parles
+Section “Boutons #2B760F cran 700 vivid, clair” on s’en fiche complètement, à supprimer
+Il faut ajouter une border aux cadre des mode light et dark car souvent le fond light sera juste blanc, on ne verra pas la délimitation
+Palettes light/dark :
+on a ça comme info pour chaque palette : “soft part 0,45”, soft OK mais part 0,45 on ne sait pas ce que c’est. Soit c’est expliqué à un autre endroit et différement, soit on supprimer.
+Chaque couleur a du texte  “soft.50 #F0FAEC L 0,974 C 0,021 H 137° fond 1,00 – noir 19,59” C’est pareil, plein d’infos mais aucun contexte, on ne comprend rien. Les checks il faut précisier AA ou AAA ou Fail etc sinon on ne comprend pas. “soft.50” c’est redondant, on a déjà l’info écrit en plus gros. Il manque les fonction et promesse “on-solid” etc: ça serait plus intéressant
+Section des Emplois :
+ça a l’air intéressant mais faut revoir tout l’UI, c’est trop dense, trop complexe à comprendre
+Section des Etats  :
+ça a l’air intéressant mais faut revoir tout l’UI, c’est trop dense, trop complexe à comprendre
+Section des Grilles de contraste : 
+c’est bien mais on a aucune légende ? impossible de comprendre quoi que ce soit.
+c’est moche
+```
 
-Les recommandations de la [dernière section](#priorités) traitent ces trois
-défauts d'abord. Aucune ne demande de changer le moteur.
+## Cause du message « Planche, undefined »
 
-## Le parcours du designer
+Le message d'écart de peinture cité par le mainteneur vient d'une
+construction désaccordée du plugin. Figma chargeait un `dist/code.js`
+construit avant le commit `2463caa`, et une interface construite après. Ce
+commit ajoute à chaque couleur relue sur la planche l'identifiant de sa
+palette. L'ancien sandbox l'omettait : l'interface a donc lu une palette
+`undefined`, n'a trouvé aucune couleur d'aperçu correspondante, et a compté
+les 44 pastilles comme des écarts. Le plugin a été reconstruit dans la copie
+de travail. Les constats du mainteneur sur ce message restent valables : sa
+place, sa sévérité et sa rédaction.
 
-Le tableau suit un designer du design system qui crée la palette d'une marque
-et la pose sur la planche. La colonne « Frottement » renvoie aux constats.
+Les observations du mainteneur sur la planche dessinée ont été faites avec
+cet ancien sandbox. Les textes qu'il cite sont toujours ceux du code actuel.
 
-| Étape | Ce que le designer fait | Ce qui marche | Frottement |
-|---|---|---|---|
-| 1. Ouvrir | Lance le plugin sur un fichier sans recette | Un seul champ et deux boutons ; « Depuis la sélection » évite de recopier un hexa | Le message parle de « recette » avant que le designer sache ce que le plugin produit ([C9](#c9-le-premier-lancement-parle-de-la-recette)) |
-| 2. Créer | Saisit un hexa ou prend la couleur de la sélection | La palette s'ouvre aussitôt, rangée, avec son aperçu | Le nom se saisit après, plus bas ; la palette s'appelle d'abord par son hexa, trois fois à l'écran |
-| 3. Lire le verdict | Regarde la barre du haut | Le verdict et « Dessiner » restent visibles à 440 × 520 | « Prête » au-dessus de blocs jaunes ([C1](#c1-toute-palette-neuve-saffiche-en-alerte)) |
-| 4. Comprendre | Survole les pastilles, lit les constats | L'infobulle donne hexa, contrastes et emplois | Rien ne relie un message à une pastille ([C3](#c3-laperçu-ne-situe-ni-la-référence-ni-les-emplois)) |
-| 5. Corriger | Cherche le geste que le constat propose | Chaque constat nomme son geste | Le geste mène à trois endroits, dont deux repliés ou masqués ([C4](#c4-un-constat-nomme-son-geste-sans-y-mener)) |
-| 6. Régler la dérive | Ouvre « Régler », glisse une poignée | Pointeur, clavier, champ, réglette et repère Tailwind sont liés | Échelle de ±90° pour des valeurs de ±10° ; aperçu en double ([C8](#c8-léditeur-de-dérive-occupe-beaucoup-pour-peu)) |
-| 7. Régler la recette | Ouvre l'engrenage, change une clarté ou une part | Le nombre de palettes touchées s'affiche par section | L'aperçu disparaît pendant tout le réglage ([C2](#c2-la-configuration-masque-ce-quelle-règle)) |
-| 8. Dessiner | Clique « Dessiner » | Progression dans le bouton, confirmation des calques étrangers | Le bouton ne dit pas si le cadre est déjà à jour ; la grille de contraste suit une case d'un autre onglet ([C5](#c5-longlet-palettes-ignore-létat-du-cadre), [C6](#c6-la-grille-de-contraste-suit-une-case-cachée)) |
-| 9. Suivre la planche | Ouvre l'onglet Planche | Une ligne par palette et son geste | Aucune synthèse ; les trois états ont le même gris ; les promesses manquées n'y figurent pas ([C7](#c7-longlet-planche-liste-sans-conclure)) |
-| 10. Échanger la recette | Exporte, importe, exporte le rapport | L'écart d'import précède le remplacement | L'écart ne dit ni ce qui change ni ce que la planche perd ([C11](#c11-lécart-dimport-ne-dit-pas-ce-qui-change)) |
+## Retours complémentaires de la revue
 
-## Constats forts
+Chaque retour ci-dessous précise ou complète un retour du mainteneur, ou
+couvre un point qu'il n'aborde pas. Ils sont rangés selon ses sections.
 
-### C1. Toute palette neuve s'affiche en alerte
+### Section 1 : création et génération
 
-**Observation.** Sur les dix-sept teintes 500 de Tailwind, les dix-sept
-déclenchent « Référence plus claire que le bouton », et onze déclenchent
-« Profils confondus ». Sur les teintes 600, les chiffres sont 17 et 12. La
-galerie le montre : la palette par défaut `#1E6FD9`, à peine créée, affiche
-« Prête » et deux blocs jaunes qui remplissent la moitié basse de la fenêtre.
+- **Le verdict « Prête ».** Il compte les promesses manquées et ne dit rien
+  d'autre. Le compte lui-même est une réponse à la question du mainteneur :
+  « 56/56 contrastes tenus », ou « 2 contrastes manqués ». La planche emploie
+  déjà ce compte dans l'en-tête d'un cadre ([PLA-07]).
+- **« Générer sur Figma » et l'état du cadre.** Le bouton actuel a le même
+  aspect quand le cadre de la palette est à jour, périmé ou jamais dessiné.
+  L'état ne se lit que dans l'onglet Planche. Afficher cet état à côté du
+  bouton, au même niveau que « Voir sur la planche », dit au designer s'il
+  doit générer de nouveau.
+- **La grille de contraste suit une case cachée.** La case « Grille de
+  contraste » est dans l'onglet Planche, et le bouton de l'onglet Palettes la
+  lit aussi (`ongletPlanche.grille()` dans `index.ts`). Un designer qui l'a
+  cochée une fois génère ensuite des cadres plus lourds sans voir l'option.
+  L'option doit être visible là où elle s'applique.
+- **Le nom de la palette.** Une palette neuve s'appelle par son hexa, qui
+  s'affiche alors trois fois : dans le sélecteur, dans le champ de référence
+  et en exemple du champ de nom. Demander le nom dans la zone de création
+  supprime ce doublon.
+- **La suppression.** « Supprimer » est un bouton plein principal, sans marque
+  de danger.
 
-Les deux alertes ont une cause structurelle :
+### Section 2 : visualisation des palettes
 
-- « Référence plus claire que le bouton » sonne dès que la clarté de la
-  référence dépasse 0,50, celle du cran 700. Une couleur de marque est presque
-  toujours plus claire. L'alerte décrit la conséquence de la décision D-O :
-  le bouton prend le 700 dans toutes les marques. Le designer ne peut pas la
-  lever sans changer de couleur de marque.
-- « Profils confondus » porte sur le cran 100, que `surface` emploie, et
-  sonne pour 249 teintes sur 360 ([VER-11] le mesure). Le geste proposé
-  modifie les parts de chroma de la recette, donc toutes les palettes, pour un
-  écart de 0,012 contre un seuil de 0,02.
+- **La couleur de base n'est pas un cran.** La rampe se construit autour
+  d'elle sans la contenir : `#FACC15` tombe entre les crans 300 et 400. Le
+  contour que propose le mainteneur se pose sur le cran le plus proche, et un
+  repère entre deux crans situe la position exacte. Le graphe de dérive porte
+  déjà un losange au même endroit, le pivot ; le même signe dans la
+  visualisation relierait les deux vues.
+- **Les fonctions des crans.** La table des emplois de la spécification donne
+  la fonction de chaque cran, commune à toutes les palettes :
 
-**Conséquence.** Le jaune devient le fond normal de l'écran. Les alertes qui
-demandent une décision, « Palettes proches » et « Référence hors de la
-rampe », arrivent dans la même couleur et au même rang que deux alertes que le
-designer a appris à ignorer. Le verdict « Prête » contredit l'écran.
+  | Emploi | Cran | États survol et appui |
+  |---|---|---|
+  | `solid` | 700 | 800, 900 |
+  | `on-solid` | fond de référence | aucun |
+  | `text` | 700 | 800, 900 |
+  | `surface` | 100 | 200, 300 |
+  | `border-control` | 600 | 700, 800 |
+  | `border-decorative` | 300 | aucun |
+  | `focus` | 600 | aucun |
 
-**Recommandation.**
+  Les « range » que demande le mainteneur sont ces suites d'états : un emploi
+  occupe son cran et les deux suivants. `on-solid` n'a pas de cran : il prend
+  le fond de référence du thème.
+- **Une promesse manquée désigne ses pastilles.** Une promesse est une paire,
+  par exemple `text` 700 sur `surface` 100. Quand elle manque, entourer les
+  deux pastilles de la paire montre le problème sans lire le message.
+- **Le survol déplace le contenu.** La ligne qui détaille un cran survolé
+  remplace la ligne d'aide et passe sur deux lignes à 440 px de large : tout ce
+  qui suit saute. L'explication au clic que demande le mainteneur supprime ce
+  saut si elle occupe une place réservée.
 
-- Sortir « Référence plus claire que le bouton » des constats. Le fait qu'elle
-  porte est le plus utile de la palette pour une marque : la couleur réelle de
-  ses boutons. Il mérite une place permanente sur la ligne de la référence,
-  pour toutes les palettes : « Bouton : ■ #0E5DC6, cran 700 ». Une alerte ne
-  reste utile qu'au-delà d'un écart que le designer juge gênant, à mesurer en
-  ΔEok entre la référence et le 700.
-- Déplacer « Profils confondus » vers la configuration, où se trouve son
-  geste, sous forme d'une ligne par cran : « Cran 100 clair : soft et vivid se
-  confondent sur 3 palettes ». La planche garde sa mention « ≈ » ([PLA-15]).
-  Cette recommandation renverse le défaut D-E, que le mainteneur peut revoir.
-- Nommer le verdict par ce qu'il compte : « 56/56 promesses tenues » plutôt
-  que « Prête ». La planche emploie déjà ce compte dans l'en-tête d'un cadre
-  ([PLA-07]).
+### Section 2 : réglage de la dérive
 
-### C2. La configuration masque ce qu'elle règle
+- **L'échelle du graphe.** L'ordonnée va de -90° à +90°. La dérive Tailwind la
+  plus forte du relevé vaut -50°, celle d'un bleu courant vaut -7,5° et +5,1°.
+  La courbe tient dans un sixième des 200 px du graphe et paraît plate. Une
+  échelle de ±30°, élargie dès qu'une valeur ou un glisser la dépasse, rend la
+  courbe lisible.
+- **Désynchroniser soft et vivid.** Une piste pour la demande du mainteneur :
+  une case « Même dérive pour soft et vivid », cochée par défaut. Décochée,
+  elle fait apparaître le sélecteur de profil qu'il juge clair, et le graphe
+  trace deux courbes, pleine et tiretée.
+- **La saturation de vivid.** Le réglage que propose le mainteneur existe déjà
+  sous une autre forme : la part de chroma de chaque profil, globale dans la
+  configuration, propre à la palette dans « Avancé ». Un curseur de
+  saturation de vivid dans la visualisation remplacerait « Avancé » pour ce
+  profil. Une borne le contraint : soft ne dépasse jamais vivid.
+- **Le libellé « Bout sombre »** passe sur deux lignes : la colonne des
+  libellés est trop étroite.
+- **Les contrastes pendant le réglage.** La dérive passe sous la
+  visualisation, et les constats plus bas encore. Un glisser qui fait manquer
+  un contraste doit se voir sans défiler : un compte des contrastes manqués à
+  côté du graphe suffit.
 
-**Observation.** L'engrenage remplace la vue de travail par la configuration
-(`montrerConfiguration` masque `travail`). Pendant qu'il change une clarté, une
-part ou un fond, le designer ne voit ni l'aperçu ni les verdicts. La
-spécification demande pourtant de régler courbes et parts « en regardant
-l'aperçu et la planche » (section 4). Les onze clartés de chaque courbe sont
-vingt-deux champs de texte, sans tracé. Les seuils WCAG 4,5 et 3 se modifient
-au même niveau que les parts de chroma. Aucune section ne revient à sa valeur
-par défaut.
+### Section 2 : alertes et messages
 
-**Conséquence.** Le réglage d'une courbe se fait à l'aveugle, puis se vérifie
-par aller-retour entre deux vues. « 3 palettes touchées » dit combien de
-palettes changent, pas si leurs promesses tiennent encore.
+- **Deux alertes sonnent sur presque toutes les palettes.** Le moteur a
+  analysé une palette neuve pour chacune des dix-sept teintes 500 de Tailwind,
+  puis des dix-sept teintes 600, avec les réglages par défaut. Les 34 couleurs
+  déclenchent « Référence plus claire que le bouton ». « Profils confondus »
+  sonne pour 11 teintes 500 et 12 teintes 600. Toute palette neuve s'affiche
+  donc en jaune, et le designer apprend à ignorer le jaune avant qu'une alerte
+  utile arrive.
+- **« Référence plus claire que le bouton ».** Le mainteneur juge inutile la
+  section « Boutons » de la planche, qui porte la même information. L'alerte
+  de l'onglet Palettes sonne pour toute couleur plus claire que le cran 700 et
+  ne se lève qu'en changeant de couleur de marque : elle suit le même sort.
+- **« Profils confondus ».** Le vrai problème, dans les mots du designer :
+  au cran 100, la version soft et la version vivid sont presque identiques, et
+  un composant qui passe de l'une à l'autre ne change pas visiblement. Le
+  geste qui le lève modifie la saturation de toutes les palettes : sa place
+  est dans la configuration, où ce geste se fait.
+- **Le poids des sévérités est inversé.** Une promesse manquée porte un filet
+  rouge sans fond, une alerte un filet orange sur fond jaune
+  (`.constat-promesse` et `.constat-alerte` dans `styles.css`). La promesse
+  manquée, plus grave, pèse moins. Le signalement par sévérité que demande le
+  mainteneur doit suivre l'ordre bloquant, contraste manqué, alerte,
+  information.
+- **Un message nomme son geste sans y mener.** « Réglez la dérive ou les parts
+  de la palette, ou la courbe claire dans la configuration » renvoie à trois
+  endroits, dont un replié et un masqué. Chaque geste doit être un lien qui
+  ouvre l'endroit, comme le lien vers les fonds de référence que demande le
+  mainteneur.
+- **Les messages en double.** Un contraste manqué en soft et en vivid sur la
+  même paire fait deux blocs presque identiques. Un bloc par paire et par
+  thème suffit : « text sur surface, thème Light : soft 4,18, vivid 4,31, pour
+  4,5 ».
 
-**Recommandation.**
+### Onglet Planche
 
-- Garder en tête de la configuration un aperçu compact : la palette ouverte,
-  ses deux rampes du mode choisi, et le compte des promesses manquées sur
-  toutes les palettes, recalculé à chaque saisie (« 0 → 4 promesses
-  manquées »).
-- Tracer les deux courbes au-dessus de leurs champs, sur le modèle du graphe
-  de dérive, avec le repère des crans 50, 600 et 700 que la garantie
-  mesure ([ENT-10]).
-- Replier les seuils de contraste sous une section distincte, avec une ligne
-  qui dit que 4,5 et 3 sont les seuils de WCAG. Un seuil abaissé change le
-  sens de « promesse tenue » sur toutes les planches.
-- Offrir « Valeurs par défaut » par section.
+- **L'état de chaque palette.** Dans l'affichage que propose le mainteneur,
+  chaque palette porte deux états : son cadre sur Figma (à jour, périmé, jamais
+  généré) et ses contrastes (tenus ou manqués). Aujourd'hui, les trois états
+  du cadre ont le même gris, et les contrastes manqués n'apparaissent pas :
+  une palette qui en manque se génère depuis cet onglet sans que le designer
+  le voie.
+- **Une action pour les cadres périmés.** Quand deux cadres sont périmés,
+  l'action utile est « Générer les 2 cadres périmés », plutôt que de tout
+  générer.
+- **L'en-tête.** Il affiche la version de la recette et son empreinte, qui ne
+  décident d'aucun geste. Le compte « 0 palettes » s'écrit « aucune palette ».
+- **La lecture automatique des planches.** Le plugin lit déjà deux choses dans
+  le fichier ouvert : les réglages de toutes les palettes, rangés sur le
+  document, et les cadres qu'il a dessinés, retrouvés par leur identifiant.
+  Le cas que la demande du mainteneur vise reste à préciser : un cadre copié
+  depuis un autre fichier, une planche sans ses réglages, ou l'affichage des
+  palettes du fichier dans l'onglet.
+- **« Ajouter aux tokens du DS ».** La spécification range la création de
+  variables en option ultérieure, hors de tout lot (section 17).
 
-### C3. L'aperçu ne situe ni la référence ni les emplois
+### Terme « Recette »
 
-**Observation.** L'aperçu montre deux rangées de onze pastilles de 24 px,
-sans numéro de cran. La couleur de référence n'y figure pas ; seule la ligne
-« proche du cran 600 » la situe. Les crans que les emplois citent, 700 pour
-`solid` et `text`, 100 pour `surface`, 600 pour `border-control` et `focus`,
-ne sont pas marqués. Une promesse manquée, « text sur surface », ne désigne
-aucune pastille. Le graphe de dérive, lui, numérote ses onze colonnes.
+Le mot désigne l'ensemble des réglages qui fabriquent les palettes du
+fichier : clartés de chaque cran, saturation des deux profils, fonds de
+référence, seuils. Il apparaît dans les messages, l'en-tête de l'onglet
+Planche, le titre de la configuration et les boutons d'export et d'import.
+« Réglages des palettes » dit la même chose.
 
-L'état « alertes seules » montre l'effet : la référence `#FACC15` tombe entre
-les crans 300 et 400, le bouton est un brun `#8A560E`. Le designer ne le
-découvre qu'en lisant l'alerte, où deux pastilles d'exemple le montrent.
+### Panneau de configuration
 
-**Conséquence.** Chaque message demande au designer de convertir un numéro de
-cran en position, par survol. Le lien entre ce qu'il voit et ce qu'on lui dit
-passe par sa mémoire.
+- **L'aperçu disparaît pendant le réglage.** L'engrenage remplace la vue de
+  travail par la configuration. Le designer change une clarté ou une
+  saturation sans voir les palettes ni les contrastes. Un aperçu compact de la
+  palette ouverte en tête du panneau, avec le compte des contrastes manqués
+  sur toutes les palettes, montre l'effet de chaque saisie.
+- **Les clartés sans tracé.** Les deux courbes sont vingt-deux champs de
+  texte. Un tracé au-dessus des champs, sur le modèle du graphe de dérive,
+  montre leur forme.
+- **Les seuils d'accessibilité.** 4,5 et 3 sont des seuils de WCAG, modifiables
+  au même niveau que les choix visuels. Les abaisser change le sens de
+  « contraste tenu » sur toutes les planches : ils méritent une section à part,
+  repliée.
+- **Le retour aux valeurs par défaut** n'existe pour aucune section.
 
-**Recommandation.**
+### Planche générée sur Figma
 
-- Numéroter les colonnes sous les rampes, comme le graphe de dérive.
-- Placer la référence dans la rangée `vivid` par un losange, le même que le
-  pivot du graphe, à sa position de clarté entre deux crans.
-- Marquer d'un trait les crans des emplois, et entourer les deux pastilles de
-  la paire quand une promesse manque.
+- **Les niveaux de contraste.** Les deux seuils du plugin correspondent à des
+  niveaux de WCAG 2 : 4,5 est le niveau AA du texte courant, 3 le niveau AA du
+  grand texte et des éléments d'interface. Le niveau AAA du texte courant vaut
+  7, et le plugin ne le mesure pas. Afficher « AA », « AAA » ou « Échec »,
+  comme le demande le mainteneur, demande d'ajouter ce troisième seuil.
+- **La légende de la grille de contraste.** La grille colore chaque case en
+  vert, jaune ou gris selon le seuil tenu (section 9.5). Sa légende donne ces
+  trois couleurs et leur niveau.
 
-[UI-04] réserve les valeurs d'un cran au survol. Un numéro et des repères
-situent sans donner de valeur, et restent compatibles avec cette exigence.
+### Points transversaux
 
-### C4. Un constat nomme son geste sans y mener
+- **Un refus d'enregistrement laisse travailler dans le vide.** Quand les
+  réglages ont changé ailleurs, le plugin propose « Recharger », qui perd la
+  dernière modification. Les champs restent modifiables, mais plus rien ne
+  s'enregistre tant que le designer n'a pas rechargé ; le seul signe est
+  « non rangé », en petit. Figer l'onglet pendant ce refus, et proposer
+  d'exporter sa version avant de recharger.
+- **L'écart d'import ne dit pas ce qui change.** « Palette modifiée : Bleu
+  roi » ne dit pas quel réglage, « Paramètre commun modifié : seuils » ne
+  donne pas les valeurs. L'écart ne dit pas non plus ce que la planche perd :
+  le cadre d'une palette retirée devient orphelin, celui d'une palette
+  modifiée devient périmé.
+- **Un dessin interrompu cite l'exception brute** : « in set_characters: font
+  not loaded ».
+- **La génération réussie n'a pas d'état dans la galerie.** Le message de
+  succès et « Voir sur la planche », que le mainteneur veut placer à côté du
+  bouton, n'ont jamais été regardés hors de Figma.
 
-**Observation.** Les gestes proposés renvoient à des endroits que l'écran ne
-montre pas :
+## Recommandations de la première revue écartées
 
-| Constat | Geste proposé | Où il se fait |
+| Recommandation | Retour du mainteneur qui l'écarte |
+|---|---|
+| Afficher en permanence la couleur du bouton, cran 700, sur la ligne de la référence | La section « Boutons » de la planche est « à supprimer » |
+| Montrer les thèmes clair et sombre empilés, sans bascule | Les onglets restent, nommés « Thème Light » et « Thème Dark » |
+| Changer le libellé du bouton selon l'état du cadre, « Dessiner » ou « Redessiner » | Le bouton s'appelle « Générer sur Figma » |
+| Masquer la visualisation principale quand l'éditeur de dérive est ouvert | La dérive se place sous la visualisation, et la couleur de base doit se voir dans la rampe de l'éditeur |
+| Expliquer au premier lancement, en une phrase, ce que produit une palette | La différence entre soft et vivid s'explique par un réglage, pas par des phrases |
+| Laisser le libellé « part de chroma » en information secondaire | La ligne est « à supprimer » |
+
+## Exigences de la spécification touchées
+
+Les retours du mainteneur changent ces exigences de la
+[spécification](./RECHERCHE-PLUGIN-PALETTES.md). Elles se réécrivent avant le
+lot qui les implémente.
+
+| Exigence | Ce qu'elle dit | Ce que le retour change |
 |---|---|---|
-| Promesse manquée | « Réglez la dérive ou les parts de la palette, ou la courbe claire dans la configuration » | Trois endroits : « Régler », « Avancé » replié en bas, l'engrenage |
-| Profils confondus | « Éloignez les parts de chroma des deux profils dans la configuration » | L'engrenage, qui masque la palette |
-| Référence plus vive que `vivid` | « Montez la part de vivid dans « Avancé » » | « Avancé », replié sous les constats |
-
-Les promesses manquées de `soft` et de `vivid` sur la même paire font deux
-blocs au texte presque identique.
-
-**Recommandation.**
-
-- Faire du geste un bouton discret qui ouvre l'endroit et y place le focus :
-  « Avancé » déplié sur le champ de la part, la configuration défilée jusqu'à
-  la courbe, l'éditeur de dérive ouvert.
-- Regrouper par paire et par mode : « text sur surface, clair : soft 4,18,
-  vivid 4,31, pour 4,5 ». La liste d'une palette qui manque la même paire
-  dans les deux profils passe de deux blocs à un.
-
-### C5. L'onglet Palettes ignore l'état du cadre
-
-**Observation.** Le bouton « Dessiner » de la barre a le même libellé et le
-même poids quand le cadre est à jour, périmé ou jamais dessiné. L'état du
-cadre ([PLA-20]) ne se lit que dans l'onglet Planche. Après un réglage, le
-designer ne sait pas s'il doit redessiner sans changer d'onglet.
-
-**Recommandation.** Faire suivre au bouton l'état du cadre de la palette
-ouverte : « Dessiner » pour une palette jamais dessinée, « Redessiner » pour
-un cadre périmé, et « Voir sur la planche » en bouton secondaire quand le
-cadre est à jour. L'état entre au rang 1 sans ajouter d'objet.
-
-### C6. La grille de contraste suit une case cachée
-
-**Observation.** La case « Grille de contraste » est dans l'onglet Planche.
-Le bouton « Dessiner » de l'onglet Palettes la lit aussi
-(`ongletPlanche.grille()` dans `index.ts`). Un designer qui l'a cochée une
-fois dessine ensuite, depuis l'onglet Palettes, des cadres plus lourds sans
-voir l'option. La case n'explique pas non plus ce qu'elle ajoute.
-
-**Recommandation.** Garder la grille à l'onglet Planche seul, ou montrer son
-état à côté de « Dessiner » dans l'onglet Palettes. Donner à la case sa
-raison en infobulle : « Une grille de 11 × 11 par rampe : quel cran se pose
-sur quel cran ».
-
-### C7. L'onglet Planche liste sans conclure
-
-**Observation.** L'en-tête de l'onglet donne le nombre de palettes, la
-version de la recette, l'empreinte et l'espace de couleur. Aucune de ces
-valeurs ne décide d'un geste. Les états « à jour », « périmée » et « jamais
-dessinée » ont la même couleur secondaire. L'action principale reste
-« Dessiner toutes les palettes » quand un seul cadre est périmé. La liste ne
-montre pas les promesses manquées : une palette qui en manque se dessine
-depuis cet onglet sans que le designer le voie. Un cadre à jour n'offre pas
-« Voir sur la planche ».
-
-La hiérarchie de CONTRIBUTING.md place le verdict au rang 1. L'onglet n'en a
-pas.
-
-**Recommandation.**
-
-- Un verdict d'onglet en tête : « 1 cadre périmé, 1 palette jamais
-  dessinée » ou « Planche à jour ».
-- Une action principale qui porte sur l'écart : « Redessiner 2 cadres ».
-  « Dessiner toutes les palettes » passe en secondaire.
-- Le verdict des promesses sur chaque ligne, en couleur de danger quand une
-  promesse manque.
-- Le nom de chaque palette cliquable vers son cadre.
-- L'empreinte dans le rapport et dans l'en-tête du cadre, où elle sert.
-  Corriger aussi « 0 palettes » en « aucune palette ».
-
-## Constats moyens
-
-### C8. L'éditeur de dérive occupe beaucoup pour peu
-
-**Observation.**
-
-- L'ordonnée va de -90° à +90° ([DER-01]). La dérive Tailwind la plus forte
-  du relevé vaut -50°, et celle de `#1E6FD9` vaut -7,5° et +5,1°. La courbe
-  tient dans un sixième de la hauteur du graphe, qui occupe 200 px.
-- Déplié, l'éditeur montre sa propre rampe et une bande de teintes. L'aperçu
-  principal répète la même rampe dessous. À 600 × 720, les constats passent
-  sous le pli ; la spécification l'avait prévu (section 12).
-- Le bouton « soft = vivid » s'affiche comme une égalité même quand les deux
-  profils diffèrent. Son état se lit au seul liseré bleu.
-- « Bout sombre » passe sur deux lignes, la colonne des libellés étant trop
-  étroite.
-
-**Recommandation.**
-
-- Une échelle qui s'adapte : ±30° par défaut, élargie à ±90° dès qu'une valeur
-  ou un glisser dépasse. Le graphe gagne en lecture ce qu'il perd en hauteur.
-- Masquer l'aperçu principal quand l'éditeur est déplié, et afficher sous
-  l'éditeur le compte des promesses manquées, pour qu'un glisser qui en fait
-  manquer une se voie sans défiler.
-- Remplacer le bouton par une case : « Même dérive pour soft et vivid ».
-
-### C9. Le premier lancement parle de la recette
-
-**Observation.** L'écran vide dit « Aucune recette dans ce fichier : la
-recette par défaut s'appliquera à la première palette. ». Le designer lit un
-terme interne avant de savoir ce que le plugin produit. Le champ porte
-`#1E6FD9` en exemple, qui se lit comme une valeur saisie. Trois quarts de la
-fenêtre restent vides.
-
-**Recommandation.** Une phrase qui dit le résultat : « Une palette part d'une
-couleur et produit quatre rampes de onze crans, soft et vivid, en clair et en
-sombre. ». Mettre « Depuis la sélection » en premier : la couleur de marque
-est souvent déjà dans le fichier. Demander le nom dans le même panneau, pour
-ne pas afficher l'hexa en guise de nom.
-
-### C10. Un refus de rangement laisse le designer travailler dans le vide
-
-**Observation.** Quand la recette a changé ailleurs, le bloc « Recette du
-fichier » propose « Recharger », qui perd la dernière modification. Les champs
-restent éditables, mais la frontière ne range plus rien tant que l'état n'est
-pas relu (`ranger` rend la main quand le statut est `refuse`). Le seul signe
-est « non rangé », au rang 3. Deux boutons pleins, « Recharger » et
-« Dessiner », se disputent l'écran.
-
-**Recommandation.** Figer l'onglet pendant le refus, comme pendant un dessin.
-Offrir « Exporter ma version » avant « Recharger », pour que la modification
-perdue reste récupérable par un import. « Dessiner » passe en secondaire ou se
-désactive.
-
-### C11. L'écart d'import ne dit pas ce qui change
-
-**Observation.** L'écart liste « Palette modifiée : Bleu roi » et
-« Paramètre commun modifié : seuils », sans les valeurs. Il ne dit pas ce que
-l'import fait à la planche : le cadre d'une palette retirée devient orphelin,
-celui d'une palette modifiée devient périmé.
-
-**Recommandation.** Donner la valeur avant et après pour chaque paramètre
-commun (« seuil texte : 4,5 → 7 »), et le champ modifié pour chaque palette
-(« référence », « dérive », « parts »). Ajouter une ligne de conséquence :
-« 1 cadre deviendra orphelin, 1 cadre sera périmé ».
-
-### C12. Le poids des sévérités s'inverse
-
-**Observation.** La feuille de style donne à une promesse manquée un filet
-rouge sans fond, et à une alerte un filet orange sur un fond jaune
-(`.constat-promesse` et `.constat-alerte` dans `styles.css`). Le fond pèse
-plus que le filet : la promesse manquée, deuxième rang de la section 11.4, se
-lit moins que l'alerte, troisième rang. Avec C1, le jaune domine chaque
-écran.
-
-**Recommandation.** Un seul moyen par rang, dans l'ordre des sévérités : fond
-et filet pour le bloquant, filet seul pour la promesse et l'alerte, couleur
-secondaire pour la notice. Ou le fond de danger pour la promesse. Le choix
-revient au point (b) du protocole, dans Figma.
-
-### C13. Deux niveaux d'onglets identiques
-
-**Observation.** La bascule « Clair / Sombre » de l'aperçu emploie le même
-composant que les onglets « Palettes / Planche ». Le designer voit deux rangées
-d'onglets de même poids, dont l'une change d'écran et l'autre change de
-rampe. Les promesses et les alertes citent les deux modes ; l'aperçu n'en
-montre qu'un.
-
-**Recommandation.** Montrer les deux modes empilés : quatre rangées de 24 px
-tiennent dans la hauteur d'un bloc de constat. La bascule disparaît, et une
-promesse manquée en sombre se voit sans clic. À défaut, un contrôle segmenté
-plus petit que les onglets.
-
-## Constats faibles
-
-- **Le succès d'un dessin n'a pas d'état dans la galerie.** La ligne « 1
-  palette dessinée sur la planche. » et son « Voir sur la planche », seul
-  résultat attendu du plugin, n'ont jamais été regardées au protocole. Les
-  écarts de peinture non plus.
-- **Le message d'un dessin interrompu cite l'exception brute** : « in
-  set_characters: font not loaded ». Le designer n'en tire rien de plus que
-  « le dessin s'est arrêté ».
-- **L'infobulle de l'aperçu remplace la ligne d'aide** et passe sur deux lignes
-  à 440 px : le contenu sous l'aperçu saute au survol. Une hauteur réservée
-  de deux lignes supprime le saut.
-- **« Supprimer » est un bouton plein principal**, sans marque de danger, dans
-  la confirmation de suppression.
-- **Le vocabulaire affiché mêle trois registres** : la conception (« part de
-  chroma », « ΔEok »), l'architecture (« emplois », « promesses », « crans »)
-  et le code (« recette », « empreinte », « rangé »). Pour l'équipe du design
-  system, les deux premiers se justifient ; le troisième peut céder la place à
-  « réglages du fichier », « enregistré », et l'empreinte peut sortir de
-  l'écran.
-- **La ligne « part de chroma 0,89 · soft 0,45 · vivid 0,95 · proche du
-  cran 600 »** place la référence entre les deux profils par des nombres. Le
-  losange de C3 dit la même chose à la lecture.
-
-## Ce qui tient
-
-Ces choix sont à garder dans toute refonte :
-
-- le verdict et « Dessiner » dans la barre du haut, visibles à la taille
-  minimale, éditeur replié ou non ;
-- la création par la sélection, et la notice qui dit quand la couleur a été
-  ramenée dans sRGB ;
-- les constats en trois parties séparées, où, quoi, geste ;
-- l'éditeur de dérive réglable au pointeur, au clavier, au champ et à la
-  réglette, avec le repère Tailwind toujours visible ;
-- la confirmation des calques étrangers, qui les nomme avant de les effacer ;
-- les gestes de sortie d'une recette illisible ou future ;
-- le rangement automatique à la fin de chaque geste, avec son indication
-  discrète.
-
-## Priorités
-
-Ordonnées par gain pour le designer, puis par coût. Les trois premières
-traitent les défauts du verdict.
-
-| # | Recommandation | Constats | Coût | Décision à prendre |
-|---|---|---|---|---|
-| 1 | Sortir « Référence plus claire que le bouton » des constats, afficher le bouton sur la ligne de la référence | C1, C3 | Faible | Mainteneur, sur [VER-12] |
-| 2 | Déplacer « Profils confondus » dans la configuration | C1, C4 | Moyen | Mainteneur, sur D-E |
-| 3 | Numéros de cran, losange de référence et repères d'emplois dans l'aperçu | C3 | Moyen | Aucune |
-| 4 | « Dessiner » suit l'état du cadre | C5 | Faible | Aucune |
-| 5 | Verdict et action principale de l'onglet Planche | C7 | Moyen | Aucune |
-| 6 | Aperçu et compte des promesses dans la configuration | C2 | Moyen | Aucune |
-| 7 | Gestes des constats en boutons, promesses regroupées par paire | C4 | Moyen | Aucune |
-| 8 | Poids des sévérités | C12 | Faible | Point (b) du protocole, dans Figma |
-| 9 | Refus de rangement figé, export avant rechargement | C10 | Faible | Aucune |
-| 10 | Échelle adaptative et aperçu unique dans l'éditeur | C8 | Moyen | Mainteneur, sur [DER-01] |
-| 11 | Grille de contraste visible où elle s'applique | C6 | Faible | Aucune |
-| 12 | Écart d'import détaillé | C11 | Moyen | Aucune |
-| 13 | Premier lancement, onglets imbriqués, constats faibles | C9, C13 | Faible | Aucune |
-
-Les recommandations 1 et 2 se décident avant M2 : elles retirent deux des
-messages que [TEXTES-A-VALIDER.md](./TEXTES-A-VALIDER.md) soumet au choix du
-mainteneur. Un état « dessin réussi » entre dans la galerie avant toute
-reprise de l'onglet Planche.
+| [UI-02] | Deux onglets ; l'onglet Planche porte les gestes du document | L'onglet Planche montre chaque palette, sa rampe et quatre actions |
+| [UI-04] | Pastilles de 24 px, valeurs au survol seulement | Pastilles plus grandes, numéro et fonction de chaque cran, explication au clic |
+| [UI-05] | « Dessiner » range et dessine la palette ouverte, au rang 1 | « Générer sur Figma », dans la section de configuration de la palette |
+| [PLA-06] | « Dessiner » et « Dessiner toutes les palettes » | « Générer sur Figma » |
+| [PLA-07] | En-tête du cadre : version, empreinte, espace, promesses | Hiérarchie revue ; mention « remplacé à chaque dessin » retirée |
+| [PLA-08] | Carte de la référence ; cran 700 `vivid` affiché à côté quand l'alerte sonne | Couleur de base nommée comme telle, valeurs remises en contexte, section « Boutons » retirée |
+| [PLA-09] | Sections light et dark peintes de leur fond | Une bordure délimite chaque section |
+| [PLA-10] | Une rangée porte son profil et sa part de chroma | La part se retire, ou s'explique ailleurs |
+| Section 9.3 | Carte d'un cran : nom, hexa, OKLCH, contrastes, seuil tenu | Niveau AA, AAA ou échec ; fonctions du cran ; nom redondant retiré |
+| Section 9.5 | Grille de contraste | Légende |
+| Section 11.4 | Notice `LEGACY` | Retirée |
+| [VER-12] | Alerte « Référence plus claire que le bouton » | Retirée, avec la section « Boutons » |
+| [DER-12] | Bouton de lien « soft = vivid » | Autre moyen de montrer que les deux dérives se désynchronisent |
+| Section 2 | Vocabulaire : « recette » | Terme à remplacer |
