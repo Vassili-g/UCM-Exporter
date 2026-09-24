@@ -210,9 +210,8 @@ test('la couleur des tracés d’une icône est située sur le slot de l’icôn
 test('un calque écarté de la projection garde sa place dans la vue exacte', async () => {
   // La vue exacte part de la vraie racine du variant, pas du node de layout élu :
   // un calque posé à côté de ce node y est publié, et sa peinture y est située.
-  // C'est la projection `structure` qui l'écarte, et elle a déjà son message et
-  // son geste. Un second message sur la même peinture réclamerait autre chose au
-  // même designer pour le même calque.
+  // Seule la projection `structure` l'écarte, et rien ne manque au contrat : ni
+  // le calque ni sa peinture ne réclament un geste.
   const errant = {
     type: 'RECTANGLE',
     id: 'stray-id',
@@ -269,10 +268,10 @@ test('un calque écarté de la projection garde sa place dans la vue exacte', as
   assert.deepEqual(structure.children.map((child) => child.slot), ['label']);
   // La vue exacte, elle, le situe : c'est elle que le consommateur lit.
   assert.deepEqual(variants[0]?.paintPlacements.fills?.stray, [['repère']]);
-  // Son déplacement est demandé une seule fois, par la note dédiée à la
-  // projection ; la peinture, elle, ne réclame rien.
-  assert.ok(notices.some((note) => note.includes('Repère')
-    && note.includes('Déplacez-le dans « Wrapper »')));
+  assert.equal(
+    [...warnings, ...notices].some((message) => message.includes('Repère') && message.includes('intérieur')),
+    false,
+  );
   assert.equal(
     [...warnings, ...notices].some((message) => message.includes('arbre publié')),
     false,

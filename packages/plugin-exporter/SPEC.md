@@ -170,9 +170,10 @@ donc toujours le même arbre. Un variant privé de ce wrapper est signalé plut�
 que rattrapé en silence.
 
 Ce que l'élection écarte n'est pas oublié : un calque posé **à côté** du node
-élu (un badge, un liseré, un second bloc) ne reçoit ni slot, ni typographie, ni
-visibilité, alors que ses couleurs entrent bien dans `variants[].tokens`, relevé
-sur le variant entier. Chaque calque écarté produit donc un avertissement.
+élu (un badge, un liseré, un second bloc) ne figure pas dans la projection de
+référence, mais la vue exacte de son variant, qui part de la racine, le publie
+avec son slot, sa typographie et sa visibilité. L'élection ne produit donc aucun
+avertissement.
 
 La liste s'arrête là, délibérément : `RECTANGLE`, `ELLIPSE` et `LINE` en sont
 exclus. Ce sont les formes dont le type ne dit rien de l'usage (une surface, un

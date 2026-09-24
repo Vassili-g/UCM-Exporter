@@ -12,7 +12,6 @@ import type { IconLayerSummary } from './extractIconLayers';
 import {
   extractLayout,
   placedDependenciesFromTree,
-  warnLayersOutsideLayoutNode,
 } from './extractLayout';
 import type { PlacedDependencies } from './extractLayout';
 import type { PublishedNodePaths } from './extractLayout';
@@ -202,15 +201,6 @@ export async function extractStructure(
   );
   const targetedLayers = new Set(iconLayers.map((layer) => layer.figmaLayer));
 
-  // Un calque posé hors du node élu apporte ses couleurs à `variantTokens` dans
-  // tous les variants, pas seulement dans la référence : le relevé des couleurs
-  // couvre la matrice entière. `extractLayout` ne voit que la référence, on
-  // complète donc ici. Les messages identiques se dédupliquent à l'export.
-  for (const { component } of matrix.variants) {
-    if (component === referenceLayout?.component) continue;
-    await warnLayersOutsideLayoutNode(component, layoutNodeOf(component), notices, composed);
-  }
-
   // « Où vivent les dimensions » se décide avant de les relever, et une seule
   // fois : c'est cette réponse que suivent à la fois l'extraction du layout de
   // référence et le choix final de `dimensions`. La décider après coup ferait
@@ -229,7 +219,6 @@ export async function extractStructure(
       !aUnAxeDeTailles,
       placedComposes,
       new Set(),
-      notices,
     )
     // Sans composant à interroger, le contrat retient le comportement par
     // défaut plutôt que d'inventer un hug que rien ne montre.
@@ -270,7 +259,6 @@ export async function extractStructure(
       true,
       exactPlaced,
       aUnAxeDeTailles ? new Set([layoutNodeOf(entry.component).id]) : new Set(),
-      warnings,
       exactPaths,
     );
     exactLayouts.push({ entry, structure: exactStructure, placed: exactPlaced, paths: exactPaths });

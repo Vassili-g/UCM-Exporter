@@ -596,7 +596,7 @@ test('l’arbre place exactement les dépendances que le scan a relevées', asyn
   assert.deepEqual(Array.from(placed.values()), composes);
 });
 
-test('une dépendance posée hors du node de layout n’est pas placée, et se signale', async () => {
+test('une dépendance posée hors du node de layout n’est pas placée par la projection de référence', async () => {
   const perdu = instance('btn-perdu', 'Bouton perdu', 'Button');
   const contenu = cadre('inner', 'Contenu', []);
   const carte = racine('card', 'Variant=Default', [contenu, perdu]);
@@ -614,10 +614,9 @@ test('une dépendance posée hors du node de layout n’est pas placée, et se s
     placed,
   );
 
-  // L'arbre ne peut pas la situer : `composes` la laissera donc tomber elle
-  // aussi, plutôt que d'annoncer une dépendance sans emplacement.
+  // L'arbre de référence ne peut pas la situer. La vue exacte du variant, qui
+  // part de sa racine, la place : c'est elle que `composes` suit.
   assert.equal(placed.size, 0);
-  assert.equal(warnings.some((warning) => warning.includes('« Bouton perdu »')), true);
 });
 
 test('une instance dont le maître est illisible avertit au lieu de disparaître', async () => {

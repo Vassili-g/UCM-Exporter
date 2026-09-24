@@ -28,7 +28,6 @@ const CANAUX = [
   'canal',
   'pathNotices',
   'variantWarnings',
-  'layoutElectionWarnings',
   'matrixWarnings',
   'projectionWarnings',
 ];

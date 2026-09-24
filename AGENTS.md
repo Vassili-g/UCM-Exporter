@@ -561,15 +561,11 @@ La spécification en lien porte le raisonnement.
   d’où part la recherche. `layoutNodes.ts` en est l’unique autorité. Aucune
   extraction ne choisit le calque qu’elle décrit : toutes reçoivent l’élection,
   `sizes` comprise. → [spec](./docs/format/FORMAT.md#3-layout)
-- Ce que l’élection écarte est dit. Un calque hors du node élu, ou à côté d’une
-  dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni visibilité,
-  alors que ses couleurs entrent dans `variants[].tokens` : il avertit.
-- Sauf quand le node élu vit dans un composant **publié** imbriqué, reconnu au
-  nom de son maître (ni `.` ni `_` en tête). Ce composant n’est candidat que
-  parce qu’il n’a pas ses règles, et le point bloquant qui les réclame porte
-  déjà la cause : tous les calques du composant sélectionné se retrouvent alors
-  mécaniquement « en dehors », et leurs messages enterreraient ce point sous ses
-  propres conséquences. Une coquille interne, elle, garde les siens.
+- Ce que l’élection écarte, la vue exacte le publie. La projection de
+  référence ne décrit que le node élu ; la vue exacte de chaque variant part de
+  sa racine, et tout calque de `getAllNodes` y reçoit un chemin, en slot ou sous
+  la feuille qui le contient. Aucun message ne dit donc perdu un calque que
+  l’élection écarte. → [spec](./packages/plugin-exporter/SPEC.md#3-layout)
 - Un auto-layout linéaire publie ses alignements (`justifyContent`,
   `alignItems`) ; ses slots ne publient que leurs exceptions (`alignSelf`,
   `flexGrow`). Une absence signifie hors flux ou non applicable, jamais

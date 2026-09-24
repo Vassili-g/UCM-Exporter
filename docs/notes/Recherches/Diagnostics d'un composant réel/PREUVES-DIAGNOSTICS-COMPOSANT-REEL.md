@@ -2,9 +2,9 @@
 
 ## État
 
-- Lot courant : L9
-- Branche et `HEAD` : `main`, `ff5e690`
-- Dernière porte franchie : H1
+- Lot courant : L7
+- Branche et `HEAD` : `main`, `d0bc9c4`
+- Dernière porte franchie : H2
 
 La copie de travail partagée porte le travail non commité d'une autre session
 (`packages/couleur`, `packages/plugin-palettes`, `packages/plugin-socle`,
@@ -254,3 +254,76 @@ copiés ; le build y tourne étape par étape.
   pas ajouté : le plugin lit `fileName` sans changer l'API du kit. Ajouter le
   champ au kit reste possible, avec une montée de `@ucm-kit/core` dans le même
   commit.
+
+### Revue R1 : conception de L5 et L7
+
+- Conception relue par un agent indépendant, en lecture seule, avec le plan,
+  F7, F8, F11, F14 et le code cité. Chaque constat retenu ci-dessous a été
+  revérifié dans le code avant d'entrer ici.
+- Retenu :
+  - L7 : aucun cas atteignable ne laisse un calque écarté par l'élection sans
+    chemin dans la vue exacte de son variant. `assignSlots` applique le filtre de
+    `getAllNodes`, et `describeNode` inscrit le chemin d'un calque et de tous les
+    descendants d'une feuille avant ses deux sorties. La liste « garder le
+    message pour eux seuls » est vide.
+  - L5 : `horsDuParent` calculé depuis `props` après
+    `buildContractPropertySurface` égale celui du contrat final ; seul
+    `mergeIconRules` ajoute des clés ensuite, toutes de type `icon`, qu'il exclut.
+  - L5 : `mainByInstanceId` couvre les instances du relevé actuel, mais
+    `getAllNodes(set)` élague un variant masqué statiquement, alors que le scan
+    part de chaque variant (`exportableNodes.ts`, `hiddenAncestor`). Le relevé
+    parcourt donc les variants de la matrice un par un.
+  - L5 : la demande de fusion coupe sa liste par la fin (`depot.ts`,
+    `corpsDeLaDemande`) ; le point se place en tête des avertissements, sans quoi
+    il serait le premier perdu sur un composant à centaines de messages.
+  - L5 : le point `sansPorteur` nomme le composant sélectionné sans node ; il
+    cible donc le composant. Le point d'un groupe inscrit chacune de ses
+    instances.
+  - L5 : `elements` devient une quatrième partie ; `AGENTS.md`, `localisation.ts`
+    et `CONTRIBUTING.md` le disent, et la loi des parties recompose la phrase
+    elle-même.
+  - L5 : la déclaration des instances à taire vaut aussi pour un composant seul,
+    et la remontée d'ancêtres tolère un node qui lève.
+  - L5 : déplacer le relevé dans le moteur plutôt que le passer par un rappel de
+    `code.ts` : sans cela, le moteur appelé seul (tests, scénario, lois) n'aurait
+    pas le point.
+- Rejeté : aucun constat. La remarque sur `layoutSilences.test.ts:79` (début du
+  test, l'assertion est plus bas) est sans conséquence.
+- Consigné : deux composants distincts de même nom et de mêmes clés donnent la
+  même phrase et fusionnent en un seul point.
+
+### Porte H2 : invariants de L5 et L7
+
+- Présenté au mainteneur : la suppression du message de L7 et de l'invariant
+  « Ce que l'élection écarte est dit » ; le code du point de L5 ; la forme de la
+  liste de propriétés dans la phrase compacte.
+- Décidé : supprimer le message de L7 ; le point de L5 porte
+  `UCM_PORTABLE_PROJECTION_WARNING` (le contrat n'a pas la dépendance qu'il
+  devrait réutiliser) ; les propriétés s'écrivent en liste simple, séparées par
+  des virgules, suivies d'un point.
+- Ordre changé : L7 avant L5, puisque L7 supprime `dansUnComposantPublie`, que
+  L5 devait absorber.
+
+### L7 : un calque publié par la vue exacte n'est pas dit perdu
+
+- Commit : ce commit, après `d0bc9c4`.
+- Commandes :
+  - tests écrits d'abord : le scénario sort rouge, « la famille
+    « horsDuNodeElu » sort encore », 1 ligne ; le test de la vue exacte aussi.
+  - `tsc --noEmit` : 0. `node scripts/run-tests.cjs` dans
+    `packages/plugin-exporter` : 920 tests, 0 échec. `galerie.test.ts` : vert.
+- Résultats : `warnLayersOutsideLayoutNode`, `dansUnComposantPublie` et le
+  paramètre `layoutElectionWarnings` d'`extractLayout` sont supprimés. Sur le
+  scénario, la ligne « il n'est pas à l'intérieur de » disparaît et une vue
+  exacte publie `Overlay`. Les tests qui citaient le message
+  (`layoutSilences.test.ts`, `extractStructure.test.ts`,
+  `composedComponents.test.ts`) vérifient maintenant que la vue exacte publie le
+  calque et qu'aucun message ne le dit perdu. L'interface et la galerie jouaient
+  ce texte en exemple ; elles jouent celui du stroke illisible. `AGENTS.md` et
+  `SPEC.md` (« 3. Layout ») disent que la vue exacte publie ce que l'élection
+  écarte.
+- Mutations : la vue exacte de chaque variant part du node élu au lieu de la
+  racine : le scénario, le test de la vue exacte et celui du regroupement sortent
+  rouges. Restauré par copie : vert.
+- Écart ou réserve : les propriétés du calque d'onde (opacité, masque,
+  disposition, dimensions sous `SCALE`) restent signalées ; elles relèvent de L8.

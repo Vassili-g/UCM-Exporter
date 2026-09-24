@@ -76,10 +76,10 @@ test('un slot qui EST une dépendance ne réexporte pas ses visibilités interne
   ]);
 });
 
-test('un calque posé hors du node de layout élu est signalé, pas oublié', async () => {
+test('un calque posé hors du node de layout élu est publié par la vue exacte, sans message', async () => {
   // Motif d'un layout complexe : le frame paddé gagne l'élection, et le badge
-  // posé à côté quitte le contrat, alors que ses couleurs y entrent, elles,
-  // par le relevé du variant entier.
+  // reste à côté. La vue exacte part de la racine du variant et le publie : ni
+  // la projection de référence ni aucun message ne doit le dire perdu.
   const texte = { type: 'TEXT', id: 'txt', name: 'Suivant', boundVariables: {} };
   const contenu = {
     type: 'FRAME',
@@ -109,19 +109,16 @@ test('un calque posé hors du node de layout élu est signalé, pas oublié', as
   lie(contenu, racine);
   lie(badge, racine);
 
+  const resolver = resolverFor({ gap: 'l.gap', px: 'l.px' });
   const warnings: string[] = [];
-  await extractLayout(
-    findLayoutNode(racine),
-    resolverFor({ gap: 'l.gap', px: 'l.px' }),
-    warnings,
-    new Map(),
-    new Set(),
-    racine,
-  );
+  await extractLayout(findLayoutNode(racine), resolver, warnings, new Map(), new Set(), racine);
+  const exacte = await extractLayout(racine, resolver, warnings, new Map(), new Set(), racine);
 
-  assert.ok(warnings.some((warning) => (
-    warning.includes('« Badge »') && warning.includes('n’est pas à l’intérieur de « Contenu »')
-  )));
+  assert.ok(exacte.children.some((enfant) => enfant.slot === 'Badge' || enfant.figmaLayer === 'Badge'));
+  assert.equal(
+    warnings.some((warning) => warning.includes('« Badge »') && warning.includes('intérieur')),
+    false,
+  );
 });
 
 test('une grille est décrite comme une grille, pas repliée en rangée', async () => {
@@ -640,7 +637,6 @@ test('un enfant publie la mesure de sa piste qui hug, en pixels et sans rien ré
     true,
     new Map(),
     new Set(),
-    warnings,
   );
 
   assert.deepEqual(layout.children[0]?.structuralSize, { height: '15px' });
@@ -673,7 +669,6 @@ test('sous une piste qui ne hug pas, la cellule décide encore et rien n’est p
     true,
     new Map(),
     new Set(),
-    warnings,
   );
 
   assert.equal(layout.children[0]?.structuralSize, undefined);
@@ -698,7 +693,6 @@ test('une étendue qui déborde d’une piste qui hug ne publie aucune mesure', 
     true,
     new Map(),
     new Set(),
-    warnings,
   );
 
   assert.equal(layout.children[0]?.structuralSize, undefined);
@@ -719,7 +713,6 @@ test('une étendue entièrement dans des pistes qui hug publie sa mesure', async
     true,
     new Map(),
     new Set(),
-    warnings,
   );
 
   assert.deepEqual(layout.children[0]?.structuralSize, { height: '40px' });
@@ -745,7 +738,6 @@ test('une variable liée l’emporte sur la mesure de la piste', async () => {
     true,
     new Map(),
     new Set(),
-    warnings,
   );
 
   assert.deepEqual(layout.children[0]?.size, { height: '{sizes.tile-height}' });
@@ -772,7 +764,6 @@ test('un enfant aligné sous une piste qui hug garde la règle commune', async (
     true,
     new Map(),
     new Set(),
-    warnings,
   );
 
   assert.equal(layout.children[0]?.structuralSize, undefined);
@@ -795,7 +786,6 @@ test('une grille dont le runtime n’expose pas les pistes ne publie ni ne dit r
     true,
     new Map(),
     new Set(),
-    warnings,
   );
 
   assert.equal(layout.children[0]?.structuralSize, undefined);

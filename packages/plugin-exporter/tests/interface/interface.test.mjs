@@ -207,7 +207,7 @@ test('un point bloquant émis en dernier se lit en premier', async () => {
     await page.getByRole('button', { name: 'Analyser le composant', exact: true }).click();
     const avertissement = (nom) => ({
       type: 'diagnostic',
-      titre: `Layer « ${nom} » : il n’est pas à l’intérieur de « Contenu ».`,
+      titre: `Layer « ${nom} » : l’alignement du stroke est illisible.`,
       impact: 'Impact.',
       action: 'Action.',
       operation: 1,

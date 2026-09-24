@@ -283,6 +283,7 @@ const FAMILLES = {
   borneSansVariable: /^Propriété sans token associé\. Des variants déclarent un \*\*min width\*\*/,
   effet: /^Propriété non supportée par le moteur\. Le contrat n’exportera pas l’ombre ou le flou/,
   calqueAbsolu: /^Layer « (Overlay|Mask|Circle) »/,
+  horsDuNodeElu: /n’est pas à l’intérieur de/,
   dessinImbrique: /^Layer « Shape » : il n’est fait que de tracés vectoriels/,
   hauteurDuTexteMasque: /^Layer « Label », height :/,
   etatNonReconnu: /l'état « (focused|pressed) » n'est pas reconnu/,
@@ -297,6 +298,7 @@ const CORRIGEES: ReadonlySet<Famille> = new Set<Famille>([
   'intentionAbsente',
   'etatNonReconnu',
   'hauteurDuTexteMasque',
+  'horsDuNodeElu',
 ]);
 
 /** Le nombre de lignes de chaque famille dans une liste de messages. */
@@ -334,6 +336,18 @@ test('le scénario du composant réel passe les lois, et seules les familles cor
     }
     assert.ok(lignes > 0, `la famille « ${famille} » ne sort pas`);
   }
+});
+
+test('le calque que l’élection écarte figure dans la vue exacte, et rien ne le dit perdu', async () => {
+  const { contrat, comptes } = await exporterLeScenario();
+  const vuesQuiLePublient = Object.values(contrat.viewStructures as Record<string, {
+    children?: Array<{ slot: string; figmaLayer?: string }>;
+  }>).filter((vue) => (vue.children ?? []).some(
+    (enfant) => (enfant.figmaLayer ?? enfant.slot) === 'Overlay',
+  ));
+
+  assert.equal(comptes.horsDuNodeElu, 0);
+  assert.ok(vuesQuiLePublient.length > 0, 'aucune vue exacte ne publie le calque absolu');
 });
 
 test('la borne et l’ombre des racines de variant se regroupent en une ligne chacune', async () => {
