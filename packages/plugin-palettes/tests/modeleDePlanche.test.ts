@@ -48,14 +48,19 @@ test('[PLA-07] l’en-tête donne le nom, la version, l’empreinte du modèle, 
   assert.match(MODELE.empreinte, /^[0-9a-f]{8}$/);
 });
 
-test('[PLA-08] la référence montre sa pastille et ses valeurs, et le bouton quand il est plus foncé qu’elle', () => {
+test('[PLA-08] la référence montre sa pastille, ses valeurs et la nuance qui la porte dans chaque thème', () => {
   const reference = trouver(MODELE.racine, 'Référence');
   assert.equal(reference.enfants[0].type === 'cadre' && reference.enfants[0].fond?.hexa, '#1E6FD9');
   const valeurs = (reference.enfants[1] as NoeudTexte).contenu;
-  assert.match(valeurs, /^#1E6FD9\nL 0,555 · C 0,179 · H 257°\npart de chroma 0,89 · proche du cran 600\nblanc /);
-  assert.ok(cadres(reference).some((noeud) => noeud.nom === 'bouton'), '#1E6FD9 est plus clair que le cran 700');
-  const sombre = nouvellePalette(VIDE, 'p-0000000b', '#1D4ED8')!;
-  assert.ok(!cadres(modeleDeCadre(avec(sombre), sombre, 'SRGB').racine).some((noeud) => noeud.nom === 'bouton'));
+  assert.match(valeurs, /^#1E6FD9\nL 0,555 · C 0,179 · H 257°\nIntensité : 0,89 · Light : Vivid · nuance 600 · Dark : Vivid · nuance 600\nblanc /);
+  assert.ok(!cadres(reference).some((noeud) => noeud.nom === 'bouton'), 'le bloc Boutons est retiré');
+});
+
+test('[MOT-17] la planche peint la référence exacte à la nuance que son bloc désigne, dans les deux thèmes', () => {
+  const peinte = (nom: string) => MODELE.peints.find((candidate) => candidate.nom === nom)?.hexa;
+  assert.equal(peinte('vivid/light/600'), '#1E6FD9');
+  assert.equal(peinte('vivid/dark/600'), '#1E6FD9');
+  assert.notEqual(peinte('soft/light/600'), '#1E6FD9');
 });
 
 test('[PLA-09] chaque section est peinte de son fond, et son texte s’y lit', () => {

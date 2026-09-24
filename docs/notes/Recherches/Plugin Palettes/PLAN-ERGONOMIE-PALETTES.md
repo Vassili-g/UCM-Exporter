@@ -318,12 +318,16 @@ l’objet d’une nouvelle validation générale.
 
 ## Lot R1 : promesses et messages
 
-- [ ] **R1.1** Retirer l’alerte `reference-plus-claire-que-bouton` et le
+- [x] **R1.1** Retirer l’alerte `reference-plus-claire-que-bouton` et le
   bloc Boutons associé, avec leurs chemins d’affichage et leurs attentes de
   tests obsolètes. Ne pas retirer l’usage `solid` ni sa promesse.
-- [ ] **R1.2** Retirer la notice `LEGACY` de l’interface et de la planche.
+  Fait avec R1b : l’alerte quitte le moteur, les textes, la planche et les
+  tests ; VER-12 est retirée de la spécification.
+- [x] **R1.2** Retirer la notice `LEGACY` de l’interface et de la planche.
   Conserver la politique de conversion des couleurs et les informations
   techniques nécessaires au rapport.
+  Fait avec R1b : l’analyse ne reçoit plus le profil du document ; la planche
+  peint toujours `LEGACY` comme sRGB, et le rapport garde le profil.
 - [ ] **R1.3** Présenter la proximité Soft/Vivid près du réglage qui peut
   agir : intensités locales si personnalisées, sinon Réglages communs.
   Garder un indice discret sur les nuances concernées. Ne pas déplacer
@@ -361,34 +365,84 @@ dominent plus la création d’une palette ordinaire.
 Ce lot change le moteur. Il précède toute présentation qui affirme qu’une
 pastille est égale à la référence.
 
-- [ ] **R1b.1** Réécrire MOT-17 : profil automatique, nuance par thème,
+- [x] **R1b.1** Réécrire MOT-17 : profil automatique, nuance par thème,
   référence inchangée, classification de gris, égalités et cas extrêmes.
   Décrire l’écart avec les courbes communes, sans promettre une régularité
   parfaite de tous les pas.
-- [ ] **R1b.2** Ajouter une fonction pure de désignation du profil et de la
+  Fait : MOT-17 de la spécification ; MOT-12 se limite aux rampes communes.
+- [x] **R1b.2** Ajouter une fonction pure de désignation du profil et de la
   nuance porteuse. Elle fournit une donnée partagée à l’analyse, au graphe,
   à l’aperçu, au rapport et au modèle de planche.
-- [ ] **R1b.3** Insérer les octets exacts de la référence dans le profil
+  Fait : `ancrageDe`, `profilPorteur` et `rangPorteur` dans
+  `packages/couleur/src/palette.ts`. L’analyse porte `ancrage` à la place du
+  cran le plus proche, que le rapport, le modèle de planche et l’éditeur de
+  dérive lisent.
+- [x] **R1b.3** Insérer les octets exacts de la référence dans le profil
   porteur pour chaque thème. Recalculer mesures et promesses après cette
   insertion. Les autres couleurs gardent le calcul habituel.
-- [ ] **R1b.4** Couvrir par des cas déterministes : terne vers Soft, saturée
+  Fait : `rampesDe` rend les rampes ancrées ; `fabriquerPalette` reste la
+  fabrication des rampes communes. La part se compare au millième entier ;
+  égalité vers Vivid ; quasi-gris vers Soft avant toute comparaison.
+- [x] **R1b.4** Couvrir par des cas déterministes : terne vers Soft, saturée
   vers Vivid, égalité, gris, noir, blanc, référence hors de la courbe et
   changement de nuance entre thèmes. Ajouter des propriétés sur l’identité
   exacte et la cohérence de désignation des vues.
-- [ ] **R1b.5** Revoir les vecteurs attendus, les lois de luminosité et de
+  Fait : `packages/couleur/tests/ancrage.test.ts`, dont une propriété sur
+  deux mille tirages et un quasi-noir de part 0,99 qui isole la règle du gris.
+  La cohérence des vues se vérifie dans les tests de l’analyse, du modèle de
+  planche, du rapport, de la géométrie et de l’interface. Six mutations du
+  moteur et deux de l’éditeur, chacune vue rouge.
+- [x] **R1b.5** Revoir les vecteurs attendus, les lois de luminosité et de
   chroma et la garantie des courbes. Une garantie calculée sur la courbe
   commune n’établit plus toutes les promesses de la palette ancrée.
   Conserver les échecs réels au lieu d’abaisser les seuils pour les effacer.
-- [ ] **R1b.6** Garder le format enregistré si l’ancrage reste entièrement
+  Fait : les vecteurs figés et la loi MOT-12 portent sur les rampes communes ;
+  la section 6.8 ajoute quatre vecteurs ancrés ; ENT-10 dit la limite de la
+  garantie.
+- [x] **R1b.6** Garder le format enregistré si l’ancrage reste entièrement
   dérivé. Toute nouvelle donnée persistante demande une décision de format
   et une migration, notamment pour l’éventuel ajustement volontaire R4.10.
-- [ ] **R1b.7** Relever l’effet sur les voisins de la référence et les
+  Fait : aucun champ enregistré ne change. Le rapport, qui n’est pas
+  enregistré dans le fichier, prend sa propre version, `formatDuRapport` 2
+  (`[VER-16]`).
+- [x] **R1b.7** Relever l’effet sur les voisins de la référence et les
   promesses avec les couleurs du mainteneur. Une marche visuelle trop forte
   conduit à une proposition de stratégie différente, jamais à une
   altération silencieuse de la référence.
-- [ ] **R1b.8** Mettre à jour l’invariant du moteur et les empreintes des
+  Fait : `packages/couleur/scripts/mesurer-ancrage.mjs`, sur les 39 références
+  et quatre gris. Profil : Soft pour #A0B599 et les gris, Vivid pour les 38
+  autres couleurs. La nuance porteuse change entre thèmes pour 25 des 39 références,
+  par exemple #B00100 en 700 Light et 500 Dark. La référence s’écarte de la
+  nuance commune qu’elle remplace de 0,000 à 0,060 ΔEok. Les marches vers les
+  voisines vont de 0,044 à 0,159, contre 0,084 à 0,129 sur la courbe commune :
+  un côté se resserre, l’autre s’allonge, jusqu’à 1,6 fois. Deux références
+  gagnent des promesses à corriger : #A855F7, paire 2 en Dark Vivid (4,47 pour
+  4,5), et #16A34A, paires 9 et 13 en Light Vivid (2,92 pour 3). Elles restent
+  affichées.
+  Proposition pour les références hors de la courbe : le noir fait une marche
+  de 0,341 en Light 950 et de 0,226 en Dark 50, le blanc de 0,149 en Dark 950.
+  Deux stratégies à décider par le mainteneur, aucune n’est implémentée :
+  proposer d’étendre l’extrémité de la courbe commune dans les Réglages
+  communs, ou orienter vers « Ajuster la référence » (R4.10). La référence
+  n’est jamais modifiée pour réduire la marche.
+- [x] **R1b.8** Mettre à jour l’invariant du moteur et les empreintes des
   cadres. Vérifier aussi le rendu Display P3 : conserver l’hexa sRGB de
   référence et convertir la peinture selon le profil du document.
+  Fait : invariant de l’ancrage dans AGENTS.md. Les empreintes se recalculent
+  sur les rampes ancrées : tout cadre déjà généré passe « À mettre à jour ».
+  `dessin.test.ts` peint déjà #1E6FD9, désormais la référence exacte, en
+  Display P3. Le rendu dans Figma reste à constater en recette (R9.3).
+
+Revue indépendante de la conception, avant implémentation : onze constats.
+Retenus : le graphe de dérive garde l’abscisse de la courbe claire, le pivot
+tombe sur le rang clair de l’ancrage et l’éditeur synchronisé montre le
+profil porteur (DER-02, DER-04, R5.2) ; l’ancrage remplace le cran le plus
+proche partout ; les deux repères d’intensité quittent la liste des messages
+et la planche (R1.4) ; le rapport prend une version ; MOT-12 se limite aux
+rampes communes ; des tests d’égalité, de parts propres et de parts communes
+s’ajoutent. Écarté : une alerte de nuances identiques. L’ancrage ne peut pas
+créer de doublon sur les courbes par défaut, la marge de clarté dépassant la
+précision à 8 bits ; un doublon se lira dans le détail d’une nuance (R4.6).
 
 Critère : la référence exacte est retrouvée dans le bon profil des deux
 thèmes. Le repère de l’interface, les couleurs générées et les ratios évalués
@@ -524,9 +578,12 @@ de comparaison. L’exploration R4.10 ne retarde pas ces fonctions.
 - [ ] **R5.1** Placer Configuration de la dérive sous le nuancier, avec le
   préréglage et un résumé à droite. À largeur minimale, le résumé passe sur
   une ligne suivante ; le titre reste entier.
-- [ ] **R5.2** Utiliser les désignations et courbes effectives de R1b. La
+- [x] **R5.2** Utiliser les désignations et courbes effectives de R1b. La
   référence est fixe dans son profil porteur pendant le déplacement des
   poignées. Une autre teinte pivot ne se présente pas comme une autre base.
+  Fait avec R1b : la ligne du porteur passe à 0° sur son rang clair, où tombe
+  le pivot, dont l’infobulle nomme la nuance de chaque thème ; synchronisé,
+  l’éditeur montre la ligne et la rampe Light du porteur.
 - [ ] **R5.3** Utiliser ±30° comme amplitude initiale lorsque les valeurs y
   tiennent, puis des paliers lisibles jusqu’à ±90°. Figer l’échelle pendant
   un glisser ; réévaluer avant ou après le geste pour éviter un saut sous

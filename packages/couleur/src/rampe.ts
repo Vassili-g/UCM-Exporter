@@ -159,8 +159,9 @@ export interface EntreesPalette {
 export type Rampes = { readonly [P in Profil]: { readonly [M in Mode]: Cran[] } };
 
 /**
- * Fabrique les quatre rampes d'une palette. La référence ne se recalcule
- * jamais ([MOT-17]) : elle fixe le pivot, et aucune rampe ne la contient.
+ * Fabrique les quatre rampes communes d'une palette : la référence fixe le
+ * pivot de la teinte, et chaque cran suit sa courbe. `rampesDe` (palette.ts) y
+ * ancre ensuite les octets exacts de la référence ([MOT-17]).
  */
 export function fabriquerPalette(entrees: EntreesPalette): Rampes {
   const reference = rgb8VersOklch(entrees.reference);

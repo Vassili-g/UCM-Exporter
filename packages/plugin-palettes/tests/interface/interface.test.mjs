@@ -517,8 +517,44 @@ test('[DER-14] une référence plus sombre que le bout sombre masque la poignée
     await envoyer(page, messageDe('reference-hors-rampe'));
     await deplier(page);
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.derive-poignee')].map((poignee) => poignee.dataset.bout)), ['clair']);
-    assert.equal(await page.locator('.derive-pivot').count(), 0);
+    // La référence exacte porte la dernière nuance claire : le pivot tombe dans cette colonne ([DER-02]).
+    assert.equal(await page.locator('.derive-pivot').count(), 1);
+    assert.equal(await colonneDuPivot(page), 10);
     assert.match(await page.locator('.editeur-derive > .ligne-secondaire').textContent(), /plus sombre que le bout sombre/);
+  } finally {
+    await page.close();
+  }
+});
+
+/** Le rang de la colonne où le pivot tombe, lu sur les cases de la rampe sous le graphe. */
+async function colonneDuPivot(page) {
+  return page.evaluate(() => {
+    const x = Number(/^M ([\d.]+)/.exec(document.querySelector('.derive-pivot').getAttribute('d'))[1]);
+    const cases = [...document.querySelectorAll('.derive-graphe rect')].filter((_, rang) => rang % 2 === 1);
+    return cases.findIndex((rect) => Math.abs(Number(rect.getAttribute('x')) + Number(rect.getAttribute('width')) / 2 - x) < 1e-6);
+  });
+}
+
+test('[DER-04] synchronisés, les profils montrent le porteur : la rampe de Soft et sa référence exacte', async () => {
+  const page = await ouvrirSur('reference-soft');
+  try {
+    await deplier(page);
+    assert.equal(await page.locator('.ligne-infos').first().textContent().then((texte) => texte.includes('Référence : Soft · nuance 400')), true);
+    assert.equal(await colonneDuPivot(page), 4);
+    const rampe = await page.evaluate(() => [...document.querySelectorAll('.derive-graphe rect')].filter((_, rang) => rang % 2 === 1).map((rect) => rect.getAttribute('fill')));
+    assert.equal(rampe[4], '#A0B599');
+  } finally {
+    await page.close();
+  }
+});
+
+test('[DER-02] le pivot tombe dans la colonne de la nuance qui porte la référence, et son infobulle la nomme', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    await deplier(page);
+    // #FACC15 est le 300 de vivid en Light.
+    assert.equal(await colonneDuPivot(page), 3);
+    assert.match(await page.locator('.derive-pivot title').textContent(), /Vivid · nuance 300 en Thème Light, 900 en Thème Dark/);
   } finally {
     await page.close();
   }

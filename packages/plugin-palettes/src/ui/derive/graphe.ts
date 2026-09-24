@@ -14,13 +14,14 @@ import {
   rgb8VersOklch,
   referenceDe,
   teinteA,
+  type Ancrage,
   type Cran,
   type Palette,
   type Profil,
   type Recette,
 } from 'ucm-couleur';
 
-import { REPERES, abscisse, ligneBrisee, ordonnee, rangDuPivot, type Cadre } from './geometrie';
+import { REPERES, abscisse, ligneBrisee, ordonnee, type Cadre } from './geometrie';
 import { TEXTES_DE_LA_DERIVE, etiquetteDePoignee, graduation, infobulleDuPivot, valeurDePoignee } from '../textes';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -47,8 +48,10 @@ export interface EntreesDuGraphe {
   readonly palette: Palette;
   /** Le profil dont les poignées se règlent. */
   readonly profil: Profil;
-  /** La rampe que l'aperçu montre, peinte sous la bande. */
+  /** La rampe Light du profil réglé, peinte sous la bande ([DER-04]). */
   readonly rampe: readonly Cran[];
+  /** Où la référence exacte se place ([MOT-17]) : le pivot tombe sur son rang clair. */
+  readonly ancrage: Ancrage;
 }
 
 function element<K extends keyof SVGElementTagNameMap>(nom: K, attributs: Record<string, string | number>): SVGElementTagNameMap[K] {
@@ -117,7 +120,7 @@ export function createGraphe(): GrapheUi {
   return {
     element: svg,
     poignees: () => poignees,
-    afficher({ recette, palette, profil, rampe }) {
+    afficher({ recette, palette, profil, rampe, ancrage }) {
       const courbe = recette.courbes.light;
       const total = courbe.length;
       const bouts = boutsDe(recette.courbes);
@@ -125,27 +128,26 @@ export function createGraphe(): GrapheUi {
       const lie = palette.derive.lien;
       const enfants: SVGElement[] = REPERES.map(repere);
 
-      // Deux profils déliés tracent deux lignes, pleine et tiretée ([DER-05]).
-      for (const trace of lie ? (['vivid'] as const) : PROFILS) {
-        const points = ligneBrisee(courbe, reference, palette.derive[trace], bouts)
+      // Synchronisés, les profils partagent la ligne du porteur. Déliés, deux lignes, pleine et tiretée ([DER-05]).
+      for (const trace of lie ? [ancrage.profil] : PROFILS) {
+        const rangAncre = trace === ancrage.profil ? ancrage.rangs.light : null;
+        const points = ligneBrisee(courbe, reference, palette.derive[trace], bouts, rangAncre)
           .map(({ rang, angle }) => `${abscisse(rang, CADRE, total)},${ordonnee(angle, CADRE)}`);
         const ligne = element('polyline', { points: points.join(' ') });
-        if (trace === 'soft') ligne.setAttribute('class', 'derive-trait derive-trait-soft');
+        if (!lie && trace === 'soft') ligne.setAttribute('class', 'derive-trait derive-trait-soft');
         else ligne.setAttribute('class', 'derive-trait derive-trait-vivid');
         enfants.push(ligne);
       }
 
-      const pivot = rangDuPivot(reference.L, courbe);
-      if (pivot !== null) {
-        const x = abscisse(pivot, CADRE, total);
-        const y = ordonnee(0, CADRE);
-        const losange = element('path', { d: `M ${x} ${y - 6} L ${x + 6} ${y} L ${x} ${y + 6} L ${x - 6} ${y} Z` });
-        losange.setAttribute('class', 'derive-pivot');
-        const titre = element('title', {});
-        titre.textContent = infobulleDuPivot(reference.H);
-        losange.append(titre);
-        enfants.push(losange);
-      }
+      // Le pivot est la référence exacte, sur son rang clair ([DER-02]).
+      const x = abscisse(ancrage.rangs.light, CADRE, total);
+      const y = ordonnee(0, CADRE);
+      const losange = element('path', { d: `M ${x} ${y - 6} L ${x + 6} ${y} L ${x} ${y + 6} L ${x - 6} ${y} Z` });
+      losange.setAttribute('class', 'derive-pivot');
+      const titre = element('title', {});
+      titre.textContent = infobulleDuPivot(reference.H, ancrage);
+      losange.append(titre);
+      enfants.push(losange);
 
       // Un bout que la référence dépasse n'a pas de segment à régler ([DER-14]).
       const derive = palette.derive[profil];

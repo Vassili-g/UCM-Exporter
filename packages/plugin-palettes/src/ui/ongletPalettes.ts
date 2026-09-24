@@ -43,7 +43,7 @@ import {
   couleurRamenee,
   hexaInvalide,
   ligneDeLaDerive,
-  ligneDeLaPart,
+  ligneDeLaReference,
   nomDeLaCopie,
   nomDeLaPalette,
   palettesDuFichier,
@@ -192,13 +192,13 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   couleur.insertBefore(pipette, hexa);
   reference.append(couleur, champ(TEXTES.nom, nom));
 
-  const part = document.createElement('span');
+  const repereDeReference = document.createElement('span');
   const indication = document.createElement('span');
   indication.className = 'etat-rangement';
   indication.setAttribute('aria-live', 'polite');
   const infos = document.createElement('p');
   infos.className = 'ligne-secondaire ligne-infos';
-  infos.append(part, indication);
+  infos.append(repereDeReference, indication);
   const derive = document.createElement('span');
   const regler = document.createElement('button');
   regler.type = 'button';
@@ -366,7 +366,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
 
   function rendrePalette(courante: Palette, lue: Recette): void {
     idOuvert = courante.id;
-    const analyse = analyserPalette(lue, courante, profil);
+    const analyse = analyserPalette(lue, courante);
     selecteur.afficher(lue.palettes, courante.id);
     menu.afficher(lue.palettes.indexOf(courante), lue.palettes.length);
     verdictDeLaPalette.textContent = verdict(analyse.manquees);
@@ -375,7 +375,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     poser(pipette, courante.reference.toLowerCase());
     poser(nom, courante.nom ?? '');
     nom.placeholder = courante.reference;
-    part.textContent = ligneDeLaPart(analyse.part, analyse.parts.soft, analyse.parts.vivid, analyse.cranProche);
+    repereDeReference.textContent = ligneDeLaReference(analyse.ancrage, apercu.mode());
     derive.textContent = ligneDeLaDerive(courante);
     // Une référence presque grise n'a pas de teinte : l'éditeur se désactive ([DER-15]).
     const grise = estPresqueGrise(lue, courante);
@@ -385,7 +385,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     regler.textContent = editeurOuvert ? TEXTES_DE_LA_DERIVE.replier : TEXTES_DE_LA_DERIVE.regler;
     regler.setAttribute('aria-expanded', String(editeurOuvert));
     editeur.element.hidden = !editeurOuvert;
-    if (editeurOuvert) editeur.afficher(lue, courante, analyse.rampes.vivid[apercu.mode()]);
+    if (editeurOuvert) editeur.afficher(lue, courante, analyse.rampes, analyse.ancrage);
     apercu.afficher(lue, analyse.rampes);
     const nomDe = (id: string) => {
       const trouvee = lue.palettes.find((candidate) => candidate.id === id);

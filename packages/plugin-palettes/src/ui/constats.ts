@@ -10,7 +10,6 @@ import {
   TEXTES,
   constatDAlerte,
   constatDePromesse,
-  noticeLegacy,
   type ConstatIllustre,
   type ContexteDAlerte,
 } from './textes';
@@ -70,9 +69,7 @@ export function listeDesConstats(analyse: AnalyseDePalette, contexte: ContexteDA
       titre.className = 'constats-titre';
       liste.append(titre);
     }
-    const texte = 'promesse' in constat
-      ? constatDePromesse(constat.promesse, nom)
-      : 'alerte' in constat ? constatDAlerte(constat.alerte, contexte) : noticeLegacy();
+    const texte = 'promesse' in constat ? constatDePromesse(constat.promesse, nom) : constatDAlerte(constat.alerte, contexte);
     liste.append(blocDeConstat(texte, constat.severite));
   }
   return liste;

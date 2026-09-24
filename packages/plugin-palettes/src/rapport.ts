@@ -6,7 +6,7 @@
  * écarts de peinture du dernier dessin (L6.14). Les nombres sont ceux du
  * moteur, sans arrondi : un outil qui relit le rapport juge lui-même.
  */
-import { lireHexa, mesurerCran, type Alerte, type Mode, type Profil, type Promesse, type Recette } from 'ucm-couleur';
+import { lireHexa, mesurerCran, type Alerte, type Ancrage, type Mode, type Profil, type Promesse, type Recette } from 'ucm-couleur';
 
 import { analyserPalette } from './analyse';
 import type { ProfilDuDocument } from './lecture';
@@ -25,15 +25,27 @@ export interface PaletteDuRapport {
   readonly id: string;
   readonly nom: string | null;
   readonly reference: string;
+  /** Le profil et les crans qui portent la référence exacte ([MOT-17]). */
+  readonly ancrage: Ancrage;
   readonly crans: { readonly [M in Mode]: { readonly [P in Profil]: readonly CranDuRapport[] } };
   readonly promesses: readonly Promesse[];
   readonly alertes: readonly Alerte[];
 }
 
+/**
+ * La version de la forme du rapport (section 10.2). Un champ ajouté la garde ;
+ * un champ ou un code d'alerte retiré ou renommé la monte. La 1, sans ce
+ * champ, portait l'alerte `reference-plus-claire-que-bouton`.
+ */
+export const FORMAT_DU_RAPPORT = 2;
+
 export interface Rapport {
+  readonly formatDuRapport: number;
   /** L'empreinte du texte rangé de la recette qui a produit ce rapport ([VER-02]). */
   readonly empreinte: string | null;
   readonly formatVersion: number;
+  /** Le profil de couleur du document, dans lequel la planche peint ses couleurs (section 6.7). */
+  readonly profilDuDocument: ProfilDuDocument;
   readonly fonds: Recette['fonds'];
   readonly seuils: Recette['seuils'];
   readonly palettes: readonly PaletteDuRapport[];
@@ -49,12 +61,14 @@ export function rapportDeLaRecette(
 ): Rapport {
   const fonds = { light: lireHexa(recette.fonds.light)!, dark: lireHexa(recette.fonds.dark)! };
   return {
+    formatDuRapport: FORMAT_DU_RAPPORT,
     empreinte,
     formatVersion: recette.formatVersion,
+    profilDuDocument: profil,
     fonds: recette.fonds,
     seuils: recette.seuils,
     palettes: recette.palettes.map((palette) => {
-      const analyse = analyserPalette(recette, palette, profil);
+      const analyse = analyserPalette(recette, palette);
       const cransDu = (mode: Mode, profilDeRampe: Profil): CranDuRapport[] =>
         analyse.rampes[profilDeRampe][mode].map((cran, rang) => {
           const mesure = mesurerCran(cran.couleur, fonds[mode], recette.seuils);
@@ -65,6 +79,7 @@ export function rapportDeLaRecette(
         id: palette.id,
         nom: palette.nom ?? null,
         reference: palette.reference,
+        ancrage: analyse.ancrage,
         crans: { light: parMode('light'), dark: parMode('dark') },
         promesses: analyse.promesses,
         alertes: analyse.constats.flatMap((constat) => ('alerte' in constat ? [constat.alerte] : [])),

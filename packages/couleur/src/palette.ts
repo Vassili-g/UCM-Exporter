@@ -1,12 +1,21 @@
 /**
- * Une palette lue contre sa recette : ses parts, ses rampes, et les parts
- * propres d'une référence presque grise ([ENT-09]).
+ * Une palette lue contre sa recette : ses parts, l'ancrage de sa référence,
+ * ses rampes, et les parts propres d'une référence presque grise ([ENT-09]).
  *
  * Chaque fonction reçoit une recette déjà validée ([REC-05]).
  */
-import { lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
+import { ecrireHexa, lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
 import { partDeChroma } from './contraste';
-import { arrondir, fabriquerPalette, partsEffectives, type Parts, type Rampes } from './rampe';
+import {
+  arrondir,
+  fabriquerPalette,
+  partsEffectives,
+  type Cran,
+  type Mode,
+  type Parts,
+  type Profil,
+  type Rampes,
+} from './rampe';
 import type { Palette, Recette } from './recette';
 
 /** La couleur de référence d'une palette validée. */
@@ -24,33 +33,85 @@ export function partsDe(recette: Recette, palette: Palette): Parts {
   );
 }
 
-/** Les quatre rampes d'une palette. */
+/** Vrai quand la chroma de la référence est sous `seuils.chromaGrise` ([MOT-18]). */
+export function estPresqueGrise(recette: Recette, palette: Palette): boolean {
+  return rgb8VersOklch(referenceDe(palette)).C < recette.seuils.chromaGrise;
+}
+
+/** Une part au millième entier : la précision à laquelle une part se range ([MOT-27]). */
+const enMilliemes = (part: number): number => Math.round(part * 1000);
+
+/**
+ * Le profil qui porte la référence exacte ([MOT-17]) : celui dont la part
+ * **commune** est la plus proche de la part de chroma de la référence, comparées
+ * au millième. Égalité : `vivid`. Une référence presque grise : `soft`. Les
+ * parts propres d'une palette n'y entrent pas : les régler ne fait pas passer
+ * la référence d'un profil à l'autre.
+ */
+export function profilPorteur(recette: Recette, palette: Palette): Profil {
+  if (estPresqueGrise(recette, palette)) return 'soft';
+  const part = enMilliemes(partDeChroma(referenceDe(palette), recette.gamut));
+  const versSoft = Math.abs(part - enMilliemes(recette.profils.soft.part));
+  const versVivid = Math.abs(part - enMilliemes(recette.profils.vivid.part));
+  return versSoft < versVivid ? 'soft' : 'vivid';
+}
+
+/**
+ * Le rang de la clarté de `courbe` la plus proche de `clarte`. Égalité : le
+ * premier rang, qui porte le plus petit numéro dans les deux courbes. Une
+ * clarté hors de la courbe donne l'extrémité la plus proche.
+ */
+export function rangPorteur(courbe: readonly number[], clarte: number): number {
+  let meilleur = 0;
+  courbe.forEach((valeur, rang) => {
+    if (Math.abs(valeur - clarte) < Math.abs(courbe[meilleur] - clarte)) meilleur = rang;
+  });
+  return meilleur;
+}
+
+/** Où la référence exacte se place : son profil porteur, et son rang et son numéro dans chaque mode. */
+export interface Ancrage {
+  readonly profil: Profil;
+  readonly rangs: { readonly [M in Mode]: number };
+  readonly crans: { readonly [M in Mode]: number };
+}
+
+/** L'ancrage de la référence d'une palette ([MOT-17]), l'unique désignation que toutes les vues lisent. */
+export function ancrageDe(recette: Recette, palette: Palette): Ancrage {
+  const clarte = rgb8VersOklch(referenceDe(palette)).L;
+  const rangs = { light: rangPorteur(recette.courbes.light, clarte), dark: rangPorteur(recette.courbes.dark, clarte) };
+  return {
+    profil: profilPorteur(recette, palette),
+    rangs,
+    crans: { light: recette.crans[rangs.light], dark: recette.crans[rangs.dark] },
+  };
+}
+
+/** Le cran que la référence devient : ses octets tels quels, et L, C, H lus sur eux ([MOT-11]). */
+function cranDeLaReference(reference: Rgb8): Cran {
+  const lu = rgb8VersOklch(reference);
+  return { couleur: reference, hexa: ecrireHexa(reference), L: lu.L, C: lu.C, H: lu.H };
+}
+
+/**
+ * Les quatre rampes d'une palette, la référence ancrée ([MOT-17]) : dans le
+ * profil porteur, le cran de l'ancrage de chaque mode prend les octets exacts
+ * de la référence. Les autres crans gardent le calcul de `fabriquerPalette`.
+ * Promesses, alertes, planche et rapport lisent ces rampes-ci.
+ */
 export function rampesDe(recette: Recette, palette: Palette): Rampes {
-  return fabriquerPalette({
-    reference: referenceDe(palette),
+  const reference = referenceDe(palette);
+  const communes = fabriquerPalette({
+    reference,
     courbes: recette.courbes,
     parts: partsDe(recette, palette),
     derives: { soft: palette.derive.soft, vivid: palette.derive.vivid },
     gamut: recette.gamut,
   });
-}
-
-/**
- * Le cran dont la clarté de la courbe claire est la plus proche de celle de la
- * référence ([PLA-08]). À égalité, le premier dans l'ordre de `crans`.
- */
-export function cranLePlusProche(recette: Recette, palette: Palette): number {
-  const L = rgb8VersOklch(referenceDe(palette)).L;
-  let meilleur = 0;
-  recette.courbes.light.forEach((clarte, rang) => {
-    if (Math.abs(clarte - L) < Math.abs(recette.courbes.light[meilleur] - L)) meilleur = rang;
-  });
-  return recette.crans[meilleur];
-}
-
-/** Vrai quand la chroma de la référence est sous `seuils.chromaGrise` ([MOT-18]). */
-export function estPresqueGrise(recette: Recette, palette: Palette): boolean {
-  return rgb8VersOklch(referenceDe(palette)).C < recette.seuils.chromaGrise;
+  const ancrage = ancrageDe(recette, palette);
+  const ancree = (mode: Mode): Cran[] => communes[ancrage.profil][mode]
+    .map((cran, rang) => (rang === ancrage.rangs[mode] ? cranDeLaReference(reference) : cran));
+  return { ...communes, [ancrage.profil]: { light: ancree('light'), dark: ancree('dark') } };
 }
 
 /**

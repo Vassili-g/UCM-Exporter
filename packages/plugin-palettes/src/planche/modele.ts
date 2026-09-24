@@ -43,12 +43,10 @@ import {
   ligneDAlerte,
   ligneDePaire,
   nomDeLaPalette,
-  noticeLegacy,
   seuilTenuEcrit,
   texteDeCarte,
   texteDeReference,
   texteDesDerives,
-  texteDuBouton,
   titreDeTable,
 } from '../ui/textes';
 
@@ -295,7 +293,7 @@ function blocDeReference(contexte: Contexte, analyse: ReturnType<typeof analyser
       C: lue.C,
       H: lue.H,
       part: analyse.part,
-      cranProche: analyse.cranProche,
+      ancrage: analyse.ancrage,
       contrastes: [
         contre('blanc', [255, 255, 255]),
         contre('noir', [0, 0, 0]),
@@ -305,14 +303,6 @@ function blocDeReference(contexte: Contexte, analyse: ReturnType<typeof analyser
     }), 'valeur', encre),
     texte('dérives', texteDesDerives(palette), 'valeur', encre),
   ];
-  const bouton = analyse.constats.find((constat) => 'alerte' in constat && constat.alerte.code === 'reference-plus-claire-que-bouton');
-  if (bouton && 'alerte' in bouton && bouton.alerte.code === 'reference-plus-claire-que-bouton') {
-    const couleur = hexaLu(bouton.alerte.bouton);
-    enfants.push(cadre('bouton', 'VERTICAL', [
-      cadre('cran 700 vivid', 'VERTICAL', [], { fond: peinture(couleur, contexte.profil), largeur: PASTILLE.largeur, hauteur: PASTILLE.hauteur, rayon: 4 }),
-      texte('valeurs', texteDuBouton(bouton.alerte.bouton), 'valeur', encre),
-    ]));
-  }
   return cadre(TEXTES_DE_LA_PLANCHE.reference, 'HORIZONTAL', enfants, { espacement: 3 * TRAME });
 }
 
@@ -335,7 +325,7 @@ function grilleDeContraste(contexte: Contexte, mode: Mode, profil: Profil, analy
 
 function construire(contexte: Contexte, empreinteAffichee: string, grille: boolean): NoeudCadre {
   const { recette, palette } = contexte;
-  const analyse = analyserPalette(recette, palette, contexte.profil);
+  const analyse = analyserPalette(recette, palette);
   const encre = peinture(hexaLu(COULEURS_DE_LA_PLANCHE.encre), contexte.profil);
   const secondaire = peinture(hexaLu(COULEURS_DE_LA_PLANCHE.encreSecondaire), contexte.profil);
   const tenues = analyse.promesses.length - analyse.manquees;
@@ -345,8 +335,7 @@ function construire(contexte: Contexte, empreinteAffichee: string, grille: boole
   };
   const alertes = analyse.constats.flatMap((constat) => {
     if ('promesse' in constat) return [];
-    const mise = 'alerte' in constat ? constatDAlerte(constat.alerte, { recette, nomDe: nomDeRecette }) : noticeLegacy();
-    return [texte('alerte', ligneDAlerte(mise), 'valeur', encre, 800)];
+    return [texte('alerte', ligneDAlerte(constatDAlerte(constat.alerte, { recette, nomDe: nomDeRecette })), 'valeur', encre, 800)];
   });
   const emplois = MODES.map((mode) => cadre(`emplois ${mode}`, 'HORIZONTAL',
     PROFILS.map((profil) => tableDEmplois(contexte, mode, profil, analyse)), { espacement: 4 * TRAME }));

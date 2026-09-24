@@ -620,6 +620,7 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N010 | Fiche de l’onglet Planche | Modifier la palette | Plan |
 | N011 | Niveaux WCAG d’un contraste mesuré | AAA · AA · Insuffisant · AA grand texte · Minimum 3:1 atteint · Minimum 3:1 non atteint | Plan |
 | N012 | Réglages communs, titres de groupe | Intensités · Minimums des promesses · Détection des couleurs proches | Plan |
+| N013 | Infobulle du pivot de la dérive, suite de T097 | Couleur de référence : teinte {teinte}°. {profil} · nuance {numéro} en Thème Light, {numéro} en Thème Dark. | À valider |
 
 ## Points à conserver lors de l’application
 

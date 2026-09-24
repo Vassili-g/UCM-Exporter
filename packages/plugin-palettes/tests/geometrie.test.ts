@@ -74,3 +74,12 @@ test('[DER-01] la ligne brisée passe par la dérive de chaque cran et par le pi
   assert.equal(ligne.find((sommet) => !Number.isInteger(sommet.rang))?.angle, 0);
   assert.ok(Math.abs(deriveDuCran(COURBE[3], BLEU, DERIVE, BOUTS)) < Math.abs(DERIVE.clair));
 });
+
+test('[DER-02] la ligne du profil porteur passe à 0° sur le rang clair de sa référence, sans pivot entre deux crans', () => {
+  // #1E6FD9 est le 600 de vivid : rang 6 de la courbe claire.
+  const ligne = ligneBrisee(COURBE, BLEU, DERIVE, BOUTS, 6);
+  assert.equal(ligne.length, 11);
+  assert.ok(ligne.every((sommet) => Number.isInteger(sommet.rang)));
+  assert.equal(ligne[6].angle, 0);
+  assert.ok(Math.abs(ligne[7].angle - deriveDuCran(COURBE[7], BLEU, DERIVE, BOUTS)) < 1e-12);
+});

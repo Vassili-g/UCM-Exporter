@@ -189,7 +189,7 @@ packages/couleur/        le moteur de couleur d'UCM Palettes : ucm-couleur, priv
   src/emplois.ts           la table fixe des emplois et les crans que la recette doit porter
   src/recette.ts           la forme de la recette, sa validation, son classement à la lecture
   src/empreinte.ts         JSON canonique, encodeur UTF-8 et FNV-1a
-  src/palette.ts           une palette lue contre sa recette, et ses parts grises
+  src/palette.ts           une palette lue contre sa recette : ses parts grises, l'ancrage de sa référence et ses rampes ancrées
   src/promesses.ts         les quatorze paires, jugées par mode et par profil, et les emplois d'un cran
   src/alertes.ts           les alertes de conception et la notice
   src/garantie.ts          la garantie des courbes : crans 600 et 700 contre le cran 50 gris, sur 360 teintes
@@ -197,6 +197,7 @@ packages/couleur/        le moteur de couleur d'UCM Palettes : ucm-couleur, priv
   src/index.ts             la porte du paquet
   scripts/mesurer-temps.mjs  la médiane de cent palettes, hors des tests
   scripts/mesurer-garantie.mjs  la médiane de vingt garanties des courbes, hors des tests
+  scripts/mesurer-ancrage.mjs   l'effet de l'ancrage sur les voisines et les promesses, hors des tests
   tests/                   vecteurs figés, propriétés, et la loi de pureté
 
 packages/plugin-socle/   ce que les plugins partagent : ucm-plugin-socle, privé, lu en source
@@ -867,6 +868,14 @@ La spécification en lien porte le raisonnement.
 - À la clarté de la couleur de référence, la teinte vaut celle de la référence,
   quelle que soit la dérive. `teinteA` (`packages/couleur/src/rampe.ts`) en est
   l'unique autorité, et `proprietes.test.ts` l'éprouve sur vingt mille tirages.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#64-la-teinte-dun-cran)
+- Dans son profil porteur, chaque mode d'une palette contient les octets
+  exacts de sa couleur de référence, au cran de clarté la plus proche. Les
+  autres crans gardent le calcul commun, et aucune vue ne recalcule une
+  référence : promesses, alertes, planche, rapport et éditeur de dérive lisent
+  `rampesDe` et `ancrageDe` (`packages/couleur/src/palette.ts`), qui en sont
+  l'unique autorité. `packages/couleur/tests/ancrage.test.ts` l'éprouve sur deux
+  mille tirages. Borne : l'ancrage ne promet pas qu'une promesse reste tenue.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#64-la-teinte-dun-cran)
 
 ### Écriture d'UCM Palettes

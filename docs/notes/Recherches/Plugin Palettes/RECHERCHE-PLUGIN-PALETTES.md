@@ -190,8 +190,10 @@ hexa = format(rgb8)
 - `[MOT-10]` L'arrondi est `Math.round`, demi vers le haut, après bornage.
 - `[MOT-11]` Un cran rend aussi `L`, `C`, `H` recalculés depuis `rgb8`. La
   planche affiche ces valeurs, qui sont celles de la couleur produite.
-- `[MOT-12]` Un cran clair et un cran sombre de même clarté rendent le même
-  hexa : clair 500 et sombre 700 partagent 0,670.
+- `[MOT-12]` Sur les rampes communes, avant l'ancrage de `[MOT-17]`, un cran
+  clair et un cran sombre de même clarté rendent le même hexa : clair 500 et
+  sombre 700 partagent 0,670. L'ancrage peut rompre cette égalité, puisque la
+  référence ne remplace qu'un cran par mode.
 - `[MOT-13]` Une palette de 44 crans se calcule en moins de 5 ms dans
   l'interface, pour que l'éditeur de dérive suive le pointeur.
 
@@ -222,8 +224,35 @@ normaliser(h) = ((h mod 360) + 360) mod 360
   jaune vers le vert.
 - `[MOT-16]` Chaque profil a sa propre dérive. Par défaut, `soft` et `vivid`
   partagent la même ([section 12](#12-léditeur-de-dérive)).
-- `[MOT-17]` La couleur de référence ne se recalcule jamais. Elle n'est pas un
-  cran : elle s'affiche à part, et la rampe passe par sa teinte à sa clarté.
+- `[MOT-17]` La couleur de référence ne se recalcule jamais : ses octets
+  entrent tels quels dans les rampes de son profil porteur, un cran par mode.
+  - Le profil porteur compare la part de chroma de la référence aux parts
+    **communes** de `soft` et `vivid`, au millième : le plus proche la porte,
+    `vivid` à égalité. Une référence presque grise (`[MOT-18]`) est portée par
+    `soft`. Les parts propres d'une palette n'entrent pas dans ce choix : les
+    régler ne fait pas changer la référence de profil. Changer les parts
+    communes peut le faire.
+  - Dans chaque mode, le cran porteur est celui dont la clarté de la courbe
+    est la plus proche de celle de la référence, le plus petit numéro à
+    égalité. Une référence hors de la courbe prend l'extrémité la plus proche.
+    Le numéro peut différer entre `light` et `dark` : `#B00100` est le 700
+    clair et le 500 sombre.
+  - Le cran porteur prend `rgb8` de la référence, et `L`, `C`, `H` lus sur
+    lui. Les autres crans, et l'autre profil au même rang, gardent le calcul de
+    la section 6.3. Promesses, alertes, planche et rapport lisent ces rampes
+    ancrées ; la teinte suit toujours la section 6.4, pivotée sur la
+    référence.
+  - L'ancrage garde l'ordre des clartés avant quantification : la clarté de la
+    référence est plus proche de son cran que des voisins. Deux crans voisins
+    peuvent pourtant partager un hexa quand la courbe a des pas plus petits que
+    la précision à 8 bits ; aucune loi ne promet une stricte différence.
+    Les pas voisins de la référence sont moins réguliers que ceux de la courbe
+    commune. Sur les 39 références colorées de la mesure
+    (`packages/couleur/scripts/mesurer-ancrage.mjs`), une marche vers une
+    voisine va de 0,044 à 0,159 en ΔEok, pour 0,084 à 0,129 sur la courbe
+    commune ; le noir en `light` 950 fait une marche de 0,341. Une promesse peut
+    ne plus être tenue après ancrage : le plugin la montre, et ne touche jamais
+    la référence pour la faire tenir.
 
 ### 6.5 Le préréglage Tailwind
 
@@ -329,7 +358,7 @@ référence n'entre pas dans les dépendances du paquet.
 | `#767676` sur `#FFFFFF` | contraste 4,54 |
 | `#1E6FD9` | `L ≈ 0,555`, `C ≈ 0,179`, `H ≈ 257,4` |
 | `plafond(0.5, h, srgb)` sur 360 teintes | jamais hors gamut, et une chroma supérieure de `1e-3` en sort |
-| dérives nulles, 360 teintes, deux profils, deux modes | les quatorze promesses de la [section 11.2](#112-promesses-des-emplois) tenues après arrondi |
+| dérives nulles, 360 teintes, deux profils, deux modes, rampes communes | les quatorze promesses de la [section 11.2](#112-promesses-des-emplois) tenues après arrondi |
 | gris de clarté 0,975 et 0,180 | `#F7F7F7` et `#121212`, les fonds par défaut |
 | toute dérive, toute référence dans `[Ls, Lc]` | la teinte à la clarté `La` vaut `Ha` |
 
@@ -344,6 +373,16 @@ le calcule, angles arrondis au centième (`[MOT-27]`) et contrastes tronqués
 | Même palette, `vivid`, sombre 200 | `#021F64`, contraste 1,23 contre `#121212` |
 | Référence `#F2A900`, préréglage Tailwind | dérive totale -39,63°, `dClair = +10,69`, `dSombre = -28,94` |
 | Même palette, `vivid`, sombre 700 | `#C9851B`, contraste 6,11 contre `#121212` |
+
+Ces vecteurs portent sur les rampes communes. Sur les rampes ancrées de
+`[MOT-17]`, dans la recette par défaut :
+
+| Entrée | Attendu |
+|---|---|
+| Référence `#1E6FD9`, préréglage Tailwind | profil porteur `vivid`, cran 600 en clair et en sombre, où l'hexa vaut `#1E6FD9` ; clair 700 reste `#0E5DC6` |
+| Référence `#A0B599` | profil porteur `soft`, cran 400 en clair, 800 en sombre |
+| Référence `#B00100` | profil porteur `vivid`, cran 700 en clair, 500 en sombre |
+| Référence `#000000` | profil porteur `soft`, cran 950 en clair, 50 en sombre |
 
 ## 7. La recette
 
@@ -535,7 +574,10 @@ composant du socle la porte (`[UI-02]`).
   gris, sur 360 teintes, les deux profils et les deux modes, sur les couleurs à
   8 bits. Une courbe qui ne la tient plus produit l'alerte « courbe hors
   garantie », qui nomme le cran, le mode, le profil, la teinte du pire cas et
-  son contraste. L'alerte n'empêche ni le rangement ni le dessin.
+  son contraste. L'alerte n'empêche ni le rangement ni le dessin. La
+  garantie juge les courbes communes : elle n'établit pas les promesses d'une
+  palette, dont la référence exacte remplace un cran (`[MOT-17]`). Seules ses
+  promesses les établissent.
 
 ## 9. Sortie 1 : la planche
 
@@ -768,6 +810,13 @@ ses cases ne sont pas des promesses.
   chaque promesse avec sa paire, son contraste et son verdict, et chaque alerte
   avec sa mesure.
 - `[VER-02]` Le rapport porte l'empreinte de la recette qui l'a produit.
+- `[VER-16]` Le rapport porte sa propre version, `formatDuRapport`, distincte
+  de celle de la recette. Un champ ajouté la garde ; un champ ou un code
+  d'alerte retiré ou renommé la monte. La version 2 ajoute l'ancrage de chaque
+  palette (`[MOT-17]`) et le profil de couleur du document, et retire l'alerte
+  de la référence plus claire que le bouton. Le rapport garde toutes les
+  alertes du moteur, y compris celles que l'interface montre ailleurs que dans
+  la liste des messages.
 
 ## 11. Les vérifications
 

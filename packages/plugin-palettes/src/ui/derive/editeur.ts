@@ -15,9 +15,10 @@ import {
   referenceDe,
   rgb8VersOklch,
   teinteA,
-  type Cran,
+  type Ancrage,
   type Palette,
   type Profil,
+  type Rampes,
   type Recette,
 } from 'ucm-couleur';
 
@@ -37,7 +38,8 @@ export interface GestesDeLEditeur {
 
 export interface EditeurUi {
   element: HTMLDivElement;
-  afficher(recette: Recette, palette: Palette, rampe: readonly Cran[]): void;
+  /** Les rampes ancrées de la palette et son ancrage ([MOT-17]) : la rampe Light du profil réglé se peint sous la bande. */
+  afficher(recette: Recette, palette: Palette, rampes: Rampes, ancrage: Ancrage): void;
 }
 
 type Bout = 'clair' | 'sombre';
@@ -293,14 +295,16 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     if (precedente) gestes.valider(precedente);
   });
 
-  let rampe: readonly Cran[] = [];
+  let rampes: Rampes | null = null;
+  let ancrage: Ancrage | null = null;
 
   function dessiner(): void {
-    if (!recette || !palette) return;
+    if (!recette || !palette || !rampes || !ancrage) return;
     const focalisee = boutDe(document.activeElement);
     const lie = palette.derive.lien;
-    if (lie) profil = 'vivid';
-    graphe.afficher({ recette, palette, profil, rampe });
+    // Synchronisés, les deux profils se règlent ensemble : l'éditeur montre le porteur de la référence.
+    if (lie) profil = ancrage.profil;
+    graphe.afficher({ recette, palette, profil, rampe: rampes[profil].light, ancrage });
     // Le graphe s'est redessiné : la poignée qui avait le focus le reprend.
     if (focalisee) graphe.poignees()[focalisee]?.focus();
 
@@ -336,11 +340,12 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
 
   return {
     element,
-    afficher(recetteLue, paletteLue, rampeLue) {
+    afficher(recetteLue, paletteLue, rampesLues, ancrageLu) {
       if (palette && paletteLue.id !== palette.id) confirmationOuverte = false;
       recette = recetteLue;
       palette = paletteLue;
-      rampe = rampeLue;
+      rampes = rampesLues;
+      ancrage = ancrageLu;
       dessiner();
     },
   };

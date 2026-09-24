@@ -6,8 +6,8 @@
 import {
   alertesDePalette,
   alertesDesFonds,
+  ancrageDe,
   compterManquees,
-  cranLePlusProche,
   distanceDePalettes,
   partDeChroma,
   partsDe,
@@ -17,6 +17,7 @@ import {
   trierParSeverite,
   verifierPromesses,
   type Alerte,
+  type Ancrage,
   type Palette,
   type Parts,
   type Promesse,
@@ -24,14 +25,10 @@ import {
   type Recette,
 } from 'ucm-couleur';
 
-import type { ProfilDuDocument } from './lecture';
-
 /** Une ligne de la liste des constats, avant sa mise en mots. */
 export type ConstatDePalette =
   | { readonly severite: 'promesse'; readonly promesse: Promesse }
-  | { readonly severite: 'alerte' | 'notice'; readonly alerte: Alerte }
-  /** Le document n'a pas de profil de couleur géré. */
-  | { readonly severite: 'notice'; readonly legacy: true };
+  | { readonly severite: 'alerte' | 'notice'; readonly alerte: Alerte };
 
 export interface AnalyseDePalette {
   readonly rampes: Rampes;
@@ -41,7 +38,8 @@ export interface AnalyseDePalette {
   /** La part de chroma de la référence, et celles que la palette emploie. */
   readonly part: number;
   readonly parts: Parts;
-  readonly cranProche: number;
+  /** Le profil et les nuances qui portent la référence exacte ([MOT-17]). */
+  readonly ancrage: Ancrage;
 }
 
 /**
@@ -61,15 +59,14 @@ function alertesQuiLaConcernent(recette: Recette, palette: Palette): Alerte[] {
   return alertes;
 }
 
-/** Analyse une palette d'une recette validée, dans un document de ce profil. */
-export function analyserPalette(recette: Recette, palette: Palette, profil: ProfilDuDocument): AnalyseDePalette {
+/** Analyse une palette d'une recette validée. */
+export function analyserPalette(recette: Recette, palette: Palette): AnalyseDePalette {
   const promesses = verifierPromesses(recette, palette);
   const constats: ConstatDePalette[] = [
     ...promesses.filter((promesse) => promesse.verdict === 'manquee')
       .map((promesse) => ({ severite: 'promesse' as const, promesse })),
     ...alertesQuiLaConcernent(recette, palette).map((alerte) => ({ severite: severiteDeLAlerte(alerte), alerte })),
   ];
-  if (profil === 'LEGACY') constats.push({ severite: 'notice', legacy: true });
   return {
     rampes: rampesDe(recette, palette),
     promesses,
@@ -77,6 +74,6 @@ export function analyserPalette(recette: Recette, palette: Palette, profil: Prof
     constats: trierParSeverite(constats),
     part: partDeChroma(referenceDe(palette), recette.gamut),
     parts: partsDe(recette, palette),
-    cranProche: cranLePlusProche(recette, palette),
+    ancrage: ancrageDe(recette, palette),
   };
 }

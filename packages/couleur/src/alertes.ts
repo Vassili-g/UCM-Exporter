@@ -1,10 +1,10 @@
 /**
  * Les alertes de la section 11.3 : une mesure qui franchit un seuil de
- * conception ([VER-08], [VER-10] à [VER-12], [ENT-06]). Une alerte n'empêche
+ * conception ([VER-08], [VER-10], [VER-11], [ENT-06]). Une alerte n'empêche
  * rien ; elle porte la mesure, le seuil et ce qu'ils visent, et l'interface
  * les met en mots.
  */
-import { ecrireHexa, lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
+import { lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
 import { distanceOk, partDeChroma } from './contraste';
 import { EMPLOIS, TABLE_DES_EMPLOIS } from './emplois';
 import { estPresqueGrise, partsDe, rampesDe, referenceDe } from './palette';
@@ -21,7 +21,6 @@ export interface Confusion {
 
 export type Alerte =
   | { readonly code: 'profils-confondus'; readonly palette: string; readonly crans: readonly Confusion[]; readonly seuil: number }
-  | { readonly code: 'reference-plus-claire-que-bouton'; readonly palette: string; readonly reference: string; readonly bouton: string }
   | { readonly code: 'palettes-proches'; readonly palettes: readonly [string, string]; readonly distance: number; readonly seuil: number }
   | { readonly code: 'couleur-presque-grise'; readonly palette: string; readonly chroma: number; readonly seuil: number }
   | { readonly code: 'reference-plus-terne'; readonly palette: string; readonly part: number; readonly partSoft: number }
@@ -68,23 +67,6 @@ function profilsConfondus(recette: Recette, palette: Palette): Alerte | null {
     : null;
 }
 
-/**
- * Une référence plus claire que le cran du fond plein en clair ([VER-12]) :
- * le bouton prend ce cran, plus foncé qu'elle. Le mode sombre n'est pas
- * regardé : le bouton y est clair et porte un texte foncé.
- */
-function boutonPlusFonce(recette: Recette, palette: Palette): Alerte | null {
-  const rang = recette.crans.indexOf(TABLE_DES_EMPLOIS.solid);
-  const reference = referenceDe(palette);
-  if (rgb8VersOklch(reference).L <= recette.courbes.light[rang]) return null;
-  return {
-    code: 'reference-plus-claire-que-bouton',
-    palette: palette.id,
-    reference: ecrireHexa(reference),
-    bouton: ecrireHexa(rampesDe(recette, palette).vivid.light[rang].couleur),
-  };
-}
-
 /** Les alertes et la notice qui portent sur une palette seule, dans l'ordre de la table 11.3. */
 export function alertesDePalette(recette: Recette, palette: Palette): Alerte[] {
   const alertes: Alerte[] = [];
@@ -97,8 +79,6 @@ export function alertesDePalette(recette: Recette, palette: Palette): Alerte[] {
 
   const confondus = profilsConfondus(recette, palette);
   if (confondus) alertes.push(confondus);
-  const bouton = boutonPlusFonce(recette, palette);
-  if (bouton) alertes.push(bouton);
   if (estPresqueGrise(recette, palette)) {
     alertes.push({ code: 'couleur-presque-grise', palette: palette.id, chroma: lue.C, seuil: recette.seuils.chromaGrise });
   }

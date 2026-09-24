@@ -87,11 +87,24 @@ export interface Sommet {
 }
 
 /**
- * La ligne brisée d'un profil : un sommet par cran de la courbe claire, et le
- * pivot à 0° quand la référence est dans la rampe.
+ * La ligne brisée d'un profil : un sommet par cran de la courbe claire. Le
+ * profil porteur passe `rangAncre`, le rang clair de sa référence exacte
+ * ([MOT-17]) : ce cran est la référence, et sa dérive vaut 0° ([DER-02]).
+ * L'autre profil passe par le pivot à 0°, entre deux crans, quand la
+ * référence est dans la rampe.
  */
-export function ligneBrisee(courbeClaire: readonly number[], reference: Oklch, derive: Derive, bouts: Bouts): Sommet[] {
-  const sommets: Sommet[] = courbeClaire.map((clarte, rang) => ({ rang, angle: deriveDuCran(clarte, reference, derive, bouts) }));
+export function ligneBrisee(
+  courbeClaire: readonly number[],
+  reference: Oklch,
+  derive: Derive,
+  bouts: Bouts,
+  rangAncre: number | null = null,
+): Sommet[] {
+  const sommets: Sommet[] = courbeClaire.map((clarte, rang) => ({
+    rang,
+    angle: rang === rangAncre ? 0 : deriveDuCran(clarte, reference, derive, bouts),
+  }));
+  if (rangAncre !== null) return sommets;
   const pivot = rangDuPivot(reference.L, courbeClaire);
   if (pivot !== null) sommets.push({ rang: pivot, angle: 0 });
   return sommets.sort((a, b) => a.rang - b.rang);

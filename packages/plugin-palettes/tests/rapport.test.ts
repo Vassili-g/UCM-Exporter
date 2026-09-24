@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { contraste, lireHexa, rampesDe, recetteParDefaut, type Recette } from 'ucm-couleur';
+import { ancrageDe, contraste, lireHexa, rampesDe, recetteParDefaut, type Recette } from 'ucm-couleur';
 
 import { ajouter, nouvellePalette } from '../src/edition';
 import { rapportDeLaRecette } from '../src/rapport';
@@ -28,8 +28,21 @@ test('[VER-01] chaque promesse porte sa paire, son contraste et son verdict ; ch
   const [bleu, jaune] = rapportDeLaRecette(RECETTE, null, 'SRGB', null).palettes;
   assert.equal(bleu.promesses.length, 56);
   assert.ok(bleu.promesses.every((promesse) => typeof promesse.contraste === 'number' && ['tenue', 'manquee'].includes(promesse.verdict)), JSON.stringify(bleu.promesses[0]));
-  const bouton = jaune.alertes.find((alerte) => alerte.code === 'reference-plus-claire-que-bouton');
-  assert.ok(bouton && bouton.code === 'reference-plus-claire-que-bouton' && bouton.reference === '#FACC15', JSON.stringify(jaune.alertes));
+  const vive = jaune.alertes.find((alerte) => alerte.code === 'reference-plus-vive');
+  assert.ok(vive && vive.code === 'reference-plus-vive' && vive.part > vive.partVivid, JSON.stringify(jaune.alertes));
+});
+
+test('[MOT-17] le rapport nomme l’ancrage de chaque palette, le même que l’analyse, et le profil du document', () => {
+  const rapport = rapportDeLaRecette(RECETTE, null, 'LEGACY', null);
+  assert.equal(rapport.formatDuRapport, 2);
+  assert.equal(rapport.profilDuDocument, 'LEGACY');
+  for (const [rang, palette] of RECETTE.palettes.entries()) {
+    const ancrage = ancrageDe(RECETTE, palette);
+    assert.deepEqual(rapport.palettes[rang].ancrage, ancrage);
+    for (const mode of ['light', 'dark'] as const) {
+      assert.equal(rapport.palettes[rang].crans[mode][ancrage.profil][ancrage.rangs[mode]].hexa, palette.reference, `${palette.id} ${mode}`);
+    }
+  }
 });
 
 test('[VER-02] le rapport porte l’empreinte de la recette et les écarts du dernier dessin, et se relit tel quel en JSON', () => {

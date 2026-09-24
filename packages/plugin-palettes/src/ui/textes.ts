@@ -9,12 +9,14 @@ import {
   ecrireArrondi,
   ecrireContraste,
   type Alerte,
+  type Ancrage,
   type DeriveRangee,
   type EmploiDUnCran,
   type ManqueDeGarantie,
   type MembrePaire,
   type Mode,
   type Palette,
+  type Profil,
   type Promesse,
   type Recette,
   type Refus,
@@ -160,9 +162,9 @@ export function etiquetteDePoignee(angle: number, teinte: number): string {
   return `${angleEcrit(angle)} · ${Math.round(teinte) % 360}°`;
 }
 
-/** L'infobulle du pivot ([DER-02]). */
-export function infobulleDuPivot(teinte: number): string {
-  return `couleur de référence, teinte fixe, ${Math.round(teinte) % 360}°`;
+/** L'infobulle du pivot ([DER-02]) : la teinte de la référence, et la nuance qui la porte dans chaque thème. */
+export function infobulleDuPivot(teinte: number, ancrage: Ancrage): string {
+  return `Couleur de référence : teinte ${Math.round(teinte) % 360}°. ${NOM_DU_PROFIL[ancrage.profil]} · nuance ${ancrage.crans.light} en Thème Light, ${ancrage.crans.dark} en Thème Dark.`;
 }
 
 /** L'indication discrète de rangement, au rang 3 (D-D). */
@@ -235,9 +237,12 @@ const NOM_DU_MODE: Record<Mode, string> = { light: 'clair', dark: 'sombre' };
 /** Un seuil de contraste : « 4,5 », « 3 ». */
 const seuilEcrit = (valeur: number): string => ecrireArrondi(valeur, 1).replace(/,0$/, '');
 
-/** La part de la référence, celles des deux profils, et le cran le plus proche ([PLA-08]). */
-export function ligneDeLaPart(part: number, soft: number, vivid: number, cranProche: number): string {
-  return `part de chroma ${ecrireArrondi(part, 2)} · soft ${ecrireArrondi(soft, 2)} · vivid ${ecrireArrondi(vivid, 2)} · proche du cran ${cranProche}`;
+/** Le nom d'affichage d'un profil ; la clé `soft` ou `vivid` reste celle des données. */
+export const NOM_DU_PROFIL: Record<Profil, string> = { soft: 'Soft', vivid: 'Vivid' };
+
+/** Le profil et la nuance qui portent la référence exacte dans un mode ([MOT-17]). */
+export function ligneDeLaReference(ancrage: Ancrage, mode: Mode): string {
+  return `Référence : ${NOM_DU_PROFIL[ancrage.profil]} · nuance ${ancrage.crans[mode]}`;
 }
 
 const ORIGINES: Record<DeriveRangee['origine'], string> = { tailwind: 'Tailwind', constante: 'Constante', libre: 'Libre' };
@@ -325,13 +330,6 @@ export function constatDAlerte(alerte: Alerte, contexte: ContexteDAlerte): Const
         geste: 'Éloignez les parts de chroma des deux profils dans la configuration.',
       };
     }
-    case 'reference-plus-claire-que-bouton':
-      return {
-        ou: `${contexte.nomDe(alerte.palette)}, couleur de référence ${alerte.reference}`,
-        quoi: `Les boutons ne seront pas de cette couleur. Au cran 700, qui porte les boutons et les textes, elle devient ${alerte.bouton}, plus foncée.`,
-        geste: 'Gardez cette couleur pour le logo et les aplats de charte, ou choisissez une référence plus sombre.',
-        pastilles: [alerte.reference, alerte.bouton],
-      };
     case 'palettes-proches':
       return {
         ou: `${contexte.nomDe(alerte.palettes[0])} et ${contexte.nomDe(alerte.palettes[1])}`,
@@ -371,15 +369,6 @@ export function constatDAlerte(alerte: Alerte, contexte: ContexteDAlerte): Const
       };
     }
   }
-}
-
-/** La notice d'un document sans profil de couleur géré. */
-export function noticeLegacy(): Constat {
-  return {
-    ou: 'Document, profil de couleur',
-    quoi: 'Profil non géré : Figma ne dit pas dans quel espace les couleurs de la planche seront peintes.',
-    geste: 'Choisissez sRGB ou Display P3 dans les réglages de couleur du fichier.',
-  };
 }
 
 /** Le nombre de palettes que la recette rangée porte. */
@@ -698,7 +687,6 @@ export const TEXTES_DE_LA_PLANCHE = {
   tenu: 'tenu',
   manque: 'manqué',
   colonnes: ['Emploi', 'Usage', 'Cran', 'Spécimen', 'Contraste', 'Seuil', 'Verdict'],
-  bouton: 'Boutons',
   mode: { light: 'Light', dark: 'Dark' },
   usage: {
     solid: 'Fond plein d’un bouton, d’un badge',
@@ -772,7 +760,7 @@ export interface TexteDeReference {
   readonly C: number;
   readonly H: number;
   readonly part: number;
-  readonly cranProche: number;
+  readonly ancrage: Ancrage;
   /** Contraste et seuil tenu contre le blanc, le noir, le fond clair et le fond sombre. */
   readonly contrastes: readonly { readonly contre: string; readonly valeur: number; readonly seuil: number | null }[];
 }
@@ -781,7 +769,7 @@ export function texteDeReference(reference: TexteDeReference): string {
   return [
     reference.hexa,
     `L ${ecrireArrondi(reference.L, 3)} · C ${ecrireArrondi(reference.C, 3)} · H ${Math.round(reference.H) % 360}°`,
-    `part de chroma ${ecrireArrondi(reference.part, 2)} · proche du cran ${reference.cranProche}`,
+    `Intensité : ${ecrireArrondi(reference.part, 2)} · ${(['light', 'dark'] as const).map((mode) => `${TEXTES_DE_LA_PLANCHE.mode[mode]} : ${NOM_DU_PROFIL[reference.ancrage.profil]} · nuance ${reference.ancrage.crans[mode]}`).join(' · ')}`,
     reference.contrastes.map(({ contre, valeur, seuil }) => `${contre} ${ecrireContraste(valeur)} ${seuilTenuEcrit(seuil)}`).join(' · '),
   ].join('\n');
 }
@@ -790,11 +778,6 @@ export function texteDeReference(reference: TexteDeReference): string {
 export function texteDesDerives(palette: Palette): string {
   const { lien, soft, vivid } = palette.derive;
   return lien ? `soft et vivid : ${uneDerive(vivid)}` : `soft : ${uneDerive(soft)}\nvivid : ${uneDerive(vivid)}`;
-}
-
-/** La carte du bouton, à côté de la référence ([PLA-08], [VER-12]). */
-export function texteDuBouton(hexa: string): string {
-  return `${TEXTES_DE_LA_PLANCHE.bouton}\n${hexa}\ncran 700 vivid, clair`;
 }
 
 /** Une ligne de paire d'état sous une table d'emplois ([PLA-17]). */

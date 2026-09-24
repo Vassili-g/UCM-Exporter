@@ -69,7 +69,6 @@ const CONTEXTE = { recette: RECETTE, nomDe: (id: string) => (id === 'p-0000000a'
 /** Une alerte de chaque code : `Record` refuse à la compilation un code oublié. */
 const ALERTES: Record<Alerte['code'], Alerte> = {
   'profils-confondus': { code: 'profils-confondus', palette: 'p-0000000a', crans: [{ mode: 'light', cran: 100, distance: 0.012 }], seuil: 0.02 },
-  'reference-plus-claire-que-bouton': { code: 'reference-plus-claire-que-bouton', palette: 'p-0000000a', reference: '#FACC15', bouton: '#8A560E' },
   'palettes-proches': { code: 'palettes-proches', palettes: ['p-0000000a', 'p-0000000b'], distance: 0.03, seuil: 0.05 },
   'couleur-presque-grise': { code: 'couleur-presque-grise', palette: 'p-0000000a', chroma: 0.021, seuil: 0.03 },
   'reference-plus-terne': { code: 'reference-plus-terne', palette: 'p-0000000a', part: 0.226, partSoft: 0.45 },
@@ -84,12 +83,6 @@ test('[VER-09] chaque alerte a ses trois parties, où, quoi et geste', () => {
     for (const partie of [constat.ou, constat.quoi, constat.geste]) assert.ok(partie.trim().length > 0, alerte.code);
     assert.ok(!/undefined|NaN/.test(JSON.stringify(constat)), `${alerte.code} : ${JSON.stringify(constat)}`);
   }
-});
-
-test('[VER-12] l’alerte du bouton montre la référence et le cran 700 côte à côte', () => {
-  const constat = constatDAlerte(ALERTES['reference-plus-claire-que-bouton'], CONTEXTE);
-  assert.deepEqual(constat.pastilles, ['#FACC15', '#8A560E']);
-  assert.ok(constat.quoi.includes('#8A560E'));
 });
 
 test('un fond hors de la courbe nomme son mode et son hexa', () => {
