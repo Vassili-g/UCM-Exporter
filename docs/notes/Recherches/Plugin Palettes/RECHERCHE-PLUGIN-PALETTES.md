@@ -56,6 +56,16 @@ critique](./REVUE-CRITIQUE-PLUGIN-PALETTES.md).
 | Emploi | Un usage d'un cran, `text` ou `solid` par exemple. La table des emplois de l'architecture lui fixe un cran, et un cran par état |
 | Recette | Tous les nombres qui fabriquent les palettes du fichier |
 | Planche | Les cadres que le plugin dessine dans Figma |
+| Profil porteur | Le profil dont les rampes contiennent la couleur de référence exacte, dans les deux modes (`[MOT-17]`) |
+| Promesse | Une relation d'usage entre deux couleurs, `on-solid` sur `solid` par exemple, que son contraste mesuré vérifie contre un minimum |
+
+L'interface et la planche emploient le vocabulaire d'affichage de
+l'[inventaire des textes](./INVENTAIRE-TEXTES-ET-PROPOSITIONS.md#vocabulaire-retenu) :
+« Palettes et réglages » pour la recette, « Réglages communs » pour sa
+configuration, « nuance » pour un cran, « intensité » pour une part de chroma,
+« usage » pour un emploi, « Thème Light » et « Thème Dark » pour les modes.
+Ce document garde les termes du code, que les données enregistrées portent
+aussi.
 
 ## 3. Décisions
 
@@ -299,7 +309,7 @@ cet espace, pour qu'elle s'affiche avec l'hexa qu'elle annonce.
 | `documentColorProfile` | Ce que le plugin peint |
 |---|---|
 | `SRGB` | `rgb8 / 255` |
-| `LEGACY` | `rgb8 / 255`, avec une notice unique : le document n'a pas de profil géré |
+| `LEGACY` | `rgb8 / 255` ; le rapport garde le profil, et aucun message ne s'affiche |
 | `DISPLAY_P3` | La couleur `rgb8` convertie en coordonnées Display P3, sans arrondi |
 
 - `[MOT-25]` L'hypothèse de cette table se vérifie dans Figma au lot 6
@@ -557,12 +567,13 @@ présenter et à comparer des palettes côte à côte.
   `recette.palettes`, 200 px entre eux. Un cadre déplacé à la main garde sa
   nouvelle position. Un cadre neuf se pose à 200 px à droite du cadre possédé
   le plus à droite, aligné sur le haut du premier cadre.
-- `[PLA-06]` Le geste « Dessiner » porte sur la palette ouverte ;
-  « Dessiner toutes les palettes » porte sur toutes. Après un dessin, le plugin
-  appelle `figma.commitUndo()` : un Ctrl+Z défait ce dessin entier, et lui seul.
-  Le résultat du dessin propose « Voir sur la planche », qui ouvre la page de la
-  planche et cadre le dessin (`setCurrentPageAsync`, puis
-  `scrollAndZoomIntoView`).
+- `[PLA-06]` Le geste « Générer sur Figma » porte sur une palette : la palette
+  ouverte dans l'onglet Palettes, ou celle d'une fiche de l'onglet Planche.
+  L'onglet Planche propose aussi de générer les palettes à mettre à jour, et
+  toutes les palettes. Après une génération, le plugin appelle
+  `figma.commitUndo()` : un Ctrl+Z défait cette génération entière, et elle
+  seule. Le résultat propose « Afficher dans Figma », qui ouvre la page du
+  cadre et le cadre (`setCurrentPageAsync`, puis `scrollAndZoomIntoView`).
 - `[PLA-25]` Un cadre dont `ucm_palettes/proprietaire` diffère de son propre
   `id` est une copie faite par le designer. Le plugin la signale en notice et ne
   la réécrit jamais.
@@ -570,69 +581,86 @@ présenter et à comparer des palettes côte à côte.
 ### 9.2 Le cadre d'une palette
 
 ```text
-┌ Bleu ────────────────────────────────────────────────────────────────────┐
-│ Bleu          recette v1 · empreinte 3fa2c91e · sRGB · 56/56 promesses   │
-│ Dessiné par UCM Palettes. Ce cadre est remplacé à chaque dessin.         │
-├──────────────────────────────────────────────────────────────────────────┤
-│ Référence  [■ #1E6FD9]   dérive soft et vivid : clair −7,5° sombre +5,1°│
-├──────────────────────────────────────────────────────────────────────────┤
-│ Light     fond de référence #F7F7F7                                      │
-│  soft   [50][100][200][300][400][500][600][700][800][900][950]         │
-│  vivid    [50]...                                                        │
-├──────────────────────────────────────────────────────────────────────────┤
-│ Dark      fond de référence #121212, section peinte de ce fond           │
-│  soft   [50]...                                                        │
-│  vivid    [50]...                                                        │
-├──────────────────────────────────────────────────────────────────────────┤
-│ Emplois   light                        │ dark                            │
-│  (table de la section 9.4)             │                                 │
-├──────────────────────────────────────────────────────────────────────────┤
-│ Alertes   (une ligne par alerte, section 11.3)                           │
-├──────────────────────────────────────────────────────────────────────────┤
-│ Légende   seuils, profils, ce que mesure chaque contraste                │
-└──────────────────────────────────────────────────────────────────────────┘
+┌ Bleu ─────────────────────────────────────────────────────────────────────┐
+│ Bleu                                                                       │
+│ Couleur de référence #1E6FD9 · Vivid · nuance 600                          │
+│ 56/56 promesses respectées                                                 │
+├ Couleur de référence ─────────────────────────────────────────────────────┤
+│ [■■■■■■]  #1E6FD9   Thème Light : Vivid · nuance 600                       │
+│                     Thème Dark : Vivid · nuance 600                        │
+│ Contrastes     Blanc     Noir     Fond Light     Fond Dark                 │
+│                ratio et niveau de chaque comparaison                       │
+│ Mesures avancées : luminosité L, chroma C, teinte H, intensité             │
+│ Dérive de teinte : …                                                       │
+├ Thème Light · fond #F7F7F7 ── filet ──────────────────────────────────────┤
+│ Soft   [50][100]…[950]                                                     │
+│ Vivid  [50][100]…[600 Référence]…[950]                                     │
+├ Thème Dark · fond #121212 ── filet ───────────────────────────────────────┤
+│ Soft   …                                                                   │
+│ Vivid  …                                                                   │
+├ Promesses · Thème Light ──────────────────────────────────────────────────┤
+│ Texte sur fond plein · on-solid sur solid                                  │
+│   Repos    [Aa Soft] ratio · minimum · résultat  [Aa Vivid] …             │
+│   Survol   …                                                               │
+│   Appui    …                                                               │
+│ …                                                                          │
+├ Promesses · Thème Dark ───────────────────────────────────────────────────┤
+├ Grilles de contraste (option) ────────────────────────────────────────────┤
+├ Points à vérifier ────────────────────────────────────────────────────────┤
+├ Lire les valeurs ─────────────────────────────────────────────────────────┤
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- `[PLA-07]` L'en-tête donne le nom de la palette, la version de la recette,
-  l'empreinte du modèle de ce cadre (`[PLA-19]`), l'espace de couleur du
-  document et le compte des promesses tenues sur le total.
-- `[PLA-08]` Le bloc « Référence » montre la couleur de référence en carte
-  large : pastille, hexa, OKLCH, part de chroma, cran le plus proche en clarté,
-  contraste contre le blanc, le noir et les deux fonds, verdict de chaque
-  contraste contre 4,5 et 3. À côté, les dérives de chaque profil et leur
-  origine. Quand l'alerte « Référence plus claire que le bouton » sonne
-  (`[VER-12]`), la carte montre à côté de la référence le cran 700 `vivid` en
-  clair, que les boutons emploient.
+- `[PLA-07]` L'en-tête donne le nom de la palette, la couleur de référence avec
+  son profil porteur et son numéro de nuance, et le bilan des promesses
+  respectées sur le total évalué. La version de la recette, l'empreinte du
+  modèle (`[PLA-19]`) et l'espace de couleur du document restent dans les
+  données de plugin du cadre et dans le rapport ; aucun texte du cadre ne les
+  imprime. Le cadre ne porte pas d'avertissement permanent sur son
+  remplacement : la confirmation des calques ajoutés (`[PLA-03]`) le remplace.
+- `[PLA-08]` Le bloc « Couleur de référence » montre une grande pastille, son
+  hexa, et le profil porteur et le numéro de nuance de chaque thème
+  (`[MOT-17]`). Un tableau légendé compare ses contrastes avec le blanc, le
+  noir et les deux fonds, chacun avec son niveau WCAG (`[VER-13]`). Les
+  mesures avancées, luminosité L, chroma C, teinte H et intensité, se lisent
+  dans une zone séparée, chacune avec son nom. Suivent les dérives de chaque
+  profil et leur origine. Une chaîne présentée comme copiable en CSS s'écrit
+  en syntaxe machine, avec des points décimaux ; un nombre à virgule est une
+  mesure à lire.
 - `[PLA-09]` La section `light` est peinte de `fonds.light`, la section `dark`
-  de `fonds.dark`. Chaque rampe se lit ainsi sur le fond où elle servira. Les
-  légendes de la section sombre sont claires ; celles de la section claire sont
-  sombres.
-- `[PLA-10]` Une rangée porte à gauche son profil et la part de chroma
-  employée.
-- `[PLA-11]` La légende dit que les seuils `profilsConfondus` et
-  `palettesProches` sont des paramètres de conception, pas des seuils
-  d'accessibilité.
+  de `fonds.dark`. Chaque rampe se lit ainsi sur le fond où elle servira. Un
+  filet délimite chaque section, visible sur un fond blanc comme sur un fond
+  sombre. Les légendes de la section sombre sont claires ; celles de la section
+  claire sont sombres.
+- `[PLA-10]` Une rangée porte à gauche le nom de son profil, Soft ou Vivid,
+  sans la part de chroma : l'intensité se lit dans les réglages. La nuance qui
+  porte la référence exacte montre le repère « Référence », au même endroit
+  que dans l'aperçu du thème.
+- `[PLA-11]` La légende, « Lire les valeurs », explique comment lire une
+  promesse, comment distinguer Soft et Vivid par leurs spécimens, et ce que
+  mesurent les contrastes d'une carte. Elle ne nomme pas les seuils par leur
+  nom interne.
 
 ### 9.3 La carte d'un cran
 
 ```text
 ┌──────────────┐
 │              │  pastille 96 × 56
-│     700      │  numéro du cran, posé sur la pastille, en noir ou en blanc
+│     700      │  numéro de la nuance, posé sur la pastille, en noir ou en blanc
 ├──────────────┤
-│ vivid.700    │  nom : profil et cran
 │ #0E5DC6      │  hexa
-│ L 0,499      │  clarté, chroma et teinte recalculées sur l'hexa
-│ C 0,179      │
-│ H 258°       │
-│ fond 5,76 4,5│  contraste contre le fond de référence du mode, et le seuil tenu
-│ blanc 6,17   │  le plus fort des contrastes contre le blanc et le noir
-│ text · solid │  les emplois que la table confie à ce cran, états compris
+│ Fond plein   │  les usages que la table confie à cette nuance, états compris
+│ Texte coloré │
+│ Fond 5,76:1  │  le contraste avec le fond du thème, et son niveau WCAG
+│ AA texte     │
 └──────────────┘
 ```
 
-- `[PLA-12]` Le seuil tenu s'écrit « 4,5 » quand le contraste atteint
-  `seuils.texte`, « 3 » quand il atteint `seuils.nonTexte`, et un tiret sinon.
+- `[PLA-12]` Le contraste avec le fond du thème porte son unité, `:1`, et son
+  niveau selon `[VER-13]`. Une carte n'empile ni la luminosité, ni la chroma, ni
+  la teinte, ni les contrastes avec le blanc et le noir : ces mesures se lisent
+  dans le rapport et dans le détail d'une nuance de l'interface. Le nom
+  `profil.cran` n'est pas répété, la rangée et le numéro le disent déjà.
 - `[PLA-13]` Le numéro du cran sur la pastille prend le noir ou le blanc,
   celui des deux qui contraste le plus avec l'hexa.
 - `[PLA-14]` Le calque de la pastille se nomme `{profil}/{mode}/{cran}`,
@@ -640,53 +668,54 @@ présenter et à comparer des palettes côte à côte.
   retrouver chaque couleur dans le panneau des calques, et sert de clé à
   l'option de la [section 17](#17-option-ultérieure--créer-les-variables).
 - `[PLA-15]` Une carte où les deux profils se confondent porte la mention
-  « ≈ soft » ou « ≈ vivid », sur tous les crans. L'alerte « Profils
-  confondus » ne porte que sur les crans de la table des emplois
-  ([section 11.3](#113-alertes)).
+  « Très proche de soft » ou « Très proche de vivid », sur tous les crans.
+  L'alerte « Profils confondus » ne porte que sur les crans de la table des
+  emplois ([section 11.3](#113-alertes)).
 - `[PLA-16]` Le texte de la carte est sélectionnable et copiable : un hexa se
   copie depuis la planche sans ouvrir le plugin.
 
 ### 9.4 Les emplois
 
-Une table par mode et par profil, une ligne par emploi : sept lignes. Les
-emplois et leurs crans sont ceux de la table de l'architecture, les mêmes pour
-toutes les palettes.
+Une section de promesses par mode. Les quatorze paires de la
+[section 11.2](#112-promesses-des-emplois) s'y groupent en huit associations :
+une association réunit les paires de même premier emploi et de même second
+membre. L'état d'une paire est le décalage le plus grand de ses deux membres :
+0 au repos, 1 au survol, 2 à l'appui.
 
-| Colonne | Contenu |
-|---|---|
-| Emploi | `text` |
-| Usage | « Texte sur le fond de page » |
-| Cran | `700`, ou `fond` pour `on-solid` |
-| Spécimen | Un cadre de 120 × 32 : le fond et le texte de la paire principale, texte « Aa Libellé » |
-| Contraste | Le rapport de la paire principale de l'emploi |
-| Seuil | 4,5, 3 ou un tiret |
-| Verdict | « tenu » ou « manqué » |
+| Association | Paires | États |
+|---|---|---|
+| `text` sur fond | 1 | repos |
+| `text` sur `surface` | 2, 3, 4 | repos, survol, appui |
+| `on-solid` sur `solid` | 5, 6, 7 | repos, survol, appui |
+| `border-control` sur fond | 8 | repos |
+| `border-control` sur `surface` | 9, 10, 11 | repos, survol, appui |
+| `focus` sur fond | 12 | repos |
+| `focus` sur `surface` | 13 | repos |
+| `solid` sur fond | 14 | survol |
 
-La paire principale de chaque emploi :
+Chaque association occupe une ligne principale : le nom de ses deux usages en
+français, leurs identifiants et le minimum demandé. Ses états s'alignent
+dessous, chacun avec un spécimen Soft et un spécimen Vivid posés sur le même
+fond, le contraste mesuré et le résultat. Le spécimen montre le premier membre
+posé sur le second : le texte `on-solid` dans le fond `solid`.
 
-| Emploi | Usage | Cran | Paire principale | Seuil |
-|---|---|---|---|---|
-| `solid` | Fond plein d'un bouton, d'un badge | 700 | `on-solid` sur `solid` | 4,5 |
-| `on-solid` | Texte posé sur ce fond | fond | `on-solid` sur `solid` | 4,5 |
-| `text` | Texte coloré sur le fond de page | 700 | `text` sur fond | 4,5 |
-| `surface` | Fond teinté discret | 100 | `text` sur `surface` | 4,5 |
-| `border-control` | Contour d'un champ, d'une case | 600 | `border-control` sur fond | 3 |
-| `border-decorative` | Séparateur, filet | 300 | aucune | aucun |
-| `focus` | Anneau de focus, décalé du contrôle | 600 | `focus` sur fond | 3 |
-
-- `[PLA-17]` Sous la table, les paires d'état de la
-  [section 11.2](#112-promesses-des-emplois) : une ligne par paire, sans
-  spécimen.
-- `[PLA-18]` L'en-tête de la table rappelle que ces crans sont ceux que les
-  composants citent, dans toutes les marques.
+- `[PLA-17]` Toutes les paires du moteur sont représentées. Une association
+  sans état repos, `solid` sur fond, montre son seul état.
+  `border-decorative` n'a aucune promesse : la carte de sa nuance dit son
+  usage, et aucune section de promesses ne lui en invente une.
+- `[PLA-18]` L'en-tête des promesses rappelle que chaque usage correspond au
+  même numéro de nuance dans toutes les palettes.
 
 ### 9.5 La grille de contraste
 
-Option du geste « Dessiner », désactivée par défaut. Pour chaque rampe et
-chaque mode, une grille de onze sur onze : ligne et colonne sont les crans, la
-cellule donne le contraste entre les deux, sur un fond vert, jaune ou gris
-selon le seuil tenu. Elle répond à la question « quel cran puis-je poser sur
-quel cran ».
+Option de la génération, désactivée par défaut. Pour chaque rampe et chaque
+mode, une grille de onze sur onze : ligne et colonne sont les crans, la cellule
+donne le contraste entre les deux, sur un fond vert, jaune ou gris selon le
+seuil atteint. Elle répond à la question « quel cran puis-je poser sur quel
+cran ». Chaque grille porte son titre, mode et profil, les numéros de nuance
+sur ses deux axes et la valeur dans chaque cellule. Une légende nomme en mots
+les trois couleurs de fond. La grille compare librement toutes les nuances :
+ses cases ne sont pas des promesses.
 
 ### 9.6 Fraîcheur
 
@@ -794,81 +823,120 @@ diffèrent un peu, et les composants citent l'un comme l'autre.
 - `[VER-05]` Les paires visent les crans 100, 200, 300, 600, 700, 800 et 900.
   `[REC-05]` refuse une recette dont `crans` n'en contient pas un : aucune
   paire ne peut viser un cran absent.
-- `[VER-06]` Une promesse manquée nomme la paire, le profil, le contraste
-  obtenu et le seuil. Aucun cran ne se propose : la table est commune à toutes
-  les palettes. Le geste qui la lève règle la palette, sa dérive ou ses parts
-  propres, ou la courbe dans la configuration.
-- `[VER-07]` Une promesse manquée n'empêche pas le dessin. Elle s'affiche au
-  premier rang, et le verdict de la palette devient « {n} promesses
-  manquées ».
+- `[VER-06]` Une promesse manquée nomme l'association (section 9.4), le mode,
+  l'état, et pour chaque profil son contraste mesuré, le minimum demandé et
+  son résultat. L'interface groupe les promesses manquées par association,
+  mode et état : un échec en `soft` et en `vivid` fait un seul message, qui
+  garde les deux résultats. Le compte reste celui des contrôles évalués, un par
+  paire, mode et profil. Aucun cran ne se propose : la table est commune à
+  toutes les palettes. Le geste mène au réglage qui peut agir (section 11.4).
+- `[VER-07]` Une promesse manquée n'empêche pas la génération. La palette
+  ouverte affiche « Prête » avec son bilan quand toutes ses promesses sont
+  respectées, et le nombre de promesses à corriger sinon. Ce bilan situe la
+  palette et ses promesses : il ne certifie pas l'accessibilité d'une
+  interface.
+- `[VER-13]` Le résultat d'une promesse suit le minimum de la recette. Le
+  niveau WCAG d'un contraste suit ses critères propres, sur la valeur mesurée
+  sans arrondi, et ne s'enregistre nulle part :
+
+  | Contraste mesuré | Texte courant | Grand texte | Éléments graphiques |
+  |---|---|---|---|
+  | 7:1 et plus | AAA | AAA | minimum 3:1 atteint |
+  | de 4,5:1 inclus à 7:1 exclu | AA | AAA | minimum 3:1 atteint |
+  | de 3:1 inclus à 4,5:1 exclu | insuffisant | AA | minimum 3:1 atteint |
+  | moins de 3:1 | insuffisant | insuffisant | minimum 3:1 non atteint |
+
+  Un couple de couleurs ne dit pas la taille d'un texte : « AA grand texte »
+  s'affiche comme un usage possible. Le contraste non textuel n'a pas de
+  niveau AAA. Une promesse respectée avec un minimum de texte abaissé à 4 peut
+  rester insuffisante pour le texte courant ; les deux résultats s'affichent
+  séparément. Sources : critères
+  [1.4.3](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html),
+  [1.4.6](https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html) et
+  [1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html).
 
 ### 11.3 Alertes
 
 | Alerte | Mesure | Seuil | Portée |
 |---|---|---|---|
 | Profils confondus | ΔEok entre `soft` et `vivid`, même cran et même mode, sur les crans de la table des emplois, états `+1` et `+2` compris | `profilsConfondus` | chaque palette, sauf parts `grise` (`[ENT-09]`) |
-| Référence plus claire que le bouton | clarté de la référence au-dessus de celle du cran 700 de la courbe claire | sans seuil | chaque palette |
 | Palettes proches | ΔEok moyen sur les crans 500, 600 et 700 de `vivid`, en clair | `palettesProches` | chaque paire de palettes de la recette |
 | Couleur presque grise | chroma de la référence | `chromaGrise` | chaque palette |
 | Référence plus terne que `soft` | part de chroma de la référence inférieure à la part de `soft` | sans seuil | chaque palette |
 | Référence hors de la rampe | clarté de la référence hors de `[Ls, Lc]` | sans seuil | chaque palette |
 | Fond hors de la courbe | [section 8.2](#82-les-fonds-de-référence) | sans seuil | chaque fond |
 
-- `[VER-08]` Une alerte n'empêche rien. Elle dit ce qui est mesuré, la valeur,
-  le seuil et le geste qui la lève.
-- `[VER-10]` Une référence plus vive que `vivid` est une notice. Toute couleur
-  au plafond du gamut la déclencherait, et aucun réglage ne la lève.
+- `[VER-08]` Une alerte n'empêche rien. Elle dit ce qui ressemble, manque ou
+  change, et mène au réglage qui la lève. La mesure, sa valeur et le seuil se
+  lisent dans le détail et dans le rapport.
+- `[VER-10]` Une référence plus vive que `vivid` ne produit aucun message : le
+  réglage d'intensité de `vivid` porte un repère qui la situe, et le rapport
+  garde la mesure. La référence exacte n'est jamais décrite comme plus terne
+  qu'elle-même ; les nuances autour d'elle peuvent l'être.
 - `[VER-11]` « Profils confondus » ne porte que sur les crans de la table des
-  emplois ; ailleurs, la carte de la planche porte la mention « ≈ »
-  (`[PLA-15]`). À dérive nulle, sur 360 teintes, l'alerte portée sur tous les
-  crans sonne pour 320 teintes, aux crans 50, 100 et 950. Bornée aux crans de
-  la table, elle sonne encore pour 249 teintes : `surface` vise le cran 100, qui
-  confond les deux profils sur 216 teintes en clair et 39 en sombre.
-- `[VER-12]` « Référence plus claire que le bouton » sonne quand la clarté de
-  la référence dépasse celle du cran 700 de `courbes.light`. Le fond plein d'un
-  bouton prend le 700 dans toutes les marques, avec le texte `on-solid` : une
-  référence plus claire donne un bouton plus foncé qu'elle. Le message montre
-  la référence et le cran 700 `vivid` en clair côte à côte. Le geste : garder
-  la référence pour le logo et les aplats de charte, ou choisir une référence
-  plus sombre. L'alerte ne regarde pas le mode sombre, où le bouton est clair
-  et porte un texte foncé.
+  emplois ; ailleurs, la carte de la planche porte la mention « Très proche
+  de » (`[PLA-15]`). À dérive nulle, sur 360 teintes, l'alerte portée sur tous
+  les crans sonne pour 320 teintes, aux crans 50, 100 et 950. Bornée aux crans
+  de la table, elle sonne encore pour 249 teintes : `surface` vise le cran 100,
+  qui confond les deux profils sur 216 teintes en clair et 39 en sombre.
+  L'interface la montre près du réglage d'intensité qui peut la lever : celui
+  de la palette quand elle porte ses propres intensités, sinon celui des
+  Réglages communs. Les nuances concernées gardent un indice discret dans
+  l'aperçu.
 
 ### 11.4 Sévérités et messages
 
 | Sévérité | Emploi | Rang dans l'interface |
 |---|---|---|
-| Bloquant | Le dessin ne peut pas se faire : recette illisible ou future, police absente | Premier, avant toute autre ligne |
-| Promesse manquée | Une paire de la table des emplois ne tient pas son seuil | Juste après les bloquants |
-| Alerte | Une mesure franchit un seuil de conception | Ensuite |
-| Notice | Profil `LEGACY`, cadre orphelin, copie de cadre, référence plus vive que `vivid`, couleur ramenée dans le gamut sRGB | Dernier, en couleur secondaire |
+| Blocage | Le plugin ne peut ni enregistrer ni générer : recette illisible ou future, enregistrement refusé, police absente, génération interrompue | Premier, avant toute autre ligne |
+| Promesse à corriger | Une paire de la table des emplois n'atteint pas son minimum | Ensuite, signal de danger |
+| Point à vérifier | Une mesure franchit un seuil de conception, ou la planche peint une couleur différente de l'aperçu | Ensuite, signal d'avertissement |
+| Information | Cadre orphelin, copie de cadre, couleur ramenée dans le gamut sRGB, document Display P3 | Dernier, en couleur secondaire |
+
+Un profil de document `LEGACY` ne produit aucun message : la planche le peint
+comme sRGB (section 6.7), et le rapport garde le profil.
 
 - `[VER-09]` Chaque message a trois parties séparées : où, quoi, geste. Il se
   rédige avec la skill `rediger-diagnostics-ucm`, et le modèle de
   `packages/plugin-exporter/src/contract/localisation.ts` sert de patron, sans import.
   Tous les textes destinés au designer sont dans un seul module de l'interface
   (D14).
+- `[VER-14]` Chaque groupe de messages porte son titre et son nombre. Une
+  sévérité se lit par un texte ou une forme en plus de sa couleur, et un échec
+  de promesse pèse plus qu'une alerte. Seul un événement qui demande une
+  intervention immédiate s'annonce par `role="alert"` : un blocage, jamais un
+  mouvement de poignée.
+- `[VER-15]` Le geste d'un message est une cible typée, indépendante de sa
+  phrase : intensités de la palette, dérive, luminosité commune, fonds,
+  intensités communes. Une fonction de présentation la choisit selon la cause
+  connue et la portée du réglage ; le lien ouvre et focalise ce réglage, et le
+  retour garde la palette, le thème, la nuance choisie et la position de
+  lecture.
 
 ## 12. L'éditeur de dérive
 
 L'éditeur règle les deux dérives d'une palette et montre leur effet sur chaque
-cran pendant le geste. Il occupe la zone centrale de l'onglet Palettes, replié
-par défaut sur une ligne : le préréglage, les deux angles et le bouton
-« Régler », qui le déplie. Déplié à 440 × 520, il repousserait les promesses
-manquées sous le pli, contre `[VER-07]`.
+cran pendant le geste. Il se place sous le nuancier de l'onglet Palettes,
+replié par défaut sur une ligne : le bouton « Configuration de la dérive »,
+qui le déplie, et à sa droite le résumé du préréglage et des deux angles. À la
+largeur minimale, le résumé passe à la ligne suivante et le titre reste
+entier.
 
 ```text
-┌ Dérive de teinte ─────────────────── Préréglage [Tailwind ▾]  🔗 soft = vivid ┐
+┌ Configuration de la dérive ─────────── Tailwind · nuances claires −7,5° · … ┐
+│ Dérive de teinte [Tailwind ▾]   ☑ Synchroniser la dérive de soft et vivid    │
 │ +30° ┤                                                                        │
 │      │                                                                        │
 │   0° ┼━━━━━━━━━━━━━━━━━━━━━━━━━━━━◆━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●            │
-│      ●╱                  référence 257° (fixe)          bout sombre +5,1°     │
-│ −30° ┤ bout clair −7,5°                                                       │
+│      ●╱                  référence 257° (fixe)                                │
+│ −30° ┤                                                                        │
 │       50   100   200   300   400   500   600   700   800   900   950          │
 │      ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇  teintes     │
 │      ▪    ▪    ▪    ▪    ▪    ▪    ▪    ▪    ▪    ▪    ▪         vivid light   │
 ├────────────────────────────────────────────────────────────────────────────────┤
-│ Bout clair   [ −7,5 ]°  ◂━━━━━━━━●━━━━━━━━▸   ┊ Tailwind −7,5°                 │
-│ Bout sombre  [ +5,1 ]°  ◂━━━━━━━━━━●━━━━━━▸   ┊ Tailwind +5,1°                 │
+│ Nuances claires  [ −7,5 ]°  ◂━━━━━━━━●━━━━━━━━▸   ┊ Tailwind −7,5°             │
+│ Nuances sombres  [ +5,1 ]°  ◂━━━━━━━━━━●━━━━━━▸   ┊ Tailwind +5,1°             │
+│ 56/56 promesses respectées                                                     │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -876,28 +944,44 @@ manquées sous le pli, contre `[VER-07]`.
 
 - `[DER-01]` Un graphe : en abscisse le rang du cran de la courbe claire, onze
   positions régulières, du bout clair à gauche au bout sombre à droite ; en
-  ordonnée la dérive par rapport à `Ha`, de -90° à +90°, avec des repères tous
-  les 15°. La courbe est une ligne brisée qui passe, à chaque position, par la
-  dérive que la [section 6.4](#64-la-teinte-dun-cran) donne à ce cran. Le pivot
-  se place entre les deux rangs qui encadrent sa clarté, par interpolation
-  linéaire de la clarté, et la ligne brisée y passe aussi. Les positions régulières alignent le graphe, la bande
-  de teintes et la rampe sur les mêmes onze colonnes.
-- `[DER-02]` Le pivot est un losange placé à la clarté de la référence, sur la
-  ligne 0°. Il ne se déplace pas ; son infobulle dit « couleur de référence,
-  teinte fixe, 257° ».
+  ordonnée la dérive par rapport à `Ha`. L'échelle vaut ±30° quand les deux
+  dérives y tiennent, puis s'élargit par paliers lisibles, ±45°, ±60° et ±90°.
+  Elle reste figée pendant un glisser et se réévalue avant ou après le geste :
+  la poignée ne saute pas sous le pointeur. Les valeurs extrêmes restent
+  accessibles au clavier et au champ numérique. La courbe est une ligne brisée
+  qui passe, à chaque position, par la dérive que la
+  [section 6.4](#64-la-teinte-dun-cran) donne à ce cran. Les positions
+  régulières alignent le graphe, la bande de teintes et la rampe sur les mêmes
+  onze colonnes.
+- `[DER-02]` Le pivot est un losange sur la ligne 0°. L'abscisse est celle de
+  la courbe claire, sur laquelle les deux bouts de la dérive se définissent :
+  le graphe ne change pas avec le thème de l'aperçu. Pour le profil porteur
+  (`[MOT-17]`), le pivot tombe sur la colonne de la nuance qui porte la
+  référence en Light, la ligne y passe à 0°, et son infobulle nomme la couleur
+  de référence, son profil et sa nuance dans chaque thème. Pour l'autre
+  profil, il se place entre les deux rangs qui encadrent la clarté de la
+  référence, par interpolation linéaire, et son infobulle dit la teinte fixe
+  sans désigner de pastille égale à la référence. La référence reste fixe
+  pendant le déplacement des poignées.
 - `[DER-03]` Deux poignées rondes aux bouts de la courbe portent `dClair` et
   `dSombre`. Leur étiquette donne l'angle signé et la teinte absolue qui en
   résulte.
 - `[DER-04]` Sous le graphe, une bande de teintes : chaque cran peint à sa
-  teinte, à la chroma de `vivid` en clair. Sous la bande, la rampe du profil et
-  du mode affichés dans l'aperçu. Les deux se mettent à jour pendant le geste.
+  teinte, à la chroma de `vivid` en clair. Sous la bande, la rampe Light du
+  profil réglé, alignée sur les colonnes ; quand les profils sont
+  synchronisés, celle du profil porteur. Les deux se mettent à jour pendant le
+  geste.
 - `[DER-05]` Quand `soft` et `vivid` ont des dérives distinctes, le graphe
-  trace deux courbes de deux couleurs de trait et de deux motifs, plein et
-  tireté, pour rester lisibles sans la couleur. Chaque poignée porte l'initiale
-  de son profil.
+  trace deux courbes de deux motifs de trait, plein et tireté, chacune avec le
+  nom de son profil, pour rester lisibles sans la couleur. Chaque poignée porte
+  l'initiale de son profil. Synchronisés, les deux profils partagent une
+  courbe, tracée pour le profil porteur.
 - `[DER-06]` Sur chaque réglette, un repère fin marque la valeur du préréglage
   Tailwind, même quand la dérive est libre. Le designer voit ainsi l'écart avec
   Tailwind sans changer de préréglage.
+- `[DER-17]` Sous les réglettes, le bilan des promesses de la palette suit le
+  réglage. Les annonces assistives se regroupent à la fin du geste, sans
+  lecture de chaque valeur pendant un glisser.
 
 ### 12.2 Ce que le designer fait
 
@@ -917,10 +1001,11 @@ manquées sous le pli, contre `[VER-07]`.
   dérives à 0) et affiche « Libre » dès qu'une valeur s'écarte du préréglage
   choisi. Choisir un préréglage remplace les deux dérives du profil affiché,
   ou des deux profils quand ils sont liés.
-- `[DER-12]` Le bouton de lien « soft = vivid » est actif par défaut. Le
-  désactiver copie la dérive courante dans les deux profils, puis un sélecteur
-  choisit le profil dont on règle les poignées. Le réactiver aligne `soft` sur
-  `vivid`, après confirmation si leurs valeurs diffèrent.
+- `[DER-12]` La case « Synchroniser la dérive de soft et vivid » est cochée par
+  défaut. La décocher garde la dérive courante dans les deux profils, puis
+  montre le sélecteur du profil dont on règle les poignées. La recocher
+  applique la dérive de `vivid` à `soft`, après confirmation si leurs valeurs
+  diffèrent ; l'annulation laisse les deux dérives intactes.
 - `[DER-13]` Tout changement se lit dans l'aperçu en moins d'une image
   (`[MOT-13]`). Il se range au relâchement de la poignée ou à la validation du
   champ, jamais pendant le glisser (`[REC-06]`). Ctrl+Z, ou Cmd+Z sur Mac,
@@ -944,61 +1029,147 @@ manquées sous le pli, contre `[VER-07]`.
 - `[UI-01]` Taille par défaut 600 × 720, minimale 440 × 520, rangée sous une
   clé propre au plugin par la fenêtre du socle.
 - `[UI-02]` Deux onglets, **Palettes** et **Planche**, et un bouton en forme
-  d'engrenage dans l'en-tête, qui ouvre la configuration de la recette
-  (section 8.3) comme celui d'UCM Exporter ouvre la sienne. L'onglet Planche
-  porte les gestes qui touchent au document : dessiner, redessiner, exporter
-  et importer la recette, exporter le rapport.
+  d'engrenage dans l'en-tête, qui ouvre les Réglages communs (section 8.3)
+  comme celui d'UCM Exporter ouvre sa configuration. L'onglet Palettes génère
+  la palette ouverte. L'onglet Planche montre chaque palette, dans l'ordre de
+  la recette : son nom, ses rampes Soft et Vivid, sa référence, le bilan de ses
+  promesses et l'état de son cadre, avec trois gestes, « Afficher dans Figma »,
+  « Modifier la palette » et « Générer sur Figma ». Il propose aussi de générer
+  les palettes à mettre à jour, ou toutes, et range dans une section
+  secondaire l'export et l'import des palettes et réglages et l'export du
+  rapport.
 - `[UI-03]` La hiérarchie de l'information de
   [CONTRIBUTING.md](../../../../CONTRIBUTING.md#la-hiérarchie-de-linformation)
-  s'applique : le verdict et l'action principale se lisent sans défiler.
+  s'applique, avec les surfaces propres à
+  [UCM Palettes](../../../../CONTRIBUTING.md#les-surfaces-ducm-palettes) : à
+  440 × 520, le choix de la palette et un nuancier lisible ont la priorité, et
+  le reste s'atteint en défilant, sans barre flottante qui recouvre le
+  contenu.
 
 ### 13.2 Écrans
 
-Onglet Palettes, une palette ouverte :
+Onglet Palettes, une palette ouverte, à 600 × 720 :
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│ [Bleu ▾] [+]                  2 promesses manquées [Dessiner] │
-├──────────────────────────────────────────────────────────────┤
-│ Référence [■ #1E6FD9]  Nom [Bleu        ]                     │
-│ part 0,89 · entre soft 0,45 et vivid 0,95 · proche du 600   │
-├──────────────────────────────────────────────────────────────┤
-│ Dérive  Tailwind · clair −7,5° · sombre +5,1°      [Régler]   │
-├──────────────────────────────────────────────────────────────┤
-│ [Light | Dark]                                                │
-│  soft  ▪▪▪▪▪▪▪▪▪▪▪                                          │
-│  vivid   ▪▪▪▪▪▪▪▪▪▪▪                                          │
-│  survol d'une pastille : nom, hexa, contrastes, emplois        │
-├──────────────────────────────────────────────────────────────┤
-│ Promesses manquées                                            │
-│  text sur surface, dark, vivid : 4,31 pour 4,5                │
-│ Alertes                                                       │
-│  proche de « Violet » : ΔEok 0,03 pour 0,05                   │
-│ ▸ Avancé                                                      │
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ Palette                                                               │
+│ [● Bleu                          ▾] [+] [⋯]                           │
+│   la création s'ouvre ici, seulement après [+]                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ Configuration · Bleu                                   Prête · 56/56  │
+│ Couleur de référence [■][#1E6FD9]   Nom de la palette [Bleu        ]  │
+│ ◆ Référence : Vivid · nuance 600                          Enregistré  │
+│                                                                       │
+│ [Thème Light] [Thème Dark]                  Fond [■ #F7F7F7] Modifier │
+│ ┌ surface peinte du fond du thème ─────────────────────────────────┐ │
+│ │        50  100  200  300  400  500  600  700  800  900  950       │ │
+│ │ Soft   ■    ■    ■    ■    ■    ■    ■    ■    ■    ■    ■       │ │
+│ │ Vivid  ■    ■    ■    ■    ■    ■    ◆    ■    ■    ■    ■       │ │
+│ │ Fonds             ▬▬▬▬▬▬▬▬▬▬                                        │ │
+│ │ Bordures et focus          ▬▬           ▬▬▬▬▬▬▬▬▬                  │ │
+│ │ Fonds pleins                                 ▬▬▬▬▬▬▬▬▬             │ │
+│ │ Textes                                       ▬▬▬▬▬▬▬▬▬             │ │
+│ │ détail de la nuance ou de l'usage choisi                          │ │
+│ └──────────────────────────────────────────────────────────────────┘ │
+│ Intensité Soft [───●──────] 0,45   Vivid [────────●─] 0,95            │
+│ ▸ Configuration de la dérive      Tailwind · nuances claires −7,5° · … │
+│ Promesses · 2 à corriger                                              │
+│   Texte sur fond léger · Thème Dark · repos : soft 4,18, vivid 4,31   │
+│ Points à vérifier · 1                                                 │
+│ ─────────────────────────────────────────────────────────────────────│
+│ [Générer sur Figma]   À mettre à jour · Afficher dans Figma           │
+│ ▸ Options de génération : sans grille de contraste                    │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-- `[UI-04]` Une pastille de l'aperçu fait 24 × 24. Les valeurs d'un cran
-  s'affichent au survol et au focus clavier, jamais en permanence : la planche
-  est l'endroit où tout se lit. Une rampe compte pour un objet au point (e) du
-  protocole de relecture.
-- `[UI-05]` Le bouton « Dessiner » range la recette et dessine la palette
-  ouverte. La progression s'affiche à sa place.
+À 440 × 520, le nom d'un profil passe au-dessus de sa rangée, et les pastilles
+prennent toute la largeur :
+
+```text
+┌──────────────────────────────────────────────┐
+│ Palette                                       │
+│ [● Bleu              ▾] [+] [⋯]               │
+├──────────────────────────────────────────────┤
+│ Configuration · Bleu            Prête · 56/56 │
+│ Couleur de référence [■][#1E6FD9]             │
+│ Nom de la palette [Bleu                    ]  │
+│ ◆ Référence : Vivid · nuance 600              │
+│ [Thème Light] [Thème Dark]  Fond [■] Modifier │
+│ ┌──────────────────────────────────────────┐ │
+│ │  50 100 200 300 400 500 600 700 800 900 950│ │
+│ │ Soft                                       │ │
+│ │  ■   ■   ■   ■   ■   ■   ■   ■   ■   ■   ■ │ │
+│ │ Vivid                                      │ │
+│ │  ■   ■   ■   ■   ■   ■   ◆   ■   ■   ■   ■ │ │
+│ │ [Fonds ▾] une famille d'usages à la fois   │ │
+│ └──────────────────────────────────────────┘ │
+│ … le reste suit en défilant                   │
+└──────────────────────────────────────────────┘
+```
+
+- `[UI-04]` Le nuancier occupe la largeur utile : ses colonnes se calculent
+  après les espacements et les bordures réels. Il est peint du fond du thème
+  choisi, et ses textes, bordures, sélection et focus prennent des couleurs
+  lisibles sur ce fond ; le reste du panneau garde le thème de Figma. Chaque
+  colonne porte son numéro de nuance, aligné entre Soft et Vivid. Les usages
+  se lisent en quatre familles, Fonds, Bordures et focus, Fonds pleins,
+  Textes, chacun avec sa plage de nuances déduite de `TABLE_DES_EMPLOIS` et de
+  `decalagesDeLEmploi`. À 440 px, un sélecteur montre une famille à la fois, et
+  le nom des familles reste visible. La nuance qui porte la référence exacte
+  montre un repère fixe et le libellé « Référence » ; la sélection d'une nuance
+  est un contour ; une promesse choisie relie ses deux couleurs par un
+  spécimen. Un clic, Entrée ou Espace ouvre le détail d'une nuance ou d'un
+  usage à une place stable, qui peut grandir sans couper le texte ; le survol
+  signale la cible sans déplacer la page. Les flèches, Origine et Fin
+  déplacent le focus ; une copie de code est un geste distinct de la
+  sélection.
+- `[UI-05]` « Générer sur Figma » ferme la configuration de la palette
+  ouverte : il enregistre la palette si un geste est en attente, puis génère
+  son cadre. L'état du cadre, À jour, À mettre à jour ou Pas encore sur la
+  planche, se lit sur la même ligne, avec « Afficher dans Figma » quand le
+  cadre est localisé. La progression, puis le résultat ou l'erreur, prennent
+  la place de cet état : un nouveau résultat remplace le précédent. Les options
+  de génération, dont la grille de contraste, sont repliées juste dessous avec
+  leur résumé ; la même option vaut pour l'onglet Planche.
 - `[UI-06]` Le sélecteur de palette liste chaque palette par son nom ou son
-  hexa, avec une pastille de sa référence.
+  hexa, avec une pastille de sa référence. Le bouton [+] ouvre la création
+  sous le sélecteur : couleur de référence et nom, ou couleur de la sélection
+  Figma, puis « Créer la palette » ou « Annuler ». Après création, la palette
+  est ouverte ; après annulation, le focus revient au bouton [+].
 
 Onglet Planche :
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ Planche : 4 palettes · recette v1 · empreinte 3fa2c91e · sRGB │
-├──────────────────────────────────────────────────────────────┤
-│ Bleu       à jour                                             │
-│ #F2A900    périmée                           [Redessiner]     │
-│ Violet     jamais dessinée                   [Dessiner]       │
-│ [Dessiner toutes les palettes]   ☐ grille de contraste        │
-├──────────────────────────────────────────────────────────────┤
-│ Recette  [Exporter] [Importer]      Rapport  [Exporter]       │
+│ 3 palettes                       [Thème Light] [Thème Dark]   │
+│ ┌ Bleu ────────────────────────────────────────────────────┐ │
+│ │ Soft  ▪▪▪▪▪▪▪▪▪▪▪                                        │ │
+│ │ Vivid ▪▪▪▪▪▪◆▪▪▪▪   Référence : Vivid · nuance 600        │ │
+│ │ 56/56 promesses respectées                 Cadre : À jour │ │
+│ │ [Afficher dans Figma] [Modifier la palette] [Générer…]   │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│ … une fiche par palette                                       │
+│ [Générer les 2 palettes à mettre à jour]  Générer toutes      │
+│ ▸ Options de génération                                       │
+│ ▸ Palettes et réglages : exporter, importer, rapport          │
+│ Informations : cadre supprimé, copie, document Display P3     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Réglages communs, derrière l'engrenage :
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ ← Retour aux palettes et à la planche     Réglages communs    │
+│ Bleu  Soft ▪▪▪▪▪▪▪▪▪▪▪  Vivid ▪▪▪▪▪▪▪▪▪▪▪   2 promesses à corriger │
+│ Couleurs de fond · 3 palettes concernées           Rétablir   │
+│   Fond du thème Light [■][#F7F7F7]  Fond du thème Dark […]    │
+│ Intensités · 2 palettes concernées                 Rétablir   │
+│   Soft [───●──────] 0,45   Vivid [────────●─] 0,95            │
+│ Luminosité des nuances · 3 palettes concernées     Rétablir   │
+│   tracé des deux courbes, puis la table des onze nuances      │
+│ ▸ Minimums des promesses                                      │
+│ ▸ Détection des couleurs proches                              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -1006,40 +1177,48 @@ Onglet Planche :
 
 Chaque état a son entrée dans `galerie/etats.cjs`, et un message déclaré dans
 `messages.ts` sans état fait échouer le test de la galerie, comme dans UCM
-Exporter.
+Exporter. Un état que l'interface ne montre pas encore nomme la case du plan
+qui le créera.
 
 | État | Ce qu'il montre |
 |---|---|
 | Premier lancement | Aucune recette rangée, recette par défaut proposée, aucune palette |
 | Premier lancement, palette créée | La première palette ouverte, recette rangée |
-| Palette créée depuis la sélection | Couleur Display P3 ramenée dans sRGB, notice sous la barre |
-| Palette en saisie | Aperçu à jour, rien de dessiné |
-| Configuration de la recette | Courbes, parts et seuils, avec le nombre de palettes que chaque champ modifie |
+| Création ouverte | Le formulaire sous le sélecteur : couleur de référence, nom, sélection Figma, « Annuler » |
+| Palette créée depuis la sélection | Couleur Display P3 ramenée dans sRGB, information sous la création |
+| Palette en saisie | Aperçu à jour, rien de généré |
+| Référence Soft | Une référence peu intense, portée par Soft, avec son repère et sa nuance |
+| Référence Vivid | Une référence intense, portée par Vivid, nuance différente en Light et en Dark |
+| Promesse choisie | Les deux couleurs d'une promesse désignées, leur spécimen et leur résultat |
+| Fond personnalisé | Un fond saturé peint sous le nuancier, textes et focus lisibles dessus |
+| Réglages communs | Fonds, intensités, luminosité et groupes repliés, avec le nombre de palettes concernées |
 | Courbe hors garantie | Alerte sous la courbe : cran, mode, profil, teinte du pire cas et contraste |
 | Hexa invalide | Le champ de référence refuse la saisie, aperçu inchangé |
-| Recette modifiée ailleurs | Rangement refusé, geste « Recharger » |
-| Notice `LEGACY` | Le document n'a pas de profil de couleur géré |
+| Conflit de sauvegarde | Enregistrement refusé : consultation et export du brouillon possibles, « Recharger » |
 | Dérive liée, préréglage Tailwind | Une courbe, repères Tailwind confondus avec les poignées |
 | Dérive déliée et libre | Deux courbes, repères Tailwind visibles à l'écart |
-| Référence hors de la rampe | Une poignée masquée et sa note |
+| Référence hors de la rampe | Une poignée masquée et sa note, la référence à l'extrémité |
 | Couleur presque grise | Éditeur désactivé, alerte |
-| Palette avec promesses manquées | Verdict et lignes au premier rang |
-| Palette avec alertes seules | Verdict « prête », alertes dessous |
-| Dessin en cours | Progression, aucun geste possible |
-| Dessin interrompu | Message d'erreur, cadre non posé, geste « Réessayer » |
-| Confirmation au-delà de six palettes | « Dessiner toutes les palettes » demande confirmation |
-| Onglet Planche sans palette | Aucun cadre à dessiner, geste vers l'onglet Palettes |
-| Planche à jour | Toutes les palettes à jour |
-| Planche périmée | Cadres nommés, geste « Redessiner » |
-| Cadre orphelin | Palette supprimée, cadre toujours sur la page |
-| Copie de cadre | Notice, la copie n'est pas réécrite |
-| Calques étrangers | Confirmation avant dessin, qui nomme les calques ajoutés |
-| Document Display P3 | Notice de conversion |
+| Palette avec promesses à corriger | Bilan et associations à corriger |
+| Palette avec points à vérifier seuls | « Prête » avec son bilan, points à vérifier dessous |
+| Génération en cours | Progression, aucun geste possible |
+| Génération réussie | État du cadre et « Afficher dans Figma » sur la ligne de l'action |
+| Génération partielle | Palettes déjà créées nommées, palette fautive, reprise possible |
+| Génération interrompue | Arrêt nommé, cadre précédent conservé, détail technique replié, « Réessayer » |
+| Confirmation au-delà de six palettes | « Générer toutes les palettes » demande confirmation |
+| Onglet Planche sans palette | Aucune palette à générer, geste vers l'onglet Palettes |
+| Planche à jour | Chaque fiche dit « À jour » |
+| Planche à mettre à jour | Fiches à mettre à jour ou pas encore sur la planche, génération groupée |
+| Cadre déplacé | Un cadre rangé dans une section ou sur une autre page, retrouvé par son identité |
+| Cadre orphelin | Palette supprimée, cadre toujours dans Figma |
+| Copie de cadre | Information, la copie n'est pas réécrite |
+| Calques étrangers | Confirmation avant génération, qui nomme les calques ajoutés |
+| Document Display P3 | Information de conversion |
 | Recette future | Refus, demande de mise à jour du plugin, trois gestes de sortie |
 | Recette illisible | Refus sans écriture, trois gestes de sortie |
-| Import invalide | Erreurs de forme, recette rangée intacte |
-| Écart d'import | Palettes et paramètres modifiés, confirmation |
-| Police indisponible | Bloquant, aucun cadre posé |
+| Import invalide | Erreurs de forme, palettes et réglages intacts |
+| Import avec différences | Palettes et valeurs modifiées, conséquence sur la planche, confirmation |
+| Police indisponible | Blocage, aucun cadre posé |
 
 ### 13.4 Messages
 

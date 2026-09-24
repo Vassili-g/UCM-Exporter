@@ -225,6 +225,29 @@ Quatre bornes, sans quoi la table ne tient pas :
   cartes se vident quand la clé de destination de `settings` change, et
   seulement alors.
 
+### Les surfaces d’UCM Palettes
+
+La table des rangs, la borne des deux moyens et le rôle de la couleur
+sémantique valent pour UCM Palettes. La règle des deux cartes décrit l’écran
+d’UCM Exporter ; l’onglet Palettes applique celles-ci :
+
+- l’onglet porte deux sections à filet discret : le choix ou la création d’une
+  palette, puis la configuration de la palette ouverte. Aucun autre objet de
+  l’onglet ne porte de filet de section ;
+- le nuancier est une surface d’aperçu à l’intérieur de la configuration,
+  peinte du fond du thème choisi. Il peut occuper la plus grande part du
+  panneau ;
+- « Générer sur Figma » ferme la configuration de la palette. Le résultat de
+  la génération et l’accès au cadre prennent la même ligne, et un nouveau
+  résultat remplace le précédent au même endroit ;
+- un message n’a pas de surface du poids du nuancier : il garde un filet de
+  sévérité, sans carte ;
+- un résultat nomme toujours la palette ouverte. Un résultat d’une autre
+  palette, ou d’une demande plus ancienne, ne la remplace pas ;
+- à la taille minimale, aucun élément fixe ne recouvre l’aperçu ou un champ.
+
+Le bleu de marque signale une action ou une sélection, jamais une section.
+
 ### Regarder avant de conclure
 
 `packages/plugin-exporter/galerie/` rend chaque état de l’interface atteignable hors de

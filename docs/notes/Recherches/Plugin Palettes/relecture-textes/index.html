@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Relecture des textes · UCM Palettes</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon" aria-hidden="true">P</span><div><strong>UCM Palettes</strong><span>Relecture des textes</span></div></div>
+    <div class="top-actions"><span id="save-state" role="status">Vos choix restent dans ce navigateur</span><button id="import-button" class="quiet">Importer mes choix</button><button id="export-button" class="dark">Exporter mes choix <span aria-hidden="true">↗</span></button><input id="import-file" type="file" accept=".json,application/json" hidden></div>
+  </header>
+  <div id="notice" role="alert" hidden></div>
+  <div class="layout">
+    <aside>
+      <div class="progress-heading"><strong>Votre progression</strong><span id="progress-number">0 / 0</span></div>
+      <progress id="progress" value="0" max="1" aria-label="Textes examinés"></progress>
+      <p id="progress-detail" class="muted"></p>
+      <label class="search-label" for="search">Rechercher un texte</label>
+      <input id="search" type="search" placeholder="Un mot, un identifiant…">
+      <label class="search-label" for="status-filter">Afficher</label>
+      <select id="status-filter"><option value="all">Tous les textes</option><option value="pending">À lire</option><option value="approved">Propositions validées</option><option value="review">À revoir</option><option value="kept">Textes actuels conservés</option></select>
+      <nav id="sections" aria-label="Sections de relecture"></nav>
+      <p class="aside-note">Vous pouvez interrompre la relecture et revenir plus tard. Exportez vos choix pour me les transmettre.</p>
+    </aside>
+    <main>
+      <div class="intro"><div class="eyebrow">LES MOTS DU PLUGIN</div><h1>Un texte à la fois.</h1><p>Lisez, ajustez si nécessaire, puis choisissez la version qui vous convient.</p></div>
+      <div class="review-toolbar"><div><span id="position"></span><span id="section-name"></span></div><div class="navigation"><button id="previous" aria-label="Texte précédent">←</button><button id="next" aria-label="Texte suivant">→</button></div></div>
+      <section id="card" class="card" aria-label="Texte à relire">
+        <div class="card-header"><div><span id="entry-id" class="id"></span><span id="kind"></span></div><span id="entry-status" class="status"></span></div>
+        <div id="context" class="context" hidden></div>
+        <div class="comparison">
+          <div class="before"><h2>Texte actuel</h2><p id="original"></p></div>
+          <div class="after"><div class="proposal-heading"><label for="proposal">Proposition <span id="edited" hidden>modifiée</span></label><button id="restore" class="text-button">Rétablir la proposition</button></div><textarea id="proposal" spellcheck="true" lang="fr" aria-describedby="edit-help"></textarea><p id="edit-help">Vous pouvez modifier ce texte directement.</p></div>
+        </div>
+        <div class="comment-area"><label for="comment">Une remarque ? <span>Facultatif</span></label><textarea id="comment" rows="2" placeholder="Le mot à changer, le sens à préciser…"></textarea></div>
+        <details id="technical"><summary>Référence et texte source exact</summary><p id="reference"></p><pre id="raw"></pre><p>Les accolades du texte de lecture représentent des valeurs variables. Le texte source ci-dessus conserve toutes les expressions d’origine.</p></details>
+        <div class="decision-bar"><button id="approve" class="approve">Valider la proposition <span aria-hidden="true">✓</span></button><button id="review">À revoir</button><button id="keep">Garder l’actuel</button><button id="reset" class="text-button">Retirer ma décision</button></div>
+      </section>
+      <section id="empty" class="empty" hidden><span aria-hidden="true">✓</span><h2 id="empty-title">Cette sélection est terminée.</h2><p id="empty-text"></p><button id="show-all">Afficher tous les textes</button></section>
+      <footer class="review-footer"><label><input id="auto-next" type="checkbox" checked> Passer au texte suivant après chaque choix</label><span>Vos choix n’appliquent aucun changement au plugin.</span></footer>
+      <div id="feedback" role="status" aria-live="polite"></div>
+    </main>
+  </div>
+  <dialog id="import-dialog"><h2>Reprendre cette relecture</h2><p id="import-summary"></p><p>Les choix présents dans ce fichier remplaceront ceux de ce navigateur pour les mêmes textes.</p><div><button id="cancel-import">Annuler</button><button id="confirm-import" class="dark">Importer ces choix</button></div></dialog>
+  <script src="donnees.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

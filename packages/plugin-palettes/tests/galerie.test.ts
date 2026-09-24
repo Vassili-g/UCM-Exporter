@@ -24,7 +24,8 @@ test('chaque état porte son identité et sa situation', () => {
 });
 
 test('un état absent nomme la case du plan qui le créera', () => {
-  assert.deepEqual(fautesDAttente(ETATS, /^L\d+[a-z]?\.\d+$/), []);
+  // `L6.14` est une case du plan de développement, `R4.7` une case du plan d'ergonomie.
+  assert.deepEqual(fautesDAttente(ETATS, /^(L\d+[a-z]?|R\d+b?)\.\d+$/), []);
 });
 
 test('un état atteignable dit ce qu’on regarde, et chaque étape porte un seul geste', () => {
