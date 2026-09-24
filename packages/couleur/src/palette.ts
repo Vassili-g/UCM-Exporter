@@ -25,12 +25,21 @@ export function referenceDe(palette: Palette): Rgb8 {
   return couleur;
 }
 
-/** Les parts de chroma qu'une palette emploie. */
+/**
+ * Les parts de chroma qu'une palette emploie. Ses parts propres, du designer
+ * ou grises, passent d'abord. Sinon une palette de base forcée ([ENT-11])
+ * donne au profil forcé la part de la référence, au millième ; l'autre profil
+ * garde la part commune, bornée pour que soft ne dépasse pas vivid. Ces parts
+ * se calculent à la lecture et ne se rangent pas : un changement de référence
+ * ou de part commune les suit sans rangement.
+ */
 export function partsDe(recette: Recette, palette: Palette): Parts {
-  return partsEffectives(
-    { soft: recette.profils.soft.part, vivid: recette.profils.vivid.part },
-    palette.parts,
-  );
+  const communes = { soft: recette.profils.soft.part, vivid: recette.profils.vivid.part };
+  if (palette.parts || !palette.base) return partsEffectives(communes, palette.parts);
+  const part = arrondir(partDeChroma(referenceDe(palette), recette.gamut), 3);
+  return palette.base === 'soft'
+    ? { soft: part, vivid: Math.max(communes.vivid, part) }
+    : { soft: Math.min(communes.soft, part), vivid: part };
 }
 
 /** Vrai quand la chroma de la référence est sous `seuils.chromaGrise` ([MOT-18]). */
@@ -42,18 +51,23 @@ export function estPresqueGrise(recette: Recette, palette: Palette): boolean {
 const enMilliemes = (part: number): number => Math.round(part * 1000);
 
 /**
- * Le profil qui porte la référence exacte ([MOT-17]) : celui dont la part
- * **commune** est la plus proche de la part de chroma de la référence, comparées
- * au millième. Égalité : `vivid`. Une référence presque grise : `soft`. Les
- * parts propres d'une palette n'y entrent pas : les régler ne fait pas passer
- * la référence d'un profil à l'autre.
+ * Le profil que le classement automatique choisit ([MOT-17]) : celui dont la
+ * part **commune** est la plus proche de la part de chroma de la référence,
+ * comparées au millième. Égalité : `vivid`. Une référence presque grise :
+ * `soft`. Les parts propres d'une palette n'y entrent pas : les régler ne
+ * fait pas passer la référence d'un profil à l'autre.
  */
-export function profilPorteur(recette: Recette, palette: Palette): Profil {
+export function profilAutomatique(recette: Recette, palette: Palette): Profil {
   if (estPresqueGrise(recette, palette)) return 'soft';
   const part = enMilliemes(partDeChroma(referenceDe(palette), recette.gamut));
   const versSoft = Math.abs(part - enMilliemes(recette.profils.soft.part));
   const versVivid = Math.abs(part - enMilliemes(recette.profils.vivid.part));
   return versSoft < versVivid ? 'soft' : 'vivid';
+}
+
+/** Le profil qui porte la référence exacte : la palette de base forcée ([ENT-11]), sinon le classement automatique. */
+export function profilPorteur(recette: Recette, palette: Palette): Profil {
+  return palette.base ?? profilAutomatique(recette, palette);
 }
 
 /**

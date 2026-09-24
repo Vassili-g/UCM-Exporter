@@ -112,7 +112,8 @@ export function ciblesDeLaPromesse(): CibleDAction[] {
 export function ciblesDeLAlerte(alerte: Alerte, palette: Palette | null): CibleDAction[] {
   switch (alerte.code) {
     case 'profils-confondus':
-      return palette?.parts?.origine === 'designer' ? ['intensites-palette'] : ['intensites-communes'];
+      // Une palette de base forcée garde l'intensité de sa référence : son geste utile est dans la palette.
+      return palette?.parts?.origine === 'designer' || palette?.base ? ['intensites-palette'] : ['intensites-communes'];
     case 'reference-plus-terne':
     case 'reference-plus-vive':
       return ['intensites-palette'];

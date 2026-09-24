@@ -766,6 +766,22 @@
   color: var(--texte-second);
 }
 
+/* La palette de base : trois segments dans un champ, comme la maquette du second tour. */
+.bascule-de-base {
+  height: var(--hauteur-action);
+  padding: 2px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+}
+
+.bascule-de-base .bascule-option {
+  height: auto;
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 0;
+}
+
 .repere-de-la-reference {
   font-weight: 600;
 }

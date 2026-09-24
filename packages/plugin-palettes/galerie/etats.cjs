@@ -79,13 +79,13 @@ const TROIS_PALETTES = [
 /**
  * Le cadre d'une palette tel que la lecture de la planche le relève. Son
  * empreinte est celle du modèle que la recette rangée donne, sauf réglage
- * contraire : le cadre est alors périmé.
+ * contraire : le cadre est alors périmé. Chaque génération dessine la grille.
  */
 function cadreDessine(texte, palette, cadre, { profil = 'SRGB', ...reglages } = {}) {
   const recette = classerRecette(texte).recette;
   const rangeeDansLaRecette = recette.palettes.find((candidate) => candidate.id === palette.id) ?? palette;
-  const empreinte = modeleDeCadre(recette, rangeeDansLaRecette, profil).empreinte;
-  return { palette: palette.id, cadre, nom: palette.nom, empreinte, grille: false, possede: true, ...reglages };
+  const empreinte = modeleDeCadre(recette, rangeeDansLaRecette, profil, { grille: true }).empreinte;
+  return { palette: palette.id, cadre, nom: palette.nom, empreinte, grille: true, possede: true, ...reglages };
 }
 const PAGE_DE_LA_PLANCHE = '40:1';
 const ouvrirLaPlanche = { clic: '#onglet-planche' };
@@ -374,7 +374,7 @@ const ETATS = [
     atteinte: [
       etatDuFichier(rangee([BLEU]), 'SRGB', {
         page: PAGE_DE_LA_PLANCHE,
-        cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2'), { palette: 'p-5c1d0e77', cadre: '40:4', nom: 'Ardoise', empreinte: '0badc0de', grille: false, possede: true }],
+        cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2'), { palette: 'p-5c1d0e77', cadre: '40:4', nom: 'Ardoise', empreinte: '0badc0de', grille: true, possede: true }],
       }),
       ouvrirLaPlanche,
     ],
@@ -502,9 +502,9 @@ const ETATS = [
     id: 'palette-de-base-forcee',
     titre: 'Palette de base forcée',
     quand: 'Le designer force Soft sur une référence saturée, #1E6FD9, qu’Auto confiait à Vivid.',
-    regarder: null,
-    existe: false,
-    attendu: 'V2.1',
+    regarder: 'Soft pressé dans la carte Couleur de base, le ◆ passé dans la rangée Soft avec le même code, et le résumé « Palette de base Soft » de la carte Intensités.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '.bascule-de-base .bascule-option:nth-child(2)' }],
   },
   {
     id: 'garanties-respectees',

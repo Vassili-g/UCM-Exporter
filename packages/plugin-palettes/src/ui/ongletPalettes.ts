@@ -12,6 +12,7 @@
 import {
   alertesDePalette,
   estPresqueGrise,
+  profilAutomatique,
   type Classement,
   type Palette,
   type Recette,
@@ -24,6 +25,7 @@ import {
   MOTIF_HEXA,
   ajouter,
   changerReference,
+  choisirLaBase,
   deplacer,
   dupliquer,
   nouvelIdentifiant,
@@ -49,8 +51,10 @@ import { messagesDeLaPalette } from './messagesDePalette';
 import { createNuancier } from './nuancier';
 import { createSelecteur } from './selecteur';
 import {
+  NOM_DU_PROFIL,
   STATUTS_DU_RANGEMENT,
   TEXTES,
+  TEXTES_DE_LA_BASE,
   TEXTES_DE_LA_DERIVE,
   TEXTES_DE_L_ONGLET,
   bilanDesPromesses,
@@ -231,9 +235,35 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   nom.className = 'input';
   const colonneDeLaReference = champEnColonne(TEXTES.reference, pipette, hexa);
   colonneDeLaReference.append(erreurHexa);
+  // La palette de base : Auto, Soft ou Vivid ([UI-11], [ENT-11]).
+  const choixDeBase = document.createElement('div');
+  choixDeBase.className = 'bascule bascule-de-base';
+  choixDeBase.setAttribute('role', 'group');
+  choixDeBase.setAttribute('aria-label', TEXTES_DE_LA_BASE.libelle);
+  const boutonsDeBase = (['auto', 'soft', 'vivid'] as const).map((valeur) => {
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.className = 'bascule-option';
+    bouton.textContent = valeur === 'auto' ? TEXTES_DE_LA_BASE.auto : NOM_DU_PROFIL[valeur];
+    bouton.addEventListener('click', () => {
+      const courante = ouverte();
+      if (recette && courante) valider(remplacerPalette(recette, choisirLaBase(courante, valeur)));
+    });
+    choixDeBase.append(bouton);
+    return { valeur, bouton };
+  });
+  const choixAutomatique = document.createElement('span');
+  choixAutomatique.className = 'ligne-secondaire';
+  const libelleDeLaBase = document.createElement('span');
+  libelleDeLaBase.className = 'libelle-de-champ';
+  libelleDeLaBase.textContent = TEXTES_DE_LA_BASE.libelle;
+  const colonneDeLaBase = document.createElement('div');
+  colonneDeLaBase.className = 'champ-colonne';
+  colonneDeLaBase.append(libelleDeLaBase, choixDeBase, choixAutomatique);
+
   const colonnes = document.createElement('div');
   colonnes.className = 'colonnes-de-base';
-  colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference);
+  colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference, colonneDeLaBase);
   const carteDeBase = createCarte({ titre: TEXTES_DE_L_ONGLET.couleurDeBase });
   const messagesDeBase = document.createElement('div');
   carteDeBase.corps.append(colonnes, messagesDeBase);
@@ -507,6 +537,10 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     poser(pipette, courante.reference.toLowerCase());
     poser(nom, courante.nom ?? '');
     nom.placeholder = courante.reference;
+    const base = courante.base ?? 'auto';
+    for (const { valeur, bouton } of boutonsDeBase) bouton.setAttribute('aria-pressed', String(valeur === base));
+    choixAutomatique.textContent = courante.base ? '' : TEXTES_DE_LA_BASE.choixAutomatique(profilAutomatique(lue, courante));
+    choixAutomatique.hidden = Boolean(courante.base);
     repereDeReference.textContent = `◆ ${ligneDeLaReference(analyse.ancrage, nuancier.mode())}`;
 
     const confusions = alertesDePalette(lue, courante).flatMap((alerte) => (alerte.code === 'profils-confondus' ? alerte.crans : []));
@@ -519,7 +553,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     const messages = messagesDeLaPalette(analyse, courante, { recette: lue, nomDe }, nomDeLaPalette(courante), inspecter);
     intensites.afficher(lue, courante, analyse.part, messages.intensite);
     const pointsDIntensite = messages.intensite.filter((message) => message.severite !== 'notice').length;
-    carteDesIntensites.poserResume(resumeDesIntensites(courante.parts?.origine, analyse.parts, pointsDIntensite));
+    carteDesIntensites.poserResume(resumeDesIntensites(courante.parts?.origine, courante.base, analyse.parts, pointsDIntensite));
     poserLesMessages(messages.liste);
 
     // Une référence presque grise n'a pas de teinte : l'éditeur se désactive ([DER-15]).

@@ -188,3 +188,18 @@ export function reprendreLesParts(recette: Recette, palette: Palette): Palette {
   const { parts: _retirees, ...sansParts } = palette;
   return ajusterPartsGrises(recette, sansParts);
 }
+
+/**
+ * La palette avec sa palette de base ([ENT-11]) : `auto` retire le choix, Soft
+ * ou Vivid force le profil porteur. Forcer un profil retire les intensités du
+ * designer, pour que le profil forcé prenne celle de la référence ; les parts
+ * grises restent. Un glisser d'intensité ensuite rend la main au designer
+ * sans changer de profil porteur.
+ */
+export function choisirLaBase(palette: Palette, choix: 'auto' | Profil): Palette {
+  const { base: _ancienne, ...sansBase } = palette;
+  if (choix === 'auto') return sansBase;
+  if (sansBase.parts?.origine !== 'designer') return { ...sansBase, base: choix };
+  const { parts: _retirees, ...sansParts } = sansBase;
+  return { ...sansParts, base: choix };
+}

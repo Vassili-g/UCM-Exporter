@@ -58,3 +58,9 @@ test('[VER-15] des profils confondus mènent aux intensités de la palette si el
   assert.deepEqual(ciblesDeLAlerte(alerte, { ...BLEU, parts: { soft: 0.3, vivid: 0.9, origine: 'designer' } }), ['intensites-palette']);
   assert.deepEqual(ciblesDeLAlerte({ code: 'fond-hors-courbe', mode: 'light', clarte: 0.9, cran: 0.975 }, BLEU), ['fonds']);
 });
+
+test('[VER-11] [ENT-11] des profils confondus sous une palette de base forcée mènent aux intensités de la palette', () => {
+  const alerte: Alerte = { code: 'profils-confondus', palette: BLEU.id, crans: [], seuil: 0.02 };
+  assert.deepEqual(ciblesDeLAlerte(alerte, { ...BLEU, base: 'vivid' }), ['intensites-palette']);
+  assert.deepEqual(ciblesDeLAlerte(alerte, BLEU), ['intensites-communes']);
+});

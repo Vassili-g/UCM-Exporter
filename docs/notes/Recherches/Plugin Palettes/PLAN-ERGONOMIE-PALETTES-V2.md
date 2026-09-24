@@ -216,33 +216,52 @@ panneau et de sa voisine, dans Figma et pas seulement dans la galerie.
 
 ## Lot V2 : couleur de base et palette de base
 
-- [ ] **V2.1** Disposer la carte en trois colonnes égales, libellé au-dessus
+- [x] **V2.1** Disposer la carte en trois colonnes égales, libellé au-dessus
   du champ : Nom de la palette, Couleur de référence (pastille cliquable et
   code hexadécimal), Palette de base. Sous le sélecteur, une ligne dit le
   choix d’Auto : « Auto a choisi Vivid ». L’erreur d’un code invalide reste
   sous son champ.
-- [ ] **V2.2** Ajouter à la palette le choix de la palette de base : `auto`,
+  Fait : segments Auto, Soft, Vivid (`aria-pressed`) dans la troisième
+  colonne ; l’état de galerie « Palette de base forcée » est atteignable.
+- [x] **V2.2** Ajouter à la palette le choix de la palette de base : `auto`,
   `soft` ou `vivid`. Absent, il vaut `auto`. C’est une nouvelle donnée
   enregistrée : monter `FORMAT_RECETTE`, écrire la migration dans
   `MIGRATIONS` et le test qui lit une recette de format 1. Le nom du champ se
   décide dans ce lot, avant la revue.
-- [ ] **V2.3** Faire lire ce choix par `profilPorteur` : `soft` ou `vivid`
+  Fait : champ `base`, `soft` ou `vivid`, absent en Auto ; `FORMAT_RECETTE`
+  vaut 2, `MIGRATIONS[1]` ne fait que monter la version, et la règle
+  `base-inconnue` refuse une autre valeur.
+- [x] **V2.3** Faire lire ce choix par `profilPorteur` : `soft` ou `vivid`
   impose le profil ; `auto` garde la règle de `[MOT-17]`. La nuance porteuse
   se calcule toujours par thème, et la référence garde ses octets exacts.
-- [ ] **V2.4** Donner au profil forcé l’intensité de la référence, par les
+  Fait : `profilPorteur` rend `base`, sinon `profilAutomatique`, l’ancienne
+  règle.
+- [x] **V2.4** Donner au profil forcé l’intensité de la référence, par les
   intensités propres de la palette. Si Soft dépasse alors Vivid, élever Vivid
   à la même valeur : Soft ne dépasse jamais Vivid (`[ENT-09]`, R4.8).
   L’alerte « Profils confondus » signale le cas où les deux profils se
   rejoignent. Définir ce que devient cette intensité au retour à Auto, et
   comment elle se distingue d’une intensité posée par le designer (champ
   `origine` des parts, `[ENT-09]`).
-- [ ] **V2.5** Montrer l’effet dans la carte « Intensités » : son résumé et
+  Fait, après revue : les parts de la base se calculent dans `partsDe`, sans
+  origine nouvelle ni rangement. Elles suivent la référence et les parts
+  communes ; des parts propres passent avant elles. Vivid forcé abaisse Soft
+  à la part de la référence, cas symétrique que le plan ne nommait pas.
+  Forcer retire les parts `designer`, garde les parts `grise` ; revenir à
+  Auto retire `base`. « Profils confondus » d’une palette forcée mène aux
+  intensités de la palette (`[ENT-11]`).
+- [x] **V2.5** Montrer l’effet dans la carte « Intensités » : son résumé et
   ses curseurs portent l’intensité propre créée par le choix. Un glisser ne
   déplace pas la référence hors du profil forcé.
-- [ ] **V2.6** Couvrir par des tests : référence terne forcée en Vivid,
+  Fait : le résumé dit « Palette de base Vivid · Soft … · Vivid … » ; un
+  glisser pose des parts `designer` et garde le profil forcé.
+- [x] **V2.6** Couvrir par des tests : référence terne forcée en Vivid,
   référence saturée forcée en Soft, forçage vers le profil qu’Auto aurait
   choisi, retour à Auto, gris et noir forcés. Propriété : la couleur de
   référence est identique dans le profil forcé, dans les deux thèmes.
+  Fait : `packages/couleur/tests/base.test.ts`, dont la propriété sur
+  quarante teintes et clartés, quatre jeux de parts communes et les deux
+  bases ; tests de `choisirLaBase` et de la migration de format 1.
 
 Revue indépendante avant V2.2 : ce lot change le moteur et le format. Ses
 conclusions se vérifient dans le code avant d’être appliquées.

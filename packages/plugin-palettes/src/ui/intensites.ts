@@ -183,7 +183,7 @@ export function createIntensites(gestes: GestesDesIntensites): IntensitesUi {
         repere.style.left = `${Math.max(0, Math.min(1, part)) * 100}%`;
         repere.title = TEXTES_DES_INTENSITES.repere(nombreEcrit(Math.round(part * 100) / 100));
       }
-      origine.textContent = origineDesParts(palette.parts?.origine, parts.soft);
+      origine.textContent = origineDesParts(palette.parts?.origine, palette.base, parts);
       reprendre.hidden = palette.parts?.origine !== 'designer';
       // Les informations restent repliées ; les points à vérifier se lisent tout de suite.
       const visibles = messagesDIntensite.filter((message) => message.severite !== 'notice');

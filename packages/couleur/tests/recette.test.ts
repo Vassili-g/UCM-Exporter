@@ -5,6 +5,7 @@ import test from 'node:test';
 import {
   CRANS_DES_EMPLOIS,
   FORMAT_RECETTE,
+  MIGRATIONS,
   classerRecette,
   recetteParDefaut,
   validerRecette,
@@ -106,7 +107,7 @@ test('[REC-03] une recette de la version courante est lue', () => {
 
 test('[REC-03] une version antérieure connue est migrée en mémoire', () => {
   const ancienne = { ...valide(), formatVersion: 0 };
-  const migrations = { 0: (objet: Record<string, unknown>) => ({ ...objet, formatVersion: 1 }) };
+  const migrations = { ...MIGRATIONS, 0: (objet: Record<string, unknown>) => ({ ...objet, formatVersion: 1 }) };
   const classement = classerRecette(JSON.stringify(ancienne), migrations);
   assert.equal(classement.etat, 'migree');
   assert.ok(classement.etat === 'migree' && classement.depuis === 0 && classement.recette.formatVersion === FORMAT_RECETTE);

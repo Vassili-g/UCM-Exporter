@@ -170,11 +170,22 @@ export const TEXTES_DES_INTENSITES = {
 } as const;
 
 /** D'où viennent les intensités qu'une palette emploie ; une intensité grise est visible (D-G). */
-export function origineDesParts(origine: 'designer' | 'grise' | undefined, part: number): string {
+export function origineDesParts(origine: 'designer' | 'grise' | undefined, base: Profil | undefined, parts: { soft: number; vivid: number }): string {
   if (origine === 'designer') return 'Cette palette utilise ses propres intensités. Les changements d’intensité dans les réglages communs ne s’y appliquent plus.';
-  if (origine === 'grise') return `La couleur de référence est presque grise. Les profils soft et vivid utilisent tous les deux son intensité : ${nombreEcrit(part)}.`;
+  if (origine === 'grise') return `La couleur de référence est presque grise. Les profils soft et vivid utilisent tous les deux son intensité : ${nombreEcrit(parts.soft)}.`;
+  if (base) {
+    const autre: Profil = base === 'soft' ? 'vivid' : 'soft';
+    return `Palette de base ${NOM_DU_PROFIL[base]} : ${NOM_DU_PROFIL[base]} utilise l’intensité de la couleur de référence, ${nombreEcrit(parts[base])}. ${NOM_DU_PROFIL[autre]} suit les réglages communs, sans dépasser cette limite.`;
+  }
   return 'Les intensités de cette palette suivent les réglages communs.';
 }
+
+/** Le choix de la palette de base, dans la carte Couleur de base (N028, N029, [UI-11]). */
+export const TEXTES_DE_LA_BASE = {
+  libelle: 'Palette de base',
+  auto: 'Auto',
+  choixAutomatique: (profil: Profil) => `Auto a choisi ${NOM_DU_PROFIL[profil]}`,
+} as const;
 
 /** Les libellés de l'éditeur de dérive (section 12). */
 export const TEXTES_DE_LA_DERIVE = {
@@ -328,9 +339,14 @@ const ORIGINE_DES_INTENSITES: Record<'communes' | 'designer' | 'grise', string> 
   grise: 'Presque grise',
 };
 
-/** Le résumé de la carte Intensités (N040) : leur origine, les deux intensités, puis les points à vérifier. */
-export function resumeDesIntensites(origine: 'designer' | 'grise' | undefined, parts: { soft: number; vivid: number }, points: number): string {
-  return `${ORIGINE_DES_INTENSITES[origine ?? 'communes']} · Soft ${nombreEcrit(parts.soft)} · Vivid ${nombreEcrit(parts.vivid)}${pointsAVerifier(points)}`;
+/**
+ * Le résumé de la carte Intensités (N040) : leur origine, les deux intensités,
+ * puis les points à vérifier. Une palette de base forcée sans intensités
+ * propres se nomme par sa base.
+ */
+export function resumeDesIntensites(origine: 'designer' | 'grise' | undefined, base: Profil | undefined, parts: { soft: number; vivid: number }, points: number): string {
+  const nom = !origine && base ? `Palette de base ${NOM_DU_PROFIL[base]}` : ORIGINE_DES_INTENSITES[origine ?? 'communes'];
+  return `${nom} · Soft ${nombreEcrit(parts.soft)} · Vivid ${nombreEcrit(parts.vivid)}${pointsAVerifier(points)}`;
 }
 
 /** Le résumé de la carte Dérive de teinte (N041) : le préréglage et la synchronisation. */
@@ -564,6 +580,7 @@ const CLES_DE_PALETTE: Record<string, string> = {
   reference: 'couleur de référence',
   derive: 'dérive de teinte',
   parts: 'intensités personnalisées',
+  base: 'palette de base',
   clair: 'côté clair',
   sombre: 'côté sombre',
   lien: 'liaison des teintes',
@@ -637,6 +654,7 @@ const REFUS: Record<RegleRecette, (champ: string, valeur: string) => string> = {
   'origine-inconnue': (champ, valeur) => `${champ} : l’origine « ${valeur} » n’est pas reconnue. Faites vérifier ce champ dans le fichier importé.`,
   'identifiant-forme': (_, valeur) => `L’identifiant de palette « ${valeur} » n’a pas le format attendu. Faites vérifier cet identifiant dans le fichier importé.`,
   'identifiants-uniques': (_, valeur) => `Deux palettes utilisent l’identifiant « ${valeur} ». Attribuez un identifiant différent à chacune dans le fichier importé.`,
+  'base-inconnue': (champ, valeur) => `${champ} : « ${valeur} » n’est pas reconnu. Indiquez soft ou vivid, ou retirez ce champ pour le choix automatique. Faites vérifier ce champ dans le fichier importé.`,
   'crans-emplois': (_, valeur) => `La nuance ${valeur} manque. Ajoutez-la : elle est nécessaire aux usages et aux contrastes vérifiés par le plugin.`,
 };
 

@@ -894,6 +894,14 @@ La spécification en lien porte le raisonnement.
   l'unique autorité. `packages/couleur/tests/ancrage.test.ts` l'éprouve sur deux
   mille tirages. Borne : l'ancrage ne promet pas qu'une promesse reste tenue.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#64-la-teinte-dun-cran)
+- Une palette de base Soft ou Vivid désigne le profil porteur, et ce profil
+  prend la part de chroma de la référence ; l'autre garde la part commune,
+  bornée pour que soft ne dépasse pas vivid. Ces parts se calculent à la
+  lecture et ne se rangent jamais : `partsDe` et `profilPorteur`
+  (`packages/couleur/src/palette.ts`) en sont l'unique autorité, et des parts
+  propres passent avant elles. `packages/couleur/tests/base.test.ts` l'éprouve
+  sur des teintes, des clartés et des parts communes variées.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#81-une-palette)
 
 ### Écriture d'UCM Palettes
 

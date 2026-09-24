@@ -226,12 +226,14 @@ normaliser(h) = ((h mod 360) + 360) mod 360
   partagent la même ([section 12](#12-léditeur-de-dérive)).
 - `[MOT-17]` La couleur de référence ne se recalcule jamais : ses octets
   entrent tels quels dans les rampes de son profil porteur, un cran par mode.
-  - Le profil porteur compare la part de chroma de la référence aux parts
-    **communes** de `soft` et `vivid`, au millième : le plus proche la porte,
-    `vivid` à égalité. Une référence presque grise (`[MOT-18]`) est portée par
-    `soft`. Les parts propres d'une palette n'entrent pas dans ce choix : les
-    régler ne fait pas changer la référence de profil. Changer les parts
-    communes peut le faire.
+  - Une palette de base Soft ou Vivid (`[ENT-11]`) désigne le profil porteur.
+    Sans elle, le classement automatique compare la part de chroma de la
+    référence aux parts **communes** de `soft` et `vivid`, au millième : le
+    plus proche la porte, `vivid` à égalité. Une référence presque grise
+    (`[MOT-18]`) est portée par `soft`. Les parts propres d'une palette
+    n'entrent pas dans ce choix : les régler ne fait pas changer la référence
+    de profil. Changer les parts communes peut le faire, sauf sous une palette
+    de base.
   - Dans chaque mode, le cran porteur est celui dont la clarté de la courbe
     est la plus proche de celle de la référence, le plus petit numéro à
     égalité. Une référence hors de la courbe prend l'extrémité la plus proche.
@@ -421,12 +423,13 @@ Une palette porte :
 | `derive.lien` | `true` quand `soft` et `vivid` partagent la même dérive |
 | `derive.soft`, `derive.vivid` | `clair` et `sombre` en degrés, et `origine` : `tailwind`, `constante` ou `libre` |
 | `parts` | Facultatif : `soft` et `vivid`, une part de chroma chacun, qui remplace celle de la recette, et `origine` : `designer` ou `grise` (`[ENT-09]`) |
+| `base` | Facultatif : `soft` ou `vivid`, la palette de base qui force le profil porteur (`[ENT-11]`). Absent, le classement automatique décide |
 
 ### 7.2 Exemple
 
 ```json
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "crans": [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950],
   "courbes": {
     "light": [0.975, 0.95, 0.905, 0.845, 0.76, 0.67, 0.585, 0.5, 0.42, 0.34, 0.27],
@@ -496,8 +499,10 @@ dix-sept paires.
   le dénominateur de l'interpolation de `dériveTailwind`. Une clé que la
   version courante ne connaît pas est refusée, `planche` comprise. Une palette
   aux profils liés porte deux dérives identiques ; chaque origine est l'une de
-  celles que la section 7.1 énumère ; un identifiant a la forme `p-` et huit
-  chiffres hexadécimaux. La validation rend tous ses refus, chacun avec sa
+  celles que la section 7.1 énumère ; `base` vaut `soft` ou `vivid` ; un
+  identifiant a la forme `p-` et huit chiffres hexadécimaux. La version 2 de
+  la recette ajoute `base` ; une recette de version 1 se migre sans autre
+  changement. La validation rend tous ses refus, chacun avec sa
   règle et le chemin du champ, et ne rédige aucune phrase.
 - `[REC-06]` La recette se range automatiquement à la fin de chaque geste :
   relâcher une poignée, valider un champ, créer, dupliquer, réordonner ou
@@ -523,6 +528,7 @@ dix-sept paires.
 | Nom | Texte libre, facultatif | l'hexa de référence |
 | Dérive de teinte | Deux angles par profil, dans l'éditeur de la [section 12](#12-léditeur-de-dérive) | préréglage Tailwind |
 | Part de chroma par profil | Nombre dans `[0, 1]`, facultatif, dans la carte « Intensités » | celle de la recette |
+| Palette de base | Auto, Soft ou Vivid, dans la carte « Couleur de base » | Auto |
 
 - `[ENT-01]` Changer la couleur de référence recalcule le préréglage Tailwind.
   Une dérive d'origine `tailwind` suit ce nouveau calcul ; une dérive `libre` ou
@@ -544,6 +550,18 @@ dix-sept paires.
   des parts d'origine `designer` les garde, grise ou non. L'alerte « Profils
   confondus » se tait pour une palette aux parts `grise`, dont les deux profils
   sont égaux par construction.
+- `[ENT-11]` Une palette de base Soft ou Vivid force le profil porteur
+  (`[MOT-17]`), et ce profil prend la part de chroma de la référence, au
+  millième. L'autre profil garde la part commune, bornée pour que `soft` ne
+  dépasse pas `vivid` : Soft forcé élève Vivid à la part de la référence
+  quand elle le dépasse, Vivid forcé abaisse Soft à elle. Ces parts se
+  calculent à la lecture et ne se rangent pas : un changement de référence ou
+  de part commune les suit. Des parts propres passent avant elles. Choisir
+  Soft ou Vivid retire les parts d'origine `designer` ; les parts `grise`
+  restent, et une référence presque grise garde ses deux profils égaux.
+  Revenir à Auto retire `base` : la palette reprend les parts communes. Quand
+  les deux profils se rejoignent, l'alerte « Profils confondus » le dit et
+  mène aux intensités de la palette.
 
 ### 8.2 Les fonds de référence
 

@@ -8,11 +8,15 @@
  */
 import { lireHexa } from './conversions';
 import { CRANS_DES_EMPLOIS } from './emplois';
-import { DERIVE_MAXIMALE } from './rampe';
+import { DERIVE_MAXIMALE, type Profil } from './rampe';
 import { RELEVE_TAILWIND, type PaireDeDerive } from './tailwind';
 
-/** La version de la forme de la recette que ce paquet écrit. */
-export const FORMAT_RECETTE = 1;
+/**
+ * La version de la forme de la recette que ce paquet écrit. La version 2
+ * ajoute `base` à une palette : un plugin qui lit la version 1 classe donc la
+ * recette « future » au lieu de refuser une clé inconnue.
+ */
+export const FORMAT_RECETTE = 2;
 
 export type OrigineDerive = 'tailwind' | 'constante' | 'libre';
 
@@ -40,6 +44,8 @@ export interface Palette {
     readonly vivid: DeriveRangee;
   };
   readonly parts?: PartsPropres;
+  /** La palette de base ([ENT-11]) : le profil porteur forcé. Absente, le classement automatique décide. */
+  readonly base?: Profil;
 }
 
 export interface Seuils {
@@ -103,7 +109,8 @@ export type RegleRecette =
   | 'origine-inconnue'
   | 'identifiant-forme'
   | 'identifiants-uniques'
-  | 'crans-emplois';
+  | 'crans-emplois'
+  | 'base-inconnue';
 
 /** Un refus : la règle, le chemin du champ fautif, et la valeur lue quand elle se montre. */
 export interface Refus {
@@ -245,11 +252,12 @@ function validerDerivePalette(releve: Releve, derive: unknown, chemin: string): 
 }
 
 function validerPalette(releve: Releve, palette: unknown, chemin: string): void {
-  if (!releve.objet(palette, chemin, ['id', 'reference', 'derive'], ['nom', 'parts'])) return;
+  if (!releve.objet(palette, chemin, ['id', 'reference', 'derive'], ['nom', 'parts', 'base'])) return;
   if (typeof palette.id !== 'string' || !MOTIF_IDENTIFIANT.test(palette.id)) {
     releve.refuser('identifiant-forme', `${chemin}.id`, palette.id);
   }
   if ('nom' in palette && typeof palette.nom !== 'string') releve.refuser('forme', `${chemin}.nom`);
+  if ('base' in palette && palette.base !== 'soft' && palette.base !== 'vivid') releve.refuser('base-inconnue', `${chemin}.base`, palette.base);
   releve.hexa(palette.reference, `${chemin}.reference`);
 
   const derive = palette.derive;
@@ -345,8 +353,10 @@ export function validerRecette(entree: unknown): { recette: Recette } | { refus:
 /** Une migration fait passer un objet de la version `n` à la version `n + 1`. */
 export type Migrations = Readonly<Record<number, (ancienne: Objet) => Objet>>;
 
-/** Les migrations connues : aucune tant que la version courante est la première. */
-export const MIGRATIONS: Migrations = {};
+/** Les migrations connues. De 1 à 2 : `base` est facultatif, rien d'autre ne change. */
+export const MIGRATIONS: Migrations = {
+  1: (ancienne) => ({ ...ancienne, formatVersion: 2 }),
+};
 
 /** Ce que la lecture conclut d'une recette rangée ([REC-03]). */
 export type Classement =
