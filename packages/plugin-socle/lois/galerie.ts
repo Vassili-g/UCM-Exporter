@@ -18,6 +18,8 @@ export interface Etape {
   survol?: string;
   /** Une touche pressée sur l'élément désigné, qui reçoit d'abord le focus. */
   touche?: { dans: string; cle: string };
+  /** Un fichier posé dans le champ de fichier désigné, comme un choix du designer. */
+  fichier?: { dans: string; nom: string; contenu: string };
 }
 
 /** Un état de la galerie, tel que `galerie/etats.cjs` le déclare. */
@@ -71,7 +73,7 @@ export function fautesDeScenario(etats: readonly EtatDeGalerie[]): string[] {
     if (!etat.regarder) fautes.push(`${etat.id} : rien à regarder`);
     if ((etat.atteinte ?? []).length === 0) fautes.push(`${etat.id} : aucune étape`);
     for (const etape of etat.atteinte ?? []) {
-      const gestes = [etape.message, etape.clic, etape.saisie, etape.erreurUi, etape.survol, etape.touche].filter(Boolean);
+      const gestes = [etape.message, etape.clic, etape.saisie, etape.erreurUi, etape.survol, etape.touche, etape.fichier].filter(Boolean);
       if (gestes.length !== 1) fautes.push(`${etat.id} : une étape porte ${gestes.length} gestes`);
     }
   }

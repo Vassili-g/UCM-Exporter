@@ -13,6 +13,7 @@ import type { EtatDeLaPlanche, ProfilDuDocument } from '../lecture';
 import { fraicheurDeLaPlanche, type EtatDuCadre } from '../planche/fraicheur';
 import { blocDeConstat } from './constats';
 import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dessin';
+import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
 import {
   TEXTES_DU_DESSIN,
   cadreOrphelin,
@@ -41,6 +42,8 @@ export interface OngletPlancheUi {
 export interface GestesDeLaPlanche extends GestesDuResultat {
   dessiner(palettes: readonly string[], grille: boolean, noms: { readonly [id: string]: string }): void;
   versLesPalettes(): void;
+  /** Les gestes de la recette en fichier, au pied de l'onglet ([UI-02]). */
+  recetteEnFichier: GestesDeLaRecetteUi;
 }
 
 export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi {
@@ -114,7 +117,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   pied.append(dessinerTout, etiquette);
 
   // Les notices ont le dernier rang : elles suivent « Dessiner toutes les palettes ».
-  element.append(enTete, zoneDuResultat, vide, liste, confirmation, pied, notices);
+  element.append(enTete, zoneDuResultat, vide, liste, confirmation, pied, notices, gestes.recetteEnFichier.element);
 
   function ligneDePalette(id: string, nom: string, etatDuCadre: EtatDuCadre): HTMLDivElement {
     const ligne = document.createElement('div');
@@ -157,6 +160,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     grille: () => grille.checked,
     afficher(classement, lue, planche, profil, empreinte) {
       recette = lue;
+      gestes.recetteEnFichier.afficher(classement);
       if (classement.etat === 'future' || classement.etat === 'illisible') {
         enTete.hidden = true;
         liste.replaceChildren();

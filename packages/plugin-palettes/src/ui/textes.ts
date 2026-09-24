@@ -503,6 +503,65 @@ export function recetteIllisible(refus: readonly Refus[]): Constat {
   };
 }
 
+/** Les gestes de la recette en fichier (section 10.1, [REC-11]). */
+export const TEXTES_DE_LA_RECETTE = {
+  exporter: 'Exporter la recette',
+  importer: 'Importer une recette',
+  repartir: 'Repartir de la recette par défaut',
+  confirmerLImport: 'Importer',
+  confirmerLeDepart: 'Repartir',
+  annuler: 'Annuler',
+  sansEcart: 'Aucun écart avec la recette du fichier.',
+  importSansDessin: 'L’import remplace la recette du fichier ; il ne redessine rien.',
+  confirmationDuDepart: 'Repartir de la recette par défaut ? La recette rangée sera remplacée : exportez-la d’abord pour la garder.',
+} as const;
+
+/** Le titre de la confirmation d'un import ([REC-08]). */
+export function titreDeLImport(fichier: string): string {
+  return `Importer « ${fichier} » ?`;
+}
+
+/** Une ligne de l'écart d'import : des palettes par leur nom, ou des paramètres communs. */
+export function ligneDEcart(genre: 'ajoutees' | 'retirees' | 'modifiees' | 'parametres', noms: readonly string[]): string {
+  const titres = {
+    ajoutees: noms.length === 1 ? 'Palette ajoutée' : 'Palettes ajoutées',
+    retirees: noms.length === 1 ? 'Palette retirée' : 'Palettes retirées',
+    modifiees: noms.length === 1 ? 'Palette modifiée' : 'Palettes modifiées',
+    parametres: noms.length === 1 ? 'Paramètre commun modifié' : 'Paramètres communs modifiés',
+  };
+  return `${titres[genre]} : ${noms.join(', ')}.`;
+}
+
+/** Le nom d'un paramètre commun dans l'écart d'import. */
+export const NOMS_DES_PARAMETRES = {
+  crans: 'crans',
+  courbes: 'courbes de clarté',
+  profils: 'parts de chroma',
+  fonds: 'fonds de référence',
+  seuils: 'seuils',
+  derives: 'paires de Tailwind',
+  gamut: 'gamut',
+} as const;
+
+/** Un fichier importé qui ne se lit pas : la recette rangée reste intacte ([REC-08]). */
+export function importInvalide(fichier: string, refus: readonly Refus[]): Constat {
+  const compte = refus.length === 1 ? '1 champ est invalide' : `${refus.length} champs sont invalides`;
+  return {
+    ou: `Import, ${fichier}`,
+    quoi: `${compte} ; le premier : ${texteDuRefus(refus[0])} La recette du fichier reste intacte.`,
+    geste: 'Corrigez le fichier, puis importez-le de nouveau.',
+  };
+}
+
+/** Un fichier importé d'une version que ce plugin ne lit pas. */
+export function importFutur(fichier: string, version: number): Constat {
+  return {
+    ou: `Import, ${fichier}, version ${version}`,
+    quoi: `Ce plugin lit la version ${FORMAT_RECETTE} : la recette du fichier reste intacte.`,
+    geste: 'Mettez UCM Palettes à jour, puis importez de nouveau ce fichier.',
+  };
+}
+
 /** Les libellés de l'onglet Planche et du dessin (section 13.2). */
 export const TEXTES_DU_DESSIN = {
   dessiner: 'Dessiner',

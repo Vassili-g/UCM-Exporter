@@ -2,6 +2,7 @@
  * Point d'entrée de l'interface d'UCM Palettes : l'en-tête du socle, deux
  * onglets et la configuration derrière l'engrenage ([UI-02]).
  */
+import { jsonCanonique, recetteParDefaut, type Recette } from 'ucm-couleur';
 import {
   createBackButton,
   createSettingsButton,
@@ -12,13 +13,16 @@ import {
 import { createOnglets } from 'ucm-plugin-socle/src/ui/Onglets';
 import { createResizeGrip } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
+import { lireLImport } from '../importation';
 import type { PluginMessage } from '../messages';
 import { ecartsDePeinture } from '../planche/peints';
 import { createConfiguration } from './configuration';
 import { createSuiviDuDessin, type GestesDuResultat } from './dessin';
 import { createFrontiere } from './frontiere';
+import { createGestesDeLaRecette, type DemandesDeLaRecette } from './gestesDeLaRecette';
 import { createOngletPalettes } from './ongletPalettes';
 import { createOngletPlanche } from './ongletPlanche';
+import { telecharger } from './telechargement';
 import { versSandbox } from './pont';
 import { TEXTES } from './textes';
 
@@ -57,6 +61,35 @@ const gestesDuResultat: GestesDuResultat = {
   confirmerEtrangers: () => suivi.confirmerEtrangers(),
   renoncer: () => suivi.renoncer(),
 };
+/**
+ * Le texte qu'exporte « Exporter la recette » ([REC-07]) : la recette que
+ * l'aperçu montre, en JSON canonique ; une recette illisible ou future
+ * s'exporte telle qu'elle est rangée ([REC-11]).
+ */
+function texteAExporter(): string {
+  const classement = dernierEtat?.classement;
+  if (dernierEtat && (classement?.etat === 'future' || classement?.etat === 'illisible')) return dernierEtat.texte;
+  return jsonCanonique(ongletPalettes.recette() ?? recetteParDefaut());
+}
+
+/**
+ * Une recette importée, ou la recette par défaut, remplace celle du fichier.
+ * L'onglet Planche la relit au rangement qui suit : son dernier état cesse
+ * d'être illisible.
+ */
+function remplacerLaRecette(recette: Recette): void {
+  ongletPalettes.importer(recette);
+  if (dernierEtat) dernierEtat = { ...dernierEtat, classement: { etat: 'courante', recette } };
+  panneauDeConfiguration.afficher();
+}
+
+const demandesDeLaRecette: DemandesDeLaRecette = {
+  exporter: () => telecharger('palettes.recette.json', texteAExporter()),
+  lire: (texte) => lireLImport(texte, ongletPalettes.recette()),
+  remplacer: remplacerLaRecette,
+  recetteParDefaut,
+};
+
 const ongletPalettes = createOngletPalettes({
   ranger: (recette) => frontiere.ranger(recette),
   lireLaSelection: () => frontiere.lireLaSelection(),
@@ -64,11 +97,13 @@ const ongletPalettes = createOngletPalettes({
   tirer: () => crypto.getRandomValues(new Uint32Array(1))[0],
   dessiner: (palettes, noms) => suivi.dessiner(palettes, ongletPlanche.grille(), noms),
   resultat: gestesDuResultat,
+  recetteEnFichier: createGestesDeLaRecette(demandesDeLaRecette),
 });
 const ongletPlanche = createOngletPlanche({
   ...gestesDuResultat,
   dessiner: (palettes, grille, noms) => suivi.dessiner(palettes, grille, noms),
   versLesPalettes: () => onglets.selectionner('palettes'),
+  recetteEnFichier: createGestesDeLaRecette(demandesDeLaRecette),
 });
 
 /**

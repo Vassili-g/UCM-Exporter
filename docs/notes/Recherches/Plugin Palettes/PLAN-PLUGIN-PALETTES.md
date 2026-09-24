@@ -593,13 +593,13 @@ Spécification : [section 8.3](./RECHERCHE-PLUGIN-PALETTES.md#83-la-recette-comm
   nombre de palettes touchées par champ [ENT-05] [ENT-07] [ENT-08].
 - [x] **L7.2** Palette, section repliée « Avancé » (parts propres, D-G
   visible).
-- [ ] **L7.3** Export de la recette [REC-07] ; import avec écart par
+- [x] **L7.3** Export de la recette [REC-07] ; import avec écart par
   identifiant et confirmation [REC-08].
-- [ ] **L7.4** Gestes de sortie d'une recette illisible ou future (E19).
+- [x] **L7.4** Gestes de sortie d'une recette illisible ou future (E19).
 - [ ] **L7.5** Rapport [VER-01] [VER-02], avec les écarts de L6.14.
-- [ ] **L7.6** Galerie : import invalide, écart d'import, états bloquants
+- [x] **L7.6** Galerie : import invalide, écart d'import, états bloquants
   avec leurs gestes.
-- [ ] **L7.7** `test:ui` : exporter, modifier le JSON, importer, voir l'écart,
+- [x] **L7.7** `test:ui` : exporter, modifier le JSON, importer, voir l'écart,
   confirmer, dessiner.
 
 Critère : scénario de L7.7 vert.
@@ -767,13 +767,16 @@ Question : rejouer les huit points de la
 [section 16](./RECHERCHE-PLUGIN-PALETTES.md#16-recette-dans-figma) et rendre
 ce que chacun montre. Le point 2 compare un document sRGB et un document
 Display P3, selon E11, et tranche `[MOT-25]`. Le point 7 donne le temps de
-douze palettes, qui fixe le seuil de D-I au lot 6d. Trois gestes s'ajoutent :
+douze palettes, qui fixe le seuil de D-I au lot 6d. Quatre gestes s'ajoutent :
 
 - poser un calque dans un cadre, puis redessiner : la confirmation nomme le
   calque, et « Annuler » le laisse en place ;
 - dupliquer un cadre : l'onglet Planche signale la copie, et un redessin ne
   la touche pas ;
 - supprimer une palette dessinée : son cadre reste, signalé orphelin.
+- exporter la recette depuis l'onglet Planche : Figma propose
+  `palettes.recette.json` au téléchargement, et le même fichier se réimporte
+  sans écart.
 
 Préparé : hors de Figma, un double de l'API tient la propriété des cadres, le
 chargement de la seule page de la planche, l'arrêt avant tout calque sur une

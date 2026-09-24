@@ -27,6 +27,7 @@ import {
 import type { LectureDeSelection, ProfilDuDocument } from '../lecture';
 import { createApercu } from './apercu';
 import { createAvance } from './avance';
+import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
 import { blocDeConstat, listeDesConstats } from './constats';
 import { createCreation } from './creation';
 import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dessin';
@@ -66,6 +67,8 @@ export interface DemandesDeLOnglet {
   dessiner(palettes: readonly string[], noms: { readonly [id: string]: string }): void;
   /** Les gestes du résultat d'un dessin. */
   resultat: GestesDuResultat;
+  /** Les gestes de la recette en fichier, que le bloquant d'une recette illisible ou future offre ([REC-11]). */
+  recetteEnFichier: GestesDeLaRecetteUi;
 }
 
 export interface OngletPalettesUi {
@@ -79,6 +82,8 @@ export interface OngletPalettesUi {
   previsualiser(recette: Recette): void;
   /** Une recette validée ailleurs : elle se range. */
   appliquer(recette: Recette): void;
+  /** Une recette importée, ou la recette par défaut : elle remplace celle du fichier, même illisible, et se range. */
+  importer(recette: Recette): void;
   /** Le dessin en cours ou fini, que la barre et la zone du résultat montrent. */
   afficherDessin(etat: EtatDuDessin, noms: { readonly [id: string]: string }): void;
 }
@@ -332,6 +337,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const zoneDuDessin = document.createElement('div');
   zoneDuDessin.hidden = true;
   const zoneDuBloquant = document.createElement('div');
+  zoneDuBloquant.className = 'page-stack';
   const zoneDeLaNote = document.createElement('div');
   const ligneVide = ligneDEtat('');
   const vide = document.createElement('div');
@@ -415,7 +421,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     if (classementLu.etat === 'future' || classementLu.etat === 'illisible') {
       montrer(zoneDuBloquant);
       const constat = classementLu.etat === 'future' ? recetteFuture(classementLu.version) : recetteIllisible(classementLu.refus);
-      zoneDuBloquant.replaceChildren(blocDeConstat(constat, 'bloquant'));
+      demandes.recetteEnFichier.afficher(classementLu);
+      zoneDuBloquant.replaceChildren(blocDeConstat(constat, 'bloquant'), demandes.recetteEnFichier.element);
       return;
     }
     const courante = ouverte();
@@ -457,6 +464,10 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       rendre();
     },
     appliquer: (suivante) => valider(suivante),
+    importer(suivante) {
+      classementLu = { etat: 'courante', recette: suivante };
+      valider(suivante);
+    },
     afficherDessin(etat, noms) {
       dessiner.disabled = etat.phase === 'en-cours';
       dessiner.setLabel(etat.phase === 'en-cours' ? progressionDuDessin(etat.fait, etat.total, etat.nom) : TEXTES.dessiner);

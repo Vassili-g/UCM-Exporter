@@ -217,6 +217,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/analyse.ts           une palette pour l'onglet : rampes, promesses, alertes et notices triées
   src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
   src/configuration.ts     les champs de la configuration, fonds et seuils compris, et les palettes que chacun touche
+  src/importation.ts       un fichier importé, classé comme la recette rangée, et son écart avec elle
   src/planche/modele.ts    le modèle pur d'un cadre de planche : cadres, textes, peintures, noms de calque, empreinte
   src/planche/fraicheur.ts chaque cadre à jour, périmé ou jamais dessiné, et les cadres orphelins et copiés
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
@@ -235,6 +236,8 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
   src/ui/configuration.ts  courbes, parts, fonds et seuils derrière l'engrenage, avec la garantie des courbes
   src/ui/avance.ts         la section repliée « Avancé » d'une palette : ses parts propres et leur origine
+  src/ui/gestesDeLaRecette.ts exporter, importer avec l'écart, repartir de la recette par défaut
+  src/ui/telechargement.ts le fichier proposé au designer, par un lien vers un blob
   src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG ; glisser, clavier, réglettes, préréglage, lien, annulation
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
   galerie/                 les états de l'interface, à la taille par défaut et à la taille minimale
@@ -919,6 +922,13 @@ La spécification en lien porte le raisonnement.
   demandé pendant un rangement part après lui ; un refus l'abandonne.
   `src/ui/frontiere.ts` en est l'unique autorité, et
   `packages/plugin-palettes/tests/frontiere.test.ts` le tient.
+- Un import ne range rien avant la confirmation du designer : le fichier se
+  classe comme la recette rangée, et un fichier cassé, invalide ou futur
+  laisse la recette du fichier intacte. L'écart compare les palettes par
+  identifiant. Une recette illisible ou future s'exporte telle qu'elle est
+  rangée. `packages/plugin-palettes/tests/importation.test.ts` et les tests
+  d'interface le tiennent.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#101-la-recette-exportée)
 - Le manifest n'ouvre aucun domaine et ne déclare pas `enablePrivatePluginApi`.
 - Aucun des deux plugins n'importe l'autre : `tests/pluginsSepares.test.ts` lit
   les deux sens, à la racine, sans qu'un paquet lise les sources de l'autre.

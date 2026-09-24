@@ -1042,3 +1042,104 @@ test('D-G : les parts grises se lisent dans « Avancé », avec la part de la r�
     await page.close();
   }
 });
+
+/** Le fichier que « Exporter la recette » propose : son nom et son contenu. */
+async function exporter(page, dans) {
+  const [telechargement] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator(dans).getByRole('button', { name: 'Exporter la recette' }).click(),
+  ]);
+  return { nom: telechargement.suggestedFilename(), contenu: readFileSync(await telechargement.path(), 'utf8') };
+}
+const importerLeFichier = (page, dans, contenu) =>
+  page.locator(`${dans} input[type="file"]`).setInputFiles({ name: 'palettes.recette.json', mimeType: 'application/json', buffer: Buffer.from(contenu) });
+
+test('L7.7 : exporter la recette, modifier le JSON, l’importer, voir l’écart, confirmer, puis dessiner', async () => {
+  const page = await ouvrirSur('planche-a-jour');
+  try {
+    await ouvrirLaPlanche(page);
+    assert.equal(await page.getByRole('button', { name: 'Repartir de la recette par défaut' }).count(), 0, 'une recette lisible ne se remplace que par un import');
+    const exporte = await exporter(page, '#panneau-planche');
+    assert.equal(exporte.nom, 'palettes.recette.json');
+    assert.equal(exporte.contenu, messageDe('planche-a-jour').texte, '[REC-07] le JSON canonique de la recette rangée');
+
+    const modifiee = JSON.parse(exporte.contenu);
+    modifiee.palettes[0].nom = 'Bleu roi';
+    modifiee.seuils.texte = 7;
+    const avant = await compte(page);
+    await importerLeFichier(page, '#panneau-planche', JSON.stringify(modifiee, null, 2));
+    const confirmation = page.locator('#panneau-planche .confirmation', { hasText: 'Importer « palettes.recette.json » ?' });
+    assert.deepEqual(await confirmation.locator('p').allTextContents(), [
+      'Importer « palettes.recette.json » ?',
+      'Palette modifiée : Bleu roi.',
+      'Paramètre commun modifié : seuils.',
+      'L’import remplace la recette du fichier ; il ne redessine rien.',
+    ]);
+    assert.equal(await compte(page), avant, 'rien ne se range avant la confirmation');
+    await confirmation.getByRole('button', { name: 'Importer' }).click();
+    const rangement = await prochaine(page, avant);
+    assert.equal(rangement.type, 'ranger-recette');
+    assert.deepEqual(rangement.recette, modifiee);
+    assert.equal(rangement.empreinteLue, messageDe('planche-a-jour').empreinte);
+    await envoyer(page, rangee(rangement.demande));
+
+    assert.equal(await page.locator('.ligne-planche-nom').first().textContent(), 'Bleu roi');
+    assert.equal(await page.locator('.ligne-planche').first().getAttribute('data-etat'), 'perimee');
+    await page.getByRole('button', { name: 'Dessiner toutes les palettes' }).click();
+    const dessin = await dessinEnvoye(page, 1);
+    assert.deepEqual(dessin.palettes, modifiee.palettes.map(({ id }) => id));
+    assert.equal(dessin.empreinteLue, '0000000f', 'le dessin part sur la recette importée');
+  } finally {
+    await page.close();
+  }
+});
+
+test('[REC-11] E19 : une recette illisible s’exporte telle qu’elle est rangée, et repart de la recette par défaut après confirmation', async () => {
+  const page = await ouvrir();
+  try {
+    const illisible = messageDe('recette-illisible');
+    await envoyer(page, illisible);
+    const bloquant = '#panneau-palettes';
+    assert.equal((await exporter(page, bloquant)).contenu, illisible.texte);
+    const avant = await compte(page);
+    await page.locator(bloquant).getByRole('button', { name: 'Repartir de la recette par défaut' }).click();
+    assert.equal(await compte(page), avant, 'la confirmation vient avant tout rangement');
+    await page.locator(bloquant).getByRole('button', { name: 'Repartir', exact: true }).click();
+    const rangement = await prochaine(page, avant);
+    assert.deepEqual(rangement.recette.palettes, []);
+    assert.equal(rangement.empreinteLue, illisible.empreinte);
+    assert.equal(await page.locator('#panneau-palettes .constat-bloquant:visible').count(), 0);
+    assert.equal(await page.getByRole('button', { name: 'Repartir de la recette par défaut' }).count(), 0);
+    await envoyer(page, rangee(rangement.demande));
+    await ouvrirLaPlanche(page);
+    assert.equal(await page.locator('#panneau-planche .constat-bloquant:visible').count(), 0, 'l’onglet Planche quitte aussi le bloquant');
+    assert.equal(await page.getByText('Aucune palette à dessiner : la planche attend une première palette.').isVisible(), true);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[REC-08] un fichier d’une version future ou cassé se refuse, et rien ne se range', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    await ouvrirLaPlanche(page);
+    const avant = await compte(page);
+    await importerLeFichier(page, '#panneau-planche', JSON.stringify({ formatVersion: 99 }));
+    assert.equal(await page.locator('#panneau-planche .constat-bloquant .constat-ou').textContent(), 'Import, palettes.recette.json, version 99');
+    await importerLeFichier(page, '#panneau-planche', '{pas du json');
+    assert.match(await page.locator('#panneau-planche .constat-bloquant .constat-quoi').textContent(), /La recette du fichier reste intacte\.$/);
+    assert.equal(await compte(page), avant);
+  } finally {
+    await page.close();
+  }
+});
+
+test('le banc de galerie joue un fichier : l’écart d’import attend sa confirmation', async () => {
+  const page = await pageDeGalerie('ecart-d-import');
+  try {
+    const confirmation = page.locator('#panneau-planche .confirmation', { hasText: 'Importer « palettes.recette.json » ?' });
+    assert.equal(await confirmation.locator('p').nth(1).textContent(), 'Palette ajoutée : Ardoise.');
+  } finally {
+    await page.close();
+  }
+});

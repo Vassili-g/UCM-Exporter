@@ -120,9 +120,11 @@ export interface DocumentLu {
   readonly documentColorProfile: ProfilDuDocument;
 }
 
-/** L'état lu : la recette classée, l'empreinte du texte rangé, et le profil. */
+/** L'état lu : la recette classée, le texte rangé et son empreinte, et le profil. */
 export interface EtatLu {
   readonly classement: Classement;
+  /** Le texte rangé tel quel, qu'une recette illisible ou future exporte ([REC-11]). */
+  readonly texte: string;
   readonly empreinte: string | null;
   readonly profil: ProfilDuDocument;
 }
@@ -181,6 +183,7 @@ export function lireEtat(document: DocumentLu): EtatLu {
   const texte = document.getSharedPluginData(ESPACE_PARTAGE, CLE_RECETTE);
   return {
     classement: classerRecette(texte),
+    texte,
     empreinte: empreinteDuTexte(texte),
     profil: document.documentColorProfile,
   };

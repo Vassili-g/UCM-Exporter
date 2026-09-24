@@ -72,6 +72,15 @@ function pilote(etat) {
         if (!touchee) throw new Error('Galerie : aucun élément pour ' + etape.touche.dans);
         touchee.focus();
         touchee.dispatchEvent(new KeyboardEvent('keydown', { key: etape.touche.cle, bubbles: true }));
+      } else if (etape.fichier) {
+        var entree = document.querySelector(etape.fichier.dans);
+        if (!entree) throw new Error('Galerie : aucun champ de fichier pour ' + etape.fichier.dans);
+        var transfert = new DataTransfer();
+        transfert.items.add(new File([etape.fichier.contenu], etape.fichier.nom, { type: 'application/json' }));
+        entree.files = transfert.files;
+        entree.dispatchEvent(new Event('change', { bubbles: true }));
+        // L'interface lit le fichier de façon asynchrone.
+        await pause(40);
       }
       await pause(8);
     }

@@ -43,6 +43,7 @@ function etatDuFichier(texte, profil = 'SRGB', planche = PLANCHE_VIDE) {
       type: 'etat',
       demande: 1,
       classement: classerRecette(texte),
+      texte,
       empreinte: texte === '' ? null : fnv1a(octetsUtf8(texte)),
       profil,
       planche,
@@ -89,6 +90,9 @@ function cadreDessine(texte, palette, cadre, { profil = 'SRGB', ...reglages } = 
 const PAGE_DE_LA_PLANCHE = '40:1';
 const ouvrirLaPlanche = { clic: '#onglet-planche' };
 
+/** Le designer choisit un fichier de recette dans l'onglet Planche. */
+const importer = (contenu) => ({ fichier: { dans: '#panneau-planche input[type="file"]', nom: 'palettes.recette.json', contenu } });
+
 const ouvrirLaConfiguration = { clic: '[aria-label="Ouvrir la configuration"]' };
 const dessinerLaPalette = { clic: '.barre-verdict .btn' };
 
@@ -131,7 +135,7 @@ const ETATS = [
     id: 'recette-future',
     titre: 'Recette future',
     quand: 'Une version plus récente du plugin a rangé la recette.',
-    regarder: 'Le bloquant en tête de l’onglet, ses trois parties séparées, et la demande de mise à jour.',
+    regarder: 'Le bloquant en tête de l’onglet, ses trois parties séparées, la demande de mise à jour, et les trois gestes de sortie : exporter, importer, repartir de la recette par défaut.',
     existe: true,
     atteinte: [etatDuFichier(JSON.stringify({ ...recetteParDefaut(), formatVersion: FORMAT_RECETTE + 1 }))],
   },
@@ -139,7 +143,7 @@ const ETATS = [
     id: 'recette-illisible',
     titre: 'Recette illisible',
     quand: 'La recette rangée ne passe pas la validation : deux champs sont faux.',
-    regarder: 'Le compte des champs invalides, le premier refus en mots du designer, et le bloquant sans écriture.',
+    regarder: 'Le compte des champs invalides, le premier refus en mots du designer, le bloquant sans écriture, et ses trois gestes de sortie.',
     existe: true,
     atteinte: [etatDuFichier(recetteCassee())],
   },
@@ -429,10 +433,26 @@ const ETATS = [
       ouvrirLaPlanche,
     ],
   },
-  ...[
-    ['import-invalide', 'Import invalide', 'Erreurs de forme, recette rangée intacte.', 'L7.6'],
-    ['ecart-d-import', 'Écart d’import', 'Palettes et paramètres modifiés, confirmation.', 'L7.6'],
-  ].map(([id, titre, quand, attendu]) => ({ id, titre, quand, regarder: null, existe: false, attendu })),
+  {
+    id: 'import-invalide',
+    titre: 'Import invalide',
+    quand: 'Le designer importe un fichier dont le fond sombre a cinq chiffres et la courbe claire remonte au cran 500.',
+    regarder: 'Le bloquant sous les gestes de la recette, qui nomme le fichier, compte les champs invalides et dit que la recette du fichier reste intacte.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU])), ouvrirLaPlanche, importer(recetteCassee())],
+  },
+  {
+    id: 'ecart-d-import',
+    titre: 'Écart d’import',
+    quand: 'Le fichier importé renomme Bleu, retire Jaune, ajoute Ardoise et relève le seuil de texte.',
+    regarder: 'La confirmation : une ligne par genre d’écart, la phrase qui dit que l’import ne redessine rien, et ses gestes « Importer » et « Annuler ».',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU, JAUNE])),
+      ouvrirLaPlanche,
+      importer(rangee([{ ...BLEU, nom: 'Bleu roi' }, palette('p-5c1d0e77', 'Ardoise', '#6B7280')], (recette) => ({ ...recette, seuils: { ...recette.seuils, texte: 7 } }))),
+    ],
+  },
 ];
 
 module.exports = { ETATS };

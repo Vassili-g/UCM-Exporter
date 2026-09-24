@@ -16,7 +16,7 @@ function banc() {
   const statuts: StatutDuRangement[] = [];
   const frontiere = createFrontiere((demande) => envoyees.push(demande), (statut) => statuts.push(statut));
   const etat = (demande: number, empreinte: string | null = null) =>
-    frontiere.accepterEtat({ type: 'etat', demande, classement: ABSENTE, empreinte, profil: 'SRGB', planche: { page: null, cadres: [] } });
+    frontiere.accepterEtat({ type: 'etat', demande, classement: ABSENTE, texte: '', empreinte, profil: 'SRGB', planche: { page: null, cadres: [] } });
   const rangee = (demande: number, empreinte: string) =>
     frontiere.recevoirRangement({ type: 'rangement', demande, issue: { issue: 'rangee', empreinte } });
   return { frontiere, envoyees, statuts, etat, rangee };

@@ -259,7 +259,21 @@ Lignes simples, sans les trois parties :
 - origine des parts : « Parts de la recette : cette palette suit les parts de
   la configuration. », « Parts propres : la configuration ne touche plus les
   parts de cette palette. », « Référence presque grise : les deux profils
-  prennent sa part de chroma, {part}. ».
+  prennent sa part de chroma, {part}. » ;
+- recette en fichier : « Exporter la recette », « Importer une recette »,
+  « Repartir de la recette par défaut » ; confirmation du départ : « Repartir
+  de la recette par défaut ? La recette rangée sera remplacée : exportez-la
+  d'abord pour la garder. », gestes « Repartir » et « Annuler » ;
+- écart d'import : « Importer « {fichier} » ? », puis « Palettes ajoutées :
+  {noms}. », « Palettes retirées : … », « Palettes modifiées : … »,
+  « Paramètres communs modifiés : {paramètres}. », ou « Aucun écart avec la
+  recette du fichier. », et « L'import remplace la recette du fichier ; il ne
+  redessine rien. » ; gestes « Importer » et « Annuler ».
+
+| Message | Où | Quoi | Geste |
+|---|---|---|---|
+| Import invalide | Import, {fichier} | {n} champs sont invalides ; le premier : {refus}. La recette du fichier reste intacte. | Corrigez le fichier, puis importez-le de nouveau. |
+| Import futur | Import, {fichier}, version {version} | Ce plugin lit la version {courante} : la recette du fichier reste intacte. | Mettez UCM Palettes à jour, puis importez de nouveau ce fichier. |
 
 ## Questions pour le mainteneur
 

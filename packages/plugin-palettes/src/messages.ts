@@ -42,7 +42,7 @@ export type PluginMessage =
    * ([REC-03]), l'empreinte du texte rangé, `null` sans recette, le profil
    * de couleur du document et les cadres de la planche.
    */
-  | { type: 'etat'; demande: number; classement: Classement; empreinte: string | null; profil: ProfilDuDocument; planche: EtatDeLaPlanche }
+  | { type: 'etat'; demande: number; classement: Classement; texte: string; empreinte: string | null; profil: ProfilDuDocument; planche: EtatDeLaPlanche }
   /** La couleur que la sélection propose, en réponse à `lire-selection` ([ENT-04]). */
   | { type: 'selection'; demande: number; lecture: LectureDeSelection }
   /** L'issue d'un rangement : la nouvelle empreinte, ou le refus ([REC-10]). */
