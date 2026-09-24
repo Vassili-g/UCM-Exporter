@@ -246,6 +246,21 @@ Lignes simples, sans les trois parties :
 - gestes : « Redessiner quand même », « Annuler » ; « Voir sur la planche »
   sous la notice d'un cadre orphelin ou copié.
 
+## Textes ajoutés au lot 7
+
+Lignes simples, sans les trois parties :
+
+- configuration, titres des groupes : « Fonds de référence », « Seuils de
+  contraste », « Seuil des palettes proches (ΔEok) », « Chroma d'une
+  référence grise » ; champs : « Clair », « Sombre », « Texte », « Non-texte » ;
+- configuration, couleur refusée : la ligne « hexa refusé » ci-dessus ;
+- palette, section repliée : « Avancé », « Part soft », « Part vivid »,
+  « Reprendre les parts de la recette » ;
+- origine des parts : « Parts de la recette : cette palette suit les parts de
+  la configuration. », « Parts propres : la configuration ne touche plus les
+  parts de cette palette. », « Référence presque grise : les deux profils
+  prennent sa part de chroma, {part}. ».
+
 ## Questions pour le mainteneur
 
 - La notice « Référence plus vive que vivid » n'a de geste que si la rampe doit

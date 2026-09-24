@@ -151,7 +151,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU])),
-      { saisie: { dans: '.champ-hexa', valeur: '#7C3AED' } },
+      { saisie: { dans: '#panneau-palettes .champ-hexa', valeur: '#7C3AED' } },
       { survol: '[aria-label^="vivid.700 "]' },
     ],
   },
@@ -209,7 +209,7 @@ const ETATS = [
     quand: 'Le designer tape une lettre qui n’est pas hexadécimale dans la référence.',
     regarder: 'L’erreur sous le champ, en rouge, et l’aperçu resté celui de #1E6FD9.',
     existe: true,
-    atteinte: [etatDuFichier(rangee([BLEU])), { saisie: { dans: '.champ-hexa', valeur: '#1E6FZ9' } }],
+    atteinte: [etatDuFichier(rangee([BLEU])), { saisie: { dans: '#panneau-palettes .champ-hexa', valeur: '#1E6FZ9' } }],
   },
   {
     id: 'recette-modifiee-ailleurs',

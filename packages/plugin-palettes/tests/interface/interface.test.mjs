@@ -153,7 +153,7 @@ test('[ENT-02] une référence saisie recalcule l’aperçu et la dérive sans p
   try {
     const avant = await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label');
     const derive = await page.locator('.ligne-secondaire').nth(1).textContent();
-    await page.locator('.champ-hexa').fill('#1E6FD9');
+    await page.locator('#panneau-palettes .champ-hexa').fill('#1E6FD9');
     assert.notEqual(await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label'), avant);
     assert.notEqual(await page.locator('.ligne-secondaire').nth(1).textContent(), derive);
     assert.deepEqual(await page.evaluate(() => window.demandes.map((demande) => demande.type)), ['lire-etat']);
@@ -172,7 +172,7 @@ test('[UI-06] le sélecteur liste les palettes et ouvre celle qu’on choisit au
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
     assert.equal(await page.getByRole('listbox').isVisible(), false);
-    assert.equal(await page.locator('.champ-hexa').inputValue(), '#1E6FD9');
+    assert.equal(await page.locator('#panneau-palettes .champ-hexa').inputValue(), '#1E6FD9');
     assert.equal(await page.locator('.selecteur-nom').textContent(), 'Bleu');
   } finally {
     await page.close();
@@ -192,7 +192,7 @@ test('le banc de galerie joue un survol : le détail du cran survolé s’affich
   const page = await pageDeGalerie('palette-en-saisie');
   try {
     assert.match(await page.locator('.detail-cran').textContent(), /^vivid\.700 · #/);
-    assert.equal(await page.locator('.champ-hexa').inputValue(), '#7C3AED');
+    assert.equal(await page.locator('#panneau-palettes .champ-hexa').inputValue(), '#7C3AED');
   } finally {
     await page.close();
   }
@@ -334,7 +334,7 @@ test('[ENT-04] une palette se crée depuis la couleur de la sélection', async (
     const rangement = await prochaine(page, avant);
     assert.equal(rangement.type, 'ranger-recette');
     assert.equal(rangement.recette.palettes.at(-1).reference, '#16A34A');
-    assert.equal(await page.locator('.champ-hexa').inputValue(), '#16A34A');
+    assert.equal(await page.locator('#panneau-palettes .champ-hexa').inputValue(), '#16A34A');
   } finally {
     await page.close();
   }
@@ -344,9 +344,9 @@ test('un hexa impossible se signale sous le champ, et l’aperçu ne change pas'
   const page = await ouvrirSur('alertes-seules');
   try {
     const avant = await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label');
-    await page.locator('.champ-hexa').fill('#FACZ15');
-    assert.equal(await page.locator('.champ-hexa').getAttribute('aria-invalid'), 'true');
-    assert.match(await page.locator('#panneau-palettes .ligne-reference + .field-error').textContent(), /n’est pas une couleur/);
+    await page.locator('#panneau-palettes .champ-hexa').fill('#FACZ15');
+    assert.equal(await page.locator('#panneau-palettes .champ-hexa').getAttribute('aria-invalid'), 'true');
+    assert.match(await page.locator('#panneau-palettes .ligne-reference + .field-error').first().textContent(), /n’est pas une couleur/);
     assert.equal(await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label'), avant);
   } finally {
     await page.close();
@@ -432,7 +432,43 @@ test('[ENT-07] chaque groupe de la configuration compte les palettes qu’il tou
   try {
     await page.getByRole('button', { name: 'Ouvrir la configuration' }).click();
     const comptes = await page.locator('.config-groupe .ligne-infos .ligne-secondaire').allTextContents();
-    assert.deepEqual(comptes, ['3 palettes touchées', '1 palette touchée', '2 palettes touchées']);
+    // Courbes, parts, fonds, seuils de contraste, profils confondus, palettes proches, référence grise.
+    assert.deepEqual(comptes, [
+      '3 palettes touchées',
+      '1 palette touchée',
+      '3 palettes touchées',
+      '3 palettes touchées',
+      '2 palettes touchées',
+      '3 palettes touchées',
+      '2 palettes touchées',
+    ]);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[ENT-05] un fond et un seuil se saisissent dans la configuration, et se rangent à la validation', async () => {
+  const page = await ouvrirSur('configuration-de-la-recette');
+  try {
+    await page.getByRole('button', { name: 'Ouvrir la configuration' }).click();
+    const fond = page.getByRole('textbox', { name: 'Fond sombre' });
+    assert.equal(await fond.inputValue(), '#121212');
+    const avant = await compte(page);
+    await fond.fill('#1c1c1c');
+    await fond.press('Tab');
+    const rangement = await prochaine(page, avant);
+    assert.deepEqual(rangement.recette.fonds, { light: '#F7F7F7', dark: '#1C1C1C' });
+    await envoyer(page, rangee(rangement.demande));
+
+    await fond.fill('#12');
+    await fond.press('Tab');
+    assert.equal(await page.locator('.config-groupe .field-error:visible').textContent(), '« #12 » n’est pas une couleur : six chiffres hexadécimaux, #1E6FD9 par exemple.');
+    assert.equal(await compte(page), avant + 1, 'une couleur refusée ne se range pas');
+
+    const texte = page.getByRole('textbox', { name: 'Texte', exact: true });
+    await texte.fill('7');
+    await texte.press('Tab');
+    assert.equal((await prochaine(page, avant + 1)).recette.seuils.texte, 7);
   } finally {
     await page.close();
   }
@@ -962,6 +998,46 @@ test('L6.14 : une couleur peinte autrement que l’aperçu se signale en notice 
       await page.locator('#panneau-palettes .constat-notice .constat-quoi').textContent(),
       /^1 couleur peinte diffère de l’aperçu, dont vivid\/light\/700 : aperçu #[0-9A-F]{6}, planche #000000\.$/,
     );
+  } finally {
+    await page.close();
+  }
+});
+
+const deplierAvance = (page) => page.getByRole('button', { name: /Avancé$/ }).click();
+
+test('[ENT-09] « Avancé » pose une part propre, refuse soft au-dessus de vivid, et reprend les parts de la recette', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    assert.equal(await page.getByRole('textbox', { name: 'Part soft' }).isVisible(), false, 'la section est repliée');
+    await deplierAvance(page);
+    assert.equal(await page.getByRole('button', { name: /Avancé$/ }).getAttribute('aria-expanded'), 'true');
+    const soft = page.getByRole('textbox', { name: 'Part soft' });
+    assert.equal(await soft.inputValue(), '0,45');
+    const avant = await compte(page);
+    await soft.fill('0,6');
+    await soft.press('Tab');
+    const rangement = await prochaine(page, avant);
+    assert.deepEqual(rangement.recette.palettes[0].parts, { soft: 0.6, vivid: 0.95, origine: 'designer' });
+    await envoyer(page, rangee(rangement.demande));
+
+    await soft.fill('0,99');
+    await soft.press('Tab');
+    assert.equal(await page.locator('#panneau-palettes .field-error:visible').count(), 1);
+    assert.equal(await compte(page), avant + 1, 'une part refusée ne se range pas');
+
+    await page.getByRole('button', { name: 'Reprendre les parts de la recette' }).click();
+    assert.equal((await prochaine(page, avant + 1)).recette.palettes[0].parts, undefined);
+  } finally {
+    await page.close();
+  }
+});
+
+test('D-G : les parts grises se lisent dans « Avancé », avec la part de la référence', async () => {
+  const page = await ouvrirSur('couleur-presque-grise');
+  try {
+    await deplierAvance(page);
+    assert.match(await page.locator('#panneau-palettes .page-stack > .ligne-secondaire').last().textContent(), /^Référence presque grise : les deux profils prennent sa part de chroma, 0,\d+\.$/);
+    assert.equal(await page.getByRole('button', { name: 'Reprendre les parts de la recette' }).isVisible(), false);
   } finally {
     await page.close();
   }

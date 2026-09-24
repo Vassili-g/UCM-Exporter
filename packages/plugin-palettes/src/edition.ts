@@ -10,6 +10,7 @@ import {
   boutsDe,
   ecrireHexa,
   lireHexa,
+  partsDe,
   prereglageTailwind,
   rgb8VersOklch,
   type Derive,
@@ -170,4 +171,20 @@ export function lierLesProfils(palette: Palette, lien: boolean): Palette {
 /** La recette où la palette d'identifiant `palette.id` est remplacée. */
 export function remplacerPalette(recette: Recette, palette: Palette): Recette {
   return { ...recette, palettes: recette.palettes.map((candidate) => (candidate.id === palette.id ? palette : candidate)) };
+}
+
+/**
+ * La palette dont un profil prend une part propre ([ENT-09]), rangée au
+ * millième (E3). Ses parts passent au designer : l'autre profil garde la part
+ * qu'il employait, et la configuration ne les touche plus.
+ */
+export function poserPart(recette: Recette, palette: Palette, profil: Profil, part: number): Palette {
+  const employees = partsDe(recette, palette);
+  return { ...palette, parts: { ...employees, [profil]: arrondir(part, 3), origine: 'designer' } };
+}
+
+/** La palette sans parts propres : elle reprend celles de la recette, ou des parts grises si sa référence l'est. */
+export function reprendreLesParts(recette: Recette, palette: Palette): Palette {
+  const { parts: _retirees, ...sansParts } = palette;
+  return ajusterPartsGrises(recette, sansParts);
 }

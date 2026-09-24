@@ -26,6 +26,7 @@ import {
 } from '../edition';
 import type { LectureDeSelection, ProfilDuDocument } from '../lecture';
 import { createApercu } from './apercu';
+import { createAvance } from './avance';
 import { blocDeConstat, listeDesConstats } from './constats';
 import { createCreation } from './creation';
 import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dessin';
@@ -214,6 +215,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   let editeurOuvert = false;
   const apercu = createApercu(() => rendre());
   const constats = document.createElement('div');
+  const avance = createAvance({
+    previsualiser: (suivante) => modifier(suivante),
+    valider: (suivante) => {
+      if (recette) valider(remplacerPalette(recette, suivante));
+    },
+  });
 
   function ouverte(): Palette | null {
     if (!recette || recette.palettes.length === 0) return null;
@@ -332,7 +339,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   vide.append(ligneVide);
   const vue = document.createElement('div');
   vue.className = 'page-stack colonne';
-  vue.append(barre, zoneDuDessin, confirmation, zoneDeLaNote, reference, erreurHexa, infos, ligneDeDerive, editeur.element, apercu.element, constats);
+  vue.append(barre, zoneDuDessin, confirmation, zoneDeLaNote, reference, erreurHexa, infos, ligneDeDerive, editeur.element, apercu.element, constats, avance.element);
   element.append(zoneDuRefus, zoneDuBloquant, vide, vue);
 
   /** Le panneau de création suit la vue montrée : seul, ou sous la barre. */
@@ -379,6 +386,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       return trouvee ? nomDeLaPalette(trouvee) : id;
     };
     constats.replaceChildren(listeDesConstats(analyse, { recette: lue, nomDe }, nomDeLaPalette(courante)));
+    avance.afficher(lue, courante);
     texteDeConfirmation.textContent = confirmationDeSuppression(nomDeLaPalette(courante));
     confirmation.hidden = !suppressionDemandee;
     placerLaCreation(vue, zoneDeLaNote);

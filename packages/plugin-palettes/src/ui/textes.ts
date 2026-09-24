@@ -64,6 +64,13 @@ export const TEXTES_DE_CONFIGURATION = {
   sombre: 'Sombre',
   parts: 'Parts de chroma',
   seuilProfilsConfondus: 'Seuil des profils confondus (ΔEok)',
+  fonds: 'Fonds de référence',
+  fondDuMode: { light: 'Fond clair', dark: 'Fond sombre' },
+  seuilsDeContraste: 'Seuils de contraste',
+  seuilTexte: 'Texte',
+  seuilNonTexte: 'Non-texte',
+  seuilPalettesProches: 'Seuil des palettes proches (ΔEok)',
+  seuilChromaGrise: 'Chroma d’une référence grise',
   sansRecette: 'La recette du fichier ne se lit pas : sa configuration attend une recette lisible.',
 } as const;
 
@@ -90,6 +97,20 @@ export function constatDeGarantie(manque: ManqueDeGarantie): Constat {
     quoi: `Contre le cran 50, le contraste descend à ${ecrireContraste(manque.contraste)} à la teinte ${manque.teinte}°, pour ${seuilEcrit(manque.seuil)} garanti.`,
     geste: `Éloignez la clarté du cran ${manque.cran} de celle du cran 50, ou gardez la courbe en connaissance de cause.`,
   };
+}
+
+/** La section repliée « Avancé » d'une palette (section 8.1, [ENT-09]). */
+export const TEXTES_AVANCES = {
+  avance: 'Avancé',
+  partDuProfil: { soft: 'Part soft', vivid: 'Part vivid' },
+  reprendre: 'Reprendre les parts de la recette',
+} as const;
+
+/** D'où viennent les parts qu'une palette emploie ; une part grise est visible (D-G). */
+export function origineDesParts(origine: 'designer' | 'grise' | undefined, part: number): string {
+  if (origine === 'designer') return 'Parts propres : la configuration ne touche plus les parts de cette palette.';
+  if (origine === 'grise') return `Référence presque grise : les deux profils prennent sa part de chroma, ${nombreEcrit(part)}.`;
+  return 'Parts de la recette : cette palette suit les parts de la configuration.';
 }
 
 /** Les libellés de l'éditeur de dérive (section 12). */

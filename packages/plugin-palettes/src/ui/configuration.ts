@@ -1,7 +1,8 @@
 /**
  * La configuration de la recette, derrière l'engrenage ([UI-02], section
- * 8.3) : les deux courbes, les parts des profils et le seuil des profils
- * confondus. Chaque groupe dit combien de palettes il modifie ([ENT-07]).
+ * 8.3) : les deux courbes, les parts des profils, les deux fonds ([ENT-05])
+ * et les cinq seuils. Chaque groupe dit combien de palettes il modifie
+ * ([ENT-07]).
  *
  * Une saisie recalcule la garantie des courbes et l'aperçu ; la validation du
  * champ range la recette (D-D). Un refus de `[REC-05]` s'écrit sous le groupe,
@@ -19,14 +20,17 @@ import {
 import {
   lireNombre,
   palettesModifiees,
+  poserFond,
   poserValeur,
   valeurDe,
   type ChampDeConfiguration,
+  type GroupeDeConfiguration,
 } from '../configuration';
 import { blocDeConstat } from './constats';
 import {
   TEXTES_DE_CONFIGURATION,
   constatDeGarantie,
+  hexaInvalide,
   nombreEcrit,
   nombreInvalide,
   palettesTouchees,
@@ -124,18 +128,79 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
   }
   parts.element.append(ligneDesParts, parts.erreur);
 
-  const seuil = groupe(TEXTES_DE_CONFIGURATION.seuilProfilsConfondus);
-  seuil.element.append(
-    champDeSaisie({ seuil: 'profilsConfondus' }, seuil, TEXTES_DE_CONFIGURATION.seuilProfilsConfondus),
-    seuil.erreur,
+  const nomDuMode: Record<Mode, string> = { light: TEXTES_DE_CONFIGURATION.clair, dark: TEXTES_DE_CONFIGURATION.sombre };
+
+  /** Une ligne de champs étiquetés, comme celle des parts. */
+  function ligneDeChamps(dans: Groupe, entrees: readonly { champ: ChampDeConfiguration; etiquette: string }[]): HTMLDivElement {
+    const ligne = document.createElement('div');
+    ligne.className = 'ligne-reference';
+    for (const { champ, etiquette } of entrees) {
+      const conteneur = document.createElement('label');
+      conteneur.className = 'champ-ligne';
+      const texte = document.createElement('span');
+      texte.className = 'field-label';
+      texte.textContent = etiquette;
+      conteneur.append(texte, champDeSaisie(champ, dans, etiquette));
+      ligne.append(conteneur);
+    }
+    return ligne;
+  }
+
+  const fonds = groupe(TEXTES_DE_CONFIGURATION.fonds);
+  const ligneDesFonds = document.createElement('div');
+  ligneDesFonds.className = 'ligne-reference';
+  const saisiesDesFonds = MODES.map((mode) => {
+    const conteneur = document.createElement('label');
+    conteneur.className = 'champ-ligne';
+    const texte = document.createElement('span');
+    texte.className = 'field-label';
+    texte.textContent = nomDuMode[mode];
+    const saisie = document.createElement('input');
+    saisie.type = 'text';
+    saisie.className = 'input champ-hexa';
+    saisie.spellcheck = false;
+    saisie.setAttribute('aria-label', TEXTES_DE_CONFIGURATION.fondDuMode[mode]);
+    saisie.addEventListener('input', () => saisirFond(mode, saisie, false));
+    saisie.addEventListener('change', () => saisirFond(mode, saisie, true));
+    conteneur.append(texte, saisie);
+    ligneDesFonds.append(conteneur);
+    return { mode, saisie };
+  });
+  fonds.element.append(ligneDesFonds, fonds.erreur);
+
+  const contraste = groupe(TEXTES_DE_CONFIGURATION.seuilsDeContraste);
+  contraste.element.append(
+    ligneDeChamps(contraste, [
+      { champ: { seuil: 'texte' }, etiquette: TEXTES_DE_CONFIGURATION.seuilTexte },
+      { champ: { seuil: 'nonTexte' }, etiquette: TEXTES_DE_CONFIGURATION.seuilNonTexte },
+    ]),
+    contraste.erreur,
   );
+
+  /** Un groupe d'un seul seuil, que son titre nomme. */
+  function groupeDeSeuil(seuil: 'profilsConfondus' | 'palettesProches' | 'chromaGrise', titre: string): Groupe {
+    const dans = groupe(titre);
+    dans.element.append(champDeSaisie({ seuil }, dans, titre), dans.erreur);
+    return dans;
+  }
+  const seuil = groupeDeSeuil('profilsConfondus', TEXTES_DE_CONFIGURATION.seuilProfilsConfondus);
+  const proches = groupeDeSeuil('palettesProches', TEXTES_DE_CONFIGURATION.seuilPalettesProches);
+  const grise = groupeDeSeuil('chromaGrise', TEXTES_DE_CONFIGURATION.seuilChromaGrise);
+
+  const comptes: readonly (readonly [Groupe, GroupeDeConfiguration])[] = [
+    [courbes, 'courbes'],
+    [parts, 'parts'],
+    [fonds, 'fonds'],
+    [contraste, 'contraste'],
+    [seuil, 'profilsConfondus'],
+    [proches, 'palettesProches'],
+    [grise, 'chromaGrise'],
+  ];
 
   const vue = document.createElement('div');
   vue.className = 'page-stack colonne';
-  vue.append(courbes.element, parts.element, seuil.element);
+  vue.append(...comptes.map(([dans]) => dans.element));
   element.append(sansRecette, vue);
-
-  const nomDuMode: Record<Mode, string> = { light: TEXTES_DE_CONFIGURATION.clair, dark: TEXTES_DE_CONFIGURATION.sombre };
 
   /** La table n'est bâtie qu'une fois par liste de crans : un champ retiré perdrait son focus. */
   let cransBatis = '';
@@ -198,6 +263,25 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     else recette.previsualiser(suivante);
   }
 
+  /** Un fond saisi : même parcours qu'un nombre, avec un hexa. */
+  function saisirFond(mode: Mode, saisie: HTMLInputElement, fin: boolean): void {
+    const lue = recette.lire();
+    if (!lue) return;
+    const suivante = poserFond(lue, mode, saisie.value);
+    if (suivante === null) {
+      if (fin) signaler(fonds, hexaInvalide(saisie.value));
+      return;
+    }
+    const jugee = validerRecette(suivante);
+    if ('refus' in jugee) {
+      if (fin) signaler(fonds, texteDuRefus(jugee.refus[0]));
+      return;
+    }
+    signaler(fonds, null);
+    if (fin) recette.appliquer(suivante);
+    else recette.previsualiser(suivante);
+  }
+
   return {
     element,
     afficher() {
@@ -209,9 +293,10 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
       for (const { champ, saisie } of champs) {
         if (document.activeElement !== saisie) saisie.value = nombreEcrit(valeurDe(lue, champ));
       }
-      courbes.compte.textContent = palettesTouchees(palettesModifiees(lue, 'courbes'));
-      parts.compte.textContent = palettesTouchees(palettesModifiees(lue, 'parts'));
-      seuil.compte.textContent = palettesTouchees(palettesModifiees(lue, 'profilsConfondus'));
+      for (const { mode, saisie } of saisiesDesFonds) {
+        if (document.activeElement !== saisie) saisie.value = lue.fonds[mode];
+      }
+      for (const [dans, nom] of comptes) dans.compte.textContent = palettesTouchees(palettesModifiees(lue, nom));
       montrerLaGarantie(lue);
     },
   };

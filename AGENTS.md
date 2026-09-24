@@ -216,7 +216,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/lecture.ts           la recette rangée, classée, son empreinte, le profil du document et les cadres de la planche
   src/analyse.ts           une palette pour l'onglet : rampes, promesses, alertes et notices triées
   src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
-  src/configuration.ts     les champs de la configuration, et les palettes que chacun touche
+  src/configuration.ts     les champs de la configuration, fonds et seuils compris, et les palettes que chacun touche
   src/planche/modele.ts    le modèle pur d'un cadre de planche : cadres, textes, peintures, noms de calque, empreinte
   src/planche/fraicheur.ts chaque cadre à jour, périmé ou jamais dessiné, et les cadres orphelins et copiés
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
@@ -233,7 +233,8 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/frontiere.ts      la numérotation des demandes, un seul rangement en vol, le dessin après lui
   src/ui/ongletPlanche.ts  une ligne par palette et sa fraîcheur, « Dessiner toutes les palettes », la grille de contraste et les notices
   src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
-  src/ui/configuration.ts  courbes, parts et seuil derrière l'engrenage, avec la garantie des courbes
+  src/ui/configuration.ts  courbes, parts, fonds et seuils derrière l'engrenage, avec la garantie des courbes
+  src/ui/avance.ts         la section repliée « Avancé » d'une palette : ses parts propres et leur origine
   src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG ; glisser, clavier, réglettes, préréglage, lien, annulation
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
   galerie/                 les états de l'interface, à la taille par défaut et à la taille minimale

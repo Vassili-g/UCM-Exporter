@@ -4,7 +4,7 @@ import test from 'node:test';
 
 import { boutsDe, lireHexa, prereglageTailwind, recetteParDefaut, rgb8VersOklch, type Palette } from 'ucm-couleur';
 
-import { changerReference, remplacerPalette, renommer } from '../src/edition';
+import { changerReference, poserPart, remplacerPalette, renommer, reprendreLesParts } from '../src/edition';
 
 const RECETTE = recetteParDefaut();
 const prereglage = (hexa: string) => prereglageTailwind(rgb8VersOklch(lireHexa(hexa)!), boutsDe(RECETTE.courbes));
@@ -49,4 +49,16 @@ test('remplacer une palette garde les autres et leur ordre', () => {
   const recette = { ...RECETTE, palettes: [PALETTE, autre] };
   const suivante = remplacerPalette(recette, renommer(PALETTE, 'Marine'));
   assert.deepEqual(suivante.palettes.map((palette) => palette.nom), ['Marine', 'Autre']);
+});
+
+test('[ENT-09] E3 : une part propre se pose au millième, passe les parts au designer, et l’autre profil garde la sienne', () => {
+  const posee = poserPart(RECETTE, PALETTE, 'soft', 0.61234);
+  assert.deepEqual(posee.parts, { soft: 0.612, vivid: RECETTE.profils.vivid.part, origine: 'designer' });
+  assert.deepEqual(poserPart(RECETTE, posee, 'vivid', 0.8).parts, { soft: 0.612, vivid: 0.8, origine: 'designer' });
+});
+
+test('[ENT-09] reprendre les parts de la recette retire les parts du designer, et remet les parts grises d’une référence grise', () => {
+  assert.equal(reprendreLesParts(RECETTE, poserPart(RECETTE, PALETTE, 'soft', 0.6)).parts, undefined);
+  const grise = changerReference(RECETTE, PALETTE, '#6B7280')!;
+  assert.equal(reprendreLesParts(RECETTE, poserPart(RECETTE, grise, 'vivid', 0.5)).parts?.origine, 'grise');
 });

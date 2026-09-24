@@ -589,9 +589,9 @@ et repris.
 Spécification : [section 8.3](./RECHERCHE-PLUGIN-PALETTES.md#83-la-recette-commune),
 [section 10](./RECHERCHE-PLUGIN-PALETTES.md#10-sortie-2--la-recette-et-le-rapport).
 
-- [ ] **L7.1** Configuration, à la suite de 4c : fonds et autres seuils ;
+- [x] **L7.1** Configuration, à la suite de 4c : fonds et autres seuils ;
   nombre de palettes touchées par champ [ENT-05] [ENT-07] [ENT-08].
-- [ ] **L7.2** Palette, section repliée « Avancé » (parts propres, D-G
+- [x] **L7.2** Palette, section repliée « Avancé » (parts propres, D-G
   visible).
 - [ ] **L7.3** Export de la recette [REC-07] ; import avec écart par
   identifiant et confirmation [REC-08].

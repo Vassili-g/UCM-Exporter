@@ -424,6 +424,11 @@
   font-weight: 600;
 }
 
+/* Seul dans une pile, « ▸ Avancé » garde la largeur de son libellé. */
+.page-stack > .bouton-discret {
+  justify-self: start;
+}
+
 .bouton-discret:hover:not(:disabled) {
   background: var(--fond-survol);
 }
