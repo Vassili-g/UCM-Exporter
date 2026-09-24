@@ -14,8 +14,10 @@ import { createResizeGrip } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
 import type { PluginMessage } from '../messages';
 import { createConfiguration } from './configuration';
+import { createSuiviDuDessin, type GestesDuResultat } from './dessin';
 import { createFrontiere } from './frontiere';
 import { createOngletPalettes } from './ongletPalettes';
+import { createOngletPlanche } from './ongletPlanche';
 import { versSandbox } from './pont';
 import { TEXTES } from './textes';
 
@@ -38,23 +40,56 @@ ligneDuHaut.append(titre, settingsButton, backButton);
 enTete.append(ligneDuHaut);
 
 const frontiere = createFrontiere(versSandbox, (statut, refus) => ongletPalettes.poserStatut(statut, refus));
+// Un dessin fini a posé des cadres : l'état relu dit lesquels à l'onglet Planche.
+const suivi = createSuiviDuDessin(frontiere, () => frontiere.lireLEtat());
+const gestesDuResultat: GestesDuResultat = {
+  voirSurLaPlanche: (page, cadres) => frontiere.voirSurLaPlanche(page, cadres),
+  reessayer: () => suivi.reessayer(),
+  recharger: () => frontiere.lireLEtat(),
+};
 const ongletPalettes = createOngletPalettes({
   ranger: (recette) => frontiere.ranger(recette),
   lireLaSelection: () => frontiere.lireLaSelection(),
   recharger: () => frontiere.lireLEtat(),
   tirer: () => crypto.getRandomValues(new Uint32Array(1))[0],
+  dessiner: (palettes, noms) => suivi.dessiner(palettes, ongletPlanche.grille(), noms),
+  resultat: gestesDuResultat,
 });
-const panneauPlanche = document.createElement('div');
-panneauPlanche.className = 'page-stack';
+const ongletPlanche = createOngletPlanche({
+  ...gestesDuResultat,
+  dessiner: (palettes, grille, noms) => suivi.dessiner(palettes, grille, noms),
+  versLesPalettes: () => onglets.selectionner('palettes'),
+});
 
+/** Le dernier état accepté : l'onglet Planche le relit quand on l'ouvre. */
+let dernierEtat: Extract<PluginMessage, { type: 'etat' }> | null = null;
+
+function afficherLaPlanche(): void {
+  if (!dernierEtat) return;
+  ongletPlanche.afficher(dernierEtat.classement, ongletPalettes.recette(), dernierEtat.planche, dernierEtat.profil, frontiere.empreinte());
+}
+
+// La recette change dans l'onglet Palettes : l'onglet Planche la relit à son ouverture.
 const onglets = createOnglets(TEXTES.etiquetteDesOnglets, [
   { id: 'palettes', libelle: TEXTES.ongletPalettes, panneau: ongletPalettes.element },
-  { id: 'planche', libelle: TEXTES.ongletPlanche, panneau: panneauPlanche },
-]);
+  { id: 'planche', libelle: TEXTES.ongletPlanche, panneau: ongletPlanche.element },
+], (id) => {
+  if (id === 'planche') afficherLaPlanche();
+});
 
 const travail = document.createElement('div');
 travail.className = 'page-stack colonne';
-travail.append(onglets.liste, ongletPalettes.element, panneauPlanche);
+travail.append(onglets.liste, ongletPalettes.element, ongletPlanche.element);
+
+// Pendant un dessin, aucun geste n'est possible : les panneaux se figent, la progression se lit.
+suivi.abonner((etat) => {
+  const enCours = etat.phase === 'en-cours';
+  ongletPalettes.element.inert = enCours;
+  ongletPlanche.element.inert = enCours;
+  settingsButton.disabled = enCours;
+  ongletPalettes.afficherDessin(etat, suivi.noms());
+  ongletPlanche.afficherDessin(etat, suivi.noms());
+});
 
 const panneauDeConfiguration = createConfiguration({
   lire: () => ongletPalettes.recette(),
@@ -87,10 +122,14 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   if (message.type === 'etat' && frontiere.accepterEtat(message)) {
     ongletPalettes.afficher(message.classement, message.profil);
     panneauDeConfiguration.afficher();
+    dernierEtat = message;
+    afficherLaPlanche();
   } else if (message.type === 'selection' && frontiere.accepterSelection(message)) {
     ongletPalettes.recevoirSelection(message.lecture);
   } else if (message.type === 'rangement') {
     frontiere.recevoirRangement(message);
+  } else if (message.type === 'progression' || message.type === 'dessin') {
+    suivi.recevoir(message);
   }
 };
 

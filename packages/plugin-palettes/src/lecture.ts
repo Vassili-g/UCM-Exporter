@@ -11,6 +11,38 @@ export const ESPACE_PARTAGE = 'ucm_palettes';
 /** La clé de la recette dans l'espace partagé. */
 export const CLE_RECETTE = 'recette';
 
+/**
+ * La clé de la planche : la page et les cadres dessinés. Elle vit hors de la
+ * recette, dont un dessin changerait sinon l'empreinte (E1). L'export l'ignore.
+ */
+export const CLE_PLANCHE = 'planche';
+
+/** Ce que la planche range : sa page, et le cadre de chaque palette dessinée. */
+export interface PlancheRangee {
+  readonly page: string | null;
+  readonly cadres: { readonly [palette: string]: string };
+}
+
+/** La planche rangée ; illisible ou absente, une planche vide, que le prochain dessin remplace. */
+export function lirePlanche(racine: { getSharedPluginData(espace: string, cle: string): string }): PlancheRangee {
+  const vide: PlancheRangee = { page: null, cadres: {} };
+  const texte = racine.getSharedPluginData(ESPACE_PARTAGE, CLE_PLANCHE);
+  if (texte === '') return vide;
+  try {
+    const lue = JSON.parse(texte) as { page?: unknown; cadres?: unknown };
+    const page = typeof lue.page === 'string' ? lue.page : null;
+    const cadres: Record<string, string> = {};
+    if (lue.cadres && typeof lue.cadres === 'object') {
+      for (const [palette, cadre] of Object.entries(lue.cadres as Record<string, unknown>)) {
+        if (typeof cadre === 'string') cadres[palette] = cadre;
+      }
+    }
+    return { page, cadres };
+  } catch {
+    return vide;
+  }
+}
+
 export type ProfilDuDocument = DocumentNode['documentColorProfile'];
 
 /** Ce que la lecture demande au document, pour se tester sans Figma. */
@@ -19,11 +51,12 @@ export interface DocumentLu {
   readonly documentColorProfile: ProfilDuDocument;
 }
 
-/** L'état lu : la recette classée, l'empreinte du texte rangé, et le profil. */
+/** L'état lu : la recette classée, l'empreinte du texte rangé, le profil, et la planche rangée. */
 export interface EtatLu {
   readonly classement: Classement;
   readonly empreinte: string | null;
   readonly profil: ProfilDuDocument;
+  readonly planche: PlancheRangee;
 }
 
 /**
@@ -82,5 +115,6 @@ export function lireEtat(document: DocumentLu): EtatLu {
     classement: classerRecette(texte),
     empreinte: empreinteDuTexte(texte),
     profil: document.documentColorProfile,
+    planche: lirePlanche(document),
   };
 }

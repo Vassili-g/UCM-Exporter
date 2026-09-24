@@ -45,6 +45,7 @@ function etatDuFichier(texte, profil = 'SRGB') {
       classement: classerRecette(texte),
       empreinte: texte === '' ? null : fnv1a(octetsUtf8(texte)),
       profil,
+      planche: { page: null, cadres: {} },
     },
   };
 }
@@ -75,6 +76,18 @@ const TROIS_PALETTES = [
   palette('p-5c1d0e77', 'Ardoise', '#6B7280'),
 ];
 const ouvrirLaConfiguration = { clic: '[aria-label="Ouvrir la configuration"]' };
+const dessinerLaPalette = { clic: '.barre-verdict .btn' };
+
+/** Sept palettes : une de plus que le seuil au-delà duquel tout dessiner se confirme. */
+const SEPT_PALETTES = [
+  BLEU,
+  JAUNE,
+  palette('p-5c1d0e77', 'Ardoise', '#6B7280'),
+  palette('p-1a2b3c4d', 'Rouge', '#DC2626'),
+  palette('p-2b3c4d5e', 'Vert', '#16A34A'),
+  palette('p-3c4d5e6f', 'Violet', '#7C3AED'),
+  palette('p-4d5e6f70', 'Cyan', '#0891B2'),
+];
 
 /** La courbe claire descend à 0,55 au cran 700 : text sur surface manque 4,5 en clair. */
 const cranSeptCentsPlusClair = (recette) => {
@@ -258,12 +271,63 @@ const ETATS = [
     existe: true,
     atteinte: [etatDuFichier(rangee([palette('p-2b7e40c1', 'Nuit', '#0B1F4B')])), { clic: '.ligne-infos .bouton-discret' }],
   },
+  {
+    id: 'dessin-en-cours',
+    titre: 'Dessin en cours',
+    quand: 'Le designer clique « Dessiner » : le sandbox annonce le premier cadre.',
+    regarder: 'Le bouton qui dit la progression, et les deux onglets inertes : aucun geste possible.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU])),
+      dessinerLaPalette,
+      { message: { type: 'progression', demande: 2, fait: 0, total: 1, nom: 'Bleu' } },
+    ],
+  },
+  {
+    id: 'dessin-interrompu',
+    titre: 'Dessin interrompu',
+    quand: 'Figma refuse un calque au milieu du cadre de Bleu.',
+    regarder: 'Le bloquant qui nomme la palette et l’erreur, dit qu’aucun cadre n’est resté, et son geste « Réessayer ».',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU])),
+      dessinerLaPalette,
+      { message: { type: 'dessin', demande: 2, resultat: { issue: 'interrompue', palette: BLEU.id, message: 'in set_characters: font not loaded', dessines: 0 } } },
+    ],
+  },
+  {
+    id: 'confirmation-six-palettes',
+    titre: 'Confirmation au-delà de six palettes',
+    quand: 'Le designer clique « Dessiner toutes les palettes » sur un fichier de sept palettes.',
+    regarder: 'La confirmation qui compte les cadres, sous la liste, et ses deux gestes.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee(SEPT_PALETTES)),
+      { clic: '#onglet-planche' },
+      { clic: '#panneau-planche .creation-ligne .btn' },
+    ],
+  },
+  {
+    id: 'planche-sans-palette',
+    titre: 'Onglet Planche sans palette',
+    quand: 'Le designer ouvre l’onglet Planche d’un fichier sans palette.',
+    regarder: 'Le texte qui dit qu’il n’y a rien à dessiner, et le geste vers l’onglet Palettes.',
+    existe: true,
+    atteinte: [etatDuFichier(''), { clic: '#onglet-planche' }],
+  },
+  {
+    id: 'police-indisponible',
+    titre: 'Police indisponible',
+    quand: 'Inter Medium ne se charge pas : le dessin s’arrête avant tout calque.',
+    regarder: 'Le bloquant qui nomme la police, et son geste « Réessayer ».',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU])),
+      dessinerLaPalette,
+      { message: { type: 'dessin', demande: 2, resultat: { issue: 'police', style: 'Inter Medium' } } },
+    ],
+  },
   ...[
-    ['dessin-en-cours', 'Dessin en cours', 'Progression, aucun geste possible.', 'L6.11'],
-    ['dessin-interrompu', 'Dessin interrompu', 'Message d’erreur, cadre non posé, geste « Réessayer ».', 'L6.11'],
-    ['confirmation-six-palettes', 'Confirmation au-delà de six palettes', '« Dessiner toutes les palettes » demande confirmation.', 'L6.11'],
-    ['planche-sans-palette', 'Onglet Planche sans palette', 'Aucun cadre à dessiner, geste vers l’onglet Palettes.', 'L6.11'],
-    ['police-indisponible', 'Police indisponible', 'Bloquant, aucun cadre posé.', 'L6.11'],
     ['planche-a-jour', 'Planche à jour', 'Toutes les palettes sont à jour.', 'L6.15'],
     ['planche-perimee', 'Planche périmée', 'Cadres nommés, geste « Redessiner ».', 'L6.15'],
     ['cadre-orphelin', 'Cadre orphelin', 'Palette supprimée, cadre toujours sur la page.', 'L6.15'],

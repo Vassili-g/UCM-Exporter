@@ -3,12 +3,14 @@
  * fichier et route les demandes de l'interface.
  *
  * Le routage n'a qu'une porte par geste d'écriture ([ARC-14]) : « ranger la
- * recette » ici ; « dessiner » s'ajoute avec la planche.
+ * recette » et « dessiner ».
  */
+import { dessinerLaRecetteRangee } from './ecriture/planche';
 import { rangerRecette } from './ecriture/recette';
 import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
 import { couleurDeLaSelection, lireEtat } from './lecture';
 import type { PluginMessage, UiRequest } from './messages';
+import { voirSurLaPlanche } from './navigation';
 
 /*
  * `showUI` part tout de suite à la taille par défaut, puis la fenêtre reprend
@@ -44,6 +46,18 @@ async function traiterMessage(message: UiRequest): Promise<void> {
 
   if (message.type === 'ranger-recette') {
     versUi({ type: 'rangement', demande: message.demande, issue: rangerRecette(figma, message.recette, message.empreinteLue) });
+    return;
+  }
+
+  if (message.type === 'dessiner') {
+    const resultat = await dessinerLaRecetteRangee(figma, message, (fait, total, nom) =>
+      versUi({ type: 'progression', demande: message.demande, fait, total, nom }));
+    versUi({ type: 'dessin', demande: message.demande, resultat });
+    return;
+  }
+
+  if (message.type === 'voir-sur-la-planche') {
+    await voirSurLaPlanche(figma, message.page, message.cadres);
     return;
   }
 

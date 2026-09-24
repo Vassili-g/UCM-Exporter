@@ -7,7 +7,8 @@
  * rangement décrirait la recette d'avant. Un seul rangement est en vol ; un
  * geste qui arrive pendant ce temps attend la réponse, puis part avec
  * l'empreinte qu'elle apporte. Après un refus, rien ne se range avant
- * « Recharger ».
+ * « Recharger ». Un dessin part quand plus rien n'est à ranger : il se fait
+ * sur la recette que l'aperçu montre.
  */
 import type { Recette, Refus } from 'ucm-couleur';
 
@@ -20,11 +21,25 @@ export interface Frontiere {
   lireLEtat(): void;
   lireLaSelection(): void;
   ranger(recette: Recette): void;
+  /**
+   * Dessine les palettes nommées, dès que la recette affichée est rangée. Un
+   * rangement refusé entre-temps abandonne le dessin : `surAbandon` le dit.
+   */
+  dessiner(palettes: readonly string[], grille: boolean, surAbandon: () => void): void;
+  /**
+   * Ouvre la planche et cadre les cadres (E18). La demande n'attend aucune
+   * réponse : son numéro ne rend caduc aucun état attendu.
+   */
+  voirSurLaPlanche(page: string, cadres: readonly string[]): void;
+  /** Vrai quand la progression ou le résultat répond au dernier dessin demandé. */
+  accepterDessin(message: Extract<PluginMessage, { type: 'progression' | 'dessin' }>): boolean;
   /** Vrai quand l'état répond à la dernière demande : l'interface l'affiche. */
   accepterEtat(message: Extract<PluginMessage, { type: 'etat' }>): boolean;
   /** Vrai quand la couleur répond à la dernière lecture de la sélection. */
   accepterSelection(message: Extract<PluginMessage, { type: 'selection' }>): boolean;
   recevoirRangement(message: Extract<PluginMessage, { type: 'rangement' }>): void;
+  /** L'empreinte de la recette rangée, telle que la dernière réponse l'a apportée. */
+  empreinte(): string | null;
   /** Vrai quand aucun rangement n'est en vol ni en attente. */
   auRepos(): boolean;
   statut(): StatutDuRangement;
@@ -41,6 +56,8 @@ export function createFrontiere(
   let empreinte: string | null = null;
   let enVol = false;
   let enAttente: Recette | null = null;
+  let dessinEnAttente: { palettes: readonly string[]; grille: boolean; surAbandon: () => void } | null = null;
+  let dernierDessin = 0;
   let courant: StatutDuRangement = 'lu';
 
   function numeroter(): number {
@@ -52,6 +69,11 @@ export function createFrontiere(
   function poser(statut: StatutDuRangement, refus: readonly Refus[] = []): void {
     courant = statut;
     surStatut(statut, refus);
+  }
+
+  function envoyerDessin(palettes: readonly string[], grille: boolean): void {
+    dernierDessin = numeroter();
+    envoyer({ type: 'dessiner', demande: dernierDessin, palettes: [...palettes], grille, empreinteLue: empreinte });
   }
 
   function envoyerRangement(recette: Recette): void {
@@ -74,6 +96,17 @@ export function createFrontiere(
       if (enVol) enAttente = recette;
       else envoyerRangement(recette);
     },
+    dessiner(palettes, grille, surAbandon) {
+      if (enVol || enAttente) dessinEnAttente = { palettes, grille, surAbandon };
+      else envoyerDessin(palettes, grille);
+    },
+    voirSurLaPlanche(page, cadres) {
+      compteur += 1;
+      envoyer({ type: 'voir-sur-la-planche', demande: compteur, page, cadres: [...cadres] });
+    },
+    accepterDessin(message) {
+      return message.demande === dernierDessin;
+    },
     accepterEtat(message) {
       if (message.demande < derniereDemande) return false;
       empreinte = message.empreinte;
@@ -94,13 +127,22 @@ export function createFrontiere(
         const suivante = enAttente;
         enAttente = null;
         if (suivante) envoyerRangement(suivante);
-        else poser('range');
+        else {
+          poser('range');
+          const dessin = dessinEnAttente;
+          dessinEnAttente = null;
+          if (dessin) envoyerDessin(dessin.palettes, dessin.grille);
+        }
       } else {
         enAttente = null;
+        const abandonne = dessinEnAttente;
+        dessinEnAttente = null;
         if (issue.issue === 'modifiee-ailleurs') poser('refuse');
         else poser('invalide', issue.refus);
+        abandonne?.surAbandon();
       }
     },
+    empreinte: () => empreinte,
     auRepos: () => !enVol && enAttente === null,
     statut: () => courant,
   };

@@ -219,6 +219,8 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/configuration.ts     les champs de la configuration, et les palettes que chacun touche
   src/planche/modele.ts    le modèle pur d'un cadre de planche : cadres, textes, peintures, noms de calque, empreinte
   src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
+  src/ecriture/planche.ts  le dessin de la planche : page, cadres possédés, polices, un commitUndo par dessin
+  src/navigation.ts        « Voir sur la planche » : ouvre la page et cadre les cadres, sans toucher au document
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
   src/ui/ongletPalettes.ts barre du verdict, référence, dérive repliée, aperçu et constats
@@ -226,7 +228,9 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/selecteur.ts      la palette ouverte, en liste déroulante avec la pastille de chaque référence
   src/ui/creation.ts       une palette neuve, par sa référence ou par la couleur de la sélection
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
-  src/ui/frontiere.ts      la numérotation des demandes, et un seul rangement en vol
+  src/ui/frontiere.ts      la numérotation des demandes, un seul rangement en vol, le dessin après lui
+  src/ui/ongletPlanche.ts  une ligne par palette, « Dessiner toutes les palettes » et la grille de contraste
+  src/ui/dessin.ts         le suivi d'un dessin : progression, résultat et son geste, dans les deux onglets
   src/ui/configuration.ts  courbes, parts et seuil derrière l'engrenage, avec la garantie des courbes
   src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG ; glisser, clavier, réglettes, préréglage, lien, annulation
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
@@ -873,8 +877,18 @@ La spécification en lien porte le raisonnement.
   `figma.variables`, `loadAllPagesAsync` ni une API de style. La même loi le
   tient.
 - `src/code.ts` est le seul fichier qui importe `src/ecriture/`, avec une porte
-  par geste d'écriture. La demande `ranger-recette` est aujourd'hui la seule ;
-  « dessiner » s'y ajoute avec la planche.
+  par geste d'écriture : `ranger-recette` et `dessiner`.
+- Le dessin part de la recette rangée, jamais de couleurs envoyées par
+  l'interface : la demande ne porte que des identifiants de palette et
+  l'empreinte lue, et une recette rangée depuis n'est pas dessinée. Un cadre
+  appartient au plugin quand son propriétaire rangé est son propre
+  identifiant : une copie du designer n'est jamais réécrite. Les polices se
+  chargent avant tout calque ; une erreur au milieu d'un cadre retire tout ce
+  qu'il avait posé. Redessiner construit le cadre neuf, puis retire l'ancien
+  et reprend sa place : l'identifiant du cadre change à chaque dessin. Un seul
+  `commitUndo` clôt le dessin. `packages/plugin-palettes/tests/dessin.test.ts`
+  le tient, contre le double de `tests/figmaDeTest.ts`.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planche)
 - La recette se range sous la clé partagée `ucm_palettes/recette`, en JSON
   canonique, si elle passe la validation et si la recette rangée porte encore
   l'empreinte que l'interface a lue. `commitUndo` suit l'écriture. Un refus
@@ -882,7 +896,8 @@ La spécification en lien porte le raisonnement.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#73-rangement-et-version)
 - L'interface range à la fin d'un geste, jamais pendant une saisie, et un seul
   rangement est en vol : un geste suivant attend l'empreinte que la réponse
-  apporte. Après un refus, rien ne se range avant « Recharger ».
+  apporte. Après un refus, rien ne se range avant « Recharger ». Un dessin
+  demandé pendant un rangement part après lui ; un refus l'abandonne.
   `src/ui/frontiere.ts` en est l'unique autorité, et
   `packages/plugin-palettes/tests/frontiere.test.ts` le tient.
 - Le manifest n'ouvre aucun domaine et ne déclare pas `enablePrivatePluginApi`.

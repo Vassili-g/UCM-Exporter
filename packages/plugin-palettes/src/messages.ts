@@ -12,19 +12,28 @@
 import type { Classement, Recette } from 'ucm-couleur';
 import type { DemandeDeTaille } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
+import type { ResultatDuDessin } from './ecriture/planche';
 import type { IssueDuRangement } from './ecriture/recette';
-import type { LectureDeSelection, ProfilDuDocument } from './lecture';
+import type { LectureDeSelection, PlancheRangee, ProfilDuDocument } from './lecture';
 
 /** Ce que l'interface demande au sandbox. */
 export type UiRequest =
   | { type: 'lire-etat'; demande: number }
   | { type: 'lire-selection'; demande: number }
   /**
-   * Seule demande de ce lot qui écrit dans le document : la recette, sous la
-   * clé partagée, après validation et contrôle de l'empreinte lue ([REC-10]).
+   * Première écriture : la recette, sous la clé partagée, après validation et
+   * contrôle de l'empreinte lue ([REC-10]).
    */
   | { type: 'ranger-recette'; demande: number; recette: Recette; empreinteLue: string | null }
+  /**
+   * Seconde écriture : les cadres des palettes nommées, calculés par le sandbox
+   * depuis la recette rangée, jamais depuis des hexas de l'interface ([ARC-11]).
+   */
+  | { type: 'dessiner'; demande: number; palettes: string[]; grille: boolean; empreinteLue: string | null }
+  | { type: 'voir-sur-la-planche'; demande: number; page: string; cadres: string[] }
   | DemandeDeTaille;
+
+export type { ResultatDuDessin };
 
 /** Ce que le sandbox envoie à l'interface. */
 export type PluginMessage =
@@ -33,8 +42,11 @@ export type PluginMessage =
    * ([REC-03]), l'empreinte du texte rangé, `null` sans recette, et le profil
    * de couleur du document.
    */
-  | { type: 'etat'; demande: number; classement: Classement; empreinte: string | null; profil: ProfilDuDocument }
+  | { type: 'etat'; demande: number; classement: Classement; empreinte: string | null; profil: ProfilDuDocument; planche: PlancheRangee }
   /** La couleur que la sélection propose, en réponse à `lire-selection` ([ENT-04]). */
   | { type: 'selection'; demande: number; lecture: LectureDeSelection }
   /** L'issue d'un rangement : la nouvelle empreinte, ou le refus ([REC-10]). */
-  | { type: 'rangement'; demande: number; issue: IssueDuRangement };
+  | { type: 'rangement'; demande: number; issue: IssueDuRangement }
+  /** Le cadre en cours de dessin ([PLA-24]). */
+  | { type: 'progression'; demande: number; fait: number; total: number; nom: string }
+  | { type: 'dessin'; demande: number; resultat: ResultatDuDessin };

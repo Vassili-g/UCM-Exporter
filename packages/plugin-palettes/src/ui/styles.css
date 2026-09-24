@@ -578,3 +578,31 @@
   stroke: var(--texte);
   stroke-width: 3;
 }
+
+/* L'onglet Planche : une ligne par palette, son état au rang 3 et son geste. */
+.liste-planche {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.ligne-planche {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-controle);
+  min-height: var(--hauteur-action);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.ligne-planche-nom {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.case-a-cocher {
+  margin: 0;
+  accent-color: var(--fond-marque);
+}

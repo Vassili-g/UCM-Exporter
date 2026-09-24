@@ -28,6 +28,7 @@ import type { LectureDeSelection, ProfilDuDocument } from '../lecture';
 import { createApercu } from './apercu';
 import { blocDeConstat, listeDesConstats } from './constats';
 import { createCreation } from './creation';
+import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dessin';
 import { createEditeur } from './derive/editeur';
 import type { StatutDuRangement } from './frontiere';
 import { createMenuPalette, type GesteDePalette } from './menuPalette';
@@ -44,6 +45,7 @@ import {
   nomDeLaCopie,
   nomDeLaPalette,
   palettesDuFichier,
+  progressionDuDessin,
   rangementInvalide,
   recetteFuture,
   recetteIllisible,
@@ -59,6 +61,10 @@ export interface DemandesDeLOnglet {
   recharger(): void;
   /** Un entier de 32 bits tiré au hasard, pour les identifiants de palette (D-K). */
   tirer(): number;
+  /** Dessine la palette ouverte ([UI-05]). */
+  dessiner(palettes: readonly string[], noms: { readonly [id: string]: string }): void;
+  /** Les gestes du résultat d'un dessin. */
+  resultat: GestesDuResultat;
 }
 
 export interface OngletPalettesUi {
@@ -72,6 +78,8 @@ export interface OngletPalettesUi {
   previsualiser(recette: Recette): void;
   /** Une recette validée ailleurs : elle se range. */
   appliquer(recette: Recette): void;
+  /** Le dessin en cours ou fini, que la barre et la zone du résultat montrent. */
+  afficherDessin(etat: EtatDuDessin, noms: { readonly [id: string]: string }): void;
 }
 
 function ligneDEtat(texte: string): HTMLParagraphElement {
@@ -120,9 +128,13 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const verdictDeLaPalette = document.createElement('span');
   verdictDeLaPalette.className = 'verdict';
   verdictDeLaPalette.setAttribute('aria-live', 'polite');
-  // Le dessin arrive avec la planche : le bouton est là, inactif, et le dit.
-  const dessiner = createButton({ label: TEXTES.dessiner, disabled: true });
-  dessiner.title = TEXTES.dessinAVenir;
+  const dessiner = createButton({
+    label: TEXTES.dessiner,
+    onClick: () => {
+      const courante = ouverte();
+      if (courante) demandes.dessiner([courante.id], { [courante.id]: nomDeLaPalette(courante) });
+    },
+  });
   const gauche = document.createElement('div');
   gauche.className = 'barre-gestes';
   gauche.append(selecteur.element, plus, menu.element);
@@ -310,6 +322,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
    * la grille compterait sinon son espacement.
    */
   const zoneDuRefus = document.createElement('div');
+  const zoneDuDessin = document.createElement('div');
+  zoneDuDessin.hidden = true;
   const zoneDuBloquant = document.createElement('div');
   const zoneDeLaNote = document.createElement('div');
   const ligneVide = ligneDEtat('');
@@ -318,7 +332,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   vide.append(ligneVide);
   const vue = document.createElement('div');
   vue.className = 'page-stack colonne';
-  vue.append(barre, confirmation, zoneDeLaNote, reference, erreurHexa, infos, ligneDeDerive, editeur.element, apercu.element, constats);
+  vue.append(barre, zoneDuDessin, confirmation, zoneDeLaNote, reference, erreurHexa, infos, ligneDeDerive, editeur.element, apercu.element, constats);
   element.append(zoneDuRefus, zoneDuBloquant, vide, vue);
 
   /** Le panneau de création suit la vue montrée : seul, ou sous la barre. */
@@ -435,6 +449,13 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       rendre();
     },
     appliquer: (suivante) => valider(suivante),
+    afficherDessin(etat, noms) {
+      dessiner.disabled = etat.phase === 'en-cours';
+      dessiner.setLabel(etat.phase === 'en-cours' ? progressionDuDessin(etat.fait, etat.total, etat.nom) : TEXTES.dessiner);
+      const resultat = blocDuResultat(etat, noms, demandes.resultat);
+      zoneDuDessin.replaceChildren(...(resultat ? [resultat] : []));
+      zoneDuDessin.hidden = !resultat;
+    },
     poserStatut(suivant, refusDuSandbox) {
       statut = suivant;
       if (suivant === 'refuse') refus = recetteModifieeAilleurs();

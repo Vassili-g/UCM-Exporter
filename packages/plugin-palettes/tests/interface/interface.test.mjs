@@ -18,7 +18,7 @@ const RELEVE = `<script>
   window.demandes = [];
   window.addEventListener('message', (event) => {
     const type = event.data.pluginMessage && event.data.pluginMessage.type;
-    if (['lire-etat', 'lire-selection', 'ranger-recette'].includes(type)) window.demandes.push(event.data.pluginMessage);
+    if (['lire-etat', 'lire-selection', 'ranger-recette', 'dessiner', 'voir-sur-la-planche'].includes(type)) window.demandes.push(event.data.pluginMessage);
   });
 </script>`;
 
@@ -65,10 +65,10 @@ test('un état plus ancien que la dernière lecture est écarté', async () => {
     const etat = (demande, classement) => ({ type: 'etat', demande, classement, empreinte: null, profil: 'SRGB' });
     await page.evaluate((message) => window.postMessage({ pluginMessage: message }, '*'), etat(0, { etat: 'future', version: 9 }));
     await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 20)));
-    assert.equal(await page.locator('.constat-bloquant').count(), 0);
+    assert.equal(await page.locator('#panneau-palettes .constat-bloquant').count(), 0);
     await page.evaluate((message) => window.postMessage({ pluginMessage: message }, '*'), etat(1, { etat: 'future', version: 9 }));
-    await page.locator('.constat-bloquant').waitFor();
-    assert.match(await page.locator('.constat-ou').textContent(), /version 9/);
+    await page.locator('#panneau-palettes .constat-bloquant').waitFor();
+    assert.match(await page.locator('#panneau-palettes .constat-ou').textContent(), /version 9/);
   } finally {
     await page.close();
   }
@@ -96,7 +96,7 @@ test('[UI-03] à 440 × 520, verdict, « Dessiner » et première promesse manqu
     assert.equal(await page.locator('.verdict').textContent(), '2 promesses manquées');
     assert.equal(await dansLaFenetre(page.locator('.verdict')), true);
     const dessiner = page.getByRole('button', { name: 'Dessiner' });
-    assert.equal(await dessiner.isDisabled(), true);
+    assert.equal(await dessiner.isDisabled(), false);
     assert.equal(await dansLaFenetre(dessiner), true);
     assert.equal(await dansLaFenetre(page.locator('.constat-promesse').first()), true);
     assert.equal(await page.evaluate(() => document.scrollingElement.scrollTop), 0);
@@ -684,5 +684,142 @@ test('[DER-03] à ±90°, les poignées et leurs étiquettes restent dans le cad
     } finally {
       await page.close();
     }
+  }
+});
+
+const ID_DU_BLEU = 'p-3fa2c91e';
+const dessinDe = (demande, resultat) => ({ type: 'dessin', demande, resultat });
+
+test('[PLA-24] [UI-05] « Dessiner » envoie la palette ouverte, dit la progression et rend les onglets inertes', async () => {
+  const page = await ouvrirSur('dessin-en-cours');
+  try {
+    const avant = await compte(page);
+    await page.locator('.barre-verdict .btn').click();
+    const demande = await prochaine(page, avant);
+    assert.deepEqual(demande, { type: 'dessiner', demande: demande.demande, palettes: [ID_DU_BLEU], grille: false, empreinteLue: messageDe('dessin-en-cours').empreinte });
+    assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), true);
+    assert.equal(await page.locator('#panneau-planche').evaluate((panneau) => panneau.inert), true);
+    assert.equal(await page.getByRole('button', { name: 'Ouvrir la configuration' }).isDisabled(), true);
+    await envoyer(page, { type: 'progression', demande: demande.demande, fait: 0, total: 1, nom: 'Bleu' });
+    assert.equal(await page.locator('.barre-verdict .btn').textContent(), 'Dessin de Bleu…');
+
+    const cadres = [{ palette: ID_DU_BLEU, cadre: '12:34' }];
+    await envoyer(page, dessinDe(demande.demande, { issue: 'dessinee', page: '5:6', cadres, peints: [] }));
+    assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), false);
+    assert.equal(await page.locator('.barre-verdict .btn').textContent(), 'Dessiner');
+    // Un dessin fini a posé des cadres : l'état se relit.
+    const relecture = await prochaine(page, avant + 1);
+    assert.equal(relecture.type, 'lire-etat');
+    assert.match(await page.locator('#panneau-palettes .ligne-infos').first().textContent(), /^1 palette dessinée sur la planche\./);
+    await page.getByRole('button', { name: 'Voir sur la planche' }).click();
+    assert.deepEqual(await prochaine(page, avant + 2), { type: 'voir-sur-la-planche', demande: relecture.demande + 1, page: '5:6', cadres: ['12:34'] });
+  } finally {
+    await page.close();
+  }
+});
+
+test('[PLA-24] D-I : au-delà de six palettes, tout dessiner se confirme, et suit la grille cochée', async () => {
+  const page = await ouvrirSur('confirmation-six-palettes');
+  try {
+    await page.getByRole('tab', { name: 'Planche', exact: true }).click();
+    assert.equal(await page.locator('.ligne-planche').count(), 7);
+    await page.getByRole('checkbox', { name: 'Grille de contraste' }).check();
+    const avant = await compte(page);
+    await page.getByRole('button', { name: 'Dessiner toutes les palettes' }).click();
+    assert.equal(await page.locator('#panneau-planche .confirmation').textContent(), 'Dessiner les 7 palettes ? Chacune pose plus de cinq cents calques sur la planche.DessinerAnnuler');
+    await page.getByRole('button', { name: 'Annuler' }).click();
+    assert.equal(await page.locator('#panneau-planche .confirmation').isVisible(), false);
+    await page.getByRole('button', { name: 'Dessiner toutes les palettes' }).click();
+    await page.locator('#panneau-planche .confirmation').getByRole('button', { name: 'Dessiner' }).click();
+    const demande = await prochaine(page, avant);
+    assert.equal(demande.type, 'dessiner');
+    assert.equal(demande.palettes.length, 7);
+    assert.equal(demande.grille, true);
+    assert.equal(await compte(page), avant + 1, 'aucune demande pendant la confirmation');
+  } finally {
+    await page.close();
+  }
+});
+
+test('[PLA-24] six palettes se dessinent sans confirmation', async () => {
+  const page = await ouvrir();
+  try {
+    const sept = messageDe('confirmation-six-palettes');
+    const recette = JSON.parse(JSON.stringify(sept.classement.recette));
+    recette.palettes = recette.palettes.slice(0, 6);
+    await envoyer(page, { ...sept, classement: { ...sept.classement, recette } });
+    await page.getByRole('tab', { name: 'Planche', exact: true }).click();
+    const avant = await compte(page);
+    await page.getByRole('button', { name: 'Dessiner toutes les palettes' }).click();
+    assert.equal((await prochaine(page, avant)).palettes.length, 6);
+    assert.equal(await page.locator('#panneau-planche .confirmation').isVisible(), false);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[PLA-22] un dessin interrompu se relance à l’identique par « Réessayer »', async () => {
+  const page = await ouvrirSur('dessin-interrompu');
+  try {
+    const avant = await compte(page);
+    await page.locator('.barre-verdict .btn').click();
+    const premiere = await prochaine(page, avant);
+    await envoyer(page, dessinDe(premiere.demande, { issue: 'interrompue', palette: ID_DU_BLEU, message: 'refus', dessines: 0 }));
+    assert.equal(await page.locator('#panneau-palettes .constat-bloquant .constat-quoi').textContent(), 'Le dessin s’est arrêté (refus) : aucun cadre n’a été posé.');
+    await page.locator('#panneau-palettes').getByRole('button', { name: 'Réessayer' }).click();
+    await page.waitForFunction(() => window.demandes.filter((demande) => demande.type === 'dessiner').length === 2);
+    const reprise = (await demandes(page)).slice(avant + 1).find((demande) => demande.type === 'dessiner');
+    assert.deepEqual({ ...reprise, demande: 0 }, { ...premiere, demande: 0 });
+    assert.ok(reprise.demande > premiere.demande);
+  } finally {
+    await page.close();
+  }
+});
+
+test('E13 : un dessin refusé sur une autre recette propose de recharger', async () => {
+  const page = await ouvrirSur('dessin-interrompu');
+  try {
+    const avant = await compte(page);
+    await page.locator('.barre-verdict .btn').click();
+    const demande = await prochaine(page, avant);
+    await envoyer(page, dessinDe(demande.demande, { issue: 'modifiee-ailleurs' }));
+    // La fin du dessin relit déjà l'état : le clic doit en demander une seconde lecture, et aucun dessin.
+    assert.equal((await prochaine(page, avant + 1)).type, 'lire-etat');
+    await page.locator('#panneau-palettes .constat-bloquant').getByRole('button', { name: 'Recharger' }).click();
+    assert.equal((await prochaine(page, avant + 2)).type, 'lire-etat');
+    assert.equal(await compte(page), avant + 3);
+  } finally {
+    await page.close();
+  }
+});
+
+test('l’onglet Planche d’un fichier sans palette renvoie vers l’onglet Palettes', async () => {
+  const page = await ouvrir();
+  try {
+    await envoyer(page, messageDe('planche-sans-palette'));
+    await page.getByRole('tab', { name: 'Planche', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: 'Dessiner toutes les palettes' }).isVisible(), false);
+    await page.getByRole('button', { name: 'Ouvrir l’onglet Palettes' }).click();
+    assert.equal(await page.getByRole('tab', { name: 'Palettes', exact: true }).getAttribute('aria-selected'), 'true');
+  } finally {
+    await page.close();
+  }
+});
+
+test('E13 : un dessin qui attendait un rangement refusé est abandonné, et l’interface redevient active', async () => {
+  const page = await ouvrirSur('dessin-en-cours');
+  try {
+    const avant = await compte(page);
+    await page.getByRole('button', { name: 'Gestes de la palette' }).click();
+    await page.getByRole('menuitem', { name: 'Dupliquer' }).click();
+    const rangement = await prochaine(page, avant);
+    await page.locator('.barre-verdict .btn').click();
+    assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), true);
+    await envoyer(page, { type: 'rangement', demande: rangement.demande, issue: { issue: 'modifiee-ailleurs' } });
+    assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), false);
+    assert.equal(await page.locator('.barre-verdict .btn').textContent(), 'Dessiner');
+    assert.deepEqual((await demandes(page)).slice(avant).map((demande) => demande.type), ['ranger-recette']);
+  } finally {
+    await page.close();
   }
 });

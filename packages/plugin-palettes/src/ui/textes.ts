@@ -31,7 +31,6 @@ export const TEXTES = {
   recetteAbsente: 'Aucune recette dans ce fichier : la recette par défaut s’appliquera à la première palette.',
   choisirUnePalette: 'Choisir la palette ouverte',
   dessiner: 'Dessiner',
-  dessinAVenir: 'Le dessin sur la planche n’est pas encore disponible.',
   prete: 'Prête',
   reference: 'Référence',
   nom: 'Nom',
@@ -480,6 +479,73 @@ export function recetteIllisible(refus: readonly Refus[]): Constat {
     ou: 'Recette du fichier',
     quoi: `${compte} ; le premier : ${texteDuRefus(refus[0])} Le plugin ne dessinera rien.`,
     geste: 'Exportez la recette pour la corriger, importez une recette valide, ou repartez de la recette par défaut.',
+  };
+}
+
+/** Les libellés de l'onglet Planche et du dessin (section 13.2). */
+export const TEXTES_DU_DESSIN = {
+  dessiner: 'Dessiner',
+  redessiner: 'Redessiner',
+  dessinerTout: 'Dessiner toutes les palettes',
+  grille: 'Grille de contraste',
+  dessinee: 'dessinée',
+  jamaisDessinee: 'jamais dessinée',
+  voirSurLaPlanche: 'Voir sur la planche',
+  reessayer: 'Réessayer',
+  confirmer: 'Dessiner',
+  annuler: 'Annuler',
+  plancheSansPalette: 'Aucune palette à dessiner : la planche attend une première palette.',
+  versLesPalettes: 'Ouvrir l’onglet Palettes',
+} as const;
+
+/** L'en-tête de l'onglet Planche (section 13.2). */
+export function enTeteDeLaPlanche(nombre: number, version: number, empreinte: string | null, profil: ProfilDuDocumentEcrit): string {
+  const palettes = nombre === 1 ? '1 palette' : `${nombre} palettes`;
+  return `Planche : ${palettes} · recette v${version}${empreinte ? ` · empreinte ${empreinte}` : ''} · ${ESPACES[profil]}`;
+}
+
+/** La progression d'un dessin, à la place de « Dessiner » ([UI-05], [PLA-24]). */
+export function progressionDuDessin(fait: number, total: number, nom: string): string {
+  return total === 1 ? `Dessin de ${nom}…` : `Dessin ${fait + 1}/${total} : ${nom}…`;
+}
+
+/** Le résultat d'un dessin réussi. */
+export function palettesDessinees(nombre: number): string {
+  return nombre === 1 ? '1 palette dessinée sur la planche.' : `${nombre} palettes dessinées sur la planche.`;
+}
+
+/** La confirmation avant de dessiner beaucoup de palettes ([PLA-24], D-I). */
+export function confirmationDuDessin(nombre: number): string {
+  return `Dessiner les ${nombre} palettes ? Chacune pose plus de cinq cents calques sur la planche.`;
+}
+
+/** Le bloquant d'une police indisponible ([PLA-22]). */
+export function policeIndisponible(style: string): Constat {
+  return {
+    ou: `Planche, police ${style}`,
+    quoi: `${style} ne se charge pas : aucun cadre n’a été dessiné.`,
+    geste: 'Installez ou activez Inter, puis relancez le dessin.',
+  };
+}
+
+/** Un dessin interrompu : le cadre en cours est retiré, les précédents restent. */
+export function dessinInterrompu(nom: string, message: string, dessines: number): Constat {
+  const suite = dessines === 0
+    ? 'aucun cadre n’a été posé'
+    : `ce cadre n’a pas été posé, ${dessines === 1 ? 'le cadre précédent reste' : `les ${dessines} cadres précédents restent`}`;
+  return {
+    ou: `Planche, ${nom}`,
+    quoi: `Le dessin s’est arrêté (${message}) : ${suite}.`,
+    geste: 'Relancez le dessin.',
+  };
+}
+
+/** Un dessin refusé : la recette rangée n'est plus celle que l'aperçu montre (E13). */
+export function dessinSurUneAutreRecette(): Constat {
+  return {
+    ou: 'Recette du fichier',
+    quoi: 'Elle a changé depuis sa lecture : le dessin montrerait d’autres couleurs que l’aperçu. Rien n’a été dessiné.',
+    geste: 'Rechargez la recette du fichier, puis relancez le dessin.',
   };
 }
 

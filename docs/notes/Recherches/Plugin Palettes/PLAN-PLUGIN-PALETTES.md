@@ -548,19 +548,19 @@ Spécification : [section 9](./RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planc
 
 ### 6b : écriture et onglet Planche
 
-- [ ] **L6.6** `src/ecriture/planche.ts` : page (E14, E16), cadres possédés
+- [x] **L6.6** `src/ecriture/planche.ts` : page (E14, E16), cadres possédés
   [PLA-02], marqueur sur chaque calque posé (D-H), position gardée [PLA-03],
   placement d'E17, recréation [PLA-04].
-- [ ] **L6.7** Polices chargées avant tout calque, arrêt sans cadre partiel
+- [x] **L6.7** Polices chargées avant tout calque, arrêt sans cadre partiel
   [PLA-22].
-- [ ] **L6.8** Dessin palette par palette, progression, `commitUndo`
+- [x] **L6.8** Dessin palette par palette, progression, `commitUndo`
   ([PLA-06], [PLA-24], E12, D-I).
-- [ ] **L6.9** Tests de l'écriture avec un `figma` minimal injecté : propriété
+- [x] **L6.9** Tests de l'écriture avec un `figma` minimal injecté : propriété
   des cadres, échec de police sans cadre posé, position gardée, ordre des
   `commitUndo`.
-- [ ] **L6.10** Onglet Planche de §13.2 ; « Dessiner » actif ; « Voir sur la
+- [x] **L6.10** Onglet Planche de §13.2 ; « Dessiner » actif ; « Voir sur la
   planche » (E18).
-- [ ] **L6.11** Galerie : dessin en cours, interrompu, police indisponible,
+- [x] **L6.11** Galerie : dessin en cours, interrompu, police indisponible,
   confirmation au-delà de six palettes, onglet Planche sans palette.
 
 ### 6c : fraîcheur et cas du designer

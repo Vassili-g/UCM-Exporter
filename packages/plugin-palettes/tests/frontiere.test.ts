@@ -16,7 +16,7 @@ function banc() {
   const statuts: StatutDuRangement[] = [];
   const frontiere = createFrontiere((demande) => envoyees.push(demande), (statut) => statuts.push(statut));
   const etat = (demande: number, empreinte: string | null = null) =>
-    frontiere.accepterEtat({ type: 'etat', demande, classement: ABSENTE, empreinte, profil: 'SRGB' });
+    frontiere.accepterEtat({ type: 'etat', demande, classement: ABSENTE, empreinte, profil: 'SRGB', planche: { page: null, cadres: {} } });
   const rangee = (demande: number, empreinte: string) =>
     frontiere.recevoirRangement({ type: 'rangement', demande, issue: { issue: 'rangee', empreinte } });
   return { frontiere, envoyees, statuts, etat, rangee };
@@ -89,4 +89,38 @@ test('une couleur de sélection ne compte que pour la dernière lecture de la s�
   const lecture = { hexa: '#FF0000', ramenee: false };
   assert.equal(frontiere.accepterSelection({ type: 'selection', demande: 1, lecture }), false);
   assert.equal(frontiere.accepterSelection({ type: 'selection', demande: 2, lecture }), true);
+});
+
+test('E13 : un dessin demandé pendant un rangement part après lui, sur l’empreinte qu’il rend', () => {
+  const { frontiere, envoyees, etat, rangee } = banc();
+  frontiere.lireLEtat();
+  etat(1, 'aaaaaaaa');
+  frontiere.ranger(AUTRE);
+  frontiere.dessiner(['p-0000000a'], true, () => assert.fail('aucun abandon'));
+  assert.equal(envoyees.length, 2, 'le dessin attend le rangement');
+  rangee(2, 'bbbbbbbb');
+  assert.deepEqual(envoyees[2], { type: 'dessiner', demande: 3, palettes: ['p-0000000a'], grille: true, empreinteLue: 'bbbbbbbb' });
+  assert.equal(frontiere.accepterDessin({ type: 'progression', demande: 3, fait: 0, total: 1, nom: 'Bleu' }), true);
+  assert.equal(frontiere.accepterDessin({ type: 'progression', demande: 2, fait: 0, total: 1, nom: 'Bleu' }), false);
+});
+
+test('E13 : un rangement refusé abandonne le dessin qui l’attendait, et le dit', () => {
+  const { frontiere, envoyees, statuts, etat } = banc();
+  frontiere.lireLEtat();
+  etat(1, 'aaaaaaaa');
+  frontiere.ranger(AUTRE);
+  let abandons = 0;
+  frontiere.dessiner(['p-0000000a'], false, () => { abandons += 1; });
+  frontiere.recevoirRangement({ type: 'rangement', demande: 2, issue: { issue: 'modifiee-ailleurs' } });
+  assert.equal(abandons, 1);
+  assert.deepEqual(statuts.slice(-1), ['refuse']);
+  assert.deepEqual(envoyees.map((demande) => demande.type), ['lire-etat', 'ranger-recette']);
+});
+
+test('« Voir sur la planche » ne rend caduc aucun état attendu', () => {
+  const { frontiere, envoyees, etat } = banc();
+  frontiere.lireLEtat();
+  frontiere.voirSurLaPlanche('1:2', ['3:4']);
+  assert.deepEqual(envoyees[1], { type: 'voir-sur-la-planche', demande: 2, page: '1:2', cadres: ['3:4'] });
+  assert.equal(etat(1), true);
 });

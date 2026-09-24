@@ -203,6 +203,33 @@ Lignes simples, sans les trois parties :
 - configuration sans recette lisible : « La recette du fichier ne se lit pas :
   sa configuration attend une recette lisible. »
 
+## Textes ajoutés au lot 6
+
+Le dessin de la planche. « Police indisponible » affiche la rédaction A
+ci-dessus, en attendant le choix.
+
+| Message | Où | Quoi | Geste |
+|---|---|---|---|
+| Dessin interrompu | Planche, {palette} | Le dessin s'est arrêté ({erreur de Figma}) : aucun cadre n'a été posé. Ou, après d'autres cadres : ce cadre n'a pas été posé, le cadre précédent reste / les {n} cadres précédents restent. | Relancez le dessin. |
+| Dessin sur une autre recette | Recette du fichier | Elle a changé depuis sa lecture : le dessin montrerait d'autres couleurs que l'aperçu. Rien n'a été dessiné. | Rechargez la recette du fichier, puis relancez le dessin. |
+
+Lignes simples, sans les trois parties :
+
+- gestes : « Dessiner », « Redessiner », « Dessiner toutes les palettes »,
+  « Grille de contraste », « Voir sur la planche », « Réessayer » ;
+- progression, à la place du bouton : « Dessin de {palette}… » pour une
+  palette, « Dessin {rang}/{total} : {palette}… » pour plusieurs ;
+- résultat : « 1 palette dessinée sur la planche. », « {n} palettes
+  dessinées sur la planche. » ;
+- en-tête de l'onglet Planche : « Planche : {n} palettes · recette v{version}
+  · empreinte {empreinte} · {espace} » ;
+- état d'une palette : « dessinée », « jamais dessinée » ;
+- confirmation au-delà de six palettes : « Dessiner les {n} palettes ?
+  Chacune pose plus de cinq cents calques sur la planche. », gestes
+  « Dessiner » et « Annuler » ;
+- planche sans palette : « Aucune palette à dessiner : la planche attend une
+  première palette. », geste « Ouvrir l'onglet Palettes ».
+
 ## Questions pour le mainteneur
 
 - La notice « Référence plus vive que vivid » n'a de geste que si la rampe doit
