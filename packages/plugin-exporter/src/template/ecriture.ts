@@ -16,7 +16,13 @@
  * - une écriture se relit. Reçue par un handle périmé, elle est perdue sans
  *   lever, et le texte d'aide du maître partirait dans le contrat.
  */
-import { COMPONENT_NAME_LAYER, RULES_CONTAINER_NAME, RULE_ITEM_NAME } from '../contract/extractRules';
+import {
+  COMPONENT_NAME_LAYER,
+  MARQUEUR_A_COMPLETER,
+  porteLeMarqueur,
+  RULES_CONTAINER_NAME,
+  RULE_ITEM_NAME,
+} from '../contract/extractRules';
 import { nombreDeRegles } from './modele';
 import type { ElementDeModele, ModeleDeRegles, SectionDeModele } from './modele';
 import type { SourcesDeCreation } from './sources';
@@ -164,6 +170,21 @@ function maitreDe(element: ElementDeModele, sources: SourcesDeCreation): Compone
 }
 
 /**
+ * Préfixe du marqueur le calque `icon` d'une règle `@icons` dont le maître ne
+ * le porte pas.
+ *
+ * Un maître antérieur y écrit `icon-name` seul, et la création l'accepte. Sans
+ * le marqueur, l'analyse lirait la règle comme rédigée et réclamerait sa
+ * politique d'icône au lieu de son texte. Un maître qui porte déjà le marqueur
+ * n'est pas réécrit.
+ */
+async function marquerLeCalqueIcon(regle: InstanceNode): Promise<void> {
+  const calque = calqueTexte(await frais(regle), 'icon');
+  if (!calque || porteLeMarqueur(calque.characters)) return;
+  await ecrireDans(regle, 'icon', `${MARQUEUR_A_COMPLETER} ${calque.characters}`);
+}
+
+/**
  * Pose une règle dans une section : créée hors de l'arbre, écrite, puis rangée.
  *
  * Un séparateur sans variante muette n'arrête rien : les règles se suivent
@@ -182,6 +203,7 @@ async function poserUnElement(
   if (element.genre === 'regle' && element.cible) {
     await ecrireDans(regle, 'prop', element.cible);
   }
+  if (element.genre === 'regle' && element.tag === 'icons') await marquerLeCalqueIcon(regle);
   (await slotFrais(section, SLOT_DES_REGLES)).appendChild(regle);
   enAttente.delete(regle);
   etirer(await slotFrais(section, SLOT_DES_REGLES));

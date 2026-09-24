@@ -2,8 +2,8 @@
 
 ## État
 
-- Lot courant : L3
-- Branche et `HEAD` : `main`, `5b4ce4f`
+- Lot courant : L4
+- Branche et `HEAD` : `main`, `97e3ef1`
 - Dernière porte franchie : aucune
 
 La copie de travail partagée porte le travail non commité d'une autre session
@@ -135,3 +135,43 @@ copiés ; le build y tourne étape par étape.
 - Écart ou réserve : aucun. Le cas `layoutGrow: 1` n'a pas été mesuré dans
   Figma ; comme le plan le prévoit, le commentaire de `menuDeDimensionnement`
   et le test le disent.
+
+### L4 : la règle `@icons` créée porte le marqueur
+
+- Commit : ce commit, après `97e3ef1`.
+- Commandes :
+  - aucun test n'exécutait `ecriture.ts`. Le test écrit d'abord monte un faux
+    maître instanciable et appelle `creerLesRegles` sur une section `@icons`.
+    Contre le moteur de `97e3ef1`, dans la copie partagée puis dans le
+    worktree : rouge, le calque `icon` vaut `icon-name` au lieu de
+    `[À compléter] icon-name`. Le cas du maître courant passe avant et après.
+  - copie partagée, `template.test.ts` et `loiDuDocumentIntact.test.ts` : 0
+    échec. `tsc --noEmit` : 0.
+  - worktree avec les fichiers du lot, `npm test` : 0, dont 905 tests du
+    moteur. `npm run typecheck` : 0. Build étape par étape : 0 à chaque étape.
+- Résultats : `poserUnElement` appelle `marquerLeCalqueIcon` pour une règle
+  `@icons`. Quand le calque `icon` du maître ne porte pas le marqueur, il est
+  réécrit précédé du marqueur, par `ecrireDans`, qui relit. Relue par
+  `extractRules`, la règle créée compte dans `aRediger` et ne produit que la
+  ligne « une règle @icons contient encore « [À compléter] » ». Avec le maître
+  courant, le texte reste celui du maître. `AIDES_LUES` ne change pas ; son
+  commentaire, le test « le calque icon de @icons n'est pas vérifié » et
+  `SPEC.md`, « La création des règles d'usage », disent que la création pose
+  le marqueur. La règle `@icons` du scénario, posée avec un maître ancien avant
+  ce lot, garde sa ligne, comme le plan l'annonce.
+- Mutations : dans le worktree, l'appel à `marquerLeCalqueIcon` retiré : le
+  test du maître ancien sort rouge sur le texte du calque. Ses deux premières
+  assertions retirées à leur tour, `aRediger` vaut 0 et la relecture produit
+  « Règle @icons « icon-name » : ni le layer « modifiable » ni le layer
+  « strict » n'est visible seul. » Restauré par copie : vert.
+- Écart ou réserve : aucun.
+
+### Porte H1 : textes du designer
+
+- [TEXTES-A-VALIDER.md](./TEXTES-A-VALIDER.md) propose, pour L6, le genre du
+  sujet et deux ou trois rédactions de la borne sans variable, de la propriété
+  sans champ et du champ sans variable ; pour L9, les rédactions du refus de
+  collision, entre deux fichiers et dans un même fichier.
+- Aucun test ne vérifie aujourd'hui le texte du refus de collision
+  (`refusDeCollision`, `src/depot.ts`) : L9 devra en écrire un.
+- En attente du choix du mainteneur. L6 et L9 ne commencent pas avant.

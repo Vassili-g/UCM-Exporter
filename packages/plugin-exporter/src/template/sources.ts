@@ -295,11 +295,10 @@ function separateurDuCatalogue(regles: Map<RuleTag, ComponentNode>): ComponentNo
  * le marqueur : le texte d'une règle que le template pose sans le rédiger.
  *
  * `@default` n'y est pas, le template ne posant aucune règle de ce tag.
- * `@icons` non plus, et pour une raison de forme : sa cible n'est pas une
- * phrase mais un nom de calque, et sa politique se choisit en masquant l'un de
- * ses deux mots. Tant que le designer ne l'a pas fait, la règle ne publie rien,
- * et le moteur le lui dit. Exiger le marqueur en plus refuserait la création
- * sur un maître correct.
+ * `@icons` non plus : un maître antérieur écrit `icon-name` sans marqueur dans
+ * son calque `icon`, et l'écriture pose elle-même le marqueur dans chaque règle
+ * `@icons` qu'elle crée (`ecriture.ts`). Refuser ce maître bloquerait la
+ * création pour un défaut qu'elle corrige.
  */
 const AIDES_LUES: Partial<Record<RuleTag, string>> = {
   usage: 'content',

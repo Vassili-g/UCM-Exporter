@@ -910,7 +910,10 @@ pas `commitUndo`.
 Ce que la création n'écrit pas est une décision : les calques `content` et
 `icon` gardent le texte d'aide du maître et son marqueur `[À compléter]`, si
 bien qu'une règle fraîchement posée ne documente rien tant que le designer ne
-l'a pas rédigée, et que l'analyse le dit.
+l'a pas rédigée, et que l'analyse le dit. Un maître antérieur écrit
+`icon-name` sans marqueur dans le calque `icon` de sa variante `@icons` : la
+création pose alors le marqueur devant ce texte, dans chaque règle `@icons`
+qu'elle crée.
 
 **Quelles propriétés publiées reçoivent une règle.** Le contrat d'un composant
 porte aussi la surface d'un wrapper élu (voir

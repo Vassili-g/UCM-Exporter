@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Contract } from '@ucm-kit/core/format';
 import { extractRules } from '../src/contract/extractRules';
+import { creerLesRegles } from '../src/template/ecriture';
 import { modeleDeRegles, nombreDeRegles, restreindreAuParent } from '../src/template/modele';
 import type { ModeleDeRegles } from '../src/template/modele';
 import { offreDeCreation, resoudreLesSources } from '../src/template/sources';
@@ -429,10 +430,9 @@ test('un content d’aide sans marqueur refuse la création', async (t) => {
 });
 
 test('le calque icon de @icons n’est pas vérifié, et son content non plus', async (t) => {
-  // Une `@icons` dont la politique n'est pas choisie ne publie rien : ses trois
-  // mots restent visibles tant que le designer n'a pas masqué celui qui ne vaut
-  // pas, et le moteur refuse déjà la règle. Exiger le marqueur en plus
-  // refuserait la création sur un maître correct.
+  // Un maître antérieur écrit `icon-name` sans marqueur. La création l'accepte
+  // et pose elle-même le marqueur dans la règle qu'elle crée : voir « avec un
+  // maître ancien, la règle @icons créée porte le marqueur ».
   const catalogue = catalogueDeRegles({
     ...AIDES,
     icons: { icon: 'icon-name', content: 'Texte libre' },
@@ -508,4 +508,116 @@ test('un conteneur fraîchement posé se relit en avertissements du marqueur, et
   // marqué demande déjà le geste.
   const autres = rules.warnings.filter((message) => !message.includes('[À compléter]'));
   assert.deepEqual(autres, []);
+});
+
+/** Un calque texte dont les polices se chargent, comme `creerLesRegles` l'exige. */
+function texteFigma(nom: string, characters: string) {
+  const police = { family: 'Inter', style: 'Regular' };
+  return noeud('TEXT', nom, [], {
+    characters,
+    hasMissingFont: false,
+    fontName: police,
+    getRangeAllFontNames: () => [police],
+  });
+}
+
+/** Chaîne les parents d'un arbre, et donne à chaque node le retrait de Figma. */
+function relier(node: any): any {
+  node.remove = () => {
+    const freres = node.parent?.children;
+    if (freres) freres.splice(freres.indexOf(node), 1);
+    node.parent = null;
+  };
+  for (const enfant of node.children ?? []) {
+    enfant.parent = node;
+    relier(enfant);
+  }
+  if (node.type === 'SLOT') {
+    node.appendChild = (enfant: any) => {
+      enfant.parent?.children?.splice(enfant.parent.children.indexOf(enfant), 1);
+      node.children.push(enfant);
+      enfant.parent = node;
+    };
+  }
+  return node;
+}
+
+/** Un maître dont `createInstance` rend une copie de l'arbre, reliée à lui. */
+function maitreInstanciable(maitre: any): any {
+  const copier = (node: any): any => noeud(
+    node.type,
+    node.name,
+    (node.children ?? []).map(copier),
+    node.type === 'TEXT'
+      ? {
+        characters: node.characters,
+        hasMissingFont: false,
+        fontName: node.fontName,
+        getRangeAllFontNames: node.getRangeAllFontNames,
+      }
+      : { visible: node.visible },
+  );
+  maitre.createInstance = () => relier(noeud('INSTANCE', maitre.name, maitre.children.map(copier), {
+    getMainComponentAsync: async () => maitre,
+  }));
+  return relier(maitre);
+}
+
+/**
+ * Crée par `creerLesRegles` la seule section `@icons` d'un conteneur, avec un
+ * calque `icon` qui écrit `texteDuMaitre`, puis relit la page.
+ */
+async function creerUneRegleDIcone(t: Parameters<typeof monterPage>[0], texteDuMaitre: string) {
+  const variante = maitreInstanciable(noeud('COMPONENT', 'Type=@icons', [
+    texteFigma('@icons', '@icons'),
+    texteFigma('icon', texteDuMaitre),
+    noeud('FRAME', 'modifiable', [], { visible: true }),
+    noeud('FRAME', 'strict', [], { visible: true }),
+  ]));
+  variante.parent = noeud('COMPONENT_SET', '.ruleItem', [variante]);
+  const section = maitreInstanciable(noeud('COMPONENT', 'Section=icons', [
+    noeud('SLOT', 'Rules-Wrapper'),
+  ]));
+  const maitre = maitreInstanciable(noeud('COMPONENT', '.componentRules', [
+    texteFigma('component-name', '[À compléter] Nom du composant'),
+    noeud('SLOT', 'Sections-Wrapper'),
+  ]));
+  monterPage(t, []);
+  Object.assign((globalThis as any).figma, {
+    getNodeByIdAsync: async () => null,
+    loadFontAsync: async () => undefined,
+  });
+
+  const { conteneur } = await creerLesRegles(
+    { absoluteBoundingBox: null } as unknown as ComponentSetNode,
+    { nom: 'Root', sections: [{ tag: 'icons', elements: [{ genre: 'regle', tag: 'icons' }] }] },
+    {
+      maitre,
+      aRemplir: null,
+      sections: new Map([['icons', section]]),
+      regles: new Map([['icons', variante]]),
+      separateur: null,
+    },
+    () => undefined,
+  );
+  (globalThis as any).figma.currentPage.children.push(conteneur);
+  const regle: any = conteneur.findOne((node: any) => node.name === 'Type=@icons');
+  return { icone: regle.findOne((node: any) => node.name === 'icon').characters, conteneur };
+}
+
+test('avec un maître ancien, la règle @icons créée porte le marqueur et attend son texte', async (t) => {
+  const { icone } = await creerUneRegleDIcone(t, 'icon-name');
+
+  assert.equal(icone, '[À compléter] icon-name');
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+  assert.equal(rules.aRediger, 1);
+  assert.deepEqual(rules.warnings.map((message) => message.slice(0, message.indexOf(' contien'))), [
+    'Layer « .ruleItem » : une règle @icons',
+  ]);
+});
+
+test('avec le maître courant, la règle @icons créée garde le texte du maître', async (t) => {
+  const { icone } = await creerUneRegleDIcone(t, AIDES.icons.icon);
+
+  assert.equal(icone, AIDES.icons.icon);
 });
