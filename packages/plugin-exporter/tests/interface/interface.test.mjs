@@ -197,9 +197,9 @@ test('un point sans éléments ne pose aucune liste', async () => {
 });
 
 /**
- * Le moteur émet les points bloquants après les avertissements : il lit le
- * contrat qu'il vient de produire pour les relever. Les lire en dernier ferait
- * corriger dix détails avant d'apprendre que le contrat est faux.
+ * L'ordre d'arrivée ne décide pas du rang : un point bloquant émis après des
+ * avertissements se lit quand même en tête. Le lire en dernier ferait corriger
+ * dix détails avant d'apprendre que le contrat est faux.
  */
 test('un point bloquant émis en dernier se lit en premier', async () => {
   const { page, envoyer } = await ouvrir();

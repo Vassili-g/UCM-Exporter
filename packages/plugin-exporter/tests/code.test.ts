@@ -13,8 +13,7 @@ import * as fenetre from '../src/fenetre';
 import * as prevol from '../src/prevol';
 import * as sources from '../src/template/sources';
 import * as modele from '../src/template/modele';
-import * as exportableNodes from '../src/contract/exportableNodes';
-import * as structureTree from '../src/contract/structureTree';
+import * as imbriques from '../src/contract/imbriques';
 import * as termes from '../src/forges/termes';
 import type { ReleveDeSource } from '../src/contract/extractRules';
 import type { ModeleDeRegles } from '../src/template/modele';
@@ -36,73 +35,18 @@ const tourner = () => new Promise((resolve) => setImmediate(resolve));
 
 type Diagnostic = { cause: string; statut?: number; layout: null };
 
-const resultat = (nom: string) => ({ filename: nom, content: '{}', warningCount: 0, warnings: [] });
-
-/** Un set nommé, tel que Figma le rend au-dessus d'un variant. */
-const setDe = (nom: string, definitions: Record<string, unknown>) =>
-  ({ id: `set-${nom}`, type: 'COMPONENT_SET', name: nom, componentPropertyDefinitions: definitions });
-
-/** Un node du sous-arbre d'une instance, réduit à ce que le parcours en lit. */
-const nodeDe = (id: string, type: string) => ({ id, type });
-
-/**
- * Une instance d'un variant de ce set, telle que le parcours la rencontre.
- *
- * `parent` la range sous une autre instance ; son absence la met directement
- * sous le composant sélectionné. `contenu` est son sous-arbre, que seul le
- * verdict de dessin parcourt. `visible: false` la masque statiquement.
- */
-const instanceDe = (
-  id: string,
-  set: ReturnType<typeof setDe>,
-  options: {
-    parent?: unknown;
-    contenu?: ReturnType<typeof nodeDe>[];
-    visible?: boolean;
-  } = {},
-) => ({
-  id,
-  type: 'INSTANCE',
-  name: `${set.name} imbriqué`,
-  parent: options.parent,
-  ...(options.visible === false ? { visible: false } : {}),
-  findAll: (predicat: (n: { type: string }) => boolean) =>
-    (options.contenu ?? []).filter(predicat),
-  getMainComponentAsync: async () => ({ id: `main-${id}`, name: 'Size=Small', parent: set }),
+const resultat = (nom: string) => ({
+  filename: nom, content: '{}', warningCount: 0, warnings: [] as string[],
+  imbriques: { auParent: [] as string[], sansRegles: [] as unknown[], sansPorteur: [] as string[] },
 });
 
-const setBouton = setDe('Button', { size: {}, label: {} });
-const setIcone = setDe('Icon', { iconName: {} });
-// Un point en tête : Figma ne publie pas ce composant, qui n'est donc qu'une
-// pièce interne, jamais une dépendance à documenter à part. Ce qu'elle prête
-// dépend de l'endroit où elle est posée, d'où les deux ci-dessous.
-const setInterne = setDe('.pieceInterne', { taille: {} });
-const setInterneDuBouton = setDe('.pieceDuBouton', { profondeur: {} });
-const premierBouton = instanceDe('btn-1', setBouton);
-const enfantsImbriques = [
-  premierBouton,
-  instanceDe('btn-2', setBouton),
-  instanceDe('ico-1', setIcone),
-  // Sous le composant sélectionné : sa propre architecture.
-  instanceDe('int-1', setInterne),
-  // Sous le Button : l'architecture du Button, pas celle du parent.
-  instanceDe('int-2', setInterneDuBouton, { parent: premierBouton }),
-];
-
-/**
- * Le composant sélectionné du banc : ce qu'il déclare, et ce qu'il abrite.
- * Un test qui éprouve le tri des imbriqués remplace la liste.
- */
-const selectionDe = (
-  id: string,
-  imbriques: ReturnType<typeof instanceDe>[],
-  parent?: { type: string },
-) => ({
+/** Le composant sélectionné du banc, et ce qu'il déclare. */
+const selectionDe = (id: string, parent?: { type: string }) => ({
   id,
   type: 'COMPONENT',
   name: 'Exemple',
   componentPropertyDefinitions: { severity: {} },
-  findAll: (predicat: (n: { type: string }) => boolean) => imbriques.filter(predicat),
+  findAll: () => [],
   parent,
 });
 const globalFigma = globalThis as unknown as { figma?: unknown };
@@ -131,21 +75,13 @@ function ouvrir() {
   };
   /** Ce que la lecture des règles conclut du conteneur ; le test le choisit. */
   const regles = { exploitables: true, aRediger: 0 };
-  /**
-   * Les noms compactés des composants qui ont déjà leurs règles. Les deux
-   * imbriqués publiés du banc les ont par défaut, faute de quoi chaque création
-   * rendrait leurs points à des tests qui parlent d'autre chose.
-   */
-  const contractes = { noms: ['button', 'icon'] };
   /** Le test de connexion, par configuration reçue. */
   const connexionDe = { traiter: async (_config: { projet: string; jeton: string }): Promise<Diagnostic> => ({ cause: 'connecte', layout: null }) };
   const runtime = {
     showUI() {}, notify() {}, openExternal() {},
     viewport: { scrollAndZoomIntoView() {} },
     currentPage: {
-      // Les enfants imbriqués du banc, chacun dans son component set : c'est là
-      // que le relevé des imbriqués va chercher leur porteur.
-      selection: [selectionDe('a', enfantsImbriques)],
+      selection: [selectionDe('a')],
     },
     ui: { postMessage: (message: PluginMessage) => messages.push(message), resize() {}, onmessage: async (_message: UiRequest) => {} },
     on: (nom: string, rappel: () => void) => evenements.set(nom, rappel),
@@ -171,14 +107,9 @@ function ouvrir() {
     },
     './contract/composedComponents': {
       oublierLIndexDuDocument: () => { appels.oublisDIndex += 1; },
-      // Les composants dont le test dit qu'ils ont déjà leurs règles.
-      indexContractedNamesInDocument: async () => new Set(contractes.noms),
     },
-    // Les vraies autorités du moteur : élagage des calques masqués et verdict
-    // de dessin. Les doubler ferait juger le tri des imbriqués sur autre chose
-    // que ce que le contrat applique.
-    './contract/exportableNodes': exportableNodes,
-    './contract/structureTree': structureTree,
+    // Le vrai texte des points : la création le reprend du moteur.
+    './contract/imbriques': imbriques,
     // Le vrai relevé lit les définitions Figma ; ici la clé publique vaut le
     // nom brut, ce qui suffit à dire quelles props le parent déclare.
     './contract/parsers': {
@@ -223,15 +154,11 @@ function ouvrir() {
     clearTimeout: (id: number) => temporisations.delete(id),
   });
   return {
-    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, regles, contractes, resolution, creation, runtime, stockage,
+    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, regles, resolution, creation, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string, parent?: { type: string }) {
-      runtime.currentPage.selection = [selectionDe(id, enfantsImbriques, parent)];
+      runtime.currentPage.selection = [selectionDe(id, parent)];
       evenements.get('selectionchange')!();
-    },
-    /** Remplace ce que le composant sélectionné abrite, avant la création. */
-    abriter(imbriques: ReturnType<typeof instanceDe>[]) {
-      runtime.currentPage.selection = [selectionDe('a', imbriques)];
     },
     connecter() {
       stockage.set('depots', [{ repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' }]);
@@ -1189,7 +1116,7 @@ test('un variant seul ne reçoit aucune offre, quoi que la page porte', async ()
     {
       id: 'a', type: 'COMPONENT', name: 'Exemple',
       componentPropertyDefinitions: { severity: {} },
-      findAll: (predicat: (n: { type: string }) => boolean) => enfantsImbriques.filter(predicat),
+      findAll: () => [],
       parent: { type: 'COMPONENT_SET' },
     },
   ];
@@ -1266,12 +1193,9 @@ test('« creer-regles » écrit une fois, et relance le relevé de sélection', 
   // l'analyse qui suit immédiatement la création.
   assert.equal(h.appels.oublisDIndex, 1, 'la création ne fait pas oublier l’index du document');
   // Le contrat porte aussi les propriétés d'un enfant élu wrapper. Le template
-  // ne documente que celles que le composant sélectionné déclare, et c'est ce
-  // relevé qui les nomme.
-  // Le composant sélectionné, puis sa seule pièce interne. Les deux imbriqués
-  // publiés ont leurs règles, donc le parcours les élague sans les lire, et
-  // avec eux ce qu'ils contiennent.
-  assert.deepEqual(h.appels.relevesDeProps, [['severity'], ['taille']]);
+  // ne documente que celles que le composant sélectionné déclare, et celles que
+  // le relevé du moteur lui attribue : la création ne lit que les premières.
+  assert.deepEqual(h.appels.relevesDeProps, [['severity']]);
 });
 
 /** Les cibles `@prop` du modèle posé, dans l'ordre où le template les écrit. */
@@ -1287,12 +1211,21 @@ function points(h: ReturnType<typeof ouvrir>) {
   return h.messages.filter((message) => message.type === 'diagnostic');
 }
 
-test('un imbriqué sans règles donne un point rouge qui nomme les deux composants', async () => {
-  // Le composant sélectionné en intègre un autre, qui n'a pas ses règles. Le
-  // contrat du parent décrira donc les internes de cet autre au lieu de le
-  // réutiliser, et le geste à faire vise cet autre.
+/** Un relevé d'imbriqués tel que le moteur le rend avec son export. */
+const releveAvec = (releve: Partial<{ auParent: string[]; sansRegles: unknown[]; sansPorteur: string[] }>) => ({
+  auParent: [], sansRegles: [], sansPorteur: [], ...releve,
+});
+
+test('la création transmet les points du relevé que l’export lui rend', async () => {
+  // Le relevé appartient au moteur : la création n'en fait qu'une lecture, et
+  // pose les points après son propre compte rendu.
   const h = ouvrir();
-  h.contractes.noms = ['icon'];
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    imbriques: releveAvec({
+      sansRegles: [{ nom: 'Button', distant: false, cles: ['size', 'label'], nodeIds: ['btn-1', 'btn-2'] }],
+    }),
+  });
 
   await h.envoyer({ type: 'creer-regles', operation: 1 });
 
@@ -1301,60 +1234,14 @@ test('un imbriqué sans règles donne un point rouge qui nomme les deux composan
   assert.equal(point.severite, 'danger');
   assert.equal(
     point.titre,
-    'Le composant « Exemple » intègre « Button », dont 3 propriétés ne sont pas documentées :',
+    'Le composant « Exemple » intègre « Button », dont 2 propriétés ne sont pas documentées :',
   );
-  // Ce que le Button déclare, et ce que déclare sa propre pièce interne : sa
-  // surface publiée, dont pas une ligne n'est documentée.
-  assert.deepEqual([...point.elements ?? []], ['size', 'label', 'profondeur']);
-  assert.equal(
-    point.impact,
-    'Sans les règles de « Button », le contrat de « Exemple » décrit les internes de '
-    + '« Button » au lieu de le réutiliser.',
-  );
-  assert.equal(
-    point.action,
-    'Créez et complétez les règles de « Button », puis relancez l’analyse de « Exemple » '
-    + 'avant de l’exporter.',
-  );
+  assert.deepEqual([...point.elements ?? []], ['size', 'label']);
   assert.deepEqual([...point.nodeIds ?? []], ['btn-1', 'btn-2']);
-  // Le point suit le succès : la création a bien posé les règles.
   assert.match(derniereNote(h) ?? '', /règles posées/);
 });
 
-test('chaque imbriqué sans règles a son propre point, dans l’ordre des calques', async () => {
-  // Deux composants sans règles dans le même parent : deux points, deux gestes.
-  // Un point unique en noierait un des deux.
-  const h = ouvrir();
-  h.contractes.noms = [];
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(points(h).map((point) => point.titre), [
-    'Le composant « Exemple » intègre « Button », dont 3 propriétés ne sont pas documentées :',
-    'Le composant « Exemple » intègre « Icon », dont une propriété n’est pas documentée :',
-  ]);
-  assert.deepEqual(points(h).map((point) => [...point.elements ?? []]), [
-    ['size', 'label', 'profondeur'],
-    ['iconName'],
-  ]);
-  assert.deepEqual(points(h).map((point) => [...point.nodeIds ?? []]), [['btn-1', 'btn-2'], ['ico-1']]);
-});
-
-test('un imbriqué qui a ses règles ne donne aucun point, ni lui ni ce qu’il contient', async () => {
-  // Il est une dépendance : le contrat s'arrête à lui, et sa pièce interne
-  // n'entre pas dans celui du parent.
-  const h = ouvrir();
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(points(h), []);
-});
-
-test('les propriétés d’une pièce interne sont documentées par le parent', async () => {
-  // Une pièce interne n'est pas publiée par Figma : aucun designer ne
-  // l'instanciera seule, elle n'aura jamais de règles à elle, et le contrat du
-  // parent porte ses propriétés comme les siennes. Les règles doivent en dire
-  // autant.
+test('les propriétés qu’une pièce interne prête au parent sont documentées par lui', async () => {
   const h = ouvrir();
   h.exporte.traiter = async () => ({
     ...resultat('Exemple.contract.json'),
@@ -1362,196 +1249,47 @@ test('les propriétés d’une pièce interne sont documentées par le parent', 
       props: {
         severity: { type: 'enum', values: ['info'] },
         taille: { type: 'enum', values: ['small', 'medium'] },
+        profondeur: { type: 'enum', values: ['deux'] },
       },
     }),
+    imbriques: releveAvec({ auParent: ['taille'] }),
   });
 
   await h.envoyer({ type: 'creer-regles', operation: 1 });
 
+  // `profondeur` appartient à un imbriqué publié : ses règles la documenteront.
   assert.deepEqual(ciblesPosees(h), ['severity.info', 'taille.small', 'taille.medium']);
   assert.deepEqual(points(h), []);
 });
 
-test('la pièce interne d’un imbriqué publié n’est pas documentée par le parent', async () => {
-  // La même pièce interne, un cran plus bas : elle appartient au Button qui
-  // l'abrite, pas au composant sélectionné. Son point va au Button.
+test('l’analyse transmet le point bloquant du moteur une fois, et le verdict le compte une fois', async () => {
   const h = ouvrir();
-  h.contractes.noms = ['icon'];
+  const message = 'Le composant « Exemple » intègre « Button », qui n’a pas ses règles d’usage. '
+    + 'Sans les règles de « Button », le contrat décrit ses internes. Créez ses règles.';
   h.exporte.traiter = async () => ({
     ...resultat('Exemple.contract.json'),
-    content: JSON.stringify({
-      props: {
-        severity: { type: 'enum', values: ['info'] },
-        profondeur: { type: 'enum', values: ['deux'] },
-      },
-    }),
-  });
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(ciblesPosees(h), ['severity.info']);
-  assert.deepEqual(points(h).map((point) => point.titre), [
-    'Le composant « Exemple » intègre « Button », dont 3 propriétés ne sont pas documentées :',
-  ]);
-});
-
-test('une propriété qu’aucun imbriqué ne revendique est nommée quand même', async () => {
-  const h = ouvrir();
-  h.exporte.traiter = async () => ({
-    ...resultat('Exemple.contract.json'),
-    content: JSON.stringify({ props: { orpheline: { type: 'boolean', default: true } } }),
-  });
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.equal(points(h).length, 1);
-  assert.equal(
-    points(h)[0].titre,
-    'Une propriété de « Exemple » n’est pas documentée, et le plugin n’a pas su nommer le '
-    + 'composant imbriqué qui la porte :',
-  );
-  assert.deepEqual([...points(h)[0].elements ?? []], ['orpheline']);
-  assert.equal(points(h)[0].nodeIds, undefined);
-});
-
-test('la prop qu’une règle @icons du composant fabrique ne cherche aucun porteur', async () => {
-  // `iconLeftName` n'existe pas dans Figma : la règle @icons de Button la
-  // fabrique. L'analyse la réclamait à un composant imbriqué introuvable.
-  const h = ouvrir();
-  h.exporte.traiter = async () => ({
-    ...resultat('Exemple.contract.json'),
-    content: JSON.stringify({
-      props: {
-        severity: { type: 'enum', values: ['info'] },
-        iconLeftName: { type: 'icon', policy: 'modifiable', visibilityProp: 'iconLeft' },
-        orpheline: { type: 'boolean', default: true },
-      },
+    warningCount: 1,
+    warnings: [message],
+    parties: new Map([[message, {
+      severite: 'danger',
+      titre: 'Le composant « Exemple » intègre « Button », qui n’a pas ses règles d’usage.',
+      impact: 'Sans les règles de « Button », le contrat décrit ses internes.',
+      action: 'Créez ses règles.',
+    }]]),
+    localisations: new Map([[message, ['btn-1']]]),
+    imbriques: releveAvec({
+      sansRegles: [{ nom: 'Button', distant: false, cles: [], nodeIds: ['btn-1'] }],
     }),
   });
 
   await h.envoyer({ type: 'analyser-composant', operation: 1 });
 
-  assert.deepEqual(points(h).map((point) => [...point.elements ?? []]), [['orpheline']]);
-});
-
-/* Le tri des imbriqués : ce qui mérite un point, et ce qui n'en est pas un. */
-
-/** Un set sans aucune propriété publique, comme un composant d'icône. */
-const setSansProps = (nom: string) => setDe(nom, {});
-
-test('une icône ne demande pas ses propres règles', async () => {
-  // Aucune propriété publique, et rien que des tracés sous elle : le moteur la
-  // traite déjà comme un dessin et demande une règle @icons dans le conteneur
-  // du composant qui l'affiche. Lui réclamer un conteneur à elle ferait poser un
-  // marqueur qui la sortirait du contrat et éteindrait cet avertissement.
-  const h = ouvrir();
-  h.contractes.noms = [];
-  h.abriter([instanceDe('ico-2', setSansProps('duck'), {
-    contenu: [nodeDe('v1', 'VECTOR'), nodeDe('v2', 'BOOLEAN_OPERATION')],
-  })]);
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(points(h), []);
-});
-
-test('un imbriqué tout en tracés qui déclare une propriété garde son point', async () => {
-  // Un composant peut n'avoir ni texte ni rien d'autre qu'une icône, et rester
-  // un composant : son API le prouve. Le dessin seul ne décide pas.
-  const h = ouvrir();
-  h.contractes.noms = [];
-  h.abriter([instanceDe('tile-1', setDe('TileLink', { variant: {} }), {
-    contenu: [nodeDe('v1', 'VECTOR')],
-  })]);
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(points(h).map((point) => point.titre), [
-    'Le composant « Exemple » intègre « TileLink », dont une propriété n’est pas documentée :',
-  ]);
-});
-
-test('un imbriqué sans propriété et sans tracé garde son point', async () => {
-  // Un séparateur fait de rectangles ne déclare rien, mais le contrat en décrit
-  // bien les internes : la garde des icônes ne doit pas mordre dessus.
-  const h = ouvrir();
-  h.contractes.noms = [];
-  h.abriter([instanceDe('div-1', setSansProps('Divider'), {
-    contenu: [nodeDe('r1', 'RECTANGLE')],
-  })]);
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(points(h).map((point) => point.titre), [
-    'Le composant « Exemple » intègre « Divider », qui n’a pas ses règles d’usage.',
-  ]);
-});
-
-test('un imbriqué dont les propriétés ne se lisent pas garde son point', async () => {
-  // Ne rien savoir n'est pas savoir qu'il n'y a rien : une lecture qui lève ne
-  // fait jamais passer un composant pour une icône.
-  const h = ouvrir();
-  h.contractes.noms = [];
-  const illisible = setDe('Mystere', {});
-  Object.defineProperty(illisible, 'componentPropertyDefinitions', {
-    get() { throw new Error('node retiré'); },
-  });
-  h.abriter([instanceDe('mys-1', illisible, { contenu: [nodeDe('v1', 'VECTOR')] })]);
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(points(h).map((point) => point.titre), [
-    'Le composant « Exemple » intègre « Mystere », qui n’a pas ses règles d’usage.',
-  ]);
-});
-
-test('un imbriqué tout en tracés qui abrite une dépendance garde son point', async () => {
-  // `getAllNodes` s'arrête sur une dépendance contractée, et le verdict de
-  // dessin avec lui. Sans le relevé de composition, ce cadre passerait pour une
-  // icône alors qu'il compose.
-  const h = ouvrir();
-  h.contractes.noms = ['icon'];
-  const dependance = instanceDe('dep-1', setIcone);
-  const cadre = instanceDe('cad-1', setSansProps('Cadre'), {
-    contenu: [nodeDe('v1', 'VECTOR'), dependance],
-  });
-  h.abriter([cadre, instanceDe('dep-1', setIcone, { parent: cadre })]);
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(points(h).map((point) => point.titre), [
-    'Le composant « Exemple » intègre « Cadre », qui n’a pas ses règles d’usage.',
-  ]);
-});
-
-test('un imbriqué rangé sous un calque masqué ne demande aucun geste', async () => {
-  // Statiquement masqué, il n'entre dans aucun contrat. Lui réclamer ses règles
-  // enverrait le designer sélectionner un calque qu'il ne voit pas.
-  const h = ouvrir();
-  h.contractes.noms = [];
-  h.abriter([instanceDe('btn-3', setBouton, { visible: false })]);
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.deepEqual(points(h), []);
-});
-
-test('un imbriqué venu d’une bibliothèque renvoie au fichier de cette bibliothèque', async () => {
-  // Ses règles vivent dans le fichier de sa bibliothèque, et l'index ne lit que
-  // le document courant : le geste demandé ici serait impossible à faire.
-  const h = ouvrir();
-  h.contractes.noms = [];
-  const distant = setDe('Alert', { severity: {} });
-  (distant as { remote?: boolean }).remote = true;
-  h.abriter([instanceDe('alr-1', distant)]);
-
-  await h.envoyer({ type: 'creer-regles', operation: 1 });
-
-  assert.equal(
-    points(h)[0].action,
-    'Les règles de « Alert » vivent dans le fichier de sa bibliothèque. Créez-les là-bas, '
-    + 'republiez la bibliothèque, puis relancez l’analyse de « Exemple ».',
-  );
+  assert.equal(points(h).length, 1);
+  assert.equal(points(h)[0].severite, 'danger');
+  assert.deepEqual([...points(h)[0].nodeIds ?? []], ['btn-1']);
+  const verdict = h.messages.find((m) => m.type === 'verdict');
+  assert.ok(verdict?.type === 'verdict');
+  assert.match(verdict.texte, /1 /);
 });
 
 test('un template qui documente tout ne rend aucun point', async () => {

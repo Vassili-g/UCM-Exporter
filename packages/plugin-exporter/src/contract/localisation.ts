@@ -80,6 +80,9 @@ export function sujetSansNode(
  *
  * La phrase compacte que `meta.diagnostics` publie se dérive de ces parties,
  * elle n'est pas rédigée une seconde fois.
+ *
+ * Un point bloquant (`severite`) peut porter une quatrième partie, `elements` :
+ * la liste que son titre annonce, que l'interface pose une ligne par élément.
  */
 export type PointACorriger = {
   /** « Layer « Border » : l'alignement du stroke est illisible. » */
@@ -88,6 +91,10 @@ export type PointACorriger = {
   readonly impact: string;
   /** Le geste exact à faire dans Figma. Une phrase impérative. */
   readonly action: string;
+  /** Un contrat déjà faux, que l'interface lit en tête de liste. */
+  readonly severite?: 'danger';
+  /** Les éléments que le titre annonce, titre fini par « : ». */
+  readonly elements?: readonly string[];
 };
 
 /** Ce qu'un site d'émission écrit ; le titre s'y compose du sujet et du manque. */
@@ -105,7 +112,10 @@ export type Constat = {
 
 /** La phrase compacte, dérivée des parties. Unique autorité sur cette jonction. */
 export function phraseDe(point: PointACorriger): string {
-  return `${point.titre} ${point.impact} ${point.action}`;
+  const liste = point.elements && point.elements.length > 0
+    ? ` ${point.elements.join(', ')}.`
+    : '';
+  return `${point.titre}${liste} ${point.impact} ${point.action}`;
 }
 
 const registres = new WeakMap<Canal, Map<string, string[]>>();

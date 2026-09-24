@@ -2,8 +2,8 @@
 
 ## État
 
-- Lot courant : L7
-- Branche et `HEAD` : `main`, `d0bc9c4`
+- Lot courant : L5
+- Branche et `HEAD` : `main`, `fddd8bf`
 - Dernière porte franchie : H2
 
 La copie de travail partagée porte le travail non commité d'une autre session
@@ -306,7 +306,7 @@ copiés ; le build y tourne étape par étape.
 
 ### L7 : un calque publié par la vue exacte n'est pas dit perdu
 
-- Commit : ce commit, après `d0bc9c4`.
+- Commit : `fddd8bf`, après `d0bc9c4`.
 - Commandes :
   - tests écrits d'abord : le scénario sort rouge, « la famille
     « horsDuNodeElu » sort encore », 1 ligne ; le test de la vue exacte aussi.
@@ -327,3 +327,45 @@ copiés ; le build y tourne étape par étape.
   rouges. Restauré par copie : vert.
 - Écart ou réserve : les propriétés du calque d'onde (opacité, masque,
   disposition, dimensions sous `SCALE`) restent signalées ; elles relèvent de L8.
+  La réécriture de `SPEC.md` retirait la mention de `variants[].tokens`, que
+  `inventaireInvariants.test.ts` exige : le commit de L5 la rétablit.
+
+### L5 : les internes d'un imbriqué sans règles se taisent
+
+- Commit : ce commit, après `fddd8bf`.
+- Commandes :
+  - tests écrits d'abord : le scénario, avec un composant imbriqué qui déclare
+    sa variant property comme sur le composant réel, sort rouge (« la famille
+    « dessinImbrique » sort encore ») ; le test du point en tête aussi. Les cas
+    « imbriqué contracté » et « imbriqué icône » passent avant et après : ils
+    gardent deux décisions.
+  - `tsc --noEmit` : 0. `node scripts/run-tests.cjs` dans
+    `packages/plugin-exporter` : 929 tests, 0 échec. `npm run test:ui` : 24
+    tests, 0 échec. `inventaireInvariants.test.ts` et `styleDocumentaire.test.ts`
+    : 0 échec.
+- Résultats : `src/contract/imbriques.ts` porte l'unique définition (pièce
+  interne, appartenance, icône), le relevé devenu synchrone, le texte des points
+  et la déclaration des instances à taire. `exportComponent` relève les
+  imbriqués après `buildContractPropertySurface`, sur les maîtres de
+  `scanComposedMatrix`, variant par variant ; il place les points en tête de
+  `meta.diagnostics`, en `UCM_PORTABLE_PROJECTION_WARNING`, chacun avec toutes
+  ses instances. `describeNode` ne signale plus un dessin sous une instance
+  déclarée. `PointACorriger` gagne `severite` et `elements`, et la phrase écrit
+  la liste après le titre. `code.ts` ne garde que la transmission : l'analyse ne
+  pose plus ses propres points ni ne les recompte, la création des règles lit le
+  relevé de l'export. `dansUnComposantPublie` était supprimé par L7 ;
+  `estUnePieceInterne` quitte `code.ts`. Les tests de tri des imbriqués passent
+  de `code.test.ts` à `imbriques.test.ts`, sur le relevé pur ; `code.test.ts`
+  garde la transmission, la surface du modèle et l'absence de double compte.
+- Relevé du plan : sur le scénario, aucun autre message que le point lui-même ne
+  vise uniquement des calques de l'imbriqué sans règles. Rien d'autre ne se tait.
+- Hors du scénario, aucun test de la suite ne gagne de diagnostic : le rayon
+  d'impact annoncé par R1 est vide.
+- Mutations : la garde des dessins rendue toujours vraie : le scénario et le
+  test du point sortent rouges, message de dessin compris. Les points placés en
+  fin de liste : le test du point en tête sort rouge. Restauré par copie : vert.
+- Écart ou réserve : le point qui n'a pas de porteur cible désormais le
+  composant exporté ; il n'avait aucune cible. Deux composants distincts de même
+  nom et de mêmes clés fusionnent en un seul point. Aucun test ne vérifie
+  qu'une prop `icon` n'entre pas dans `horsDuParent` : le relevé précède
+  `mergeIconRules`, seul producteur de ce type, par l'ordre du code.

@@ -20,15 +20,35 @@ const peintureLiee = () => ({
   fills: [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 }, boundVariables: { color: alias('fond') } }],
 });
 
-/** Un maître de component set, tel que `getMainComponentAsync` le rend. */
-function maitreDansUnSet(nomDuSet: string, nomDuVariant: string) {
-  const set = { type: 'COMPONENT_SET', name: nomDuSet, componentPropertyDefinitions: {} };
-  return { type: 'COMPONENT', id: `maitre-${nomDuSet}`, name: nomDuVariant, parent: set };
+/**
+ * Ce que le composant publié imbriqué est pour le scénario : sans règles et
+ * doté d'une variant property (le composant réel), contracté, ou icône sans
+ * propriété.
+ */
+type Glyphe = 'sans-regles' | 'contracte' | 'icone';
+
+/** Le maître du composant publié imbriqué, dans son component set. */
+function maitreDuGlyphe(glyphe: Glyphe) {
+  const set = {
+    type: 'COMPONENT_SET',
+    id: 'set-Glyph',
+    name: 'Glyph',
+    componentPropertyDefinitions: glyphe === 'icone'
+      ? {}
+      : { Tone: { type: 'VARIANT', variantOptions: ['Neutral'], defaultValue: 'Neutral' } },
+  };
+  return { type: 'COMPONENT', id: 'maitre-Glyph', name: 'Tone=Neutral', parent: set };
 }
 
-/** Un composant publié sans règles, à une variant property, qui n'est qu'un tracé. */
-function glyphe(nom: string) {
-  const maitreDuTrace = { type: 'COMPONENT', id: 'maitre-Shape', name: 'Shape', remote: true };
+/** Un composant publié imbriqué dont le contenu n'est qu'un tracé. */
+function glyphe(nom: string, maitre: ReturnType<typeof maitreDuGlyphe>) {
+  const maitreDuTrace = {
+    type: 'COMPONENT',
+    id: 'maitre-Shape',
+    name: 'Shape',
+    remote: true,
+    componentPropertyDefinitions: {},
+  };
   const trace = node('INSTANCE', 'Shape', [
     node('VECTOR', 'Vector', [], {
       layoutSizingHorizontal: 'FIXED',
@@ -43,7 +63,7 @@ function glyphe(nom: string) {
   return node('INSTANCE', nom, [trace], {
     variantProperties: { Tone: 'Neutral' },
     componentProperties: { Tone: { type: 'VARIANT', value: 'Neutral' } },
-    getMainComponentAsync: async () => maitreDansUnSet('Glyph', 'Tone=Neutral'),
+    getMainComponentAsync: async () => maitre,
     layoutSizingHorizontal: 'HUG',
     layoutSizingVertical: 'HUG',
   });
@@ -104,11 +124,11 @@ const setDuWrapper = (() => {
 })();
 
 /** Le wrapper interne exposé : il porte paddings, hauteur et gap liés. */
-function wrapper(texteVisible: boolean) {
+function wrapper(texteVisible: boolean, maitre: ReturnType<typeof maitreDuGlyphe>) {
   return node('INSTANCE', 'Wrapper', [
-    glyphe('Leading'),
+    glyphe('Leading', maitre),
     libelle(texteVisible),
-    glyphe('Trailing'),
+    glyphe('Trailing', maitre),
   ], {
     isExposedInstance: true,
     getMainComponentAsync: async () => setDuWrapper.children[1],
@@ -160,9 +180,13 @@ const ombre = {
 };
 
 /** Une racine de variant : auto layout vertical en hug, `minWidth` sans variable. */
-function racine(etat: string, options: { effet?: boolean; texteVisible?: boolean; absolu?: boolean }) {
+function racine(
+  etat: string,
+  maitre: ReturnType<typeof maitreDuGlyphe>,
+  options: { effet?: boolean; texteVisible?: boolean; absolu?: boolean },
+) {
   return node('COMPONENT', `State=${etat}`, [
-    wrapper(options.texteVisible ?? true),
+    wrapper(options.texteVisible ?? true, maitre),
     ...(options.absolu ? [overlay()] : []),
   ], {
     variantProperties: { State: etat },
@@ -184,12 +208,13 @@ function racine(etat: string, options: { effet?: boolean; texteVisible?: boolean
   });
 }
 
-function monterLeScenario() {
-  const parDefaut = racine('Default', { texteVisible: false });
+function monterLeScenario(leGlyphe: Glyphe) {
+  const maitre = maitreDuGlyphe(leGlyphe);
+  const parDefaut = racine('Default', maitre, { texteVisible: false });
   const set = node('COMPONENT_SET', 'Root', [
     parDefaut,
-    racine('Focused', { effet: true }),
-    racine('Pressed', { effet: true, absolu: true }),
+    racine('Focused', maitre, { effet: true }),
+    racine('Pressed', maitre, { effet: true, absolu: true }),
   ], {
     key: 'cle-root',
     componentPropertyDefinitions: {
@@ -212,7 +237,8 @@ function monterLeScenario() {
       node('FRAME', 'strict', [], { visible: true }),
     ]),
   ]);
-  const page = node('PAGE', 'Composants', [set, regles]);
+  const reglesDuGlyphe = leGlyphe === 'contracte' ? [conteneurDeRegles('Glyph')] : [];
+  const page = node('PAGE', 'Composants', [set, regles, ...reglesDuGlyphe]);
 
   const collection = {
     id: 'collection',
@@ -285,6 +311,7 @@ const FAMILLES = {
   calqueAbsolu: /^Layer « (Overlay|Mask|Circle) »/,
   horsDuNodeElu: /n’est pas à l’intérieur de/,
   dessinImbrique: /^Layer « Shape » : il n’est fait que de tracés vectoriels/,
+  imbriqueSansRegles: /^Le composant « Root » intègre « Glyph », dont une propriété n’est pas documentée : tone./,
   hauteurDuTexteMasque: /^Layer « Label », height :/,
   etatNonReconnu: /l'état « (focused|pressed) » n'est pas reconnu/,
   intentionAbsente: /aucune règle @usage, @do, @dont ou @pairs n’est déclarée/,
@@ -299,6 +326,7 @@ const CORRIGEES: ReadonlySet<Famille> = new Set<Famille>([
   'etatNonReconnu',
   'hauteurDuTexteMasque',
   'horsDuNodeElu',
+  'dessinImbrique',
 ]);
 
 /** Le nombre de lignes de chaque famille dans une liste de messages. */
@@ -310,8 +338,8 @@ function compterLesFamilles(messages: readonly string[]): Record<Famille, number
   return comptes;
 }
 
-async function exporterLeScenario() {
-  const restaurer = monterLeScenario();
+async function exporterLeScenario(leGlyphe: Glyphe = 'sans-regles') {
+  const restaurer = monterLeScenario(leGlyphe);
   try {
     const resultat = await handleExportComponent();
     const contrat = JSON.parse(resultat.content);
@@ -359,4 +387,34 @@ test('la borne et l’ombre des racines de variant se regroupent en une ligne ch
   assert.equal(cibles('borneSansVariable')?.length, 3);
   assert.equal(comptes.effet, 1);
   assert.equal(cibles('effet')?.length, 2);
+});
+
+test('un imbriqué sans règles donne son point en tête, en perte de portabilité, et ses dessins se taisent', async () => {
+  const { resultat, contrat, comptes } = await exporterLeScenario('sans-regles');
+  const diagnostics = contrat.meta.diagnostics as Array<{ code: string; message: string }>;
+
+  assert.match(diagnostics[0].message, FAMILLES.imbriqueSansRegles);
+  assert.equal(diagnostics[0].code, 'UCM_PORTABLE_PROJECTION_WARNING');
+  assert.equal(contrat.meta.coverage.portable, 'partial');
+  assert.equal(comptes.imbriqueSansRegles, 1);
+  assert.equal(comptes.dessinImbrique, 0);
+  // Une instance par variant et par place : Leading et Trailing, dans les trois.
+  assert.equal(resultat.localisations.get(diagnostics[0].message)?.length, 6);
+  const point = resultat.parties.get(diagnostics[0].message);
+  assert.equal(point?.severite, 'danger');
+  assert.deepEqual(point?.elements, ['tone']);
+});
+
+test('un imbriqué contracté ne donne ni point ni dessin', async () => {
+  const { comptes } = await exporterLeScenario('contracte');
+
+  assert.equal(comptes.imbriqueSansRegles, 0);
+  assert.equal(comptes.dessinImbrique, 0);
+});
+
+test('un imbriqué sans propriété qui n’est qu’un dessin garde le message de dessin, sans point', async () => {
+  const { resultat, comptes } = await exporterLeScenario('icone');
+
+  assert.equal(resultat.warnings.some((message) => message.includes('intègre « Glyph »')), false);
+  assert.equal(comptes.dessinImbrique, 1);
 });

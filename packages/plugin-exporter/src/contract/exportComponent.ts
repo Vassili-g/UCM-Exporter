@@ -13,6 +13,8 @@ import {
 } from './componentTree';
 import { indexContractedNamesInDocument, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
+import { pousserLesImbriques, releverLesImbriques } from './imbriques';
+import type { ReleveDesImbriques } from './imbriques';
 import { TAGS_D_INTENTION } from './rulesModel';
 import { extractStructure } from './extractStructure';
 import { collidingVariantAxes, extractContractPropertyModel } from './parsers';
@@ -117,6 +119,8 @@ export type ComponentExport = {
    * Justification explicite des messages sans node, utilisée par la loi de couverture.
    */
   localisationsDeclarees: ReadonlyMap<string, string>;
+  /** Les imbriqués sans règles : la création des règles en tire son modèle et ses points. */
+  imbriques: ReleveDesImbriques;
 };
 
 /** Erreur « métier » : son message est affiché tel quel à l'utilisateur. */
@@ -279,6 +283,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
   // conditionne tout ce qui suit.
   annoncer('Lecture des composants imbriqués…');
+  const contractes = await indexContractedNamesInDocument();
   const {
     composes: scannedComposes,
     composed,
@@ -289,7 +294,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   } = await scanComposedMatrix(
     matrix.variants.map((entry) => entry.component),
     referenceComponent,
-    await indexContractedNamesInDocument(),
+    contractes,
   );
   warnings.push(...compositionWarnings);
   // Un message qui change de canal laisse sa cible derrière lui si le registre
@@ -320,6 +325,17 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     wrapper?.componentSet?.name,
   );
   const props = propertySurface.props;
+  // Aucune prop `icon` n'existe encore : `mergeIconRules` les ajoute plus loin,
+  // depuis une règle du composant lui-même, que nul imbriqué ne déclare.
+  const clesDuParent = new Set(Object.keys(propertyModel.props));
+  const imbriques = releverLesImbriques({
+    composant: componentSet,
+    variants: matrix.variants.map((entry) => entry.component),
+    maitres: mainByInstanceId,
+    contractes,
+    composed,
+    horsDuParent: Object.keys(props).filter((cle) => !clesDuParent.has(cle)),
+  });
   const publicPropertyKeyByFigmaName = propertySurface.publicPropertyKeyByFigmaName;
   markProjectionWarningsSince(warningCursor);
   warningCursor = warnings.length;
@@ -363,6 +379,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     resolver,
     composed,
     rules.iconRules.map((rule) => rule.iconName),
+    imbriques,
   );
   markProjectionWarningsSince(warningCursor);
   addProjectionWarnings(extracted.warnings);
@@ -480,10 +497,16 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // répété à l'infini.
   const meta = buildMeta(componentSet);
 
-  const allWarnings = Array.from(new Set([...warnings, ...extracted.warnings]));
+  // En tête : le point dit que le contrat est déjà faux, et la demande de
+  // fusion coupe sa liste par la fin quand elle dépasse sa taille.
+  const bloquants: string[] = [];
+  pousserLesImbriques(bloquants, componentSet, imbriques);
+  addProjectionWarnings(bloquants);
+  const allWarnings = Array.from(new Set([...bloquants, ...warnings, ...extracted.warnings]));
   // La jonction : les deux canaux se fondent, et leurs registres avec eux. Le
   // relevé ne va pas plus loin que la frontière sandbox ↔ UI : le contrat, lui,
   // n'en verra rien, et une loi de `lois.ts` le refuse.
+  reporterLocalisations(bloquants, allWarnings);
   reporterLocalisations(warnings, allWarnings);
   reporterLocalisations(extracted.warnings, allWarnings);
   const localisations = localisationsDe(allWarnings);
@@ -572,6 +595,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     localisations,
     parties: decoupes,
     localisationsDeclarees,
+    imbriques,
   };
 }
 

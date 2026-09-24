@@ -670,7 +670,7 @@ const ETATS = [
     id: 'resultat-bloquant-en-tete',
     titre: 'Un bloquant au milieu d’avertissements',
     quand:
-      'Une analyse qui relève trois strokes illisibles, puis découvre qu’un composant imbriqué n’a pas ses règles. Le moteur écrit le bloquant en dernier : il le relève sur le contrat qu’il vient de produire.',
+      'Une analyse qui relève trois strokes illisibles et un composant imbriqué sans règles. Le point bloquant arrive ici après les trois autres : l’interface le place en tête quel que soit son rang d’arrivée.',
     regarder:
       'Le point bloquant EN PREMIER, alors qu’il est arrivé après les trois autres. C’est l’écran qui dit si la pastille et le fond suffisent à le détacher sans rien ajouter. Le compteur du groupe et le verdict annoncent le même nombre : les quatre points sont des gestes, pas trois gestes et une note.',
     existe: true,

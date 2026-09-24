@@ -172,8 +172,9 @@ que rattrapé en silence.
 Ce que l'élection écarte n'est pas oublié : un calque posé **à côté** du node
 élu (un badge, un liseré, un second bloc) ne figure pas dans la projection de
 référence, mais la vue exacte de son variant, qui part de la racine, le publie
-avec son slot, sa typographie et sa visibilité. L'élection ne produit donc aucun
-avertissement.
+avec son slot, sa typographie et sa visibilité, et ses couleurs entrent dans
+`variants[].tokens`, relevé sur le variant entier. L'élection ne produit donc
+aucun avertissement.
 
 La liste s'arrête là, délibérément : `RECTANGLE`, `ELLIPSE` et `LINE` en sont
 exclus. Ce sont les formes dont le type ne dit rien de l'usage (une surface, un
@@ -835,7 +836,9 @@ qu'elle se survole, et il survolera ensuite celles qui demandent un geste.
 `localisation.ts` en compose le titre puis la phrase compacte. La phrase est ce
 que publient `meta.diagnostics`, la demande et le compte rendu ; les parties
 sont ce que l'interface met en page, sous une pastille qui nomme la sévérité.
-Une seule rédaction, deux formes. Sans cette séparation, l'interface n'aurait le
+Une seule rédaction, deux formes. Un point bloquant ajoute la liste que son titre
+annonce : l'interface la pose une ligne par élément, la phrase l'écrit après le
+titre, séparée par des virgules. Sans cette séparation, l'interface n'aurait le
 choix qu'entre afficher un paragraphe (où le geste se lit en dernier, après deux
 phrases de contexte) et découper une `string` dans le DOM, c'est-à-dire
 redéfinir chez elle une grammaire dont le moteur est propriétaire.

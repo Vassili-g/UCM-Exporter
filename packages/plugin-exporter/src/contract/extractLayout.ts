@@ -66,6 +66,7 @@ import type {
   PaddingY,
   Radius,
 } from '@ucm-kit/core/format';
+import { sousUnImbriqueSansRegles } from './imbriques';
 import { estUneRacineDeVariant, pousserLocalise, pousserNote, sujet } from './localisation';
 
 /**
@@ -427,7 +428,11 @@ async function describeNode(
   // contrat : c'est à lui de s'en plaindre, pas à celui-ci.
   if (!estUneDependance) {
     warnUnsupportedProperties(child, warnings);
-    warnUndeclaredDrawing(parent, child, iconNames, composed, warnings);
+    // Un dessin interne d'un imbriqué sans règles se tait : son point bloquant
+    // dit déjà la cause, et le geste qui le corrige.
+    if (!sousUnImbriqueSansRegles(warnings, child)) {
+      warnUndeclaredDrawing(parent, child, iconNames, composed, warnings);
+    }
   }
 
   const describesChildren = publishesChildren(child, iconNames, composed, depth);

@@ -20,6 +20,8 @@ import { extractVariantTokens } from './extractVariantTokens';
 import type { VariantPaintNodeIds } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
 import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
+import { declarerLesImbriquesSansRegles } from './imbriques';
+import type { ReleveDesImbriques } from './imbriques';
 import { declarerLesRacinesDeVariants, pousserSansNode } from './localisation';
 import type { DiscoveredRoles } from './semantics';
 import type {
@@ -109,6 +111,8 @@ export async function extractStructure(
   // Calques désignés par les règles `@icons`, relevés avant les slots : c'est
   // leur inventaire qui donne son rôle `icon` au slot correspondant.
   iconNames: readonly string[] = [],
+  // Les imbriqués sans règles : leurs dessins internes se taisent.
+  imbriques?: ReleveDesImbriques,
 ): Promise<{
   structure: ContractStructure;
   textStyles: Record<string, TextStyleDefinition>;
@@ -145,6 +149,7 @@ export async function extractStructure(
   targetedLayers: Set<string>;
 }> {
   const warnings = [...matrixWarnings];
+  if (imbriques) declarerLesImbriquesSansRegles(warnings, imbriques);
   // Un set d'un seul variant garde le nom de sa racine : rien n'y est à regrouper.
   if (matrix.variants.length > 1) {
     declarerLesRacinesDeVariants(warnings, matrix.variants.map(({ component }) => component));

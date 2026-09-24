@@ -545,7 +545,9 @@ La spécification en lien porte le raisonnement.
   jamais son dessin. Le déclencheur est le tracé (`nodeBindings.estUnTrace`, la
   même autorité que pour les dimensions), jamais l’absence de texte. Un seul
   message par dessin, sur le calque le plus profond qui le contienne encore en
-  entier ; un composant qui est un dessin ne dit rien.
+  entier ; un composant qui est un dessin ne dit rien. Un dessin interne d’un
+  composant imbriqué qui attend ses règles se tait aussi : son point bloquant
+  dit la cause (`sousUnImbriqueSansRegles`, `src/contract/imbriques.ts`).
 - Masquer et remplacer sont deux libertés distinctes : le booléen Figma dit si
   une icône s’affiche, la prop runtime dit laquelle rendre. Une icône toujours
   visible est modifiable comme une autre, sans booléen et sans signalement.
@@ -675,18 +677,22 @@ La spécification en lien porte le raisonnement.
   (`pousserPourLesVariants`, `src/contract/localisation.ts`).
 - **Un point bloquant se lit en tête de la liste, quel que soit son rang
   d’arrivée.** Il dit que le contrat est déjà faux, là où un avertissement le
-  laisse exact ; le moteur, lui, le relève sur le contrat qu’il vient de
-  produire, donc en dernier. L’interface l’insère avant le premier
-  avertissement, sans trier les autres
-  (`tests/interface/interface.test.mjs`).
-- **Un composant imbriqué sans ses règles se signale à l’analyse comme à la
-  création des règles.** Les deux passent par le même relevé
-  (`releverLesImbriques`) : c’est l’analyse que le designer relance, et taire la
-  cause là où il la cherche laisse ses conséquences seules à l’écran. Ces points
-  entrent dans le compte du verdict, qui annonce donc ce que la liste montre.
+  laisse exact. Le moteur le place en tête de `meta.diagnostics`, parce que la
+  demande de fusion coupe sa liste par la fin ; l’interface l’insère avant le
+  premier avertissement, sans trier les autres, quel que soit l’ordre où il
+  arrive (`tests/interface/interface.test.mjs`).
+- **Un composant imbriqué sans ses règles se signale dans le contrat.** Le
+  moteur en fait l’unique relevé (`releverLesImbriques`,
+  `src/contract/imbriques.ts`) : un composant publié, non contracté et qui
+  n’est pas une icône donne un point bloquant, publié dans `meta.diagnostics`
+  et la demande de fusion en `UCM_PORTABLE_PROJECTION_WARNING`, puisque le
+  contrat n’a pas la dépendance qu’il devrait réutiliser. La création des
+  règles relit le relevé que l’export lui rend. Le verdict compte ce que la
+  liste montre.
 - **Les trois parties voyagent séparées**, du site d’émission jusqu’à
   l’interface : un site écrit un `Constat` (`src/contract/localisation.ts`),
-  jamais une phrase. La phrase compacte que publient `meta.diagnostics`, la
+  jamais une phrase. Un point bloquant porte en plus la liste que son titre
+  annonce (`elements`), que la phrase écrit après le titre. La phrase compacte que publient `meta.diagnostics`, la
   demande de fusion et le journal s’en dérive (`phraseDe`), sans seconde rédaction ;
   l’interface, elle, met les parties en page et ne recoupe rien. Deux lois le
   tiennent (`tests/loiDesParties.test.ts`) : l’une lit la source et refuse

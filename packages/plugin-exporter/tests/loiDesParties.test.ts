@@ -102,8 +102,10 @@ export function verifierLesPartiesDesDiagnostics(
     }
     // La phrase compacte se DÉRIVE des parties : si les deux divergent, la pull
     // request et la carte ne disent plus la même chose, et c'est exactement ce
-    // que « sans seconde rédaction » interdit.
-    const derivee = `${point.titre} ${point.impact} ${point.action}`;
+    // que « sans seconde rédaction » interdit. La liste d'un point bloquant se
+    // lit après son titre, qui l'annonce par « : ».
+    const liste = point.elements?.length ? ` ${point.elements.join(', ')}.` : '';
+    const derivee = `${point.titre}${liste} ${point.impact} ${point.action}`;
     if (derivee !== message) fautifs.push(`la phrase ne dérive pas des parties — ${derivee}`);
   }
 

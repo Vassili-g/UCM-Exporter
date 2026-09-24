@@ -162,6 +162,11 @@ publient, s’en dérive et ne se rédige jamais une seconde fois :
 {Élément Figma}[, {champ}] : {ce qui manque}. {impact}. {action}.
 ```
 
+Un point bloquant, celui d'un composant imbriqué sans règles, porte une
+quatrième partie : `elements`, la liste que son titre annonce par « : ».
+L'interface la pose une ligne par élément ; la phrase compacte l'écrit après le
+titre, séparée par des virgules et suivie d'un point.
+
 L’interface, elle, ne recoupe pas cette phrase : elle met les trois parties en
 page, sous une pastille qui nomme la sévérité. C’est pour cela qu’elles voyagent
 séparées : un paragraphe unique fait lire le geste en dernier, après deux
