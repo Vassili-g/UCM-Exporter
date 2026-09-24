@@ -67,6 +67,12 @@ type ProprieteNonPortee = {
   manque: string;
   /** Le geste à faire dans Figma, sans le « puis réexportez » final. */
   geste: string;
+  /**
+   * L'impact quand cette propriété est celle de tous les variants d'un set.
+   * Absent tant que le mainteneur n'a pas validé ce texte : la propriété garde
+   * alors une ligne par racine.
+   */
+  impactDesVariants?: string;
 };
 
 /** Les modes de fusion que Figma considère comme neutres. */
@@ -93,6 +99,7 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
       champ: 'effect',
       manque: 'l’ombre ou le flou de ce layer',
       geste: 'Retirez cet effect si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
+      impactDesVariants: 'Le contrat n’exportera pas l’ombre ou le flou de ces variants.',
     });
   }
 
@@ -310,12 +317,23 @@ function proprietesDeTexteNonPortees(
  * demandent deux gestes différents, et les fondre en une phrase priverait le
  * designer de l'un des deux.
  */
-export function unsupportedPropertyWarnings(node: SceneNode): PointACorriger[] {
-  return proprietesNonPortees(node).map(({ champ, manque, geste }) =>
-    pointDe(sujet('Layer', node).texte, {
+export function unsupportedPropertyWarnings(
+  node: SceneNode,
+  racineDeVariant = false,
+): PointACorriger[] {
+  return proprietesNonPortees(node).map(({ champ, manque, geste, impactDesVariants }) => {
+    if (racineDeVariant && impactDesVariants) {
+      return {
+        titre: 'Propriété non supportée par le moteur.',
+        impact: impactDesVariants,
+        action: `${geste}, puis réexportez.`,
+      };
+    }
+    return pointDe(sujet('Layer', node).texte, {
       champ,
       manque: 'le contrat n’a aucun champ pour cette propriété.',
       impact: `Le développeur n’aura pas ${manque}.`,
       action: `${geste}, puis réexportez.`,
-    }));
+    });
+  });
 }

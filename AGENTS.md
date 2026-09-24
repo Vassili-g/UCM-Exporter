@@ -670,7 +670,10 @@ La spécification en lien porte le raisonnement.
   relevée ni signalée.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
   geste à faire. Les trois sont exigés ; un constat qui ne nomme aucun geste
-  n’est pas un avertissement, et il ne s’écrit nulle part.
+  n’est pas un avertissement, et il ne s’écrit nulle part. Un message qui vise
+  la racine de chaque variant du set exporté ne nomme aucun calque : le nom
+  change d’une racine à l’autre, et la phrase s’écrit une fois pour toutes
+  (`pousserPourLesVariants`, `src/contract/localisation.ts`).
 - **Un point bloquant se lit en tête de la liste, quel que soit son rang
   d’arrivée.** Il dit que le contrat est déjà faux, là où un avertissement le
   laisse exact ; le moteur, lui, le relève sur le contrat qu’il vient de

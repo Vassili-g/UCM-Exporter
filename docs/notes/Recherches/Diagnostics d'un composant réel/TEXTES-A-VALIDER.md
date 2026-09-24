@@ -7,7 +7,8 @@ du plan sous des noms neutres : un component set « Button » de 140 variants,
 nommés comme « Color=Primary, Variant=Filled, State=Focused ».
 
 Le mainteneur choisit une rédaction par message, ou la réécrit. L6 et L9
-reprennent le texte retenu mot pour mot.
+reprennent le texte retenu mot pour mot. La section « Textes retenus » en bas de
+ce fichier donne ce que L6 et L9 écrivent.
 
 ## L6 : un message sur la racine d'un variant se regroupe
 
@@ -140,3 +141,49 @@ Exemple : deux composants du fichier « Design system », « Button » et
 |---|---|---|---|
 | 1 | « Button » et « button », du fichier « Design system », produisent le même identifiant. | Leurs deux contrats s'écrivent dans `components/Button/Button.contract.json`, et cet export écraserait celui de « button » (branche main). | Renommez l'un des deux composants dans Figma, puis relancez l'export. |
 | 2 | Le fichier « Design system » porte deux composants au même identifiant : « Button » et « button ». | Cet export écraserait le contrat de « button » dans `components/Button/Button.contract.json` (branche main). | Renommez l'un des deux composants dans Figma, puis relancez l'export. |
+
+## Textes retenus
+
+Le mainteneur a réécrit les rédactions proposées. Le moteur n'a que trois
+parties par message : l'intitulé devient le titre, et la phrase qui le suit
+ouvre l'impact. Aucun titre de L6 ne nomme un calque, et `**` met un passage en
+gras dans le plugin et dans la demande de fusion.
+
+### L6
+
+| Message | Titre | Impact | Action |
+|---|---|---|---|
+| Borne sans variable | Propriété sans token associé. | Des variants déclarent un **min width** sans token. Le contrat ne publiera que les paramètres reliés à un token. | Reliez ces paramètres à une variable dans chaque variant concerné, puis réexportez. |
+| Propriété sans champ (`effect`) | Propriété non supportée par le moteur. | Le contrat n'exportera pas l'ombre ou le flou de ces variants. | Retirez cet effect si le rendu peut s'en passer, ou signalez cette limite au mainteneur du plugin, puis réexportez. |
+| Champ sans variable (`gap`) | gap : aucun token n'est relié à cette propriété. | Le contrat n'exportera pas cette propriété. | Reliez-la à un token, puis réexportez. |
+
+Deux bornes sans variable sur les mêmes racines s'écrivent « des variants
+déclarent **min width** et **max width** sans token ».
+
+### L9
+
+| Cas | Titre | Impact | Action |
+|---|---|---|---|
+| Deux fichiers Figma | « Button » vient du fichier « Design system », et le contrat « Button » du dépôt vient du fichier « Fichier de recette ». | Les deux s'écrivent dans `components/Button/Button.contract.json` : cet export écraserait le contrat existant (branche main). | Choisissez un autre dépôt dans la configuration du plugin, ou renommez l'un des deux composants dans Figma, puis relancez l'export. |
+| Même fichier Figma | Le fichier « Design system » porte deux composants avec le même identifiant : « Button » et « button ». | Cet export écraserait le contrat de « button » dans `components/Button/Button.contract.json` (branche main). | Renommez l'un des deux composants dans Figma, puis relancez l'export. |
+
+Le composant exporté est nommé en premier, le contrat déjà présent en second.
+
+### Ajustements de forme
+
+- Les titres de L6 finissent par un point : la phrase compacte de
+  `meta.diagnostics` et de la demande de fusion joint titre, impact et action.
+- « reliées » devient « reliés », qui s'accorde avec « paramètres ».
+- Chaque fichier garde son apostrophe : droite dans `nodeBindings.ts` et
+  `depot.ts`, typographique dans `unsupportedProperties.ts`.
+
+## Reste à valider
+
+L6 n'écrit un texte de groupe que pour ce que le mainteneur a validé. Sur la
+racine d'un variant, ces messages gardent une ligne par variant :
+
+- `opacity`, `blend mode`, `mask`, `dash`, `fill` et `stroke` de la propriété
+  sans champ ;
+- les autres refus d'un champ : côtés reliés à des variables différentes,
+  réglages qui se contredisent, côtés sans variable, absence d'auto layout ;
+- l'alignement d'auto layout illisible et l'auto layout absent de la racine.

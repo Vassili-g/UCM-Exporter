@@ -66,7 +66,7 @@ import type {
   PaddingY,
   Radius,
 } from '@ucm-kit/core/format';
-import { pousserLocalise, pousserNote, sujet } from './localisation';
+import { estUneRacineDeVariant, pousserLocalise, pousserNote, sujet } from './localisation';
 
 /**
  * Les dépendances que l'arbre place, indexées par le slot qui les rend.
@@ -139,7 +139,8 @@ function layoutDirection(node: SceneNode): LayoutDirection {
  * dépendance, que ce contrat-ci ne décrit pas.
  */
 function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
-  for (const point of unsupportedPropertyWarnings(node)) {
+  const racine = estUneRacineDeVariant(warnings, node);
+  for (const point of unsupportedPropertyWarnings(node, racine)) {
     pousserNote(warnings, point, sujet('Layer', node));
   }
 }

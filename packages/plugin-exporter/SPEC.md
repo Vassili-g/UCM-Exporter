@@ -297,6 +297,18 @@ tracés internes d’une icône restent hors de la portée du relevé. Le seuil 
 neutralité de la rotation est un centième de degré, très en dessous du premier
 pixel visible et très au-dessus du bruit de flottant.
 
+##### Racine de variant : une phrase pour tous les variants
+
+La vue exacte de chaque variant part de sa racine, donc les messages qui visent
+une racine se répètent une fois par variant. Sur un set de plusieurs variants,
+`extractStructure` déclare ces racines à `estUneRacineDeVariant`, et trois
+messages s'écrivent une fois, sans nom de calque : une borne sans variable, une
+propriété sans champ et un champ sans variable. Leur carte garde chaque racine
+pour cible. Pour la propriété sans champ, seul `effect` a un texte de groupe ;
+les autres propriétés gardent une ligne par racine tant que le leur n'est pas
+validé. Les représentants de tailles d'un wrapper ne sont pas des racines du
+set exporté et gardent le nom de leur variant.
+
 ##### Passage à la ligne : les mots du message
 
 Sous le wrap, Figma scinde son champ gap en deux. Les messages emploient donc «

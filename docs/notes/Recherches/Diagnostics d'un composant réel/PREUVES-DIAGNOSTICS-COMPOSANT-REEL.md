@@ -2,9 +2,9 @@
 
 ## État
 
-- Lot courant : L4
-- Branche et `HEAD` : `main`, `97e3ef1`
-- Dernière porte franchie : aucune
+- Lot courant : L6
+- Branche et `HEAD` : `main`, `51a1766`
+- Dernière porte franchie : H1
 
 La copie de travail partagée porte le travail non commité d'une autre session
 (`packages/couleur`, `packages/plugin-palettes`, `packages/plugin-socle`,
@@ -174,4 +174,52 @@ copiés ; le build y tourne étape par étape.
   collision, entre deux fichiers et dans un même fichier.
 - Aucun test ne vérifie aujourd'hui le texte du refus de collision
   (`refusDeCollision`, `src/depot.ts`) : L9 devra en écrire un.
-- En attente du choix du mainteneur. L6 et L9 ne commencent pas avant.
+- Le mainteneur a réécrit les rédactions. Trois arbitrages ont précédé le code :
+  le moteur n'a que trois parties, donc l'intitulé est le titre et la phrase qui
+  le suit ouvre l'impact ; aucun titre de L6 ne nomme un calque, et
+  `CONTRIBUTING.md` et `AGENTS.md` reçoivent l'exception ; le gras `**` est rendu
+  par le plugin, et la demande de fusion le lit en Markdown. Les textes retenus
+  sont dans la section « Textes retenus » de `TEXTES-A-VALIDER.md`.
+- Dernière porte franchie : H1.
+
+### L6 : un message sur la racine se regroupe sur les variants
+
+- Commit : ce commit, après le commit de L4.
+- Commandes :
+  - sites recensés pour une racine de variant du set exporté : `resolveSizeBounds`
+    (borne), `resolveGroup` branche « aucune liaison » (champ sans variable, sur
+    `gap`, `padding`, `radius`) et `unsupportedPropertyWarnings` (propriété sans
+    champ). Les deux extractions de `extractLayout` les atteignent : la vue exacte
+    passe la racine comme node de layout, la projection de référence la passe
+    comme composant.
+  - tests écrits d'abord, `messagesDeRacine.test.ts` : neuf rouges sur dix,
+    `declarerLesRacinesDeVariants is not a function` ; le dixième, « sans
+    déclaration, chaque racine garde son message », garde le comportement actuel.
+  - `npx tsx --test` sur `messagesDeRacine` et `diagnosticsComposantReel` : 0
+    échec. `tsc --noEmit` : 0. `node scripts/run-tests.cjs` dans
+    `packages/plugin-exporter` : 916 tests, 0 échec. `npm run test:ui` : 24
+    tests, 0 échec, dont celui du gras.
+- Résultats : `extractStructure` déclare les racines de la matrice à
+  `declarerLesRacinesDeVariants` quand le set a plus d'un variant ; les trois
+  sites consultent `estUneRacineDeVariant` sur leur canal et écrivent par
+  `pousserPourLesVariants`. L'appartenance à la matrice décide, pas le parent :
+  les représentants de tailles d'un wrapper ne sont pas déclarés, et
+  `extractSizes.test.ts` reste vert sans changement. Sur le scénario, la famille
+  de la borne passe de 3 lignes à 1 ligne à 3 cibles, celle de l'ombre de 2
+  lignes à 1 ligne à 2 cibles. Seul `effect` reçoit un texte de groupe : les
+  autres propriétés sans champ gardent une ligne par racine, tant que le
+  mainteneur n'a pas validé leur texte (liste dans `TEXTES-A-VALIDER.md`).
+  `CompteRendu.ts` rend `**` en `<strong>` sans passer par du HTML, et laisse un
+  nombre impair de marques tel quel. La galerie gagne l'état
+  `resultat-avertissement-regroupe`.
+- Mutations : la déclaration des racines retirée dans `extractStructure` : le
+  scénario et le test de regroupement sortent rouges. Le sujet de chacun des trois
+  sites rendu au nom du node (`false &&` devant la condition) : les tests de
+  `messagesDeRacine`, dont le test de la borne à trois cibles, sortent rouges.
+  `ecrireAvecGras` qui ne rend jamais de gras : le test d'interface sort rouge.
+  Chaque fichier restauré par copie : vert.
+- Écart ou réserve : les textes reprennent ceux du mainteneur avec trois
+  ajustements de forme, consignés dans `TEXTES-A-VALIDER.md` (point final des
+  titres, accord de « reliés », apostrophes). Le plan prévoyait un simple
+  changement de sujet ; les textes retenus changent les trois parties, et le
+  titre de la propriété sans champ ne porte plus le nom de la propriété.

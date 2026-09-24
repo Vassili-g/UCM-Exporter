@@ -16,7 +16,7 @@ import {
   sizeBoundFields,
 } from './flexLayout';
 import type { ContainerSizing, GridStructuralSize, SizeBounds, SlotSize } from '@ucm-kit/core/format';
-import { pousserLocalise } from './localisation';
+import { estUneRacineDeVariant, pousserLocalise, pousserPourLesVariants } from './localisation';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
 export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
@@ -519,6 +519,14 @@ async function resolveGroup<K extends string>(
   const withBindings = resolved.filter((entry) => entry.aliases.some(Boolean));
   if (withBindings.length === 0) {
     if (hasImplicitDefaultValue(node, alternatives)) return null;
+    if (estUneRacineDeVariant(warnings, node)) {
+      pousserPourLesVariants(warnings, node, {
+        titre: `${label} : aucun token n'est relié à cette propriété.`,
+        impact: `Le contrat n'exportera pas cette propriété.`,
+        action: `Reliez-la à un token, puis réexportez.`,
+      });
+      return null;
+    }
     pousserLocalise(warnings, 'Layer', node, {
       champ: label,
       manque: `aucune variable Figma n'est reliée.`,
@@ -804,7 +812,18 @@ export async function resolveSizeBounds(
 
   const bound = fields.filter((field) => Boolean(firstVariableAlias(getBinding(node, field))));
   const unbound = fields.filter((field) => !bound.includes(field));
-  if (unbound.length > 0) {
+  if (unbound.length > 0 && estUneRacineDeVariant(warnings, node)) {
+    const enGras = unbound.map((field) => `**${fieldLabel(field)}**`);
+    const declarees = enGras.length === 1
+      ? `un ${enGras[0]}`
+      : `${enGras.slice(0, -1).join(', ')} et ${enGras[enGras.length - 1]}`;
+    pousserPourLesVariants(warnings, node, {
+      titre: `Propriété sans token associé.`,
+      impact: `Des variants déclarent ${declarees} sans token. `
+        + `Le contrat ne publiera que les paramètres reliés à un token.`,
+      action: `Reliez ces paramètres à une variable dans chaque variant concerné, puis réexportez.`,
+    });
+  } else if (unbound.length > 0) {
     pousserLocalise(warnings, 'Layer', node, {
       manque: `il fixe ${unbound.map(fieldLabel).join(', ')} sans variable Figma.`,
       impact: `Le contrat ne publie que les bornes reliées à une variable : le développeur `

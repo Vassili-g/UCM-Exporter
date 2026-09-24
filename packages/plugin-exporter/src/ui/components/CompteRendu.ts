@@ -22,6 +22,27 @@ export interface CompteRenduUi {
   ajouterLien(libelle: string, url: string): void;
 }
 
+/**
+ * Pose un texte dont les passages entre `**` sont en gras.
+ *
+ * Le moteur écrit ces marques pour la demande de fusion, où elles sont du
+ * Markdown. Ici elles deviennent un `<strong>`, sans jamais passer par du HTML :
+ * un nombre impair de marques n'en ferme aucune, et le texte reste tel quel.
+ */
+function ecrireAvecGras(element: HTMLElement, texte: string): void {
+  const segments = texte.split('**');
+  if (segments.length % 2 === 0) {
+    element.textContent = texte;
+    return;
+  }
+  element.replaceChildren(...segments.map((segment, rang) => {
+    if (rang % 2 === 0) return document.createTextNode(segment);
+    const gras = document.createElement('strong');
+    gras.textContent = segment;
+    return gras;
+  }));
+}
+
 /** Rend séparément les corrections Figma et le résultat de publication. */
 export function createCompteRendu(): CompteRenduUi {
   const section = document.createElement('section');
@@ -127,7 +148,7 @@ export function createCompteRendu(): CompteRenduUi {
 
     const titre = document.createElement('p');
     titre.className = 'carte-titre';
-    titre.textContent = point.titre;
+    ecrireAvecGras(titre, point.titre);
 
     carte.append(pastille, titre);
 
@@ -148,14 +169,14 @@ export function createCompteRendu(): CompteRenduUi {
     if (point.impact) {
       const impact = document.createElement('p');
       impact.className = 'carte-impact';
-      impact.textContent = point.impact;
+      ecrireAvecGras(impact, point.impact);
       carte.appendChild(impact);
     }
 
     if (point.action) {
       const action = document.createElement('p');
       action.className = 'carte-action';
-      action.textContent = point.action;
+      ecrireAvecGras(action, point.action);
       carte.appendChild(action);
     }
 

@@ -155,6 +155,30 @@ test('un point à corriger pose ses éléments en liste, un par ligne', async ()
   }
 });
 
+test('un passage entre ** se lit en gras, et jamais comme du HTML', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await page.getByRole('button', { name: 'Analyser le composant', exact: true }).click();
+    await envoyer({
+      type: 'diagnostic',
+      titre: 'Propriété sans token associé.',
+      impact: 'Des variants déclarent un **min width** sans token. <b>Impact</b>.',
+      action: 'Reliez ces paramètres à un **token de départ, puis réexportez.',
+      nodeIds: ['1:1', '1:2', '1:3'],
+      operation: 1,
+    });
+    assert.deepEqual(await page.locator('.carte-impact strong').allInnerTexts(), ['min width']);
+    assert.equal(await page.locator('.carte-impact b').count(), 0);
+    assert.match(await page.locator('.carte-impact').innerText(), /<b>Impact<\/b>/);
+    // Une marque sans sa fermeture n'ouvre aucun gras : le texte reste écrit tel quel.
+    assert.equal(await page.locator('.carte-action strong').count(), 0);
+    assert.match(await page.locator('.carte-action').innerText(), /\*\*token de départ/);
+    assert.equal(await page.getByRole('button', { name: 'Sélectionner les 3 calques' }).count(), 1);
+  } finally {
+    await page.close();
+  }
+});
+
 test('un point sans éléments ne pose aucune liste', async () => {
   const { page, envoyer } = await ouvrir();
   try {

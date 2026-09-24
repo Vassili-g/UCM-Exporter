@@ -76,6 +76,22 @@ const AVERTISSEMENT_SANS_TEXT_STYLE = { // extractVariantTypography.ts, loadText
   impact: "Sa typographie manquera au développeur.",
   action: "Appliquez un text style au layer entier, puis réexportez.",
 };
+// Les trois messages qui visent la racine de chaque variant du set exporté.
+const AVERTISSEMENT_BORNE_DES_VARIANTS = { // nodeBindings.ts, resolveSizeBounds
+  titre: "Propriété sans token associé.",
+  impact: "Des variants déclarent un **min width** sans token. Le contrat ne publiera que les paramètres reliés à un token.",
+  action: "Reliez ces paramètres à une variable dans chaque variant concerné, puis réexportez.",
+};
+const AVERTISSEMENT_OMBRE_DES_VARIANTS = { // unsupportedProperties.ts, effect
+  titre: "Propriété non supportée par le moteur.",
+  impact: "Le contrat n’exportera pas l’ombre ou le flou de ces variants.",
+  action: "Retirez cet effect si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin, puis réexportez.",
+};
+const AVERTISSEMENT_GAP_DES_VARIANTS = { // nodeBindings.ts, resolveGroup
+  titre: "gap : aucun token n'est relié à cette propriété.",
+  impact: "Le contrat n'exportera pas cette propriété.",
+  action: "Reliez-la à un token, puis réexportez.",
+};
 const AVERTISSEMENT_HORS_DU_NODE = { // extractLayout.ts, warnLayersOutsideLayoutNode
   titre: "Layer « Badge » : il n’est pas à l’intérieur de « Contenu ».",
   impact: "Le contrat ne décrit que le contenu de « Contenu ». « Badge » n’y figure pas, et le développeur ne le rendra pas.",
@@ -699,6 +715,25 @@ const ETATS = [
       diagnostic(AVERTISSEMENT_STROKE, ['12:345']),
       diagnostic(AVERTISSEMENT_SANS_TEXT_STYLE, ['12:346', '12:347', '12:348']),
       diagnostic(AVERTISSEMENT_TEXT_STYLE),
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 3 }),
+    ],
+  },
+  {
+    id: 'resultat-avertissement-regroupe',
+    titre: 'Des avertissements regroupés sur les variants',
+    quand:
+      "Un component set de cent quarante variants dont chaque racine fixe un min width sans variable, porte une ombre et laisse son gap sans variable. Le moteur écrit une phrase par sujet, sans nom de calque, et la carte réunit toutes les racines.",
+    regarder:
+      "Trois cartes, et non trois cent huit : aucune ne nomme un calque, et le bouton dit « Sélectionner les 140 calques » sur la première et la troisième, « Sélectionner les 28 calques » sur la deuxième. Le nom de la propriété est en gras dans l'impact de la première.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      diagnostic(AVERTISSEMENT_BORNE_DES_VARIANTS, Array.from({ length: 140 }, (_, rang) => `20:${rang + 1}`)),
+      diagnostic(AVERTISSEMENT_OMBRE_DES_VARIANTS, Array.from({ length: 28 }, (_, rang) => `21:${rang + 1}`)),
+      diagnostic(AVERTISSEMENT_GAP_DES_VARIANTS, Array.from({ length: 140 }, (_, rang) => `22:${rang + 1}`)),
       verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 3 }),
     ],
   },

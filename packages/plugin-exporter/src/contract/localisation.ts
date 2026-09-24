@@ -153,6 +153,51 @@ export function sujet(genre: SujetLocalisable, node: NodeLocalisable): Sujet {
 }
 
 /**
+ * Les racines de variant du set exporté, par canal.
+ *
+ * Le nom d'une racine change d'un variant à l'autre : un message qui l'écrit
+ * donne autant de lignes que de variants, alors que le geste est le même. Les
+ * sites qui peuvent viser une racine consultent `estUneRacineDeVariant` et
+ * écrivent alors une seule phrase, sans nom de calque. L'appartenance au set
+ * décide, jamais le seul fait que le parent est un component set : les
+ * représentants de tailles d'un wrapper sont ceux d'un autre set, et leurs
+ * messages gardent le nom de leur variant.
+ */
+const racinesDeVariants = new WeakMap<Canal, Set<string>>();
+
+/** Déclare, pour ce canal, les racines dont un message se regroupe. */
+export function declarerLesRacinesDeVariants(
+  canal: Canal,
+  racines: readonly NodeLocalisable[],
+): void {
+  let ids = racinesDeVariants.get(canal);
+  if (!ids) {
+    ids = new Set();
+    racinesDeVariants.set(canal, ids);
+  }
+  for (const racine of racines) ids.add(racine.id);
+}
+
+/** Vrai si ce node est la racine d'un variant que ce canal a déclarée. */
+export function estUneRacineDeVariant(canal: Canal, node: NodeLocalisable): boolean {
+  return racinesDeVariants.get(canal)?.has(node.id) ?? false;
+}
+
+/**
+ * Pousse un point écrit pour tous les variants à la fois.
+ *
+ * Son titre ne nomme aucun calque : le node ne sert que de cible, et le bouton
+ * de la carte sélectionne toutes les racines que la phrase a réunies.
+ */
+export function pousserPourLesVariants(
+  canal: string[],
+  racine: NodeLocalisable,
+  point: PointACorriger,
+): string {
+  return pousserNote(canal, point, { texte: '', nodeId: racine.id });
+}
+
+/**
  * Un sujet dont le nom affiché n'est pas celui du node.
  *
  * Le cas existe et n'est pas une bizarrerie : un conteneur de règles se

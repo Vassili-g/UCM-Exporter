@@ -280,8 +280,8 @@ function monterLeScenario() {
  * reconnues à un extrait de leur message.
  */
 const FAMILLES = {
-  borneSansVariable: /il fixe min width sans variable Figma/,
-  effet: /, effect : le contrat n’a aucun champ/,
+  borneSansVariable: /^Propriété sans token associé\. Des variants déclarent un \*\*min width\*\*/,
+  effet: /^Propriété non supportée par le moteur\. Le contrat n’exportera pas l’ombre ou le flou/,
   calqueAbsolu: /^Layer « (Overlay|Mask|Circle) »/,
   dessinImbrique: /^Layer « Shape » : il n’est fait que de tracés vectoriels/,
   hauteurDuTexteMasque: /^Layer « Label », height :/,
@@ -334,4 +334,15 @@ test('le scénario du composant réel passe les lois, et seules les familles cor
     }
     assert.ok(lignes > 0, `la famille « ${famille} » ne sort pas`);
   }
+});
+
+test('la borne et l’ombre des racines de variant se regroupent en une ligne chacune', async () => {
+  const { resultat, comptes } = await exporterLeScenario();
+  const cibles = (famille: Famille) =>
+    [...resultat.localisations].find(([message]) => FAMILLES[famille].test(message))?.[1];
+
+  assert.equal(comptes.borneSansVariable, 1);
+  assert.equal(cibles('borneSansVariable')?.length, 3);
+  assert.equal(comptes.effet, 1);
+  assert.equal(cibles('effet')?.length, 2);
 });

@@ -131,6 +131,15 @@ Chacun répond à trois questions, dans cet ordre :
 | **Et alors** | `impact` | Ce que le développeur n’aura pas, en une phrase |
 | **Comment** | `action` | Le geste à faire dans Figma, à l’impératif |
 
+Un point écrit pour la racine de tous les variants du set exporté fait
+exception à la première ligne : le nom d'une racine change d'un variant à
+l'autre, et un titre qui le porte donne une ligne par variant. Ce titre ne nomme
+aucun calque. `pousserPourLesVariants` (`src/contract/localisation.ts`) l'écrit
+une fois, et le bouton de sa carte sélectionne toutes les racines. Les sites qui
+peuvent viser une racine consultent `estUneRacineDeVariant` ; un set d'un seul
+variant n'en déclare aucune. Un passage entre `**` s'affiche en gras dans le
+plugin et, en Markdown, dans la demande de fusion.
+
 **Les trois voyagent séparées, du moteur jusqu’à l’interface.** Un site
 d’émission n’écrit pas une phrase : il écrit un `Constat`
 (`src/contract/localisation.ts`), et l’autorité en compose le titre puis la

@@ -21,7 +21,7 @@ import { extractVariantTokens } from './extractVariantTokens';
 import type { VariantPaintNodeIds } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
 import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
-import { pousserSansNode } from './localisation';
+import { declarerLesRacinesDeVariants, pousserSansNode } from './localisation';
 import type { DiscoveredRoles } from './semantics';
 import type {
   ComposedDependency,
@@ -146,6 +146,10 @@ export async function extractStructure(
   targetedLayers: Set<string>;
 }> {
   const warnings = [...matrixWarnings];
+  // Un set d'un seul variant garde le nom de sa racine : rien n'y est à regrouper.
+  if (matrix.variants.length > 1) {
+    declarerLesRacinesDeVariants(warnings, matrix.variants.map(({ component }) => component));
+  }
   const notices: string[] = [];
   const placedComposes: PlacedDependencies = new Map();
   // Les règles `@icons` sont relevées avant toute extraction : c'est leur
