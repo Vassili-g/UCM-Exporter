@@ -379,17 +379,22 @@ function construire(contexte: Contexte, empreinteAffichee: string, grille: boole
 }
 
 /**
- * Le modèle du cadre d'une palette. Son empreinte ([PLA-19], E2) porte sur le
- * modèle dont l'en-tête montre un texte d'attente à la place de l'empreinte :
- * l'empreinte ne peut pas se contenir. Elle change donc avec tout ce que le
- * cadre montre, et seulement avec cela.
+ * L'empreinte du modèle du cadre d'une palette ([PLA-19], E2). Elle porte sur
+ * le modèle dont l'en-tête montre un texte d'attente à la place de
+ * l'empreinte : l'empreinte ne peut pas se contenir. Elle change donc avec
+ * tout ce que le cadre montre, et seulement avec cela. La fraîcheur n'a besoin
+ * que d'elle, et ne construit pas le cadre affiché.
  */
+export function empreinteDuModele(recette: Recette, palette: Palette, profil: ProfilDuDocument, options: { grille: boolean } = { grille: false }): string {
+  return empreinte(construire({ recette, palette, profil, peints: [] }, EMPREINTE_EN_ATTENTE, options.grille));
+}
+
+/** Le modèle du cadre d'une palette, dont l'en-tête affiche l'empreinte. */
 export function modeleDeCadre(recette: Recette, palette: Palette, profil: ProfilDuDocument, options: { grille: boolean } = { grille: false }): ModeleDeCadre {
-  const brouillon = construire({ recette, palette, profil, peints: [] }, EMPREINTE_EN_ATTENTE, options.grille);
-  const empreinteDuModele = empreinte(brouillon);
+  const empreinteAffichee = empreinteDuModele(recette, palette, profil, options);
   const peints: { nom: string; hexa: string }[] = [];
-  const racine = construire({ recette, palette, profil, peints }, empreinteDuModele, options.grille);
-  return { palette: palette.id, nom: nomDeLaPalette(palette), empreinte: empreinteDuModele, racine, peints };
+  const racine = construire({ recette, palette, profil, peints }, empreinteAffichee, options.grille);
+  return { palette: palette.id, nom: nomDeLaPalette(palette), empreinte: empreinteAffichee, racine, peints };
 }
 
 /** Le nombre de calques qu'un modèle pose, racine comprise. */

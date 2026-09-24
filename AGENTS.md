@@ -213,13 +213,15 @@ packages/plugin-socle/   ce que les plugins partagent : ucm-plugin-socle, privé
 packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/code.ts              routage des demandes de l'interface, une porte par geste d'écriture
   src/messages.ts          les deux sens de la frontière sandbox ↔ interface
-  src/lecture.ts           la recette rangée, classée, son empreinte, et le profil du document
+  src/lecture.ts           la recette rangée, classée, son empreinte, le profil du document et les cadres de la planche
   src/analyse.ts           une palette pour l'onglet : rampes, promesses, alertes et notices triées
   src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
   src/configuration.ts     les champs de la configuration, et les palettes que chacun touche
   src/planche/modele.ts    le modèle pur d'un cadre de planche : cadres, textes, peintures, noms de calque, empreinte
+  src/planche/fraicheur.ts chaque cadre à jour, périmé ou jamais dessiné, et les cadres orphelins et copiés
+  src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
   src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
-  src/ecriture/planche.ts  le dessin de la planche : page, cadres possédés, polices, un commitUndo par dessin
+  src/ecriture/planche.ts  le dessin de la planche : page, cadres possédés, polices, calques étrangers, un commitUndo par dessin
   src/navigation.ts        « Voir sur la planche » : ouvre la page et cadre les cadres, sans toucher au document
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
@@ -229,8 +231,8 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/creation.ts       une palette neuve, par sa référence ou par la couleur de la sélection
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
   src/ui/frontiere.ts      la numérotation des demandes, un seul rangement en vol, le dessin après lui
-  src/ui/ongletPlanche.ts  une ligne par palette, « Dessiner toutes les palettes » et la grille de contraste
-  src/ui/dessin.ts         le suivi d'un dessin : progression, résultat et son geste, dans les deux onglets
+  src/ui/ongletPlanche.ts  une ligne par palette et sa fraîcheur, « Dessiner toutes les palettes », la grille de contraste et les notices
+  src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
   src/ui/configuration.ts  courbes, parts et seuil derrière l'engrenage, avec la garantie des courbes
   src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG ; glisser, clavier, réglettes, préréglage, lien, annulation
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
@@ -888,6 +890,22 @@ La spécification en lien porte le raisonnement.
   et reprend sa place : l'identifiant du cadre change à chaque dessin. Un seul
   `commitUndo` clôt le dessin. `packages/plugin-palettes/tests/dessin.test.ts`
   le tient, contre le double de `tests/figmaDeTest.ts`.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planche)
+- Chaque calque posé porte le marqueur `ucm_palettes/calque`. Un calque sans
+  marqueur dans un cadre à redessiner arrête le dessin avant tout calque, et
+  l'interface le nomme ; le dessin ne part qu'avec l'identifiant de chaque
+  calque confirmé par le designer. Chaque dessin relit la peinture des
+  pastilles qu'il a posées, et l'interface compare ces hexas à son aperçu.
+  `packages/plugin-palettes/tests/dessin.test.ts` le tient.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#91-emplacement-et-propriété)
+- Un cadre est à jour quand l'empreinte qu'il range égale celle du modèle
+  que la recette donne aujourd'hui, recalculé avec la grille du cadre. La
+  lecture ne charge que la page de la planche, et n'en lit que les enfants de
+  premier niveau. L'interface recalcule la fraîcheur après chaque état lu et
+  chaque rangement, sur l'onglet Planche ouvert ; elle ne redessine jamais
+  sans le geste du designer. `packages/plugin-palettes/tests/fraicheur.test.ts`
+  le tient.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#96-fraîcheur)
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planche)
 - La recette se range sous la clé partagée `ucm_palettes/recette`, en JSON
   canonique, si elle passe la validation et si la recette rangée porte encore

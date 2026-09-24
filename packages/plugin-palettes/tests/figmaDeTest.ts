@@ -123,7 +123,7 @@ class Cadre extends Noeud {
   paddingRight = 0;
   paddingBottom = 0;
   paddingLeft = 0;
-  fills: unknown = [];
+  private peinture: unknown = [];
   cornerRadius = 0;
   primaryAxisAlignItems = 'MIN';
   counterAxisAlignItems = 'MIN';
@@ -133,6 +133,14 @@ class Cadre extends Noeud {
   constructor(figma: FauxFigma) {
     super('FRAME', figma);
     figma.journal.push('créer cadre');
+  }
+
+  get fills(): unknown {
+    return this.peinture;
+  }
+
+  set fills(peinture: unknown) {
+    this.peinture = this.figma.garderLaPeinture(peinture);
   }
 }
 
@@ -144,6 +152,8 @@ export class FauxFigma {
   readonly policesAbsentes = new Set<string>();
   /** Le nombre de textes créés avant que la création suivante lève ; `null`, jamais. */
   echouerAuTexte: number | null = null;
+  /** Ce que Figma garde de la peinture d'un cadre ; un test la fausse pour voir le dessin la relire. */
+  garderLaPeinture: (peinture: unknown) => unknown = (peinture) => peinture;
   readonly root: Document;
   readonly pageCourante: Page;
 

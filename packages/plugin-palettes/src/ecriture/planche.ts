@@ -9,11 +9,18 @@
  */
 import type { Palette, Recette } from 'ucm-couleur';
 
-import { CLE_PLANCHE, ESPACE_PARTAGE, lireEtat, lirePlanche, type PlancheRangee, type ProfilDuDocument } from '../lecture';
+import {
+  CLES_DU_CADRE,
+  CLE_PLANCHE,
+  ESPACE_PARTAGE,
+  cadresDeLaPage,
+  couleurDeLaSelection,
+  lireEtat,
+  lirePlanche,
+  type PlancheRangee,
+  type ProfilDuDocument,
+} from '../lecture';
 import { modeleDeCadre, type Noeud, type NoeudCadre, type NoeudTexte, type StyleDeTexte } from '../planche/modele';
-
-/** Les données de plugin qu'un cadre de palette porte ([PLA-02], [PLA-19]). */
-export const CLES_DU_CADRE = { cadre: 'cadre', proprietaire: 'proprietaire', empreinte: 'empreinte' } as const;
 
 /** Le marqueur que porte chaque calque posé par le plugin (D-H). */
 export const CLE_DU_MARQUEUR = 'calque';
@@ -40,9 +47,28 @@ type Remplissage = { type: 'SOLID'; color: { r: number; g: number; b: number } }
 /** L'API que le dessin emploie ; `figma` la fournit, un double de test aussi. */
 export type FigmaDuDessin = Pick<PluginAPI, 'root' | 'createPage' | 'createFrame' | 'createText' | 'getNodeByIdAsync' | 'loadFontAsync' | 'commitUndo'>;
 
+/** Un calque que le designer a posé dans un cadre du plugin : redessiner le retire (D-H). */
+export interface CalqueEtranger {
+  readonly id: string;
+  readonly nom: string;
+}
+
+/** Une couleur relue sur une pastille posée, en hexa sRGB, que l'interface compare à son aperçu. */
+export interface CouleurPeinte {
+  readonly palette: string;
+  readonly nom: string;
+  readonly hexa: string;
+}
+
 /** L'issue d'un dessin, que l'interface met en mots. */
 export type IssueDuDessin =
-  | { readonly issue: 'dessinee'; readonly page: string; readonly cadres: readonly { readonly palette: string; readonly cadre: string }[]; readonly peints: readonly { readonly nom: string; readonly hexa: string }[] }
+  | { readonly issue: 'dessinee'; readonly page: string; readonly cadres: readonly { readonly palette: string; readonly cadre: string }[]; readonly peints: readonly CouleurPeinte[] }
+  /**
+   * Des cadres à redessiner portent des calques que le designer n'a pas
+   * confirmés : rien n'est posé, et l'interface demande confirmation en les
+   * nommant ([PLA-03], D-H).
+   */
+  | { readonly issue: 'etrangers'; readonly cadres: readonly { readonly palette: string; readonly calques: readonly CalqueEtranger[] }[] }
   /** Une police ne se charge pas : aucun calque n'est posé ([PLA-22]). */
   | { readonly issue: 'police'; readonly style: string }
   /** Une erreur au milieu d'un cadre : ce cadre est retiré, les cadres déjà dessinés restent. */
@@ -129,14 +155,29 @@ async function pageDeLaPlanche(figma: FigmaDuDessin, planche: PlancheRangee): Pr
  * jamais réécrite ([PLA-25], E15).
  */
 export function cadresPossedes(page: PageNode): Map<string, FrameNode> {
+  const parIdentifiant = new Map(page.children.map((enfant) => [enfant.id, enfant]));
   const possedes = new Map<string, FrameNode>();
-  for (const enfant of page.children) {
-    if (enfant.type !== 'FRAME') continue;
-    const cadre = enfant;
-    const palette = cadre.getSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.cadre);
-    if (palette && cadre.getSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.proprietaire) === cadre.id) possedes.set(palette, cadre);
+  for (const lu of cadresDeLaPage(page.children)) {
+    if (lu.possede) possedes.set(lu.palette, parIdentifiant.get(lu.cadre) as FrameNode);
   }
   return possedes;
+}
+
+/**
+ * Les calques sans marqueur d'un cadre possédé ([PLA-03], D-H). La recherche
+ * ne descend pas sous un calque étranger : ses enfants partent avec lui, et
+ * une instance n'est jamais parcourue.
+ */
+export function calquesEtrangers(cadre: FrameNode): CalqueEtranger[] {
+  const trouves: CalqueEtranger[] = [];
+  const parcourir = (parent: ChildrenMixin): void => {
+    for (const enfant of parent.children) {
+      if (enfant.getSharedPluginData(ESPACE_PARTAGE, CLE_DU_MARQUEUR) !== '1') trouves.push({ id: enfant.id, nom: enfant.name });
+      else if ('children' in enfant) parcourir(enfant);
+    }
+  };
+  parcourir(cadre);
+  return trouves;
 }
 
 /**
@@ -147,6 +188,22 @@ export function placeDUnCadreNeuf(possedes: readonly FrameNode[]): { x: number; 
   if (possedes.length === 0) return { x: 0, y: 0 };
   const droite = Math.max(...possedes.map((cadre) => cadre.x + cadre.width));
   return { x: droite + ECART_ENTRE_CADRES, y: possedes[0].y };
+}
+
+/**
+ * Les couleurs relues sur les pastilles posées (L6.14) : la peinture que Figma
+ * garde, ramenée en hexa sRGB comme la couleur d'une sélection. Elle diffère
+ * de l'aperçu si la peinture perd la couleur en chemin.
+ */
+function couleursPeintes(crees: Crees, attendues: readonly { readonly nom: string }[], palette: string, profil: ProfilDuDocument): CouleurPeinte[] {
+  const pastilles = new Set(attendues.map(({ nom }) => nom));
+  const couleurs: CouleurPeinte[] = [];
+  for (const calque of crees) {
+    if (calque.type !== 'FRAME' || !pastilles.has(calque.name)) continue;
+    const lue = couleurDeLaSelection([calque], profil);
+    couleurs.push({ palette, nom: calque.name, hexa: 'hexa' in lue ? lue.hexa : '' });
+  }
+  return couleurs;
 }
 
 /** Ce qu'un dessin rend : son issue, un refus avant tout calque, ou rien à dessiner. */
@@ -162,6 +219,8 @@ export interface DemandeDeLInterface {
   readonly palettes: readonly string[];
   readonly grille: boolean;
   readonly empreinteLue: string | null;
+  /** Les calques étrangers que le designer a accepté de perdre (D-H). */
+  readonly etrangersConfirmes: readonly string[];
 }
 
 /**
@@ -180,7 +239,13 @@ export async function dessinerLaRecetteRangee(
   const { classement } = lu;
   if (classement.etat !== 'courante' && classement.etat !== 'migree') return { issue: 'sans-recette' };
   const palettes = classement.recette.palettes.filter((palette) => demande.palettes.includes(palette.id));
-  return dessinerLaPlanche(figma, { recette: classement.recette, profil: lu.profil, palettes, grille: demande.grille }, surProgression);
+  return dessinerLaPlanche(figma, {
+    recette: classement.recette,
+    profil: lu.profil,
+    palettes,
+    grille: demande.grille,
+    etrangersConfirmes: demande.etrangersConfirmes,
+  }, surProgression);
 }
 
 /** Ce qu'un dessin reçoit : la recette rangée, le profil du document, et les palettes à dessiner. */
@@ -189,11 +254,14 @@ export interface DemandeDeDessin {
   readonly profil: ProfilDuDocument;
   readonly palettes: readonly Palette[];
   readonly grille: boolean;
+  readonly etrangersConfirmes?: readonly string[];
 }
 
 /**
  * Dessine les palettes une à une ([PLA-24]), en annonçant chaque cadre. Les
- * polices se chargent avant tout calque ([PLA-22]). Un seul `commitUndo`
+ * polices se chargent avant tout calque ([PLA-22]) ; un calque étranger que
+ * le designer n'a pas confirmé arrête aussi le dessin avant tout calque
+ * (D-H). Un seul `commitUndo`
  * clôt le geste : Ctrl+Z défait ce dessin entier, et lui seul ([PLA-06],
  * E12).
  */
@@ -214,8 +282,17 @@ export async function dessinerLaPlanche(
   const page = await pageDeLaPlanche(figma, rangee);
   await page.loadAsync();
   const possedes = cadresPossedes(page);
+
+  const etrangers = demande.palettes.flatMap((palette) => {
+    const ancien = possedes.get(palette.id);
+    const calques = ancien ? calquesEtrangers(ancien) : [];
+    return calques.length > 0 ? [{ palette: palette.id, calques }] : [];
+  });
+  const confirmes = new Set(demande.etrangersConfirmes ?? []);
+  if (etrangers.some(({ calques }) => calques.some(({ id }) => !confirmes.has(id)))) return { issue: 'etrangers', cadres: etrangers };
+
   const cadres: { palette: string; cadre: string }[] = [];
-  const peints: { nom: string; hexa: string }[] = [];
+  const peints: CouleurPeinte[] = [];
 
   const ranger = () => {
     const suivante: PlancheRangee = { page: page.id, cadres: Object.fromEntries([...possedes].map(([palette, cadre]) => [palette, cadre.id])) };
@@ -238,6 +315,7 @@ export async function dessinerLaPlanche(
       neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.cadre, palette.id);
       neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.proprietaire, neuf.id);
       neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.empreinte, modele.empreinte);
+      neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.grille, demande.grille ? '1' : '');
     } catch (erreur) {
       for (const calque of crees.reverse()) if (!calque.removed) calque.remove();
       ranger();
@@ -247,7 +325,7 @@ export async function dessinerLaPlanche(
     ancien?.remove();
     possedes.set(palette.id, neuf);
     cadres.push({ palette: palette.id, cadre: neuf.id });
-    peints.push(...modele.peints);
+    peints.push(...couleursPeintes(crees, modele.peints, palette.id, demande.profil));
   }
 
   ranger();

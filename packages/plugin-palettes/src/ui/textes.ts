@@ -488,8 +488,10 @@ export const TEXTES_DU_DESSIN = {
   redessiner: 'Redessiner',
   dessinerTout: 'Dessiner toutes les palettes',
   grille: 'Grille de contraste',
-  dessinee: 'dessinée',
+  aJour: 'à jour',
+  perimee: 'périmée',
   jamaisDessinee: 'jamais dessinée',
+  redessinerQuandMeme: 'Redessiner quand même',
   voirSurLaPlanche: 'Voir sur la planche',
   reessayer: 'Réessayer',
   confirmer: 'Dessiner',
@@ -546,6 +548,58 @@ export function dessinSurUneAutreRecette(): Constat {
     ou: 'Recette du fichier',
     quoi: 'Elle a changé depuis sa lecture : le dessin montrerait d’autres couleurs que l’aperçu. Rien n’a été dessiné.',
     geste: 'Rechargez la recette du fichier, puis relancez le dessin.',
+  };
+}
+
+const citer = (noms: readonly string[]): string => noms.map((nom) => `« ${nom} »`).join(', ');
+
+/** Les calques qu'un redessin retirerait, à confirmer avant le dessin ([PLA-03], D-H). */
+export function constatDesCalquesEtrangers(nom: string, calques: readonly string[]): Constat {
+  const seul = calques.length === 1;
+  return {
+    ou: `Planche, cadre de ${nom}`,
+    quoi: seul
+      ? `Le calque ${citer(calques)}, ajouté dans ce cadre, disparaîtra au dessin.`
+      : `Les ${calques.length} calques ajoutés dans ce cadre disparaîtront au dessin : ${citer(calques)}.`,
+    geste: seul ? 'Sortez-le du cadre pour le garder, ou redessinez quand même.' : 'Sortez-les du cadre pour les garder, ou redessinez quand même.',
+  };
+}
+
+/** Un cadre dont la palette a été supprimée ([ENT-03]). */
+export function cadreOrphelin(nom: string): Constat {
+  return {
+    ou: `Planche, cadre « ${nom} »`,
+    quoi: 'Sa palette a été supprimée : aucun dessin ne touche plus ce cadre.',
+    geste: 'Supprimez le cadre dans Figma s’il ne sert plus.',
+  };
+}
+
+/** La copie d'un cadre de palette, faite par le designer ([PLA-25], E15). */
+export function copieDeCadre(nom: string): Constat {
+  return {
+    ou: `Planche, cadre « ${nom} »`,
+    quoi: 'Ce cadre est une copie : le plugin ne la redessine pas, et ses couleurs datent du moment de la copie.',
+    geste: 'Pour une copie à jour, redessinez la palette, puis copiez de nouveau son cadre.',
+  };
+}
+
+/** La notice d'un document Display P3 (section 6.7, E11). */
+export function noticeDisplayP3(): Constat {
+  return {
+    ou: 'Document, profil Display P3',
+    quoi: 'La planche peint chaque couleur convertie en Display P3 : la pipette de Figma y lit des valeurs P3, différentes de l’hexa des cartes.',
+    geste: 'Copiez l’hexa depuis le texte de la carte, pas avec la pipette.',
+  };
+}
+
+/** Les couleurs d'une palette que la planche peint autrement que l'aperçu (L6.14). */
+export function ecartDePeinture(nom: string, ecarts: readonly { readonly nom: string; readonly apercu: string | null; readonly peint: string }[]): Constat {
+  const [premier] = ecarts;
+  const compte = ecarts.length === 1 ? '1 couleur peinte diffère' : `${ecarts.length} couleurs peintes diffèrent`;
+  return {
+    ou: `Planche, ${nom}`,
+    quoi: `${compte} de l’aperçu, dont ${premier.nom} : aperçu ${premier.apercu ?? 'absent'}, planche ${premier.peint}.`,
+    geste: 'Redessinez la palette. Si l’écart reste, signalez-le au mainteneur du plugin.',
   };
 }
 

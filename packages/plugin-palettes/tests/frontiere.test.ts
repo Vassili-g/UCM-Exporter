@@ -16,7 +16,7 @@ function banc() {
   const statuts: StatutDuRangement[] = [];
   const frontiere = createFrontiere((demande) => envoyees.push(demande), (statut) => statuts.push(statut));
   const etat = (demande: number, empreinte: string | null = null) =>
-    frontiere.accepterEtat({ type: 'etat', demande, classement: ABSENTE, empreinte, profil: 'SRGB', planche: { page: null, cadres: {} } });
+    frontiere.accepterEtat({ type: 'etat', demande, classement: ABSENTE, empreinte, profil: 'SRGB', planche: { page: null, cadres: [] } });
   const rangee = (demande: number, empreinte: string) =>
     frontiere.recevoirRangement({ type: 'rangement', demande, issue: { issue: 'rangee', empreinte } });
   return { frontiere, envoyees, statuts, etat, rangee };
@@ -96,10 +96,10 @@ test('E13 : un dessin demandé pendant un rangement part après lui, sur l’emp
   frontiere.lireLEtat();
   etat(1, 'aaaaaaaa');
   frontiere.ranger(AUTRE);
-  frontiere.dessiner(['p-0000000a'], true, () => assert.fail('aucun abandon'));
+  frontiere.dessiner({ palettes: ['p-0000000a'], grille: true, etrangersConfirmes: ['12:40'] }, () => assert.fail('aucun abandon'));
   assert.equal(envoyees.length, 2, 'le dessin attend le rangement');
   rangee(2, 'bbbbbbbb');
-  assert.deepEqual(envoyees[2], { type: 'dessiner', demande: 3, palettes: ['p-0000000a'], grille: true, empreinteLue: 'bbbbbbbb' });
+  assert.deepEqual(envoyees[2], { type: 'dessiner', demande: 3, palettes: ['p-0000000a'], grille: true, empreinteLue: 'bbbbbbbb', etrangersConfirmes: ['12:40'] });
   assert.equal(frontiere.accepterDessin({ type: 'progression', demande: 3, fait: 0, total: 1, nom: 'Bleu' }), true);
   assert.equal(frontiere.accepterDessin({ type: 'progression', demande: 2, fait: 0, total: 1, nom: 'Bleu' }), false);
 });
@@ -110,7 +110,7 @@ test('E13 : un rangement refusé abandonne le dessin qui l’attendait, et le di
   etat(1, 'aaaaaaaa');
   frontiere.ranger(AUTRE);
   let abandons = 0;
-  frontiere.dessiner(['p-0000000a'], false, () => { abandons += 1; });
+  frontiere.dessiner({ palettes: ['p-0000000a'], grille: false, etrangersConfirmes: [] }, () => { abandons += 1; });
   frontiere.recevoirRangement({ type: 'rangement', demande: 2, issue: { issue: 'modifiee-ailleurs' } });
   assert.equal(abandons, 1);
   assert.deepEqual(statuts.slice(-1), ['refuse']);

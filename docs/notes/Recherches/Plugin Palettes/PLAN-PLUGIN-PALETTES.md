@@ -565,15 +565,15 @@ Spécification : [section 9](./RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planc
 
 ### 6c : fraîcheur et cas du designer
 
-- [ ] **L6.12** Fraîcheur [PLA-19] [PLA-20] par l'empreinte du modèle.
-- [ ] **L6.13** Cadre orphelin [ENT-03], copie de cadre (E15), calques
+- [x] **L6.12** Fraîcheur [PLA-19] [PLA-20] par l'empreinte du modèle.
+- [x] **L6.13** Cadre orphelin [ENT-03], copie de cadre (E15), calques
   étrangers avec confirmation (D-H).
-- [ ] **L6.14** Rapport sandbox et interface : chaque dessin renvoie les hexas
+- [x] **L6.14** Rapport sandbox et interface : chaque dessin renvoie les hexas
   qu'il a peints ; l'interface les compare à son aperçu et signale un écart en
   notice. Un écart attendu vaut zéro.
-- [ ] **L6.15** Galerie : planche à jour, périmée, cadre orphelin, copie de
+- [x] **L6.15** Galerie : planche à jour, périmée, cadre orphelin, copie de
   cadre, calques étrangers, document Display P3.
-- [ ] **L6.16** Ouvrir M4 avec la recette de §16 corrigée par E11.
+- [x] **L6.16** Ouvrir M4 avec la recette de §16 corrigée par E11.
 
 ### 6d : reprise de la recette Figma
 
@@ -760,3 +760,28 @@ de `[VER-12]` attendent le choix du mainteneur, comme ceux de M2.
 
 Traité dans le moteur par le commit du lot 2b. Les textes restent ouverts
 avec M2.
+
+### M4 : la recette dans Figma
+
+Question : rejouer les huit points de la
+[section 16](./RECHERCHE-PLUGIN-PALETTES.md#16-recette-dans-figma) et rendre
+ce que chacun montre. Le point 2 compare un document sRGB et un document
+Display P3, selon E11, et tranche `[MOT-25]`. Le point 7 donne le temps de
+douze palettes, qui fixe le seuil de D-I au lot 6d. Trois gestes s'ajoutent :
+
+- poser un calque dans un cadre, puis redessiner : la confirmation nomme le
+  calque, et « Annuler » le laisse en place ;
+- dupliquer un cadre : l'onglet Planche signale la copie, et un redessin ne
+  la touche pas ;
+- supprimer une palette dessinée : son cadre reste, signalé orphelin.
+
+Préparé : hors de Figma, un double de l'API tient la propriété des cadres, le
+chargement de la seule page de la planche, l'arrêt avant tout calque sur une
+police absente ou un calque étranger, la place gardée au redessin et le
+`commitUndo` unique. Le dessin relit la peinture de chaque pastille, et
+l'interface la compare à son aperçu : dans le double, en sRGB comme en
+Display P3, l'écart vaut zéro. Ce qui ne se prouve pas hors de Figma : la
+couleur que Figma affiche pour une peinture P3, la police Inter du poste, le
+pas d'annulation, le temps du dessin et de la lecture de la planche.
+
+Ce point attend M1 : le plugin doit être importé dans Figma.

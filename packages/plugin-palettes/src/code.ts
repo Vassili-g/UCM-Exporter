@@ -8,7 +8,7 @@
 import { dessinerLaRecetteRangee } from './ecriture/planche';
 import { rangerRecette } from './ecriture/recette';
 import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
-import { couleurDeLaSelection, lireEtat } from './lecture';
+import { couleurDeLaSelection, lireEtat, lireLaPlanche } from './lecture';
 import type { PluginMessage, UiRequest } from './messages';
 import { voirSurLaPlanche } from './navigation';
 
@@ -28,13 +28,13 @@ function versUi(message: PluginMessage): void {
   figma.ui.postMessage(message);
 }
 
-function envoyerEtat(demande: number): void {
-  versUi({ type: 'etat', demande, ...lireEtat(figma.root) });
+async function envoyerEtat(demande: number): Promise<void> {
+  versUi({ type: 'etat', demande, ...lireEtat(figma.root), planche: await lireLaPlanche(figma) });
 }
 
 async function traiterMessage(message: UiRequest): Promise<void> {
   if (message.type === 'lire-etat') {
-    envoyerEtat(message.demande);
+    await envoyerEtat(message.demande);
     return;
   }
 

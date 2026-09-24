@@ -17,6 +17,13 @@ import type { PluginMessage, UiRequest } from '../messages';
 /** Ce que l'indication de rangement affiche. */
 export type StatutDuRangement = 'lu' | 'en-cours' | 'range' | 'refuse' | 'invalide';
 
+/** Ce qu'un dessin demande : des palettes, la grille, et les calques étrangers que le designer accepte de perdre (D-H). */
+export interface DemandeDeDessin {
+  readonly palettes: readonly string[];
+  readonly grille: boolean;
+  readonly etrangersConfirmes: readonly string[];
+}
+
 export interface Frontiere {
   lireLEtat(): void;
   lireLaSelection(): void;
@@ -25,7 +32,7 @@ export interface Frontiere {
    * Dessine les palettes nommées, dès que la recette affichée est rangée. Un
    * rangement refusé entre-temps abandonne le dessin : `surAbandon` le dit.
    */
-  dessiner(palettes: readonly string[], grille: boolean, surAbandon: () => void): void;
+  dessiner(demande: DemandeDeDessin, surAbandon: () => void): void;
   /**
    * Ouvre la planche et cadre les cadres (E18). La demande n'attend aucune
    * réponse : son numéro ne rend caduc aucun état attendu.
@@ -56,7 +63,7 @@ export function createFrontiere(
   let empreinte: string | null = null;
   let enVol = false;
   let enAttente: Recette | null = null;
-  let dessinEnAttente: { palettes: readonly string[]; grille: boolean; surAbandon: () => void } | null = null;
+  let dessinEnAttente: { demande: DemandeDeDessin; surAbandon: () => void } | null = null;
   let dernierDessin = 0;
   let courant: StatutDuRangement = 'lu';
 
@@ -71,9 +78,16 @@ export function createFrontiere(
     surStatut(statut, refus);
   }
 
-  function envoyerDessin(palettes: readonly string[], grille: boolean): void {
+  function envoyerDessin({ palettes, grille, etrangersConfirmes }: DemandeDeDessin): void {
     dernierDessin = numeroter();
-    envoyer({ type: 'dessiner', demande: dernierDessin, palettes: [...palettes], grille, empreinteLue: empreinte });
+    envoyer({
+      type: 'dessiner',
+      demande: dernierDessin,
+      palettes: [...palettes],
+      grille,
+      empreinteLue: empreinte,
+      etrangersConfirmes: [...etrangersConfirmes],
+    });
   }
 
   function envoyerRangement(recette: Recette): void {
@@ -96,9 +110,9 @@ export function createFrontiere(
       if (enVol) enAttente = recette;
       else envoyerRangement(recette);
     },
-    dessiner(palettes, grille, surAbandon) {
-      if (enVol || enAttente) dessinEnAttente = { palettes, grille, surAbandon };
-      else envoyerDessin(palettes, grille);
+    dessiner(demande, surAbandon) {
+      if (enVol || enAttente) dessinEnAttente = { demande, surAbandon };
+      else envoyerDessin(demande);
     },
     voirSurLaPlanche(page, cadres) {
       compteur += 1;
@@ -131,7 +145,7 @@ export function createFrontiere(
           poser('range');
           const dessin = dessinEnAttente;
           dessinEnAttente = null;
-          if (dessin) envoyerDessin(dessin.palettes, dessin.grille);
+          if (dessin) envoyerDessin(dessin.demande);
         }
       } else {
         enAttente = null;

@@ -223,12 +223,28 @@ Lignes simples, sans les trois parties :
   dessinées sur la planche. » ;
 - en-tête de l'onglet Planche : « Planche : {n} palettes · recette v{version}
   · empreinte {empreinte} · {espace} » ;
-- état d'une palette : « dessinée », « jamais dessinée » ;
 - confirmation au-delà de six palettes : « Dessiner les {n} palettes ?
   Chacune pose plus de cinq cents calques sur la planche. », gestes
   « Dessiner » et « Annuler » ;
 - planche sans palette : « Aucune palette à dessiner : la planche attend une
   première palette. », geste « Ouvrir l'onglet Palettes ».
+
+La fraîcheur et les cas du designer, au sous-lot 6c :
+
+| Message | Où | Quoi | Geste |
+|---|---|---|---|
+| Calques étrangers | Planche, cadre de {palette} | Le calque « {nom} », ajouté dans ce cadre, disparaîtra au dessin. Ou : Les {n} calques ajoutés dans ce cadre disparaîtront au dessin : « {nom} », « {nom} ». | Sortez-le du cadre pour le garder, ou redessinez quand même. Au pluriel : sortez-les, les garder. |
+| Cadre orphelin | Planche, cadre « {cadre} » | Sa palette a été supprimée : aucun dessin ne touche plus ce cadre. | Supprimez le cadre dans Figma s'il ne sert plus. |
+| Copie de cadre | Planche, cadre « {cadre} » | Ce cadre est une copie : le plugin ne la redessine pas, et ses couleurs datent du moment de la copie. | Pour une copie à jour, redessinez la palette, puis copiez de nouveau son cadre. |
+| Document Display P3 | Document, profil Display P3 | La planche peint chaque couleur convertie en Display P3 : la pipette de Figma y lit des valeurs P3, différentes de l'hexa des cartes. | Copiez l'hexa depuis le texte de la carte, pas avec la pipette. |
+| Écart de peinture | Planche, {palette} | {n} couleurs peintes diffèrent de l'aperçu, dont {pastille} : aperçu {hexa}, planche {hexa}. | Redessinez la palette. Si l'écart reste, signalez-le au mainteneur du plugin. |
+
+Lignes simples, sans les trois parties :
+
+- état d'une palette : « à jour », « périmée », « jamais dessinée » ; « à
+  jour » n'a pas de geste ;
+- gestes : « Redessiner quand même », « Annuler » ; « Voir sur la planche »
+  sous la notice d'un cadre orphelin ou copié.
 
 ## Questions pour le mainteneur
 

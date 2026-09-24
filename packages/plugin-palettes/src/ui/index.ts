@@ -13,6 +13,7 @@ import { createOnglets } from 'ucm-plugin-socle/src/ui/Onglets';
 import { createResizeGrip } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
 import type { PluginMessage } from '../messages';
+import { ecartsDePeinture } from '../planche/peints';
 import { createConfiguration } from './configuration';
 import { createSuiviDuDessin, type GestesDuResultat } from './dessin';
 import { createFrontiere } from './frontiere';
@@ -39,13 +40,22 @@ ligneDuHaut.className = 'header-topline';
 ligneDuHaut.append(titre, settingsButton, backButton);
 enTete.append(ligneDuHaut);
 
-const frontiere = createFrontiere(versSandbox, (statut, refus) => ongletPalettes.poserStatut(statut, refus));
+const frontiere = createFrontiere(versSandbox, (statut, refus) => {
+  ongletPalettes.poserStatut(statut, refus);
+  // Une recette rangée peut périmer des cadres ([PLA-20]).
+  if (statut === 'range') afficherLaPlanche();
+});
 // Un dessin fini a posé des cadres : l'état relu dit lesquels à l'onglet Planche.
-const suivi = createSuiviDuDessin(frontiere, () => frontiere.lireLEtat());
+const suivi = createSuiviDuDessin(frontiere, () => frontiere.lireLEtat(), (resultat) => {
+  const recette = ongletPalettes.recette();
+  return resultat.issue === 'dessinee' && recette ? ecartsDePeinture(recette, resultat.peints) : [];
+});
 const gestesDuResultat: GestesDuResultat = {
   voirSurLaPlanche: (page, cadres) => frontiere.voirSurLaPlanche(page, cadres),
   reessayer: () => suivi.reessayer(),
   recharger: () => frontiere.lireLEtat(),
+  confirmerEtrangers: () => suivi.confirmerEtrangers(),
+  renoncer: () => suivi.renoncer(),
 };
 const ongletPalettes = createOngletPalettes({
   ranger: (recette) => frontiere.ranger(recette),
@@ -61,11 +71,15 @@ const ongletPlanche = createOngletPlanche({
   versLesPalettes: () => onglets.selectionner('palettes'),
 });
 
-/** Le dernier état accepté : l'onglet Planche le relit quand on l'ouvre. */
+/**
+ * Le dernier état accepté : l'onglet Planche le relit quand on l'ouvre. Sa
+ * fraîcheur recalcule le modèle de chaque cadre ; elle ne se calcule que sur
+ * l'onglet ouvert.
+ */
 let dernierEtat: Extract<PluginMessage, { type: 'etat' }> | null = null;
 
 function afficherLaPlanche(): void {
-  if (!dernierEtat) return;
+  if (!dernierEtat || onglets.actif() !== 'planche') return;
   ongletPlanche.afficher(dernierEtat.classement, ongletPalettes.recette(), dernierEtat.planche, dernierEtat.profil, frontiere.empreinte());
 }
 

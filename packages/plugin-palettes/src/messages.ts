@@ -14,7 +14,7 @@ import type { DemandeDeTaille } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
 import type { ResultatDuDessin } from './ecriture/planche';
 import type { IssueDuRangement } from './ecriture/recette';
-import type { LectureDeSelection, PlancheRangee, ProfilDuDocument } from './lecture';
+import type { EtatDeLaPlanche, LectureDeSelection, ProfilDuDocument } from './lecture';
 
 /** Ce que l'interface demande au sandbox. */
 export type UiRequest =
@@ -29,7 +29,7 @@ export type UiRequest =
    * Seconde écriture : les cadres des palettes nommées, calculés par le sandbox
    * depuis la recette rangée, jamais depuis des hexas de l'interface ([ARC-11]).
    */
-  | { type: 'dessiner'; demande: number; palettes: string[]; grille: boolean; empreinteLue: string | null }
+  | { type: 'dessiner'; demande: number; palettes: string[]; grille: boolean; empreinteLue: string | null; etrangersConfirmes: string[] }
   | { type: 'voir-sur-la-planche'; demande: number; page: string; cadres: string[] }
   | DemandeDeTaille;
 
@@ -39,10 +39,10 @@ export type { ResultatDuDessin };
 export type PluginMessage =
   /**
    * L'état du fichier, en réponse à `lire-etat` : la recette classée
-   * ([REC-03]), l'empreinte du texte rangé, `null` sans recette, et le profil
-   * de couleur du document.
+   * ([REC-03]), l'empreinte du texte rangé, `null` sans recette, le profil
+   * de couleur du document et les cadres de la planche.
    */
-  | { type: 'etat'; demande: number; classement: Classement; empreinte: string | null; profil: ProfilDuDocument; planche: PlancheRangee }
+  | { type: 'etat'; demande: number; classement: Classement; empreinte: string | null; profil: ProfilDuDocument; planche: EtatDeLaPlanche }
   /** La couleur que la sélection propose, en réponse à `lire-selection` ([ENT-04]). */
   | { type: 'selection'; demande: number; lecture: LectureDeSelection }
   /** L'issue d'un rangement : la nouvelle empreinte, ou le refus ([REC-10]). */

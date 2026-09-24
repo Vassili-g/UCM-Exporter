@@ -1,7 +1,7 @@
 /**
  * Ce que le plugin lit du document : la recette rangée, classée avant tout
- * emploi ([REC-03]), son empreinte, le profil de couleur du document, et la
- * couleur de la sélection. Rien ici n'écrit.
+ * emploi ([REC-03]), son empreinte, le profil de couleur du document, les
+ * cadres de la planche et la couleur de la sélection. Rien ici n'écrit.
  */
 import { classerRecette, ecrireHexa, fnv1a, octetsUtf8, p3VersRgb8, type Classement } from 'ucm-couleur';
 
@@ -43,6 +43,75 @@ export function lirePlanche(racine: { getSharedPluginData(espace: string, cle: s
   }
 }
 
+/** Les données de plugin qu'un cadre de palette porte ([PLA-02], [PLA-19]). */
+export const CLES_DU_CADRE = { cadre: 'cadre', proprietaire: 'proprietaire', empreinte: 'empreinte', grille: 'grille' } as const;
+
+/** Un cadre de premier niveau de la planche qui porte l'identifiant d'une palette. */
+export interface CadreLu {
+  readonly palette: string;
+  readonly cadre: string;
+  readonly nom: string;
+  /** L'empreinte du modèle au moment du dessin ([PLA-19]). */
+  readonly empreinte: string;
+  /** Vrai quand le cadre a été dessiné avec la grille de contraste, qui entre dans l'empreinte. */
+  readonly grille: boolean;
+  /** Faux pour une copie faite par le designer, que le plugin ne réécrit jamais ([PLA-25], E15). */
+  readonly possede: boolean;
+}
+
+/** La planche telle que la page la porte : sa page, `null` sans planche, et ses cadres de palette. */
+export interface EtatDeLaPlanche {
+  readonly page: string | null;
+  readonly cadres: readonly CadreLu[];
+}
+
+/** Ce que la lecture demande à un nœud de premier niveau de la page. */
+interface NoeudDePage {
+  readonly type: string;
+  readonly id: string;
+  readonly name: string;
+  getSharedPluginData(espace: string, cle: string): string;
+}
+
+/** Les cadres de palette parmi les enfants de la page ; un cadre sans identifiant de palette est au designer. */
+export function cadresDeLaPage(enfants: readonly NoeudDePage[]): CadreLu[] {
+  const cadres: CadreLu[] = [];
+  for (const noeud of enfants) {
+    if (noeud.type !== 'FRAME') continue;
+    const donnee = (cle: string) => noeud.getSharedPluginData(ESPACE_PARTAGE, cle);
+    const palette = donnee(CLES_DU_CADRE.cadre);
+    if (!palette) continue;
+    cadres.push({
+      palette,
+      cadre: noeud.id,
+      nom: noeud.name,
+      empreinte: donnee(CLES_DU_CADRE.empreinte),
+      grille: donnee(CLES_DU_CADRE.grille) === '1',
+      possede: donnee(CLES_DU_CADRE.proprietaire) === noeud.id,
+    });
+  }
+  return cadres;
+}
+
+/** Ce que la lecture de la planche demande à Figma. */
+export interface FigmaDeLaLecture {
+  readonly root: { getSharedPluginData(espace: string, cle: string): string };
+  getNodeByIdAsync(id: string): Promise<unknown>;
+}
+
+/**
+ * La page de la planche et ses cadres de palette. Seule la page rangée se
+ * charge ([PLA-01], E14) ; une page supprimée depuis donne une planche vide.
+ */
+export async function lireLaPlanche(figma: FigmaDeLaLecture): Promise<EtatDeLaPlanche> {
+  const { page: id } = lirePlanche(figma.root);
+  if (id === null) return { page: null, cadres: [] };
+  const page = await figma.getNodeByIdAsync(id) as PageNode | null;
+  if (!page || page.type !== 'PAGE' || page.removed) return { page: null, cadres: [] };
+  await page.loadAsync();
+  return { page: page.id, cadres: cadresDeLaPage(page.children) };
+}
+
 export type ProfilDuDocument = DocumentNode['documentColorProfile'];
 
 /** Ce que la lecture demande au document, pour se tester sans Figma. */
@@ -51,12 +120,11 @@ export interface DocumentLu {
   readonly documentColorProfile: ProfilDuDocument;
 }
 
-/** L'état lu : la recette classée, l'empreinte du texte rangé, le profil, et la planche rangée. */
+/** L'état lu : la recette classée, l'empreinte du texte rangé, et le profil. */
 export interface EtatLu {
   readonly classement: Classement;
   readonly empreinte: string | null;
   readonly profil: ProfilDuDocument;
-  readonly planche: PlancheRangee;
 }
 
 /**
@@ -115,6 +183,5 @@ export function lireEtat(document: DocumentLu): EtatLu {
     classement: classerRecette(texte),
     empreinte: empreinteDuTexte(texte),
     profil: document.documentColorProfile,
-    planche: lirePlanche(document),
   };
 }

@@ -373,8 +373,9 @@
   color: inherit;
 }
 
-/* Le geste d'un constat, « Recharger », garde la largeur de son libellé. */
-.constat .btn {
+/* Le geste d'un constat, « Recharger » ou « Voir sur la planche », garde la largeur de son libellé. */
+.constat .btn,
+.constat .bouton-discret {
   justify-self: start;
 }
 

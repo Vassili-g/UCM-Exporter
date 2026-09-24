@@ -7,20 +7,16 @@
 const path = require('path');
 
 /**
- * Le moteur est lu à sa source : une recette classée ici est celle que le
- * sandbox classerait, jamais une recopie.
+ * Le moteur et le modèle de planche sont lus à leur source : une recette
+ * classée ici est celle que le sandbox classerait, une empreinte de cadre
+ * celle que l'interface recalcule, jamais une recopie.
  */
-function chargerLeMoteur() {
-  const compile = path.resolve(__dirname, '../dist/galerie-couleur.cjs');
-  require('esbuild').buildSync({
-    entryPoints: [require.resolve('ucm-couleur')],
-    outfile: compile,
-    bundle: true,
-    format: 'cjs',
-    platform: 'node',
-  });
+function compiler(entree, nom) {
+  const compile = path.resolve(__dirname, `../dist/${nom}.cjs`);
+  require('esbuild').buildSync({ entryPoints: [entree], outfile: compile, bundle: true, format: 'cjs', platform: 'node' });
   return require(compile);
 }
+const chargerLeMoteur = () => compiler(require.resolve('ucm-couleur'), 'galerie-couleur');
 
 const {
   FORMAT_RECETTE,
@@ -35,9 +31,13 @@ const {
   recetteParDefaut,
   rgb8VersOklch,
 } = chargerLeMoteur();
+const { modeleDeCadre } = compiler(path.resolve(__dirname, '../src/planche/modele.ts'), 'galerie-modele');
+
+/** Une planche sans page, avant tout dessin. */
+const PLANCHE_VIDE = { page: null, cadres: [] };
 
 /** L'état que le sandbox envoie pour un texte rangé sous la clé de la recette. */
-function etatDuFichier(texte, profil = 'SRGB') {
+function etatDuFichier(texte, profil = 'SRGB', planche = PLANCHE_VIDE) {
   return {
     message: {
       type: 'etat',
@@ -45,7 +45,7 @@ function etatDuFichier(texte, profil = 'SRGB') {
       classement: classerRecette(texte),
       empreinte: texte === '' ? null : fnv1a(octetsUtf8(texte)),
       profil,
-      planche: { page: null, cadres: {} },
+      planche,
     },
   };
 }
@@ -75,6 +75,20 @@ const TROIS_PALETTES = [
   { ...JAUNE, parts: { soft: 0.3, vivid: 0.8, origine: 'designer' } },
   palette('p-5c1d0e77', 'Ardoise', '#6B7280'),
 ];
+/**
+ * Le cadre d'une palette tel que la lecture de la planche le relève. Son
+ * empreinte est celle du modèle que la recette rangée donne, sauf réglage
+ * contraire : le cadre est alors périmé.
+ */
+function cadreDessine(texte, palette, cadre, { profil = 'SRGB', ...reglages } = {}) {
+  const recette = classerRecette(texte).recette;
+  const rangeeDansLaRecette = recette.palettes.find((candidate) => candidate.id === palette.id) ?? palette;
+  const empreinte = modeleDeCadre(recette, rangeeDansLaRecette, profil).empreinte;
+  return { palette: palette.id, cadre, nom: palette.nom, empreinte, grille: false, possede: true, ...reglages };
+}
+const PAGE_DE_LA_PLANCHE = '40:1';
+const ouvrirLaPlanche = { clic: '#onglet-planche' };
+
 const ouvrirLaConfiguration = { clic: '[aria-label="Ouvrir la configuration"]' };
 const dessinerLaPalette = { clic: '.barre-verdict .btn' };
 
@@ -327,13 +341,95 @@ const ETATS = [
       { message: { type: 'dessin', demande: 2, resultat: { issue: 'police', style: 'Inter Medium' } } },
     ],
   },
+  {
+    id: 'planche-a-jour',
+    titre: 'Planche à jour',
+    quand: 'Bleu et Jaune ont été dessinées, et la recette n’a pas changé depuis.',
+    regarder: 'Chaque ligne dit « à jour », sans geste ; seul « Dessiner toutes les palettes » reste.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU, JAUNE]), 'SRGB', {
+        page: PAGE_DE_LA_PLANCHE,
+        cadres: [cadreDessine(rangee([BLEU, JAUNE]), BLEU, '40:2'), cadreDessine(rangee([BLEU, JAUNE]), JAUNE, '40:3')],
+      }),
+      ouvrirLaPlanche,
+    ],
+  },
+  {
+    id: 'planche-perimee',
+    titre: 'Planche périmée',
+    quand: 'Le cadre de Jaune a été dessiné sur une recette d’avant ; Ardoise n’a jamais été dessinée.',
+    regarder: 'Bleu à jour, Jaune « périmée » avec « Redessiner », Ardoise « jamais dessinée » avec « Dessiner ».',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee(TROIS_PALETTES), 'SRGB', {
+        page: PAGE_DE_LA_PLANCHE,
+        cadres: [cadreDessine(rangee(TROIS_PALETTES), BLEU, '40:2'), cadreDessine(rangee(TROIS_PALETTES), JAUNE, '40:3', { empreinte: '0badc0de' })],
+      }),
+      ouvrirLaPlanche,
+    ],
+  },
+  {
+    id: 'cadre-orphelin',
+    titre: 'Cadre orphelin',
+    quand: 'La palette Ardoise a été supprimée ; son cadre est resté sur la planche.',
+    regarder: 'La notice sous « Dessiner toutes les palettes », qui nomme le cadre, dit qu’aucun dessin ne le touche plus, et propose « Voir sur la planche ».',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU]), 'SRGB', {
+        page: PAGE_DE_LA_PLANCHE,
+        cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2'), { palette: 'p-5c1d0e77', cadre: '40:4', nom: 'Ardoise', empreinte: '0badc0de', grille: false, possede: true }],
+      }),
+      ouvrirLaPlanche,
+    ],
+  },
+  {
+    id: 'copie-de-cadre',
+    titre: 'Copie de cadre',
+    quand: 'Le designer a dupliqué le cadre de Bleu sur la planche.',
+    regarder: 'Bleu à jour, et la notice de la copie, qui dit que le plugin ne la redessine pas.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU]), 'SRGB', {
+        page: PAGE_DE_LA_PLANCHE,
+        cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2'), cadreDessine(rangee([BLEU]), BLEU, '40:5', { nom: 'Bleu copie', possede: false })],
+      }),
+      ouvrirLaPlanche,
+    ],
+  },
+  {
+    id: 'calques-etrangers',
+    titre: 'Calques étrangers',
+    quand: 'Le designer a posé une note et une flèche dans le cadre de Bleu, puis clique « Dessiner ».',
+    regarder: 'La confirmation qui nomme les deux calques, et ses gestes « Redessiner quand même » et « Annuler ».',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU]), 'SRGB', { page: PAGE_DE_LA_PLANCHE, cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2')] }),
+      dessinerLaPalette,
+      {
+        message: {
+          type: 'dessin',
+          demande: 2,
+          resultat: { issue: 'etrangers', cadres: [{ palette: BLEU.id, calques: [{ id: '40:7', nom: 'Note' }, { id: '40:8', nom: 'Flèche' }] }] },
+        },
+      },
+    ],
+  },
+  {
+    id: 'document-display-p3',
+    titre: 'Document Display P3',
+    quand: 'Le fichier est en Display P3, et Bleu y a été dessinée.',
+    regarder: 'La notice qui dit que la pipette lit des valeurs P3, et de copier l’hexa depuis la carte.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU]), 'DISPLAY_P3', {
+        page: PAGE_DE_LA_PLANCHE,
+        cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2', { profil: 'DISPLAY_P3' })],
+      }),
+      ouvrirLaPlanche,
+    ],
+  },
   ...[
-    ['planche-a-jour', 'Planche à jour', 'Toutes les palettes sont à jour.', 'L6.15'],
-    ['planche-perimee', 'Planche périmée', 'Cadres nommés, geste « Redessiner ».', 'L6.15'],
-    ['cadre-orphelin', 'Cadre orphelin', 'Palette supprimée, cadre toujours sur la page.', 'L6.15'],
-    ['copie-de-cadre', 'Copie de cadre', 'Notice, la copie n’est pas réécrite.', 'L6.15'],
-    ['calques-etrangers', 'Calques étrangers', 'Confirmation avant dessin, qui nomme les calques ajoutés.', 'L6.15'],
-    ['document-display-p3', 'Document Display P3', 'Notice de conversion.', 'L6.15'],
     ['import-invalide', 'Import invalide', 'Erreurs de forme, recette rangée intacte.', 'L7.6'],
     ['ecart-d-import', 'Écart d’import', 'Palettes et paramètres modifiés, confirmation.', 'L7.6'],
   ].map(([id, titre, quand, attendu]) => ({ id, titre, quand, regarder: null, existe: false, attendu })),

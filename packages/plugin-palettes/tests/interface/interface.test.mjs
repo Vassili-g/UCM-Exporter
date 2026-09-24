@@ -696,7 +696,7 @@ test('[PLA-24] [UI-05] « Dessiner » envoie la palette ouverte, dit la progress
     const avant = await compte(page);
     await page.locator('.barre-verdict .btn').click();
     const demande = await prochaine(page, avant);
-    assert.deepEqual(demande, { type: 'dessiner', demande: demande.demande, palettes: [ID_DU_BLEU], grille: false, empreinteLue: messageDe('dessin-en-cours').empreinte });
+    assert.deepEqual(demande, { type: 'dessiner', demande: demande.demande, palettes: [ID_DU_BLEU], grille: false, empreinteLue: messageDe('dessin-en-cours').empreinte, etrangersConfirmes: [] });
     assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), true);
     assert.equal(await page.locator('#panneau-planche').evaluate((panneau) => panneau.inert), true);
     assert.equal(await page.getByRole('button', { name: 'Ouvrir la configuration' }).isDisabled(), true);
@@ -819,6 +819,149 @@ test('E13 : un dessin qui attendait un rangement refusé est abandonné, et l’
     assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), false);
     assert.equal(await page.locator('.barre-verdict .btn').textContent(), 'Dessiner');
     assert.deepEqual((await demandes(page)).slice(avant).map((demande) => demande.type), ['ranger-recette']);
+  } finally {
+    await page.close();
+  }
+});
+
+const ID_DU_JAUNE = 'p-08b7d4a0';
+const ouvrirLaPlanche = (page) => page.getByRole('tab', { name: 'Planche', exact: true }).click();
+const etatsDesLignes = (page) => page.locator('.ligne-planche').evaluateAll((lignes) => lignes.map((ligne) => ligne.dataset.etat));
+const dessinsEnvoyes = async (page) => (await demandes(page)).filter((demande) => demande.type === 'dessiner');
+/** Attend le `rang`-ième dessin envoyé, compté à partir de 1. */
+async function dessinEnvoye(page, rang) {
+  await page.waitForFunction((n) => window.demandes.filter((demande) => demande.type === 'dessiner').length >= n, rang);
+  return (await dessinsEnvoyes(page))[rang - 1];
+}
+
+test('[PLA-20] l’onglet Planche dit l’état de chaque cadre, et « Redessiner » envoie la seule palette périmée', async () => {
+  const page = await ouvrirSur('planche-perimee');
+  try {
+    await ouvrirLaPlanche(page);
+    assert.deepEqual(await etatsDesLignes(page), ['a-jour', 'perimee', 'jamais-dessinee']);
+    assert.deepEqual(await page.locator('.ligne-planche .ligne-secondaire').allTextContents(), ['à jour', 'périmée', 'jamais dessinée']);
+    assert.equal(await page.locator('.ligne-planche').first().getByRole('button').count(), 0, 'un cadre à jour n’a rien à redessiner');
+    await page.locator('.ligne-planche').nth(1).getByRole('button', { name: 'Redessiner' }).click();
+    const demande = await dessinEnvoye(page, 1);
+    assert.deepEqual({ ...demande, demande: 0 }, { type: 'dessiner', demande: 0, palettes: [ID_DU_JAUNE], grille: false, empreinteLue: messageDe('planche-perimee').empreinte, etrangersConfirmes: [] });
+  } finally {
+    await page.close();
+  }
+});
+
+test('[PLA-20] une recette rangée périme le cadre de la palette qu’elle change, et lui seul', async () => {
+  const page = await ouvrirSur('planche-a-jour');
+  try {
+    await ouvrirLaPlanche(page);
+    assert.deepEqual(await etatsDesLignes(page), ['a-jour', 'a-jour']);
+    await page.getByRole('tab', { name: 'Palettes', exact: true }).click();
+    const avant = await compte(page);
+    const nom = page.getByRole('textbox', { name: 'Nom' });
+    await nom.fill('Bleu roi');
+    await nom.press('Tab');
+    const rangement = await prochaine(page, avant);
+    await envoyer(page, rangee(rangement.demande));
+    await ouvrirLaPlanche(page);
+    assert.deepEqual(await etatsDesLignes(page), ['perimee', 'a-jour']);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[PLA-20] une courbe rangée depuis la configuration, ouverte sur l’onglet Planche, périme tous les cadres', async () => {
+  const page = await ouvrirSur('planche-a-jour');
+  try {
+    await ouvrirLaPlanche(page);
+    await page.getByRole('button', { name: 'Ouvrir la configuration' }).click();
+    const avant = await compte(page);
+    const clair700 = page.getByRole('textbox', { name: 'Clair 700' });
+    await clair700.fill('0,56');
+    await clair700.press('Tab');
+    await envoyer(page, rangee((await prochaine(page, avant)).demande));
+    await page.getByRole('button', { name: 'Retour' }).click();
+    assert.deepEqual(await etatsDesLignes(page), ['perimee', 'perimee']);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[ENT-03] un cadre orphelin se signale en notice, et « Voir sur la planche » le montre', async () => {
+  const page = await ouvrirSur('cadre-orphelin');
+  try {
+    await ouvrirLaPlanche(page);
+    const notice = page.locator('#panneau-planche .constat-notice');
+    assert.equal(await notice.locator('.constat-ou').textContent(), 'Planche, cadre « Ardoise »');
+    const avant = await compte(page);
+    await notice.getByRole('button', { name: 'Voir sur la planche' }).click();
+    const demande = await prochaine(page, avant);
+    assert.deepEqual({ ...demande, demande: 0 }, { type: 'voir-sur-la-planche', demande: 0, page: '40:1', cadres: ['40:4'] });
+  } finally {
+    await page.close();
+  }
+});
+
+test('[PLA-25] une copie de cadre se signale, et ne compte pas comme le cadre de sa palette', async () => {
+  const page = await ouvrirSur('copie-de-cadre');
+  try {
+    await ouvrirLaPlanche(page);
+    assert.deepEqual(await etatsDesLignes(page), ['a-jour']);
+    assert.equal(await page.locator('#panneau-planche .constat-notice .constat-ou').textContent(), 'Planche, cadre « Bleu copie »');
+  } finally {
+    await page.close();
+  }
+});
+
+test('E11 : un document Display P3 dit de copier l’hexa depuis la carte', async () => {
+  const page = await ouvrirSur('document-display-p3');
+  try {
+    await ouvrirLaPlanche(page);
+    assert.deepEqual(await etatsDesLignes(page), ['a-jour']);
+    assert.equal(await page.locator('#panneau-planche .constat-notice .constat-ou').textContent(), 'Document, profil Display P3');
+  } finally {
+    await page.close();
+  }
+});
+
+const ETRANGERS = { issue: 'etrangers', cadres: [{ palette: ID_DU_BLEU, calques: [{ id: '40:7', nom: 'Note' }, { id: '40:8', nom: 'Flèche' }] }] };
+
+test('D-H : des calques étrangers se confirment ; « Annuler » ne dessine rien, « Redessiner quand même » les nomme au sandbox', async () => {
+  const page = await ouvrirSur('calques-etrangers');
+  try {
+    await page.locator('.barre-verdict .btn').click();
+    await envoyer(page, dessinDe((await dessinEnvoye(page, 1)).demande, ETRANGERS));
+    const confirmation = page.locator('#panneau-palettes .confirmation', { hasText: 'disparaîtront au dessin' });
+    assert.equal(await confirmation.locator('.constat-quoi').textContent(), 'Les 2 calques ajoutés dans ce cadre disparaîtront au dessin : « Note », « Flèche ».');
+    assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), false);
+    await confirmation.getByRole('button', { name: 'Annuler' }).click();
+    assert.equal(await confirmation.count(), 0);
+    assert.equal((await dessinsEnvoyes(page)).length, 1, 'annuler ne dessine rien');
+
+    await page.locator('.barre-verdict .btn').click();
+    const seconde = await dessinEnvoye(page, 2);
+    await envoyer(page, dessinDe(seconde.demande, ETRANGERS));
+    await page.getByRole('button', { name: 'Redessiner quand même' }).click();
+    const confirmee = await dessinEnvoye(page, 3);
+    assert.deepEqual({ ...confirmee, demande: 0 }, { ...seconde, demande: 0, etrangersConfirmes: ['40:7', '40:8'] });
+  } finally {
+    await page.close();
+  }
+});
+
+test('L6.14 : une couleur peinte autrement que l’aperçu se signale en notice ; sans écart, rien ne s’ajoute', async () => {
+  const page = await ouvrirSur('dessin-en-cours');
+  try {
+    const cadres = [{ palette: ID_DU_BLEU, cadre: '12:34' }];
+    await page.locator('.barre-verdict .btn').click();
+    await envoyer(page, dessinDe((await dessinEnvoye(page, 1)).demande, { issue: 'dessinee', page: '5:6', cadres, peints: [] }));
+    assert.equal(await page.locator('#panneau-palettes .constat-notice').count(), 0);
+
+    await page.locator('.barre-verdict .btn').click();
+    const peints = [{ palette: ID_DU_BLEU, nom: 'vivid/light/700', hexa: '#000000' }];
+    await envoyer(page, dessinDe((await dessinEnvoye(page, 2)).demande, { issue: 'dessinee', page: '5:6', cadres, peints }));
+    assert.match(
+      await page.locator('#panneau-palettes .constat-notice .constat-quoi').textContent(),
+      /^1 couleur peinte diffère de l’aperçu, dont vivid\/light\/700 : aperçu #[0-9A-F]{6}, planche #000000\.$/,
+    );
   } finally {
     await page.close();
   }

@@ -1,4 +1,4 @@
-/** Le dessin de la planche, contre un double de Figma ([PLA-01] à [PLA-06], [PLA-22], [PLA-25], E12, E14 à E17). */
+/** Le dessin de la planche, contre un double de Figma ([PLA-01] à [PLA-06], [PLA-19], [PLA-22], [PLA-25], D-H, E12, E14 à E17, L6.14). */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
@@ -156,21 +156,93 @@ const creations = (figma: FauxFigma) => figma.journal.filter((entree) => entree.
 
 test('E13 : une recette rangée qui n’est plus celle lue n’est pas dessinée', async () => {
   const { figma } = fichierRange();
-  const issue = await dessinerLaRecetteRangee(figma.api(), { palettes: [BLEU.id], grille: false, empreinteLue: '00000000' });
+  const issue = await dessinerLaRecetteRangee(figma.api(), { palettes: [BLEU.id], grille: false, empreinteLue: '00000000', etrangersConfirmes: [] });
   assert.deepEqual(issue, { issue: 'modifiee-ailleurs' });
   assert.deepEqual(creations(figma), []);
 });
 
 test('[REC-04] sans recette rangée, rien ne se dessine', async () => {
   const figma = new FauxFigma();
-  assert.deepEqual(await dessinerLaRecetteRangee(figma.api(), { palettes: [BLEU.id], grille: false, empreinteLue: null }), { issue: 'sans-recette' });
+  assert.deepEqual(await dessinerLaRecetteRangee(figma.api(), { palettes: [BLEU.id], grille: false, empreinteLue: null, etrangersConfirmes: [] }), { issue: 'sans-recette' });
   assert.deepEqual(creations(figma), []);
 });
 
 test('[ARC-11] le dessin prend les palettes nommées dans la recette rangée, dans son ordre', async () => {
   const { figma, empreinte } = fichierRange();
-  const issue = await dessinerLaRecetteRangee(figma.api(), { palettes: [VERT.id, 'p-inconnue', BLEU.id], grille: false, empreinteLue: empreinte });
+  const issue = await dessinerLaRecetteRangee(figma.api(), { palettes: [VERT.id, 'p-inconnue', BLEU.id], grille: false, empreinteLue: empreinte, etrangersConfirmes: [] });
   assert.equal(issue.issue, 'dessinee');
   assert.deepEqual(cadres(figma).map((cadre) => cadre.name), ['Bleu', 'Vert']);
   assert.equal(cadres(figma)[1].getSharedPluginData('ucm_palettes', 'empreinte'), modeleDeCadre(RECETTE, VERT, 'SRGB').empreinte);
+});
+
+test('[PLA-19] chaque cadre range son empreinte et la grille avec laquelle il a été dessiné', async () => {
+  const figma = new FauxFigma();
+  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], grille: true });
+  await dessiner(figma, [AMBRE]);
+  const [bleu, ambre] = cadres(figma);
+  assert.equal(bleu.getSharedPluginData('ucm_palettes', 'grille'), '1');
+  assert.equal(bleu.getSharedPluginData('ucm_palettes', 'empreinte'), modeleDeCadre(RECETTE, BLEU, 'SRGB', { grille: true }).empreinte);
+  assert.equal(ambre.getSharedPluginData('ucm_palettes', 'grille'), '');
+});
+
+/** Un cadre de Bleu dessiné, où le designer a posé une note dans une section et une flèche à la racine. */
+async function cadreAnnote(): Promise<{ figma: FauxFigma; cadre: ReturnType<typeof cadres>[number]; note: ReturnType<FauxFigma['createFrame']>; fleche: ReturnType<FauxFigma['createFrame']> }> {
+  const figma = new FauxFigma();
+  await dessiner(figma, [BLEU, AMBRE]);
+  const [cadre] = cadres(figma);
+  const note = figma.createFrame();
+  note.name = 'Note';
+  note.appendChild(figma.createFrame());
+  cadre.enfants[0].appendChild(note);
+  const fleche = figma.createFrame();
+  fleche.name = 'Flèche';
+  cadre.appendChild(fleche);
+  return { figma, cadre, note, fleche };
+}
+
+test('[PLA-03] D-H : un calque ajouté par le designer arrête le redessin avant tout calque, et se nomme', async () => {
+  const { figma, cadre, note, fleche } = await cadreAnnote();
+  const avant = figma.journal.length;
+  const issue = await dessiner(figma, [BLEU, AMBRE]);
+  assert.deepEqual(issue, { issue: 'etrangers', cadres: [{ palette: BLEU.id, calques: [{ id: note.id, nom: 'Note' }, { id: fleche.id, nom: 'Flèche' }] }] });
+  assert.deepEqual(creations({ journal: figma.journal.slice(avant) } as FauxFigma), []);
+  assert.equal(cadre.removed, false);
+});
+
+test('D-H : les calques confirmés disparaissent au redessin ; un calque ajouté depuis redemande confirmation', async () => {
+  const { figma, cadre, note, fleche } = await cadreAnnote();
+  const confirme = await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], grille: false, etrangersConfirmes: [note.id, fleche.id] });
+  assert.equal(confirme.issue, 'dessinee');
+  assert.equal(cadre.removed, true);
+  assert.equal(note.removed, true);
+
+  const neuf = cadres(figma).find((candidat) => candidat.getSharedPluginData('ucm_palettes', 'cadre') === BLEU.id)!;
+  const autre = figma.createFrame();
+  autre.name = 'Commentaire';
+  neuf.appendChild(autre);
+  const issue = await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], grille: false, etrangersConfirmes: [note.id, fleche.id] });
+  assert.deepEqual(issue, { issue: 'etrangers', cadres: [{ palette: BLEU.id, calques: [{ id: autre.id, nom: 'Commentaire' }] }] });
+});
+
+test('L6.14 : le dessin relit la couleur de chaque pastille posée, égale au modèle en sRGB comme en Display P3', async () => {
+  for (const profil of ['SRGB', 'DISPLAY_P3'] as const) {
+    const figma = new FauxFigma();
+    figma.root.documentColorProfile = profil;
+    const issue = await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil, palettes: [BLEU, AMBRE], grille: false });
+    assert.ok(issue.issue === 'dessinee');
+    const attendus = [BLEU, AMBRE].flatMap((palette) => modeleDeCadre(RECETTE, palette, profil).peints.map(({ nom, hexa }) => ({ palette: palette.id, nom, hexa })));
+    assert.equal(attendus.length, 88);
+    assert.deepEqual(issue.peints, attendus, profil);
+  }
+});
+
+test('L6.14 : le dessin relit la peinture que Figma garde, pas celle que le modèle demande', async () => {
+  const figma = new FauxFigma();
+  // Un Figma qui perdrait le rouge de chaque peinture pleine.
+  figma.garderLaPeinture = (peinture) => (peinture as { type: string; color: { r: number; g: number; b: number } }[])
+    .map((plein) => ({ ...plein, color: { ...plein.color, r: 0 } }));
+  const issue = await dessiner(figma, [AMBRE]);
+  assert.ok(issue.issue === 'dessinee');
+  assert.equal(issue.peints.length, 44);
+  assert.deepEqual(issue.peints.filter(({ hexa }) => !hexa.startsWith('#00')), []);
 });
