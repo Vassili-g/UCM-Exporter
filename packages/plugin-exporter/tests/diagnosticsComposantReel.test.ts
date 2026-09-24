@@ -295,6 +295,7 @@ type Famille = keyof typeof FAMILLES;
 /** Les familles qu'un lot du plan a fait taire sur ce scénario. */
 const CORRIGEES: ReadonlySet<Famille> = new Set<Famille>([
   'intentionAbsente',
+  'etatNonReconnu',
 ]);
 
 /** Le nombre de lignes de chaque famille dans une liste de messages. */

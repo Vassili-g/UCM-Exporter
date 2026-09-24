@@ -336,9 +336,12 @@ un padding selon un autre axe, le contrat ne le verrait pas.
 
 Lorsqu'un axe `State`, `States` ou `Status` est présent, le contrat ajoute `stateModel`
 avec le déclencheur et, si une règle `@prop` la déclare, la description de
-chaque état connu : `hover` → `:hover`, `focus` → `:focus-visible`, `press` →
-`:active`, `disable`/`disabled` → `[disabled]`. La priorité générique est
-`disable > press > focus > hover > default`. Un état inconnu reste exporté avec
+chaque état connu : `hover`/`hovered` → `:hover`, `focus`/`focused` →
+`:focus-visible`, `press`/`pressed` → `:active`, `disable`/`disabled` →
+`[disabled]`. La priorité générique est `disable > press > focus > hover >
+default`, et chaque forme en `-ed` prend le rang de sa forme courte. `active`
+n'est pas reconnu : ce nom désigne souvent un état sélectionné, que `:active`
+déclencherait au clic. Un état inconnu reste exporté avec
 un déclencheur `null` et un warning. Les `selector` visent l'implémentation CSS
 de **production** (pseudo-classes) ; l'outil de test froid, en styles inline,
 reproduit les mêmes états via des événements.

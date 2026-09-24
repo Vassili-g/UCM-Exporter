@@ -36,6 +36,36 @@ test('buildStateModel associe les états connus à leurs déclencheurs et à leu
   assert.deepEqual(warnings, []);
 });
 
+test('buildStateModel reconnaît les formes en -ed et les range à côté de leur forme courte', () => {
+  const warnings: string[] = [];
+  const model = buildStateModel(
+    ['state'],
+    ['default', 'hovered', 'focused', 'pressed', 'disabled'].map((state) => ({ state })),
+    warnings,
+  );
+
+  assert.deepEqual(model, {
+    axis: 'state',
+    states: {
+      default: {},
+      hovered: { selector: ':hover' },
+      focused: { selector: ':focus-visible' },
+      pressed: { selector: ':active' },
+      disabled: { selector: '[disabled]' },
+    },
+    precedence: ['disabled', 'pressed', 'focused', 'hovered', 'default'],
+  });
+  assert.deepEqual(warnings, []);
+});
+
+test('buildStateModel ne traduit pas « active », qui nomme souvent un état sélectionné', () => {
+  const warnings: string[] = [];
+  const model = buildStateModel(['state'], [{ state: 'default' }, { state: 'active' }], warnings);
+
+  assert.deepEqual(model?.states.active, {});
+  assert.equal(warnings.length, 1);
+});
+
 test('buildStateModel publie un axe states comme un axe state ou status', () => {
   for (const axe of ['state', 'states', 'status']) {
     const warnings: string[] = [];

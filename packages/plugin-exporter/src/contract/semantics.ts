@@ -24,18 +24,27 @@ import type {
  * `default` n'en a aucun, et c'est une réponse : l'état par défaut est celui
  * qu'aucun sélecteur ne déclenche. Il vaut donc la chaîne vide ici, et le
  * descripteur publié n'a pas de `selector` du tout.
+ *
+ * Chaque forme en `-ed` prend le sélecteur de sa forme courte. `active` n'en
+ * reçoit aucun : beaucoup de design systems nomment ainsi un état sélectionné,
+ * et le rendre en `:active` le déclencherait au clic.
  */
 const STATE_SELECTORS: Record<string, string> = {
   default: '',
   hover: ':hover',
+  hovered: ':hover',
   focus: ':focus-visible',
+  focused: ':focus-visible',
   press: ':active',
+  pressed: ':active',
   disable: '[disabled]',
   disabled: '[disabled]',
 };
 
 /** Priorité générique appliquée quand plusieurs états sont simultanés. */
-const STATE_PRECEDENCE = ['disable', 'disabled', 'press', 'focus', 'hover', 'default'];
+const STATE_PRECEDENCE = [
+  'disable', 'disabled', 'press', 'pressed', 'focus', 'focused', 'hover', 'hovered', 'default',
+];
 
 /**
  * Les noms, une fois normalisés, d'un axe d'états : `State`, `States` ou

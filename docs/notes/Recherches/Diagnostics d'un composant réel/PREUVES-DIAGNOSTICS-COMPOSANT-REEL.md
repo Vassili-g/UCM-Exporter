@@ -2,8 +2,8 @@
 
 ## État
 
-- Lot courant : L1
-- Branche et `HEAD` : `main`, `800e5b4`
+- Lot courant : L2
+- Branche et `HEAD` : `main`, `d295200`
 - Dernière porte franchie : aucune
 
 La copie de travail partagée porte le travail non commité d'une autre session
@@ -77,4 +77,27 @@ copiés ; le build y tourne étape par étape.
 - Mutations : dans le worktree, la condition redevient `if (!intent)` : le
   scénario et « une règle d'intention marquée ne produit que la ligne de son
   marqueur » sortent rouges. Restauré par copie : vert.
+- Écart ou réserve : aucun.
+
+### L2 : les formes en `-ed` des états
+
+- Commit : ce commit, après `d295200`.
+- Commandes :
+  - tests écrits d'abord : dans la copie partagée, « buildStateModel reconnaît
+    les formes en -ed » sort rouge contre le moteur de `d295200` ; dans le
+    worktree, le scénario sort rouge, « la famille « etatNonReconnu » sort
+    encore ». Le test sur `active` passe avant et après : il garde une
+    décision.
+  - worktree avec les fichiers du lot, `npm test` : 0, dont 899 tests du
+    moteur. `npm run typecheck` : 0. Build étape par étape : 0 à chaque étape.
+- Résultats : `hovered`, `focused` et `pressed` prennent le sélecteur de leur
+  forme courte et son rang dans `STATE_PRECEDENCE`. Un axe
+  `default | hovered | focused | pressed | disabled` publie `precedence` dans
+  l'ordre `disabled`, `pressed`, `focused`, `hovered`, `default`, sans message.
+  `active` reste inconnu. Le texte de l'action ne change pas. `FORMAT.md`,
+  « 4. Modèle d'interaction », énumère les graphies et dit pourquoi `active`
+  n'en est pas. Sur le scénario, la famille des états passe de 2 à 0 ligne.
+- Mutations : dans le worktree, la ligne `focused` retirée de la table : le
+  test des formes en `-ed` et le scénario sortent rouges. Restauré par copie :
+  vert.
 - Écart ou réserve : aucun.
