@@ -2,8 +2,8 @@
 
 ## État
 
-- Lot courant : L6
-- Branche et `HEAD` : `main`, `51a1766`
+- Lot courant : L9
+- Branche et `HEAD` : `main`, `ff5e690`
 - Dernière porte franchie : H1
 
 La copie de travail partagée porte le travail non commité d'une autre session
@@ -184,7 +184,7 @@ copiés ; le build y tourne étape par étape.
 
 ### L6 : un message sur la racine se regroupe sur les variants
 
-- Commit : ce commit, après le commit de L4.
+- Commit : `ff5e690`, après `51a1766`.
 - Commandes :
   - sites recensés pour une racine de variant du set exporté : `resolveSizeBounds`
     (borne), `resolveGroup` branche « aucune liaison » (champ sans variable, sur
@@ -223,3 +223,34 @@ copiés ; le build y tourne étape par étape.
   titres, accord de « reliés », apostrophes). Le plan prévoyait un simple
   changement de sujet ; les textes retenus changent les trois parties, et le
   titre de la propriété sans champ ne porte plus le nom de la propriété.
+
+### L9 : le message de collision nomme les fichiers
+
+- Commit : ce commit, après `ff5e690`.
+- Commandes :
+  - tests écrits d'abord : dans le plugin, les tests des cas « deux fichiers »
+    et « même fichier » et le test existant de collision sortent rouges. Le test
+    du contrat existant sans `fileName` passe avant et après : il garde le texte
+    actuel.
+  - `github.test.ts` et `gitlab.test.ts` : 66 verts. `tsc --noEmit` : 0.
+  - worktree avec les fichiers de L6 et de L9, `npm test` : 0, dont 919 tests du
+    moteur. `npm run typecheck` : 0. `build:code`, `build:ui`, `build:manifest` et
+    `test:ui` lancés un par un : 0 à chaque étape, 24 tests d'interface verts.
+  - copie partagée : `build:code` et `build:manifest` refaits, et `dist/code.js`
+    contient `estUneRacineDeVariant` (le texte des messages y est écrit en
+    échappements Unicode).
+- Résultats : `refusDeCollision` lit `fileName` des deux contrats par
+  `identiteDeContrat`, déjà public, et écrit le texte des deux fichiers quand ils
+  diffèrent, celui d'un seul fichier quand ils coïncident, et garde le texte
+  actuel quand l'un des deux manque. Aucun test ne vérifiait ce texte avant : les
+  trois cas sont maintenant tenus mot pour mot. Le composant exporté passe en
+  premier dans le titre, l'ordre de l'exemple du mainteneur ; les deux tests de
+  collision existants (`github.test.ts`, `gitlab.test.ts`) suivent cet ordre.
+- Mutations : la condition qui nomme les fichiers rendue fausse : quatre tests
+  sortent rouges. Restauré par copie : vert.
+- Écart ou réserve : le plan faisait porter `fileName` à `VerdictIdentite`, dans
+  le kit. Le test `versionSuitLeContenu.test.mjs` refuse tout fichier publiable
+  du kit modifié sans nouveau numéro, et le plan ne publie rien. Le champ n'est
+  pas ajouté : le plugin lit `fileName` sans changer l'API du kit. Ajouter le
+  champ au kit reste possible, avec une montée de `@ucm-kit/core` dans le même
+  commit.

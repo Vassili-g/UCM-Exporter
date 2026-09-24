@@ -132,7 +132,7 @@ test('deux composants distincts au même chemin sur la base : refus avant toute 
     },
     async () => assert.rejects(
       publishArtifact(forge, composant(contratFigma('IconButton', '67:890'))),
-      /« Icon \/ Button » et « IconButton »/,
+      /« IconButton » et « Icon \/ Button »/,
     ),
   );
   assert.deepEqual(appels.map((appel) => appel.method), ['GET', 'GET', 'GET']);

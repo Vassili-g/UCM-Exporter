@@ -339,9 +339,13 @@ export async function diagnostiquerConnexion(forge: Forge): Promise<DiagnosticCo
  * donc aucune erreur. Avertir en écrivant quand même laisserait passer
  * exactement la perte silencieuse que cette détection existe pour supprimer.
  *
- * Le message nomme les deux composants et le geste : renommer dans Figma. Un
- * refus qui dit seulement « collision » ne se corrige pas : le designer ne sait
- * pas quel autre composant est en cause, et ne peut pas aller le chercher.
+ * Le message nomme les deux composants et le geste. Quand les deux contrats
+ * disent leur fichier Figma, il nomme aussi ces fichiers : deux fichiers
+ * proposent de changer de dépôt, un seul fichier demande de renommer. Un
+ * contrat existant sans `fileName` garde le texte qui ne nomme que les
+ * composants. Un refus qui dit seulement « collision » ne se corrige pas : le
+ * designer ne sait pas quel autre composant est en cause, et ne peut pas aller
+ * le chercher.
  *
  * `null` quand l'écriture est légitime.
  */
@@ -377,6 +381,25 @@ function refusDeCollision(
   }
 
   const nomExistant = verdict.nomExistant ?? 'un autre composant';
+  const fichierExistant = identiteDeContrat(existant).fileName;
+  const fichierCandidat = identiteDeContrat(candidat).fileName;
+  if (fichierExistant !== null && fichierCandidat !== null) {
+    if (fichierExistant === fichierCandidat) {
+      return (
+        `Le fichier « ${fichierCandidat} » porte deux composants avec le même identifiant : `
+        + `« ${nomCandidat} » et « ${nomExistant} ». Cet export écraserait le contrat de `
+        + `« ${nomExistant} » dans \`${path}\` (${ou}). Renommez l'un des deux composants `
+        + `dans Figma, puis relancez l'export.`
+      );
+    }
+    return (
+      `« ${nomCandidat} » vient du fichier « ${fichierCandidat} », et le contrat `
+      + `« ${nomExistant} » du dépôt vient du fichier « ${fichierExistant} ». Les deux `
+      + `s'écrivent dans \`${path}\` : cet export écraserait le contrat existant (${ou}). `
+      + `Choisissez un autre dépôt dans la configuration du plugin, ou renommez l'un des deux `
+      + `composants dans Figma, puis relancez l'export.`
+    );
+  }
   return (
     `« ${nomExistant} » et « ${nomCandidat} » produisent le même identifiant : leurs deux `
     + `contrats s'écrivent dans \`${path}\`, et cet export écraserait celui de `

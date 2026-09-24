@@ -462,7 +462,7 @@ test('deux composants Figma distincts au même chemin : l’export est refusé, 
       // Le message doit nommer les deux composants et le geste : un refus qui
       // dit seulement « collision » ne se corrige pas, le designer ne sait pas
       // quel autre composant est en cause.
-      assert.match(erreur.message, /« Icon \/ Button » et « IconButton »/);
+      assert.match(erreur.message, /« IconButton » et « Icon \/ Button »/);
       assert.match(erreur.message, /IconButton\/IconButton\.contract\.json/);
       assert.match(erreur.message, /Renommez l'un des deux composants dans Figma/);
       return true;
@@ -472,6 +472,85 @@ test('deux composants Figma distincts au même chemin : l’export est refusé, 
   // Le refus tombe AVANT toute écriture. Une branche créée puis abandonnée
   // laisserait une trace que personne n'ira nettoyer.
   assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'GET']);
+});
+
+/** Un contrat qui dit de quel fichier Figma il vient, ou qui ne le dit pas. */
+function contratDuFichier(name: string, nodeId: string, fileName?: string): string {
+  return JSON.stringify({
+    name,
+    meta: {
+      contractVersion: '3.0',
+      exportedAt: '2026-09-04T10:00:00.000Z',
+      figma: { ...(fileName ? { fileName } : {}), nodeId },
+    },
+  });
+}
+
+/** Le refus que produit l'export de `candidat` sur un dépôt qui porte `existant`. */
+async function refusPour(existant: string, candidat: string): Promise<string> {
+  let message = '';
+  await avecMethode(
+    (url) => sansConfiguration(url) ?? sansExportEnVol(url) ?? fichier(existant),
+    () => assert.rejects(
+      publishArtifact(forge, {
+        kind: 'component',
+        filename: 'Button.contract.json',
+        content: candidat,
+        warnings: [],
+      }),
+      (erreur: Error) => {
+        message = erreur.message;
+        return true;
+      },
+    ),
+  );
+  return message;
+}
+
+test('deux composants de deux fichiers Figma : le refus nomme chaque fichier', async () => {
+  const message = await refusPour(
+    contratDuFichier('Button', '12:345', 'Fichier de recette'),
+    contratDuFichier('Button', '67:890', 'Design system'),
+  );
+
+  assert.equal(
+    message,
+    '« Button » vient du fichier « Design system », et le contrat « Button » du dépôt vient du '
+      + 'fichier « Fichier de recette ». Les deux s\'écrivent dans '
+      + '`components/Button/Button.contract.json` : cet export écraserait le contrat existant '
+      + '(branche main). Choisissez un autre dépôt dans la configuration du plugin, ou renommez '
+      + 'l\'un des deux composants dans Figma, puis relancez l\'export.',
+  );
+});
+
+test('deux composants d’un même fichier Figma : le refus nomme le fichier une fois', async () => {
+  const message = await refusPour(
+    contratDuFichier('button', '12:345', 'Design system'),
+    contratDuFichier('Button', '67:890', 'Design system'),
+  );
+
+  assert.equal(
+    message,
+    'Le fichier « Design system » porte deux composants avec le même identifiant : « Button » '
+      + 'et « button ». Cet export écraserait le contrat de « button » dans '
+      + '`components/Button/Button.contract.json` (branche main). Renommez l\'un des deux '
+      + 'composants dans Figma, puis relancez l\'export.',
+  );
+});
+
+test('un contrat existant sans nom de fichier garde le refus qui nomme les composants', async () => {
+  const message = await refusPour(
+    contratDuFichier('Button', '12:345'),
+    contratDuFichier('Button', '67:890', 'Design system'),
+  );
+
+  assert.equal(
+    message,
+    '« Button » et « Button » produisent le même identifiant : leurs deux contrats s\'écrivent '
+      + 'dans `components/Button/Button.contract.json`, et cet export écraserait celui de '
+      + '« Button » (branche main). Renommez l\'un des deux composants dans Figma, puis '
+      + 'relancez l\'export.',
+  );
 });
 
 test('le même composant réexporté après un renommage dans Figma passe', async () => {
