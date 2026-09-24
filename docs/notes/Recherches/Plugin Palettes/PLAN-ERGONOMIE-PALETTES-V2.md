@@ -190,16 +190,23 @@ Critère : l’agent peut placer chaque élément de l’onglet sans relire ce p
 
 ## Lot V1 : cadre du panneau
 
-- [ ] **V1.1** Passer `TAILLE_MINIMALE` à 500 × 520 dans `src/fenetre.ts`.
+- [x] **V1.1** Passer `TAILLE_MINIMALE` à 500 × 520 dans `src/fenetre.ts`.
   Une taille rangée plus étroite s’ouvre à 500 px. La poignée de
   redimensionnement refuse une largeur inférieure.
-- [ ] **V1.2** Changer la couleur de bordure dans le socle, pour les deux
+  Fait : `tailleValide` borne la demande de la poignée comme la taille rangée ;
+  vue rouge à 440, puis verte.
+- [x] **V1.2** Changer la couleur de bordure dans le socle, pour les deux
   thèmes. Passer la suite d’UCM Exporter et relire sa galerie aux deux
   thèmes : ce changement modifie ses styles calculés, et seule la bordure doit
   différer.
-- [ ] **V1.3** Poser le titre de premier rang et les cartes. Les éléments DOM
+  Fait : `--bordure` ne suit plus `--figma-color-border` et vaut `#D2D2D2` et
+  `#5E5E5E`. Suite et lois d’UCM Exporter vertes ; sa galerie reste à relire
+  aux deux thèmes, dans Figma.
+- [x] **V1.3** Poser le titre de premier rang et les cartes. Les éléments DOM
   existants se déplacent sans être recréés à chaque rendu ; un changement de
   résultat ne fait pas perdre le focus du champ en cours.
+  Fait : `src/ui/carte.ts` ; les cartes et leurs contrôles sont créés une
+  fois. Le verdict reste à droite du titre jusqu’à V4.8.
 - [ ] **V1.4** Mettre à jour le test `[UI-03]` : à 500 × 520, le sélecteur,
   le titre, la carte Couleur de base et le haut de l’aperçu se lisent sans
   défiler.
@@ -339,22 +346,31 @@ qui est garanti ». Aucun ratio n’y apparaît sans le nom de ce qu’il compar
 
 ## Lot V6 : réglages repliables et génération
 
-- [ ] **V6.1** Ranger les intensités et l’éditeur de dérive dans deux cartes
+- [x] **V6.1** Ranger les intensités et l’éditeur de dérive dans deux cartes
   repliables, « Intensités » et « Dérive de teinte ». Leur en-tête est un
   bouton : chevron, titre, résumé aligné à droite. Elles sont repliées à
   l’ouverture et gardent leur état pendant la session.
-- [ ] **V6.2** Écrire les résumés : origine commune ou propre et les deux
+  Fait : cartes repliables de `src/ui/carte.ts` ; une référence presque grise
+  désactive celle de la dérive.
+- [x] **V6.2** Écrire les résumés : origine commune ou propre et les deux
   intensités ; préréglage et synchronisation de la dérive. Un point à
   vérifier qui concerne la carte, par exemple des profils confondus,
   s’annonce dans le résumé quand elle est repliée.
-- [ ] **V6.3** Placer « Générer sur Figma » seul dans la dernière carte, avec
+  Fait : `resumeDesIntensites` et `resumeDeLaDerive` comptent les points à
+  vérifier de leur carte.
+- [x] **V6.3** Placer « Générer sur Figma » seul dans la dernière carte, avec
   l’état du cadre et « Afficher dans Figma » sur la même ligne (R3.9).
-- [ ] **V6.4** Retirer les options de génération des onglets Palettes et
+- [x] **V6.4** Retirer les options de génération des onglets Palettes et
   Planche, avec `optionsDeGeneration.ts` et leurs textes. La grille des
   contrastes est toujours générée. Mesurer le temps et le nombre de calques
   d’une génération de douze palettes avec la grille, et appliquer `[PLA-24]`
   au résultat.
-- [ ] **V6.5** Un lien d’un message qui vise un réglage de la palette ouvre sa
+  Fait : l’interface demande toujours la grille, et la fraîcheur attend un
+  cadre qui la porte : un cadre dessiné sans elle est à mettre à jour.
+  Mesure sur le modèle : 18 624 calques pour douze palettes, 1 552 par
+  palette contre 535 sans grille ; la confirmation le dit. Le temps de
+  génération se mesure dans Figma, à la recette.
+- [x] **V6.5** Un lien d’un message qui vise un réglage de la palette ouvre sa
   carte avant de focaliser le contrôle. Le retour suit R3.7.
 
 Critère : fermées, les deux cartes tiennent sur deux lignes et disent leur

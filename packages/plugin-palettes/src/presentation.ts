@@ -82,6 +82,20 @@ export function placeDeLAlerte(alerte: Alerte): 'intensite' | 'liste' {
     : 'liste';
 }
 
+/** La carte de l'onglet Palettes sous laquelle un message se lit. */
+export type CarteDuMessage = 'couleur-de-base' | 'apercu' | 'derive';
+
+/**
+ * La carte sous laquelle un message se lit : celle du premier réglage qu'il
+ * ouvre. Un message sur les fonds, la luminosité ou les promesses concerne
+ * l'aperçu.
+ */
+export function carteDuMessage(cibles: readonly CibleDAction[]): CarteDuMessage {
+  if (cibles[0] === 'reference') return 'couleur-de-base';
+  if (cibles[0] === 'derive') return 'derive';
+  return 'apercu';
+}
+
 /**
  * Les réglages qu'une promesse manquée ouvre : l'intensité et la dérive de la
  * palette, puis la luminosité commune, qui touche toutes les palettes.

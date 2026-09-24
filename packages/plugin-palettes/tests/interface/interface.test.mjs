@@ -878,7 +878,7 @@ test('[PLA-24] D-I : au-delà de six palettes, tout dessiner se confirme, et sui
     assert.equal(await options.locator('summary').textContent(), 'Options de génération : avec la grille des contrastes');
     const avant = await compte(page);
     await page.getByRole('button', { name: 'Générer toutes les palettes' }).click();
-    assert.equal(await page.locator('#panneau-planche .confirmation').textContent(), 'La génération de 7 palettes ajoutera plus de 500 calques par palette. Confirmez pour lancer la génération.Générer sur FigmaAnnuler');
+    assert.equal(await page.locator('#panneau-planche .confirmation').textContent(), 'La génération de 7 palettes ajoutera plus de 1 500 calques par palette. Confirmez pour lancer la génération.Générer sur FigmaAnnuler');
     await page.getByRole('button', { name: 'Annuler' }).click();
     assert.equal(await page.locator('#panneau-planche .confirmation').isVisible(), false);
     await page.getByRole('button', { name: 'Générer toutes les palettes' }).click();

@@ -66,15 +66,15 @@ test('[PLA-04] sans planche rangée, ou quand sa page a disparu, la planche est 
 
 const etats = (fraicheur: ReturnType<typeof fraicheurDeLaPlanche>) => fraicheur.palettes.map(({ palette, etat }) => `${palette} ${etat}`);
 
-test('[PLA-20] un cadre est à jour tant que son modèle ne change pas, grille comprise ; une palette jamais dessinée le dit', async () => {
+test('[PLA-20] un cadre dessiné avec la grille est à jour tant que son modèle ne change pas ; sans elle, il est à mettre à jour', async () => {
   const planche = await lireLaPlanche((await plancheDessinee()).api());
-  assert.deepEqual(etats(fraicheurDeLaPlanche(RECETTE, 'SRGB', planche)), [`${BLEU.id} a-jour`, `${AMBRE.id} a-jour`, `${VERT.id} jamais-dessinee`]);
+  assert.deepEqual(etats(fraicheurDeLaPlanche(RECETTE, 'SRGB', planche)), [`${BLEU.id} a-jour`, `${AMBRE.id} perimee`, `${VERT.id} jamais-dessinee`]);
 });
 
-test('[PLA-20] renommer Bleu périme son seul cadre ; changer le profil du document les périme tous', async () => {
+test('[PLA-20] renommer Bleu périme son cadre à jour ; changer le profil du document les périme tous', async () => {
   const planche = await lireLaPlanche((await plancheDessinee()).api());
   const renommee: Recette = { ...RECETTE, palettes: RECETTE.palettes.map((palette): Palette => (palette.id === BLEU.id ? { ...palette, nom: 'Bleu roi' } : palette)) };
-  assert.deepEqual(etats(fraicheurDeLaPlanche(renommee, 'SRGB', planche)), [`${BLEU.id} perimee`, `${AMBRE.id} a-jour`, `${VERT.id} jamais-dessinee`]);
+  assert.deepEqual(etats(fraicheurDeLaPlanche(renommee, 'SRGB', planche)), [`${BLEU.id} perimee`, `${AMBRE.id} perimee`, `${VERT.id} jamais-dessinee`]);
   assert.deepEqual(etats(fraicheurDeLaPlanche(RECETTE, 'DISPLAY_P3', planche)), [`${BLEU.id} perimee`, `${AMBRE.id} perimee`, `${VERT.id} jamais-dessinee`]);
 });
 

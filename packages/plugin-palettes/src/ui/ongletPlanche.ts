@@ -1,7 +1,7 @@
 /**
  * L'onglet Planche (section 13.2, [UI-02]) : l'état de la planche, une ligne
  * par palette et son geste, puis « Dessiner toutes les palettes » et
- * l'option de la grille de contraste (section 9.5). Au-delà de six palettes,
+ * chaque génération dessine la grille des contrastes (section 9.5). Au-delà de six palettes,
  * le dessin de toutes demande confirmation ([PLA-24], D-I). Chaque palette dit
  * si son cadre est à jour ([PLA-20]) ; les cadres orphelins, les copies et le
  * profil Display P3 se lisent en notices, en dernier.
@@ -14,7 +14,6 @@ import { fraicheurDeLaPlanche, type EtatDuCadre } from '../planche/fraicheur';
 import { blocDeConstat } from './constats';
 import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dessin';
 import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
-import type { OptionsDeGeneration } from './optionsDeGeneration';
 import {
   TEXTES_DU_DESSIN,
   cadreOrphelin,
@@ -39,12 +38,10 @@ export interface OngletPlancheUi {
 }
 
 export interface GestesDeLaPlanche extends GestesDuResultat {
-  dessiner(palettes: readonly string[], grille: boolean, noms: { readonly [id: string]: string }): void;
+  dessiner(palettes: readonly string[], noms: { readonly [id: string]: string }): void;
   versLesPalettes(): void;
   /** Les gestes de la recette en fichier, au pied de l'onglet ([UI-02]). */
   recetteEnFichier: GestesDeLaRecetteUi;
-  /** Les options de génération, partagées avec l'onglet Palettes. */
-  options: OptionsDeGeneration;
 }
 
 export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi {
@@ -79,7 +76,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   function toutDessiner(): void {
     if (!recette) return;
     confirmationOuverte = false;
-    gestes.dessiner(recette.palettes.map((palette) => palette.id), gestes.options.grille(), noms());
+    gestes.dessiner(recette.palettes.map((palette) => palette.id), noms());
   }
 
   const dessinerTout = createButton({
@@ -110,7 +107,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   pied.append(dessinerTout);
 
   // Les notices ont le dernier rang : elles suivent « Dessiner toutes les palettes ».
-  element.append(enTete, zoneDuResultat, vide, liste, confirmation, pied, gestes.options.creerRepli(), notices, gestes.recetteEnFichier.element);
+  element.append(enTete, zoneDuResultat, vide, liste, confirmation, pied, notices, gestes.recetteEnFichier.element);
 
   function ligneDePalette(id: string, nom: string, etatDuCadre: EtatDuCadre): HTMLDivElement {
     const ligne = document.createElement('div');
@@ -129,7 +126,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     geste.type = 'button';
     geste.className = 'bouton-discret';
     geste.textContent = TEXTES_DU_DESSIN.dessiner;
-    geste.addEventListener('click', () => gestes.dessiner([id], gestes.options.grille(), noms()));
+    geste.addEventListener('click', () => gestes.dessiner([id], noms()));
     ligne.append(geste);
     return ligne;
   }

@@ -35,13 +35,13 @@ export function fraicheurDUnePalette(
   const palette = recette.palettes.find((candidate) => candidate.id === id);
   const cadre = planche.cadres.find((candidat) => candidat.possede && candidat.palette === id);
   if (!palette || !cadre) return { etat: 'jamais-dessinee', cadre: null };
-  const attendue = empreinteDuModele(recette, palette, profil, { grille: cadre.grille });
+  const attendue = empreinteDuModele(recette, palette, profil, { grille: true });
   return { etat: attendue === cadre.empreinte ? 'a-jour' : 'perimee', cadre: cadre.cadre };
 }
 
 /**
- * Le modèle se recalcule avec la grille du cadre : elle entre dans
- * l'empreinte, et un cadre dessiné avec elle n'est pas périmé pour autant.
+ * Le modèle attendu porte la grille des contrastes, que chaque génération
+ * dessine (section 9.5) : un cadre dessiné sans elle est à mettre à jour.
  */
 export function fraicheurDeLaPlanche(recette: Recette, profil: ProfilDuDocument, planche: EtatDeLaPlanche): FraicheurDeLaPlanche {
   const possedes = new Map(planche.cadres.filter((cadre) => cadre.possede).map((cadre) => [cadre.palette, cadre]));
@@ -50,7 +50,7 @@ export function fraicheurDeLaPlanche(recette: Recette, profil: ProfilDuDocument,
     palettes: recette.palettes.map((palette) => {
       const cadre = possedes.get(palette.id);
       if (!cadre) return { palette: palette.id, etat: 'jamais-dessinee', cadre: null };
-      const attendue = empreinteDuModele(recette, palette, profil, { grille: cadre.grille });
+      const attendue = empreinteDuModele(recette, palette, profil, { grille: true });
       return { palette: palette.id, etat: attendue === cadre.empreinte ? 'a-jour' : 'perimee', cadre: cadre.cadre };
     }),
     orphelins: planche.cadres.filter((cadre) => cadre.possede && !presentes.has(cadre.palette)),

@@ -71,10 +71,15 @@ export const TEXTES = {
   retour: 'Retour aux palettes et à la planche',
 } as const;
 
-/** Les titres des deux sections de l'onglet Palettes ([UI-06]). */
+/** Le titre de premier rang de l'onglet Palettes et les titres de ses cartes (N026, N027). */
 export const TEXTES_DE_L_ONGLET = {
-  palette: 'Palette',
-  configuration: (nom: string) => `Configuration · ${nom}`,
+  titre: 'Configuration de la palette',
+  couleurDeBase: 'Couleur de base',
+  apercu: 'Aperçu',
+  garanties: 'Garanties de contraste',
+  intensites: 'Intensités',
+  derive: 'Dérive de teinte',
+  generation: 'Génération',
 } as const;
 
 /** Le titre d'un groupe de messages et son nombre ([VER-14]) : « Promesses à corriger · 2 ». */
@@ -311,7 +316,32 @@ function uneDerive(derive: DeriveRangee): string {
   return `${ORIGINES[derive.origine]} · nuances claires : ${angleEcrit(derive.clair)} · nuances sombres : ${angleEcrit(derive.sombre)}`;
 }
 
-/** Le résumé de la dérive, à droite de « Configuration de la dérive » : une ligne, ou une par profil déliée. */
+/** Le nombre de points à vérifier qu'une carte repliée annonce ([UI-12]). */
+function pointsAVerifier(nombre: number): string {
+  if (nombre === 0) return '';
+  return nombre === 1 ? ' · 1 point à vérifier' : ` · ${nombre} points à vérifier`;
+}
+
+const ORIGINE_DES_INTENSITES: Record<'communes' | 'designer' | 'grise', string> = {
+  communes: 'Communes',
+  designer: 'Propres',
+  grise: 'Presque grise',
+};
+
+/** Le résumé de la carte Intensités (N040) : leur origine, les deux intensités, puis les points à vérifier. */
+export function resumeDesIntensites(origine: 'designer' | 'grise' | undefined, parts: { soft: number; vivid: number }, points: number): string {
+  return `${ORIGINE_DES_INTENSITES[origine ?? 'communes']} · Soft ${nombreEcrit(parts.soft)} · Vivid ${nombreEcrit(parts.vivid)}${pointsAVerifier(points)}`;
+}
+
+/** Le résumé de la carte Dérive de teinte (N041) : le préréglage et la synchronisation. */
+export function resumeDeLaDerive(palette: Palette, grise: boolean, points: number): string {
+  if (grise) return 'Désactivée pour une couleur presque grise';
+  const { lien, soft, vivid } = palette.derive;
+  const reglage = lien ? `${ORIGINES[vivid.origine]} · synchronisée` : `Soft ${ORIGINES[soft.origine]} · Vivid ${ORIGINES[vivid.origine]} · désynchronisée`;
+  return `${reglage}${pointsAVerifier(points)}`;
+}
+
+/** Le détail de la dérive : une ligne, ou une par profil déliée. */
 export function ligneDeLaDerive(palette: Palette): string {
   const { lien, soft, vivid } = palette.derive;
   return lien ? uneDerive(vivid) : `soft : ${uneDerive(soft)} · vivid : ${uneDerive(vivid)}`;
@@ -364,11 +394,6 @@ export const TEXTES_DU_NUANCIER = {
   plage: (numeros: readonly number[]) => `nuances ${numeros.join(', ')}`,
   revenirAuTheme: (mode: Mode) => `Revenir au thème ${NOM_DU_MODE[mode]}`,
 } as const;
-
-/** Le résumé des options de génération, visible replié ([UI-05]). */
-export function resumeDesOptions(grille: boolean): string {
-  return grille ? 'avec la grille des contrastes' : 'sans grille des contrastes';
-}
 
 const ETATS_DU_DECALAGE = ['', ' au survol', ' à l’appui'];
 
@@ -706,8 +731,6 @@ export function importFutur(fichier: string, version: number): Constat {
 export const TEXTES_DU_DESSIN = {
   dessiner: 'Générer sur Figma',
   dessinerTout: 'Générer toutes les palettes',
-  grille: 'Inclure la grille des contrastes',
-  options: 'Options de génération',
   aJour: 'À jour',
   perimee: 'À mettre à jour',
   jamaisDessinee: 'Pas encore sur la planche',
@@ -738,7 +761,7 @@ export function progressionDuDessin(fait: number, total: number, nom: string): s
 
 /** La confirmation avant de générer beaucoup de palettes ([PLA-24], D-I). */
 export function confirmationDuDessin(nombre: number): string {
-  return `La génération de ${nombre} palettes ajoutera plus de 500 calques par palette. Confirmez pour lancer la génération.`;
+  return `La génération de ${nombre} palettes ajoutera plus de 1 500 calques par palette. Confirmez pour lancer la génération.`;
 }
 
 /** Le blocage d'une police indisponible ([PLA-22]). */

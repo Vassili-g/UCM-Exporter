@@ -7,8 +7,8 @@ import * as socle from 'ucm-plugin-socle/src/fenetre';
 /** La taille d'ouverture, tant que rien n'a été rangé. */
 export const TAILLE_PAR_DEFAUT = { largeur: 600, hauteur: 720 } as const;
 
-/** En dessous, l'aperçu et le verdict ne tiennent plus sans défiler. */
-export const TAILLE_MINIMALE = { largeur: 440, hauteur: 520 } as const;
+/** En dessous, les trois colonnes de la couleur de base et l'aperçu ne tiennent plus en largeur. */
+export const TAILLE_MINIMALE = { largeur: 500, hauteur: 520 } as const;
 
 /** Une clé propre au plugin, distincte de celle d'UCM Exporter. */
 export const CLE_DE_LA_FENETRE = 'ucm-palettes/tailleFenetre';

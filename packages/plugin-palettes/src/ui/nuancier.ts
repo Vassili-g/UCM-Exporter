@@ -65,7 +65,10 @@ export interface GestesDuNuancier {
 }
 
 export interface NuancierUi {
+  /** La surface peinte, dans le corps de la carte Aperçu. */
   element: HTMLDivElement;
+  /** La bascule des thèmes, le retour et le fond, dans l'en-tête de la carte. */
+  tete: HTMLDivElement;
   afficher(entrees: EntreesDuNuancier): void;
   mode(): Mode;
   /**
@@ -135,9 +138,6 @@ function copier(texte: string): void {
 }
 
 export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
-  const element = document.createElement('div');
-  element.className = 'nuancier';
-
   // En-tête : les deux thèmes, le retour après une promesse de l'autre thème, et le fond.
   const tete = document.createElement('div');
   tete.className = 'nuancier-tete';
@@ -183,7 +183,6 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   detail.setAttribute('aria-live', 'polite');
   detail.hidden = true;
   surface.append(grille, usages, detail);
-  element.append(tete, surface);
 
   let mode: Mode = 'light';
   let modeDAvant: Mode | null = null;
@@ -529,7 +528,8 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   }
 
   return {
-    element,
+    element: surface,
+    tete,
     mode: () => mode,
     afficher(entrees) {
       donnees = entrees;

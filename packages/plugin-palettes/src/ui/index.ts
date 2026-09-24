@@ -26,7 +26,6 @@ import { createFrontiere } from './frontiere';
 import { createGestesDeLaRecette, type DemandesDeLaRecette } from './gestesDeLaRecette';
 import { createOngletPalettes } from './ongletPalettes';
 import { createOngletPlanche } from './ongletPlanche';
-import { createOptionsDeGeneration } from './optionsDeGeneration';
 import { telecharger } from './telechargement';
 import { versSandbox } from './pont';
 import { TEXTES } from './textes';
@@ -111,16 +110,15 @@ const demandesDeLaRecette: DemandesDeLaRecette = {
   recetteParDefaut,
 };
 
-/** Les options de génération, partagées par les deux onglets ([UI-05]). */
-const options = createOptionsDeGeneration();
+/** Chaque génération dessine la grille des contrastes (section 9.5, [UI-05]). */
+const AVEC_LA_GRILLE = true;
 
 const ongletPalettes = createOngletPalettes({
   ranger: (recette) => frontiere.ranger(recette),
   lireLaSelection: () => frontiere.lireLaSelection(),
   recharger: () => frontiere.lireLEtat(),
   tirer: () => crypto.getRandomValues(new Uint32Array(1))[0],
-  dessiner: (palettes, noms) => suivi.dessiner(palettes, options.grille(), noms),
-  options,
+  dessiner: (palettes, noms) => suivi.dessiner(palettes, AVEC_LA_GRILLE, noms),
   resultat: gestesDuResultat,
   recetteEnFichier: createGestesDeLaRecette(demandesDeLaRecette),
   ouvrirReglages(cible) {
@@ -130,8 +128,7 @@ const ongletPalettes = createOngletPalettes({
 });
 const ongletPlanche = createOngletPlanche({
   ...gestesDuResultat,
-  options,
-  dessiner: (palettes, grille, noms) => suivi.dessiner(palettes, grille, noms),
+  dessiner: (palettes, noms) => suivi.dessiner(palettes, AVEC_LA_GRILLE, noms),
   versLesPalettes: () => onglets.selectionner('palettes'),
   recetteEnFichier: createGestesDeLaRecette(demandesDeLaRecette),
 });

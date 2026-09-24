@@ -2,13 +2,12 @@
  * La génération de la palette ouverte, qui ferme sa configuration ([UI-05]) :
  * « Générer sur Figma », l'état de son cadre et « Afficher dans Figma » sur une
  * seule ligne, puis une seule zone pour la progression, l'erreur ou les écarts
- * de peinture, que chaque génération remplace. Les options suivent, repliées.
+ * de peinture, que chaque génération remplace. La génération n'a pas d'option.
  */
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
 import type { EtatDuCadre } from '../planche/fraicheur';
 import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dessin';
-import type { OptionsDeGeneration } from './optionsDeGeneration';
 import { TEXTES_DU_DESSIN, etatDuCadreEcrit, progressionDuDessin } from './textes';
 
 /** Le cadre de la palette ouverte : son état, et où le montrer quand il est localisé. */
@@ -29,7 +28,7 @@ export interface GestesDeLaGeneration extends GestesDuResultat {
   generer(): void;
 }
 
-export function createGeneration(gestes: GestesDeLaGeneration, options: OptionsDeGeneration): GenerationUi {
+export function createGeneration(gestes: GestesDeLaGeneration): GenerationUi {
   const element = document.createElement('div');
   element.className = 'generation';
   const ligne = document.createElement('div');
@@ -47,7 +46,7 @@ export function createGeneration(gestes: GestesDeLaGeneration, options: OptionsD
   const zone = document.createElement('div');
   zone.className = 'page-stack';
   zone.hidden = true;
-  element.append(ligne, zone, options.creerRepli());
+  element.append(ligne, zone);
 
   let cadre: CadreDeLaPalette = { etat: 'jamais-dessinee', page: null, cadre: null };
   let enCours = false;

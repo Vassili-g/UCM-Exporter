@@ -229,13 +229,14 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/navigation.ts        « Voir sur la planche » : ouvre la page et cadre les cadres, sans toucher au document
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
-  src/ui/ongletPalettes.ts barre du verdict, référence, dérive repliée, aperçu et constats
+  src/ui/ongletPalettes.ts le sélecteur, puis « Configuration de la palette » en cartes, chaque message sous la sienne
+  src/ui/carte.ts          une carte de la configuration, fixe ou repliable, avec son résumé
   src/ui/nuancier.ts       l'aperçu peint du fond du thème : pastilles en grille, plages des usages, détail d'une nuance
   src/ui/selecteur.ts      la palette ouverte, en liste déroulante avec la pastille de chaque référence
   src/ui/creation.ts       une palette neuve, par sa référence ou par la couleur de la sélection
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
   src/ui/frontiere.ts      la numérotation des demandes, un seul rangement en vol, le dessin après lui
-  src/ui/ongletPlanche.ts  une ligne par palette et sa fraîcheur, « Dessiner toutes les palettes », la grille de contraste et les notices
+  src/ui/ongletPlanche.ts  une ligne par palette et sa fraîcheur, « Générer toutes les palettes » et les notices
   src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
   src/ui/configuration.ts  courbes, parts, fonds et seuils derrière l'engrenage, avec la garantie des courbes
   src/ui/intensites.ts     les intensités de la palette : curseurs, repère de la référence, origine, retour aux réglages communs

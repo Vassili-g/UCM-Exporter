@@ -1,8 +1,8 @@
 /**
- * L'onglet Palettes (section 13.2), en deux sections à filet : le choix ou la
- * création d'une palette, puis la configuration de la palette ouverte. La
- * configuration porte la référence et le nom, le nuancier, les intensités, la
- * dérive, les messages, et se ferme sur « Générer sur Figma ».
+ * L'onglet Palettes (section 13.2) : le choix ou la création d'une palette,
+ * puis « Configuration de la palette » en cartes : Couleur de base, Aperçu,
+ * Intensités et Dérive de teinte repliables, et la génération en dernière
+ * carte. Un message se lit sous la carte qu'il concerne.
  *
  * Une saisie recalcule l'aperçu dans l'interface ([ENT-02]). La recette
  * s'enregistre à la fin de chaque geste : valider un champ, relâcher un
@@ -34,8 +34,9 @@ import {
 } from '../edition';
 import type { EtatDeLaPlanche, LectureDeSelection, ProfilDuDocument } from '../lecture';
 import { fraicheurDUnePalette } from '../planche/fraicheur';
-import { CIBLES_COMMUNES, type CibleDAction, type GroupeDePromesses } from '../presentation';
-import { blocDeConstat, listeDesMessages } from './constats';
+import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction, type GroupeDePromesses } from '../presentation';
+import { blocDeConstat, listeDesMessages, type Message } from './constats';
+import { createCarte } from './carte';
 import { createCreation } from './creation';
 import { createEditeur } from './derive/editeur';
 import type { EtatDuDessin, GestesDuResultat } from './dessin';
@@ -46,19 +47,16 @@ import { createIntensites } from './intensites';
 import { createMenuPalette, type GesteDePalette } from './menuPalette';
 import { messagesDeLaPalette } from './messagesDePalette';
 import { createNuancier } from './nuancier';
-import type { OptionsDeGeneration } from './optionsDeGeneration';
 import { createSelecteur } from './selecteur';
 import {
   STATUTS_DU_RANGEMENT,
   TEXTES,
-  TEXTES_AVANCES,
   TEXTES_DE_LA_DERIVE,
   TEXTES_DE_L_ONGLET,
   bilanDesPromesses,
   confirmationDeSuppression,
   couleurRamenee,
   hexaInvalide,
-  ligneDeLaDerive,
   ligneDeLaReference,
   nomDeLaCopie,
   nomDeLaPalette,
@@ -67,6 +65,8 @@ import {
   recetteFuture,
   recetteIllisible,
   recetteModifieeAilleurs,
+  resumeDeLaDerive,
+  resumeDesIntensites,
   verdict,
   type Constat,
 } from './textes';
@@ -86,8 +86,6 @@ export interface DemandesDeLOnglet {
   recetteEnFichier: GestesDeLaRecetteUi;
   /** Ouvre les Réglages communs sur le groupe qu'un message nomme ([VER-15]). */
   ouvrirReglages(cible: CibleDAction): void;
-  /** Les options de génération, partagées avec l'onglet Planche. */
-  options: OptionsDeGeneration;
 }
 
 export interface OngletPalettesUi {
@@ -116,21 +114,18 @@ function ligneDEtat(texte: string): HTMLParagraphElement {
   return ligne;
 }
 
-function champ(libelle: string, ...saisies: HTMLElement[]): HTMLLabelElement {
+/** Un champ de la carte Couleur de base : son libellé au-dessus, ses saisies sur une ligne ([UI-11]). */
+function champEnColonne(libelle: string, ...saisies: HTMLElement[]): HTMLLabelElement {
   const etiquette = document.createElement('label');
-  etiquette.className = 'champ-ligne';
+  etiquette.className = 'champ-colonne';
   const texte = document.createElement('span');
-  texte.className = 'field-label';
+  texte.className = 'libelle-de-champ';
   texte.textContent = libelle;
-  etiquette.append(texte, ...saisies);
+  const ligne = document.createElement('span');
+  ligne.className = 'champ-ligne';
+  ligne.append(...saisies);
+  etiquette.append(texte, ligne);
   return etiquette;
-}
-
-function titreDeSection(texte = ''): HTMLHeadingElement {
-  const titre = document.createElement('h2');
-  titre.className = 'titre-de-section';
-  titre.textContent = texte;
-  return titre;
 }
 
 export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalettesUi {
@@ -147,10 +142,9 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   let note: Constat | null = null;
   let statut: StatutDuRangement = 'lu';
   let refus: Constat | null = null;
-  let editeurOuvert = false;
   let dernierDessin: { etat: EtatDuDessin; noms: { readonly [id: string]: string } } = { etat: { phase: 'repos' }, noms: {} };
 
-  // Section 1 : choisir ou créer une palette.
+  // Le choix ou la création d'une palette, en tête de l'onglet.
   const selecteur = createSelecteur((id) => {
     idOuvert = id;
     suppressionDemandee = false;
@@ -201,20 +195,25 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   confirmation.append(texteDeConfirmation, gestesDeConfirmation);
   const zoneDeLaNote = document.createElement('div');
 
-  const sectionPalette = document.createElement('section');
-  sectionPalette.className = 'section-onglet';
-  sectionPalette.setAttribute('aria-label', TEXTES_DE_L_ONGLET.palette);
-  sectionPalette.append(titreDeSection(TEXTES_DE_L_ONGLET.palette), barre, confirmation, zoneDeLaNote);
+  const choix = document.createElement('div');
+  choix.className = 'choix-de-palette';
+  choix.append(barre, confirmation, zoneDeLaNote);
 
-  // Section 2 : configurer la palette ouverte.
-  const titreDeConfiguration = titreDeSection();
+  // Le titre de premier rang, et l'état de l'enregistrement au rang 3.
+  const titreDeConfiguration = document.createElement('h2');
+  titreDeConfiguration.className = 'titre-de-premier-rang';
+  titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre;
   const verdictDeLaPalette = document.createElement('span');
   verdictDeLaPalette.className = 'verdict';
   verdictDeLaPalette.setAttribute('aria-live', 'polite');
+  const indication = document.createElement('span');
+  indication.className = 'etat-rangement ligne-secondaire';
+  indication.setAttribute('aria-live', 'polite');
   const teteDeConfiguration = document.createElement('div');
-  teteDeConfiguration.className = 'tete-de-section';
-  teteDeConfiguration.append(titreDeConfiguration, verdictDeLaPalette);
+  teteDeConfiguration.className = 'tete-de-configuration';
+  teteDeConfiguration.append(titreDeConfiguration, verdictDeLaPalette, indication);
 
+  // Carte Couleur de base ([UI-11]).
   const pipette = document.createElement('input');
   pipette.type = 'color';
   pipette.className = 'pipette';
@@ -230,27 +229,29 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const nom = document.createElement('input');
   nom.type = 'text';
   nom.className = 'input';
-  const reference = document.createElement('div');
-  reference.className = 'ligne-reference';
-  reference.append(champ(TEXTES.reference, pipette, hexa), champ(TEXTES.nom, nom));
+  const colonneDeLaReference = champEnColonne(TEXTES.reference, pipette, hexa);
+  colonneDeLaReference.append(erreurHexa);
+  const colonnes = document.createElement('div');
+  colonnes.className = 'colonnes-de-base';
+  colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference);
+  const carteDeBase = createCarte({ titre: TEXTES_DE_L_ONGLET.couleurDeBase });
+  const messagesDeBase = document.createElement('div');
+  carteDeBase.corps.append(colonnes, messagesDeBase);
 
-  const repereDeReference = document.createElement('span');
-  repereDeReference.className = 'repere-de-la-reference';
-  const indication = document.createElement('span');
-  indication.className = 'etat-rangement';
-  indication.setAttribute('aria-live', 'polite');
-  const infos = document.createElement('p');
-  infos.className = 'ligne-infos';
-  infos.append(repereDeReference, indication);
-
+  // Carte Aperçu ([UI-04]) : la bascule des thèmes et le fond dans l'en-tête.
   const nuancier = createNuancier({
     surMode: () => rendre(),
     modifierLeFond: () => demandes.ouvrirReglages('fonds'),
   });
+  const carteDApercu = createCarte({ titre: TEXTES_DE_L_ONGLET.apercu });
+  carteDApercu.tete.append(nuancier.tete);
+  const repereDeReference = document.createElement('p');
+  repereDeReference.className = 'repere-de-la-reference';
+  carteDApercu.corps.append(repereDeReference, nuancier.element);
+  const messagesDApercu = document.createElement('div');
 
-  const titreDesIntensites = document.createElement('p');
-  titreDesIntensites.className = 'field-label';
-  titreDesIntensites.textContent = TEXTES_AVANCES.avance;
+  // Cartes repliables Intensités et Dérive de teinte ([UI-12]).
+  const carteDesIntensites = createCarte({ titre: TEXTES_DE_L_ONGLET.intensites, repliable: { ouverte: false } });
   const intensites = createIntensites({
     previsualiser: (suivante) => modifier(suivante),
     valider: (suivante) => {
@@ -258,51 +259,58 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     },
     ouvrir: (cible) => ouvrir(cible),
   });
+  carteDesIntensites.corps.append(intensites.element);
 
-  const regler = document.createElement('button');
-  regler.type = 'button';
-  regler.className = 'bouton-deplier';
-  regler.setAttribute('aria-expanded', 'false');
-  regler.addEventListener('click', () => {
-    editeurOuvert = !editeurOuvert;
-    rendre();
-  });
-  const resumeDeLaDerive = document.createElement('span');
-  resumeDeLaDerive.className = 'ligne-secondaire resume-de-la-derive';
-  const ligneDeDerive = document.createElement('div');
-  ligneDeDerive.className = 'ligne-de-derive';
-  ligneDeDerive.append(regler, resumeDeLaDerive);
+  const carteDeLaDerive = createCarte({ titre: TEXTES_DE_L_ONGLET.derive, repliable: { ouverte: false } });
   const editeur = createEditeur({
     previsualiser: (suivante) => modifier(suivante),
     valider: (suivante) => {
       if (recette) valider(remplacerPalette(recette, suivante));
     },
   });
+  carteDeLaDerive.corps.append(editeur.element);
+  // L'éditeur ne se dessine que déplié : l'ouvrir le dessine.
+  carteDeLaDerive.surBascule(() => rendre());
+  const messagesDeLaDerive = document.createElement('div');
 
-  const constats = document.createElement('div');
+  // La génération ferme la configuration, dans une carte au fond du panneau ([UI-05]).
   const generation = createGeneration({
     ...demandes.resultat,
     generer: () => {
       const courante = ouverte();
       if (courante) demandes.dessiner([courante.id], { [courante.id]: nomDeLaPalette(courante) });
     },
-  }, demandes.options);
+  });
+  const carteDeGeneration = createCarte({ titre: TEXTES_DE_L_ONGLET.generation, plate: true });
+  carteDeGeneration.corps.append(generation.element);
 
-  const sectionConfiguration = document.createElement('section');
-  sectionConfiguration.className = 'section-onglet';
-  sectionConfiguration.append(
+  const configuration = document.createElement('div');
+  configuration.className = 'configuration-de-la-palette';
+  configuration.append(
     teteDeConfiguration,
-    reference,
-    erreurHexa,
-    infos,
-    nuancier.element,
-    titreDesIntensites,
-    intensites.element,
-    ligneDeDerive,
-    editeur.element,
-    constats,
-    generation.element,
+    carteDeBase.element,
+    carteDApercu.element,
+    messagesDApercu,
+    carteDesIntensites.element,
+    carteDeLaDerive.element,
+    messagesDeLaDerive,
+    carteDeGeneration.element,
   );
+
+  /** Les messages de la palette, chacun sous la carte qu'il concerne. */
+  const ZONES_DES_MESSAGES: Record<CarteDuMessage, HTMLDivElement> = {
+    'couleur-de-base': messagesDeBase,
+    apercu: messagesDApercu,
+    derive: messagesDeLaDerive,
+  };
+
+  function poserLesMessages(liste: readonly Message[]): void {
+    for (const [carte, zone] of Object.entries(ZONES_DES_MESSAGES) as [CarteDuMessage, HTMLDivElement][]) {
+      const ici = liste.filter((message) => carteDuMessage(message.cibles) === carte);
+      zone.replaceChildren(...(ici.length > 0 ? [listeDesMessages(ici, ouvrir)] : []));
+      zone.hidden = ici.length === 0;
+    }
+  }
 
   /** Ouvre et focalise le réglage qu'un message nomme ([VER-15]) : dans l'onglet, ou dans les Réglages communs. */
   function ouvrir(cible: CibleDAction): void {
@@ -314,11 +322,11 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       hexa.focus();
       hexa.select();
     } else if (cible === 'intensites-palette') {
+      carteDesIntensites.ouvrir();
       intensites.ouvrir();
-    } else if (!regler.disabled) {
-      editeurOuvert = true;
-      rendre();
-      editeur.focaliser();
+    } else {
+      carteDeLaDerive.ouvrir();
+      if (carteDeLaDerive.estOuverte()) editeur.focaliser();
     }
   }
 
@@ -459,7 +467,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   vide.append(ligneVide);
   const vue = document.createElement('div');
   vue.className = 'page-stack colonne';
-  vue.append(sectionPalette, sectionConfiguration);
+  vue.append(choix, configuration);
   element.append(zoneDuRefus, zoneDuBloquant, vide, vue);
 
   /** Le panneau de création suit la vue montrée : seul, ou sous le sélecteur. */
@@ -483,7 +491,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     const analyse = analyserPalette(lue, courante);
     selecteur.afficher(lue.palettes, courante.id);
     menu.afficher(lue.palettes.indexOf(courante), lue.palettes.length);
-    placerLaCreation(sectionPalette, confirmation);
+    placerLaCreation(choix, confirmation);
     creation.element.hidden = !creationOuverte;
     plus.setAttribute('aria-expanded', String(creationOuverte));
     texteDeConfirmation.textContent = confirmationDeSuppression(nomDeLaPalette(courante));
@@ -491,7 +499,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     zoneDeLaNote.replaceChildren(...(note ? [blocDeConstat(note, 'notice')] : []));
     zoneDeLaNote.hidden = !note;
 
-    titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.configuration(nomDeLaPalette(courante));
     verdictDeLaPalette.textContent = analyse.manquees === 0
       ? `${verdict(0)} · ${bilanDesPromesses(analyse.promesses.length, analyse.promesses.length)}`
       : verdict(analyse.manquees);
@@ -511,19 +518,16 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     };
     const messages = messagesDeLaPalette(analyse, courante, { recette: lue, nomDe }, nomDeLaPalette(courante), inspecter);
     intensites.afficher(lue, courante, analyse.part, messages.intensite);
-    constats.replaceChildren(...(messages.liste.length > 0 ? [listeDesMessages(messages.liste, ouvrir)] : []));
-    constats.hidden = messages.liste.length === 0;
+    const pointsDIntensite = messages.intensite.filter((message) => message.severite !== 'notice').length;
+    carteDesIntensites.poserResume(resumeDesIntensites(courante.parts?.origine, analyse.parts, pointsDIntensite));
+    poserLesMessages(messages.liste);
 
-    resumeDeLaDerive.textContent = ligneDeLaDerive(courante);
     // Une référence presque grise n'a pas de teinte : l'éditeur se désactive ([DER-15]).
     const grise = estPresqueGrise(lue, courante);
-    if (grise) editeurOuvert = false;
-    regler.disabled = grise;
-    regler.title = grise ? TEXTES_DE_LA_DERIVE.grisDesactive : '';
-    regler.textContent = `${editeurOuvert ? '▾' : '▸'} ${TEXTES_DE_LA_DERIVE.regler}`;
-    regler.setAttribute('aria-expanded', String(editeurOuvert));
-    editeur.element.hidden = !editeurOuvert;
-    if (editeurOuvert) editeur.afficher(lue, courante, analyse.rampes, analyse.ancrage, analyse);
+    const pointsDeDerive = messages.liste.filter((message) => carteDuMessage(message.cibles) === 'derive').length;
+    carteDeLaDerive.poserResume(resumeDeLaDerive(courante, grise, pointsDeDerive));
+    carteDeLaDerive.desactiver(grise ? TEXTES_DE_LA_DERIVE.grisDesactive : null);
+    if (carteDeLaDerive.estOuverte()) editeur.afficher(lue, courante, analyse.rampes, analyse.ancrage, analyse);
 
     generation.afficherLeCadre(cadreOuvert);
     generation.afficherDessin(dernierDessin.etat, dernierDessin.noms, courante.id);

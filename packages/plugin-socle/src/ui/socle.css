@@ -75,7 +75,11 @@
   --fond-marque-survol: var(--figma-color-bg-brand-hover, #007be5);
   --fond-avertissement: var(--figma-color-bg-warning-tertiary, #fff1d6);
   --fond-danger: var(--figma-color-bg-danger-tertiary, #ffe0db);
-  --bordure: var(--figma-color-border, #e6e6e6);
+  /*
+   * La bordure ne suit pas `--figma-color-border` : sur le fond sombre, #444444
+   * ne détache pas une carte de son voisin. Même valeur dans et hors de Figma.
+   */
+  --bordure: #d2d2d2;
   --bordure-marque: var(--figma-color-border-brand-strong, #0d99ff);
   /*
    * La bordure d'une carte dépôt visée, au survol comme au focus. Seul rôle de
@@ -103,7 +107,7 @@
   --fond-marque-survol: var(--figma-color-bg-brand-hover, #3ab0ff);
   --fond-avertissement: var(--figma-color-bg-warning-tertiary, #4a3a10);
   --fond-danger: var(--figma-color-bg-danger-tertiary, #4d1f17);
-  --bordure: var(--figma-color-border, #444444);
+  --bordure: #5e5e5e;
   --bordure-marque: var(--figma-color-border-brand-strong, #0d99ff);
   /* Redéclaré à l'identique : le rôle existe dans les deux thèmes, ou l'un des
    * deux tomberait sur celui de l'autre sans que rien ne le dise. */

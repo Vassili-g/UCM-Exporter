@@ -95,7 +95,7 @@
   gap: var(--espace-controle);
 }
 
-/* Rang 3 : « rangé » ou « rangement… », à droite de la ligne d'informations. */
+/* Rang 3 : « Enregistré » ou « Enregistrement… », à droite du titre de premier rang. */
 .etat-rangement {
   flex-shrink: 0;
 }
@@ -632,42 +632,142 @@
 }
 
 /*
- * L'onglet Palettes : deux sections à filet discret, le choix d'une palette
- * puis sa configuration. Le titre, l'espacement et la densité les distinguent ;
- * aucune n'a de fond propre.
+ * L'onglet Palettes : un titre de premier rang, puis des cartes de même facture
+ * (CONTRIBUTING.md, « Les surfaces d'UCM Palettes »). Trois niveaux de titre :
+ * premier rang, carte, libellé de champ.
  */
-.section-onglet {
+.choix-de-palette,
+.configuration-de-la-palette {
   display: grid;
   min-width: 0;
-  gap: var(--espace-controle);
-  padding: var(--espace-controle);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon);
+  gap: var(--espace-bloc);
   grid-template-columns: minmax(0, 1fr);
 }
 
-.titre-de-section {
+.choix-de-palette {
+  gap: var(--espace-controle);
+}
+
+.tete-de-configuration {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espace-controle);
+}
+
+.titre-de-premier-rang {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.carte {
+  display: grid;
+  min-width: 0;
+  gap: var(--espace-controle);
+  padding: var(--espace-bloc);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--fond-bloc);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* La carte de génération porte le fond du panneau. */
+.carte-plate {
+  background: var(--fond);
+}
+
+.carte-tete {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+.carte-titre {
   margin: 0;
   font-size: var(--libelle);
   font-weight: 600;
   line-height: var(--libelle-interligne);
 }
 
-.tete-de-section {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--espace-controle);
+.carte-resume {
+  min-width: 0;
+  color: var(--texte-second);
 }
 
-.tete-de-section .titre-de-section {
+/* Une carte repliable : son en-tête est un bouton sur toute la largeur. */
+.carte-bascule {
+  width: 100%;
+  min-height: var(--hauteur-action);
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  margin: calc(-1 * var(--espace-controle)) 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texte);
+  cursor: pointer;
+  text-align: left;
+}
+
+.carte-bascule .carte-resume {
+  margin-left: auto;
+  text-align: right;
+}
+
+.carte-chevron::before {
+  display: inline-block;
+  width: 10px;
+  color: var(--texte-second);
+  content: '›';
+}
+
+.carte-bascule[aria-expanded='true'] .carte-chevron::before {
+  content: '⌄';
+}
+
+.carte-bascule:disabled {
+  color: var(--texte-second);
+  cursor: not-allowed;
+}
+
+.carte-bascule:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.carte-corps {
+  display: grid;
   min-width: 0;
-  overflow-wrap: anywhere;
+  gap: var(--espace-controle);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Trois colonnes égales, libellé au-dessus du champ ([UI-11]). */
+.colonnes-de-base {
+  display: grid;
+  gap: var(--espace-controle);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.champ-colonne {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--espace-serre);
+}
+
+.libelle-de-champ {
+  color: var(--texte-second);
 }
 
 .repere-de-la-reference {
-  color: var(--texte);
+  font-weight: 600;
 }
 
 /* Une suppression est un geste destructif : le bouton porte la couleur du danger. */
@@ -682,11 +782,6 @@
  * thème choisi. Ses encres viennent du script, calculées sur ce fond : elles
  * sont des données, comme les couleurs des pastilles.
  */
-.nuancier {
-  display: grid;
-  gap: var(--espace-controle);
-}
-
 .nuancier-tete {
   display: flex;
   flex-wrap: wrap;
@@ -931,37 +1026,6 @@
   background: var(--texte);
 }
 
-/* La dérive se déplie sous le nuancier ; à la largeur minimale, son résumé passe à la ligne. */
-.ligne-de-derive {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--espace-controle);
-}
-
-.bouton-deplier {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--texte);
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.bouton-deplier:disabled {
-  color: var(--texte-second);
-  cursor: not-allowed;
-}
-
-.bouton-deplier:focus-visible {
-  outline: 2px solid var(--bordure-marque);
-  outline-offset: 2px;
-}
-
-.resume-de-la-derive {
-  min-width: 0;
-}
-
 .derive-nom-de-courbe {
   font-weight: 600;
 }
@@ -974,8 +1038,6 @@
 .generation {
   display: grid;
   gap: var(--espace-controle);
-  padding-top: var(--espace-controle);
-  border-top: 1px solid var(--bordure);
 }
 
 .generation-ligne {
@@ -987,15 +1049,6 @@
 
 .etat-du-cadre {
   color: var(--texte-second);
-}
-
-.options-de-generation summary {
-  color: var(--texte-second);
-  cursor: pointer;
-}
-
-.options-de-generation .champ-ligne {
-  margin-top: var(--espace-serre);
 }
 
 /*
