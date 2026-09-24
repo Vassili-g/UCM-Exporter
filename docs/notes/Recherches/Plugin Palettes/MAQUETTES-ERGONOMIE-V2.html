@@ -1,0 +1,498 @@
+<title>Palettes, recette 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root {
+  --sol: #F3F4F6; --papier: #FFFFFF; --encre: #17191E; --encre-2: #555C69; --filet: #D9DCE2;
+  --accent: #A8511B; --accent-fond: #FBEDE3; --ok: #17784A; --ko: #C7321B;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --sol: #15171B; --papier: #1D2026; --encre: #ECEEF2; --encre-2: #A3AAB7;
+    --filet: #343944; --accent: #F0A06A; --accent-fond: #3A2618; --ok: #5BD08F; --ko: #FF8C78;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --sol: #15171B; --papier: #1D2026; --encre: #ECEEF2; --encre-2: #A3AAB7;
+  --filet: #343944; --accent: #F0A06A; --accent-fond: #3A2618; --ok: #5BD08F; --ko: #FF8C78;
+}
+* { box-sizing: border-box; }
+body { background: var(--sol); color: var(--encre); font: 15px/1.55 var(--sans); padding-inline: 16px; padding-block: 32px 64px; }
+main { max-width: 900px; margin: 0 auto; display: grid; gap: 56px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 21px; font-weight: 600; }
+h3 { font-size: 15px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+ul { margin: 0; padding-left: 1.2em; max-width: 68ch; }
+li + li { margin-top: 4px; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+.intro, .bloc { display: grid; gap: 16px; }
+.tete { display: grid; gap: 8px; }
+.sur { font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.reco-legende { display: flex; gap: 8px; align-items: center; color: var(--encre-2); font-size: 14px; }
+.decision { font: 600 12px/1 var(--mono); color: var(--accent); background: var(--accent-fond); padding: 4px 7px; border-radius: 4px; white-space: nowrap; }
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.option { background: var(--papier); border: 1px solid var(--filet); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.option.reco { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.option h3 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.option p { font-size: 14px; color: var(--encre-2); }
+.chip-reco { font: 600 11px/1 var(--sans); color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+.pour, .contre { font-size: 13.5px; }
+.pour::before { content: "+ "; color: var(--ok); font-weight: 600; }
+.contre::before { content: "− "; color: var(--ko); font-weight: 600; }
+.note { border-left: 3px solid var(--filet); padding: 2px 0 2px 14px; color: var(--encre-2); font-size: 14px; }
+.faits { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.faits div { background: var(--papier); border: 1px solid var(--filet); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.faits b { font-size: 15px; }
+.faits span { font-size: 14px; color: var(--encre-2); }
+.recap { background: var(--papier); border: 1px solid var(--filet); border-radius: 12px; overflow-x: auto; }
+.recap table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+.recap th, .recap td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--filet); vertical-align: top; }
+.recap tr:last-child td { border-bottom: 0; }
+.recap th { font-weight: 600; color: var(--encre-2); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.fait { color: var(--ok); font-weight: 600; white-space: nowrap; }
+
+/* ——— Maquettes : panneau Figma sombre, échelle 1 ——— */
+.scene { overflow-x: auto; padding: 4px 0 8px; }
+.scene-rangee { display: flex; gap: 24px; align-items: flex-start; width: max-content; }
+.legende { font-size: 13px; color: var(--encre-2); margin-top: 8px; max-width: 500px; }
+.fp {
+  --f-fond: #2C2C2C; --f-bloc: #383838; --f-bord: #5E5E5E; --f-champ: #2C2C2C;
+  --f-texte: #FFFFFF; --f-texte-2: #B3B3B3; --f-marque: #0D99FF; --f-lien: #7CC4F8;
+  --f-succes: #85E0A3; --f-danger: #FFAFA3; --f-avert: #FFC470;
+  width: 500px; flex: none; background: var(--f-fond); color: var(--f-texte);
+  font: 11px/16px Inter, system-ui, sans-serif; border: 1px solid #1B1B1B; border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35); overflow: hidden;
+}
+.fp-barre { height: 32px; display: flex; align-items: center; gap: 14px; padding: 0 16px; border-bottom: 1px solid var(--f-bord); font-weight: 500; }
+.fp-barre .actif { box-shadow: inset 0 -2px 0 var(--f-texte); padding: 8px 0 7px; }
+.fp-barre .inactif { color: var(--f-texte-2); }
+.fp-barre .engrenage { margin-left: auto; color: var(--f-texte-2); }
+.fp-corps { padding: 16px; display: grid; gap: 12px; }
+.fp-select { display: flex; gap: 8px; align-items: center; }
+.fp-select .champ { flex: 1; }
+.champ { height: 28px; border: 1px solid var(--f-bord); border-radius: 6px; display: flex; align-items: center; gap: 6px; padding: 0 8px; background: var(--f-champ); min-width: 0; }
+.champ .pastille { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+.bouton-icone { width: 28px; height: 28px; border: 1px solid var(--f-bord); border-radius: 6px; display: grid; place-items: center; flex: none; }
+.fp-h1 { font-size: 16px; line-height: 24px; font-weight: 600; padding-top: 4px; }
+.carte-f { background: var(--f-bloc); border: 1px solid var(--f-bord); border-radius: 8px; padding: 12px; display: grid; gap: 10px; }
+.carte-f.plate { background: var(--f-fond); }
+.carte-titre { font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.libelle { color: var(--f-texte-2); }
+.trois { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.trois > div { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.segment { display: flex; border: 1px solid var(--f-bord); border-radius: 6px; height: 28px; padding: 2px; gap: 2px; background: var(--f-champ); }
+.segment span { flex: 1; display: grid; place-items: center; border-radius: 4px; color: var(--f-texte-2); white-space: nowrap; padding: 0 6px; }
+.segment .on { background: #4A4A4A; color: var(--f-texte); font-weight: 600; }
+.segment.petit { height: 24px; }
+.aide { color: var(--f-texte-2); }
+.ref-ligne { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.surface { border-radius: 6px; padding: 10px 10px 8px; background: #121212; }
+.grille, .brackets { display: grid; grid-template-columns: 34px 30px repeat(11, 1fr); column-gap: 3px; }
+.sw.onsolid { grid-row: span 2; height: 55px; border: 1px dashed #6E6E6E; }
+.centre { display: flex; justify-content: center; }
+.grille { row-gap: 3px; align-items: center; }
+.grille .num { text-align: center; font-size: 9.5px; line-height: 12px; color: #9A9A9A; font-variant-numeric: tabular-nums; }
+.grille .prof { font-size: 10px; font-weight: 600; color: #CFCFCF; }
+.sw { height: 26px; border-radius: 4px; position: relative; }
+.sw.ref::after { content: "◆"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 10px; }
+.sw.choisie { box-shadow: 0 0 0 2px #121212, 0 0 0 3.5px #FFFFFF; }
+.brackets { margin-top: 6px; row-gap: 1px; }
+.br { border: 1px solid #8C8C8C; border-top: 0; height: 5px; border-radius: 0 0 2px 2px; }
+.br-l { font: 500 9.5px/12px "IBM Plex Mono", monospace; color: #E6E6E6; text-align: center; white-space: nowrap; }
+.br-fr { font-size: 9px; line-height: 11px; color: #9A9A9A; text-align: center; white-space: nowrap; margin-bottom: 4px; }
+.accordeon { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; background: var(--f-bloc); border: 1px solid var(--f-bord); border-radius: 8px; }
+.accordeon b { font-size: 12px; font-weight: 600; }
+.accordeon .resume { margin-left: auto; color: var(--f-texte-2); }
+.chevron { color: var(--f-texte-2); width: 10px; display: inline-block; }
+.btn-marque { height: 32px; border-radius: 6px; background: var(--f-marque); color: #fff; font-weight: 600; display: grid; place-items: center; padding: 0 14px; }
+.gen { display: flex; align-items: center; gap: 10px; }
+.gen .etat { color: var(--f-avert); }
+.gen .lien { margin-left: auto; color: var(--f-lien); }
+.tok { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight: 500; color: #FFFFFF; }
+.sur-mot { color: var(--f-texte-2); }
+
+/* Garanties repensées */
+.reglette { background: #121212; border-radius: 6px; padding: 6px 0 4px; }
+.reglette svg { display: block; width: 100%; height: auto; }
+.groupe-titre { display: flex; justify-content: space-between; font-weight: 600; font-size: 11px; padding-top: 4px; }
+.groupe-titre span { color: var(--f-texte-2); font-weight: 400; }
+.rel { display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: start; padding: 8px 6px; border-top: 1px solid var(--f-bord); border-radius: 4px; }
+.rel.choisie { background: #444444; border-top-color: transparent; box-shadow: inset 2px 0 0 #FFFFFF; }
+.rel .qui { display: grid; gap: 1px; min-width: 0; }
+.rel .qui .fr { color: var(--f-texte-2); font-size: 10px; line-height: 13px; }
+.etats { display: flex; gap: 8px; flex-wrap: wrap; }
+.etat { display: grid; gap: 2px; justify-items: center; width: 64px; }
+.etat .spec { width: 64px; height: 26px; border-radius: 4px; display: grid; place-items: center; }
+.etat .n { font: 500 10px/12px "IBM Plex Mono", monospace; color: #E6E6E6; font-variant-numeric: tabular-nums; }
+.etat .r { font-size: 10px; line-height: 12px; font-variant-numeric: tabular-nums; color: var(--f-succes); }
+.etat .r.ko { color: var(--f-danger); font-weight: 600; }
+.etat .quand { font-size: 9px; line-height: 11px; color: #8F8F8F; }
+.mini-btn { height: 18px; padding: 0 8px; border-radius: 3px; display: grid; place-items: center; font-size: 9px; font-weight: 600; }
+.mini-champ { width: 40px; height: 14px; border-radius: 3px; border: 1.5px solid; }
+.mini-focus { width: 36px; height: 12px; border-radius: 3px; outline: 2px solid; outline-offset: 2px; }
+.mini-texte { font-size: 11px; font-weight: 600; }
+.decoratif { color: var(--f-texte-2); font-size: 10px; padding: 6px 6px 0; border-top: 1px solid var(--f-bord); }
+.action { color: var(--f-lien); padding: 0 6px 6px 166px; }
+
+/* Détail d'une nuance */
+.detail { background: #121212; border-radius: 6px; padding: 10px; display: grid; gap: 6px; color: #FFFFFF; }
+.detail-tete { display: flex; gap: 10px; align-items: center; }
+.detail-tete .grosse { width: 36px; height: 36px; border-radius: 6px; }
+.detail-tete b { font-size: 12px; }
+.detail-tete .copier { margin-left: auto; border: 1px solid #5E5E5E; border-radius: 5px; padding: 2px 8px; }
+.sous-titre-f { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #9A9A9A; font-weight: 600; }
+.usage { display: grid; grid-template-columns: 58px 1fr; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid #2E2E2E; }
+.usage .quoi { display: grid; gap: 1px; }
+.usage .quoi .fr { color: #9A9A9A; font-size: 10px; }
+.usage .g { color: var(--f-succes); font-size: 10.5px; }
+
+.bords { display: flex; gap: 16px; flex-wrap: wrap; }
+.bords figure { margin: 0; display: grid; gap: 6px; font-size: 13px; color: var(--encre-2); }
+.bords .ech { width: 200px; height: 70px; border-radius: 8px; background: #383838; outline: 16px solid #2C2C2C; margin: 16px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<main>
+
+<header class="intro">
+  <span class="sur">UCM Palettes · recette 2 · maquettes validées</span>
+  <h1>Le panneau de configuration, repris avec tes réponses</h1>
+  <p>Maquettes en thème sombre de Figma, à 500 px. Quatre choix sont acquis (bordures, largeur, palette de base, noms des réglages). Deux sujets ont été repensés : <b>les termes</b> et <b>le module des garanties</b>. Il reste deux questions, en bas de page.</p>
+</header>
+
+<!-- ============ Ce que la relecture apprend ============ -->
+<section class="bloc" id="faits">
+  <div class="tete">
+    <span class="sur">Relecture de la spécification et de l'architecture</span>
+    <h2>Trois faits qui orientent la décision</h2>
+  </div>
+  <div class="faits">
+    <div><b>Le numéro est le vrai nom</b><span>Un composant cite <span class="mono">theme.primary.vivid.700</span>. Aucune variable ne s'appelle <span class="mono">solid</span> ou <span class="mono">text</span> : ces mots sont les règles de la table des usages. Il faut donc voir le numéro partout où l'on compare deux couleurs.</span></div>
+    <div><b><span class="mono">on-solid</span> = <span class="mono">neutral.50</span></b><span>Le texte d'un bouton plein prend le neutre 50, c'est-à-dire le fond de page. Il n'est pas dans la rampe de la palette, d'où l'absence de numéro. On l'écrira « fond ».</span></div>
+    <div><b>Un état avance d'un cran</b><span>C'est la règle centrale de l'architecture : au survol, texte et fond avancent ensemble (700 sur 100 → 800 sur 200 → 900 sur 300). C'est cette relation qu'il faut rendre visible.</span></div>
+  </div>
+</section>
+
+<!-- ============ VUE D'ENSEMBLE ============ -->
+<section class="bloc" id="ensemble">
+  <div class="tete">
+    <span class="sur">Vue d'ensemble</span>
+    <h2>Le panneau complet, en sombre</h2>
+    <p>Ce qui change depuis la version 1 : le thème sombre, la pastille <span class="mono">on-solid</span> (le fond de page, <span class="mono">neutral.50</span>) nommée comme un rôle, les accolades avec leurs noms du design system, et la carte Garanties qui annonce le résultat de chaque profil.</p>
+  </div>
+  <div class="scene"><div class="scene-rangee">
+    <div class="fp" role="img" aria-label="Maquette du panneau complet en thème sombre">
+      <div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planche</span><span class="engrenage">⚙</span></div>
+      <div class="fp-corps">
+        <div class="fp-select">
+          <div class="champ"><span class="pastille" style="background:#1E6FD9"></span>Bleu marque<span style="margin-left:auto;color:#B3B3B3">▾</span></div>
+          <div class="bouton-icone">+</div><div class="bouton-icone">⋯</div>
+        </div>
+        <div class="fp-h1">Configuration de la palette</div>
+
+        <div class="carte-f">
+          <div class="carte-titre">Couleur de base</div>
+          <div class="trois">
+            <div><span class="libelle">Nom de la palette</span><div class="champ">Bleu marque</div></div>
+            <div><span class="libelle">Couleur de référence</span><div class="champ"><span class="pastille" style="background:#1E6FD9"></span><span style="font-family:'IBM Plex Mono',monospace">#1E6FD9</span></div></div>
+            <div><span class="libelle">Palette de base</span><div class="segment"><span class="on">Auto</span><span>Soft</span><span>Vivid</span></div><span class="aide">Auto a choisi Vivid</span></div>
+          </div>
+        </div>
+
+        <div class="carte-f">
+          <div class="carte-titre">Aperçu <div class="segment petit"><span>Light</span><span class="on">Dark</span></div></div>
+          <div class="ref-ligne">◆ Référence : Vivid · nuance 600</div>
+          <div class="surface">
+            <div class="grille">
+              <span></span><span></span>
+              <span class="num">50</span><span class="num">100</span><span class="num">200</span><span class="num">300</span><span class="num">400</span><span class="num">500</span><span class="num">600</span><span class="num">700</span><span class="num">800</span><span class="num">900</span><span class="num">950</span>
+              <span class="prof">Soft</span>
+              <span class="sw onsolid" style="background:#121212" title="on-solid : fond de page, neutral.50"></span>
+              <span class="sw" style="background:#081123"></span><span class="sw" style="background:#0F1B32"></span><span class="sw" style="background:#172745"></span><span class="sw" style="background:#223557"></span><span class="sw" style="background:#304870"></span><span class="sw" style="background:#426190"></span><span class="sw" style="background:#567CB1"></span><span class="sw" style="background:#7498C6"></span><span class="sw" style="background:#99B4D5"></span><span class="sw" style="background:#BED0E4"></span><span class="sw" style="background:#E0E9F2"></span>
+              <span class="prof">Vivid</span>
+              <span class="sw" style="background:#000C35"></span><span class="sw" style="background:#01154B"></span><span class="sw" style="background:#021F64"></span><span class="sw" style="background:#032D7B"></span><span class="sw" style="background:#07409A"></span><span class="sw" style="background:#0D5AC2"></span><span class="sw ref" style="background:#1E6FD9"></span><span class="sw" style="background:#4596FA"></span><span class="sw" style="background:#7AB5FB"></span><span class="sw" style="background:#ACD2FD"></span><span class="sw" style="background:#D8EAFE"></span>
+            </div>
+            <div class="brackets" aria-hidden="true">
+              <span class="br" style="grid-column:2 / 3;grid-row:1"></span>
+              <span class="br-l centre" style="grid-column:2 / 3;grid-row:2">on-solid</span>
+              <span class="br-fr centre" style="grid-column:2 / 3;grid-row:3">fond</span>
+              <span class="br" style="grid-column:4 / 7;grid-row:1"></span>
+              <span class="br" style="grid-column:10 / 13;grid-row:1"></span>
+              <span class="br-l" style="grid-column:4 / 7;grid-row:2">surface</span>
+              <span class="br-l" style="grid-column:10 / 13;grid-row:2">solid · text</span>
+              <span class="br-fr" style="grid-column:4 / 7;grid-row:3">fonds légers</span>
+              <span class="br-fr" style="grid-column:10 / 13;grid-row:3">pleins · textes</span>
+              <span class="br" style="grid-column:6 / 7;grid-row:4"></span>
+              <span class="br" style="grid-column:9 / 12;grid-row:4"></span>
+              <span class="br-l" style="grid-column:3 / 10;grid-row:5">border-decorative</span>
+              <span class="br-l" style="grid-column:9 / 14;grid-row:5;text-align:left;padding-left:4px">border-control · focus</span>
+              <span class="br-fr" style="grid-column:3 / 10;grid-row:6">séparateurs</span>
+              <span class="br-fr" style="grid-column:9 / 14;grid-row:6;text-align:left;padding-left:4px">bordures de champ · focus</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="carte-f">
+          <div class="carte-titre"><span><span class="chevron">›</span> Garanties de contraste</span><span style="font-weight:400;color:#B3B3B3">Soft <b style="color:#85E0A3">✓</b> · Vivid <b style="color:#85E0A3">✓</b></span></div>
+        </div>
+
+        <div class="accordeon"><span class="chevron">›</span><b>Intensités</b><span class="resume">Communes · Soft 0,45 · Vivid 0,95</span></div>
+        <div class="accordeon"><span class="chevron">›</span><b>Dérive de teinte</b><span class="resume">Tailwind · synchronisée</span></div>
+
+        <div class="carte-f plate">
+          <div class="gen"><span class="btn-marque">Générer sur Figma</span><span class="etat">▲ À mettre à jour</span><span class="lien">Afficher dans Figma</span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <p class="legende">L'aperçu est peint du fond du thème de la palette (ici Dark, <span class="mono">#121212</span>) ; le reste du panneau suit le thème de Figma.</p>
+</section>
+
+<!-- ============ Termes ============ -->
+<section class="bloc" id="termes">
+  <div class="tete">
+    <span class="sur">Les termes</span>
+    <h2>Le nom du design system d'abord, le français dessous</h2>
+    <p>L'architecture écrit déjà ses usages ainsi : « <span class="mono">solid</span>, fond plein d'un bouton, d'un badge ». Je propose d'appliquer la même règle partout dans le plugin. On garde la notion de relation (<span class="mono">on-solid</span> se pose <i>sur</i> <span class="mono">solid</span>), et le français explique sans remplacer.</p>
+  </div>
+  <ul>
+    <li><b>Un rôle</b> : <span class="mono">border-control</span> en police code, puis « bordure de champ » en gris, plus petit.</li>
+    <li><b>Une relation</b> : « <span class="mono">text</span> 700 sur <span class="mono">surface</span> 100 ». Rôles et numéros, toujours ensemble.</li>
+    <li><b>Le fond de page</b> s'écrit « fond » ; son explication (« <span class="mono">neutral.50</span>, fond de page ») apparaît une seule fois, dans la ligne <span class="mono">on-solid</span>.</li>
+  </ul>
+  <div class="tete"><div class="reco-legende"><span class="decision">Q1</span> Cette règle de nommage te convient-elle ?</div></div>
+  <div class="options">
+    <div class="option reco"><h3>A · DS + français dessous <span class="chip-reco">Recommandé</span></h3><p>Comme dans les maquettes de cette page.</p><span class="pour">vrais termes et relations visibles, compréhensible pour un nouvel arrivant</span><span class="contre">deux lignes de texte par libellé</span></div>
+    <div class="option"><h3>B · DS seul</h3><p>Français uniquement dans le détail d'une nuance et au survol.</p><span class="pour">le plus compact</span><span class="contre">opaque pour qui ne connaît pas l'architecture</span></div>
+  </div>
+</section>
+
+<!-- ============ Garanties repensées ============ -->
+<section class="bloc" id="garanties">
+  <div class="tete">
+    <span class="sur">Le module des garanties, repensé</span>
+    <h2>Montrer à la fois ce qui est garanti et quelles nuances vont ensemble</h2>
+    <p>Ton retour pointe le vrai manque : on voyait des spécimens sans savoir quelles nuances étaient comparées. La proposition ajoute trois choses à la carte Garanties :</p>
+  </div>
+  <ul>
+    <li><b>Une réglette</b> des onze nuances du profil choisi, en tête de carte. La relation sélectionnée y est tracée par des arcs, de la nuance du dessus vers la nuance du dessous. Pour <span class="mono">text</span> sur <span class="mono">surface</span>, on voit trois arcs parallèles : l'état avance d'un cran, les deux ensemble.</li>
+    <li><b>Sous chaque spécimen</b> : les deux numéros comparés (« 700 / 100 »), l'état, puis le ratio.</li>
+    <li><b>Deux groupes</b> selon le minimum : « Textes lisibles · 4,5:1 » et « Éléments visibles · 3:1 ». On comprend pourquoi une bordure passe à 3,58 et un texte non.</li>
+  </ul>
+  <p>Soft et Vivid se consultent par une bascule en tête de carte, qui affiche le résultat de chaque profil : trois états côte à côte avec leurs numéros ne tiennent pas deux fois dans 500 px. Au départ, la carte montre le profil qui porte la référence.</p>
+
+  <div class="scene"><div class="scene-rangee">
+    <div>
+    <div class="fp" role="img" aria-label="Maquette de la carte Garanties repensée, thème Dark, profil Vivid">
+      <div class="fp-corps">
+        <div class="carte-f">
+          <div class="carte-titre"><span><span class="chevron">⌄</span> Garanties de contraste</span><span class="aide" style="font-weight:400">Thème Dark</span></div>
+          <div class="segment petit" style="width:200px"><span>Soft <b style="color:#85E0A3;margin-left:4px">✓</b></span><span class="on">Vivid <b style="color:#85E0A3;margin-left:4px">✓</b></span></div>
+
+          <div class="reglette">
+            <svg viewBox="-46 0 488 92" role="img" aria-label="Réglette Vivid Dark : arcs de 100 vers 700, 200 vers 800, 300 vers 900">
+              <path d="M59 48 C59 6, 302 6, 302 48" fill="none" stroke="#FFFFFF" stroke-width="1.6"/>
+              <path d="M99.5 48 C99.5 10, 342.5 10, 342.5 48" fill="none" stroke="#FFFFFF" stroke-width="1.1" stroke-dasharray="4 3" opacity=".75"/>
+              <path d="M140 48 C140 14, 383 14, 383 48" fill="none" stroke="#FFFFFF" stroke-width="1.1" stroke-dasharray="1.5 2.5" opacity=".75"/>
+              <circle cx="59" cy="48" r="2.2" fill="#FFFFFF"/><circle cx="302" cy="48" r="2.2" fill="#FFFFFF"/>
+              <circle cx="99.5" cy="48" r="2" fill="#FFFFFF"/><circle cx="342.5" cy="48" r="2" fill="#FFFFFF"/>
+              <circle cx="140" cy="48" r="2" fill="#FFFFFF"/><circle cx="383" cy="48" r="2" fill="#FFFFFF"/>
+              <g>
+                <rect x="0" y="52" width="37" height="22" rx="3" fill="#000C35"/>
+                <rect x="40.5" y="52" width="37" height="22" rx="3" fill="#01154B"/>
+                <rect x="81" y="52" width="37" height="22" rx="3" fill="#021F64"/>
+                <rect x="121.5" y="52" width="37" height="22" rx="3" fill="#032D7B"/>
+                <rect x="162" y="52" width="37" height="22" rx="3" fill="#07409A"/>
+                <rect x="202.5" y="52" width="37" height="22" rx="3" fill="#0D5AC2"/>
+                <rect x="243" y="52" width="37" height="22" rx="3" fill="#1E6FD9"/>
+                <rect x="283.5" y="52" width="37" height="22" rx="3" fill="#4596FA"/>
+                <rect x="324" y="52" width="37" height="22" rx="3" fill="#7AB5FB"/>
+                <rect x="364.5" y="52" width="37" height="22" rx="3" fill="#ACD2FD"/>
+                <rect x="405" y="52" width="37" height="22" rx="3" fill="#D8EAFE"/>
+                <text x="261.5" y="66.5" text-anchor="middle" font-size="9" fill="#FFFFFF">◆</text>
+              </g>
+              <rect x="-44" y="52" width="36" height="22" rx="3" fill="#121212" stroke="#6E6E6E" stroke-dasharray="3 2"/><text x="-26" y="87" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#9A9A9A">on-solid</text>
+              <g font-family="IBM Plex Mono, monospace" font-size="9.5" fill="#9A9A9A" text-anchor="middle">
+                <text x="18.5" y="87">50</text><text x="59" y="87" fill="#FFFFFF">100</text><text x="99.5" y="87" fill="#FFFFFF">200</text><text x="140" y="87" fill="#FFFFFF">300</text><text x="180.5" y="87">400</text><text x="221" y="87">500</text><text x="261.5" y="87">600</text><text x="302" y="87" fill="#FFFFFF">700</text><text x="342.5" y="87" fill="#FFFFFF">800</text><text x="383" y="87" fill="#FFFFFF">900</text><text x="423.5" y="87">950</text>
+              </g>
+            </svg>
+          </div>
+          <div class="aide" style="margin-top:-4px">— repos · - - survol · ··· appui : l'état avance d'un cran, texte et fond ensemble.</div>
+
+          <div class="groupe-titre">Textes lisibles <span>minimum 4,5:1</span></div>
+
+          <div class="rel choisie">
+            <div class="qui"><span><span class="tok">text</span> <span class="sur-mot">sur</span> <span class="tok">surface</span></span><span class="fr">texte coloré sur fond léger</span></div>
+            <div class="etats">
+              <div class="etat"><span class="spec" style="background:#01154B"><span class="mini-texte" style="color:#4596FA">Texte</span></span><span class="n">700 / 100</span><span class="r">✓ 5,78</span><span class="quand">repos</span></div>
+              <div class="etat"><span class="spec" style="background:#021F64"><span class="mini-texte" style="color:#7AB5FB">Texte</span></span><span class="n">800 / 200</span><span class="r">✓ 7,11</span><span class="quand">survol</span></div>
+              <div class="etat"><span class="spec" style="background:#032D7B"><span class="mini-texte" style="color:#ACD2FD">Texte</span></span><span class="n">900 / 300</span><span class="r">✓ 8,04</span><span class="quand">appui</span></div>
+            </div>
+          </div>
+
+          <div class="rel">
+            <div class="qui"><span><span class="tok">text</span> <span class="sur-mot">sur</span> fond</span><span class="fr">texte coloré sur le fond de page</span></div>
+            <div class="etats">
+              <div class="etat"><span class="spec" style="background:#121212"><span class="mini-texte" style="color:#4596FA">Lien</span></span><span class="n">700 / fond</span><span class="r">✓ 6,24</span></div>
+            </div>
+          </div>
+
+          <div class="rel">
+            <div class="qui"><span><span class="tok">on-solid</span> <span class="sur-mot">sur</span> <span class="tok">solid</span></span><span class="fr">texte d'un bouton plein ; on-solid = fond de page (neutral.50)</span></div>
+            <div class="etats">
+              <div class="etat"><span class="spec"><span class="mini-btn" style="background:#4596FA;color:#121212">Bouton</span></span><span class="n">fond / 700</span><span class="r">✓ 6,24</span><span class="quand">repos</span></div>
+              <div class="etat"><span class="spec"><span class="mini-btn" style="background:#7AB5FB;color:#121212">Bouton</span></span><span class="n">fond / 800</span><span class="r">✓ 8,77</span><span class="quand">survol</span></div>
+              <div class="etat"><span class="spec"><span class="mini-btn" style="background:#ACD2FD;color:#121212">Bouton</span></span><span class="n">fond / 900</span><span class="r">✓ 11,95</span><span class="quand">appui</span></div>
+            </div>
+          </div>
+
+          <div class="groupe-titre">Éléments visibles <span>minimum 3:1</span></div>
+
+          <div class="rel">
+            <div class="qui"><span><span class="tok">border-control</span> <span class="sur-mot">sur</span> <span class="tok">surface</span></span><span class="fr">bordure de champ sur fond léger</span></div>
+            <div class="etats">
+              <div class="etat"><span class="spec" style="background:#01154B"><span class="mini-champ" style="border-color:#1E6FD9"></span></span><span class="n">600 / 100</span><span class="r">✓ 3,58</span><span class="quand">repos</span></div>
+              <div class="etat"><span class="spec" style="background:#021F64"><span class="mini-champ" style="border-color:#4596FA"></span></span><span class="n">700 / 200</span><span class="r">✓ 5,06</span><span class="quand">survol</span></div>
+              <div class="etat"><span class="spec" style="background:#032D7B"><span class="mini-champ" style="border-color:#7AB5FB"></span></span><span class="n">800 / 300</span><span class="r">✓ 5,90</span><span class="quand">appui</span></div>
+            </div>
+          </div>
+
+          <div class="rel">
+            <div class="qui"><span><span class="tok">border-control</span> <span class="sur-mot">sur</span> fond</span><span class="fr">bordure de champ sur le fond de page</span></div>
+            <div class="etats"><div class="etat"><span class="spec" style="background:#121212"><span class="mini-champ" style="border-color:#1E6FD9"></span></span><span class="n">600 / fond</span><span class="r">✓ 3,86</span></div></div>
+          </div>
+
+          <div class="rel">
+            <div class="qui"><span><span class="tok">focus</span> <span class="sur-mot">sur</span> fond · <span class="tok">surface</span></span><span class="fr">anneau de focus, sur le fond de page puis sur fond léger</span></div>
+            <div class="etats">
+              <div class="etat"><span class="spec" style="background:#121212"><span class="mini-focus" style="outline-color:#1E6FD9;background:#2C2C2C"></span></span><span class="n">600 / fond</span><span class="r">✓ 3,86</span></div>
+              <div class="etat"><span class="spec" style="background:#01154B"><span class="mini-focus" style="outline-color:#1E6FD9;background:#01154B"></span></span><span class="n">600 / 100</span><span class="r">✓ 3,58</span></div>
+            </div>
+          </div>
+
+          <div class="rel">
+            <div class="qui"><span><span class="tok">solid</span> <span class="sur-mot">sur</span> fond</span><span class="fr">bouton plein qui se détache du fond de page</span></div>
+            <div class="etats"><div class="etat"><span class="spec" style="background:#121212"><span class="mini-btn" style="background:#7AB5FB;width:40px"></span></span><span class="n">800 / fond</span><span class="r">✓ 8,77</span><span class="quand">survol</span></div></div>
+          </div>
+
+          <div class="decoratif"><span class="tok" style="color:#B3B3B3">border-decorative</span> 300 · séparateur décoratif, sans minimum de contraste</div>
+        </div>
+      </div>
+    </div>
+    <p class="legende">Données réelles de <span class="mono">#1E6FD9</span>, thème Dark, profil Vivid. La ligne choisie est tracée sur la réglette ; cliquer une autre ligne change les arcs.</p>
+    </div>
+
+    <div>
+    <div class="fp" role="img" aria-label="Maquette d'une garantie en échec">
+      <div class="fp-corps">
+        <div class="carte-f">
+          <div class="carte-titre"><span><span class="chevron">⌄</span> Garanties de contraste</span><span class="aide" style="font-weight:400">Thème Light</span></div>
+          <div class="segment petit" style="width:200px"><span>Soft <b style="color:#85E0A3;margin-left:4px">✓</b></span><span class="on">Vivid <b style="color:#FFAFA3;margin-left:4px">✗ 2</b></span></div>
+          <div class="reglette" style="background:#F7F7F7">
+            <svg viewBox="-46 0 488 92" role="img" aria-label="Réglette Vivid Light de #16A34A : arc de 100 vers 600, en échec">
+              <path d="M59 48 C59 10, 261.5 10, 261.5 48" fill="none" stroke="#C7321B" stroke-width="1.8"/>
+              <circle cx="59" cy="48" r="2.4" fill="#C7321B"/><circle cx="261.5" cy="48" r="2.4" fill="#C7321B"/>
+              <rect x="0" y="52" width="37" height="22" rx="3" fill="#E6FFE9"/><rect x="40.5" y="52" width="37" height="22" rx="3" fill="#CAFED2"/><rect x="81" y="52" width="37" height="22" rx="3" fill="#89FEA3"/><rect x="121.5" y="52" width="37" height="22" rx="3" fill="#2FF274"/><rect x="162" y="52" width="37" height="22" rx="3" fill="#27D364"/><rect x="202.5" y="52" width="37" height="22" rx="3" fill="#20B253"/><rect x="243" y="52" width="37" height="22" rx="3" fill="#16A34A"/><rect x="283.5" y="52" width="37" height="22" rx="3" fill="#127735"/><rect x="324" y="52" width="37" height="22" rx="3" fill="#0B5D28"/><rect x="364.5" y="52" width="37" height="22" rx="3" fill="#06441B"/><rect x="405" y="52" width="37" height="22" rx="3" fill="#033011"/>
+              <text x="261.5" y="66.5" text-anchor="middle" font-size="9" fill="#FFFFFF">◆</text>
+              <rect x="-44" y="52" width="36" height="22" rx="3" fill="#F7F7F7" stroke="#9A9A9A" stroke-dasharray="3 2"/><text x="-26" y="87" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#7A7A7A">on-solid</text>
+              <g font-family="IBM Plex Mono, monospace" font-size="9.5" fill="#7A7A7A" text-anchor="middle"><text x="18.5" y="87">50</text><text x="59" y="87" fill="#1E1E1E">100</text><text x="99.5" y="87">200</text><text x="140" y="87">300</text><text x="180.5" y="87">400</text><text x="221" y="87">500</text><text x="261.5" y="87" fill="#1E1E1E">600</text><text x="302" y="87">700</text><text x="342.5" y="87">800</text><text x="383" y="87">900</text><text x="423.5" y="87">950</text></g>
+            </svg>
+          </div>
+          <div class="groupe-titre">Éléments visibles <span>minimum 3:1</span></div>
+          <div class="rel choisie">
+            <div class="qui"><span><span class="tok">border-control</span> <span class="sur-mot">sur</span> <span class="tok">surface</span></span><span class="fr">bordure de champ sur fond léger</span></div>
+            <div class="etats">
+              <div class="etat"><span class="spec" style="background:#CAFED2"><span class="mini-champ" style="border-color:#16A34A"></span></span><span class="n">600 / 100</span><span class="r ko">✗ 2,92</span><span class="quand">repos</span></div>
+              <div class="etat"><span class="spec" style="background:#89FEA3"><span class="mini-champ" style="border-color:#127735"></span></span><span class="n">700 / 200</span><span class="r">✓ 4,51</span><span class="quand">survol</span></div>
+              <div class="etat"><span class="spec" style="background:#2FF274"><span class="mini-champ" style="border-color:#0B5D28"></span></span><span class="n">800 / 300</span><span class="r">✓ 5,39</span><span class="quand">appui</span></div>
+            </div>
+          </div>
+          <div class="action">Régler l'intensité Vivid ›</div>
+          <div class="rel">
+            <div class="qui"><span><span class="tok">focus</span> <span class="sur-mot">sur</span> fond · <span class="tok">surface</span></span><span class="fr">anneau de focus</span></div>
+            <div class="etats">
+              <div class="etat"><span class="spec" style="background:#F7F7F7"><span class="mini-focus" style="outline-color:#16A34A;background:#FFFFFF"></span></span><span class="n">600 / fond</span><span class="r">✓ 3,08</span></div>
+              <div class="etat"><span class="spec" style="background:#CAFED2"><span class="mini-focus" style="outline-color:#16A34A;background:#CAFED2"></span></span><span class="n">600 / 100</span><span class="r ko">✗ 2,92</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="legende">Cas réel : <span class="mono">#16A34A</span>, thème Light. La bascule annonce « Vivid ✗ 2 », la première ligne en échec est choisie d'office et son arc est rouge. Le réglage qui peut corriger est proposé sur la ligne.</p>
+    </div>
+  </div></div>
+
+  <div class="tete"><div class="reco-legende"><span class="decision">Q2</span> Quelle forme pour ce module ?</div></div>
+  <div class="options">
+    <div class="option"><h3>A · Numéros seuls</h3><p>La carte de la version 1, avec les numéros sous chaque spécimen.</p><span class="pour">simple, rapide à livrer</span><span class="contre">la relation entre nuances reste à déduire des chiffres</span></div>
+    <div class="option reco"><h3>B · Réglette et arcs <span class="chip-reco">Recommandé</span></h3><p>Les maquettes ci-dessus : numéros, groupes par minimum, et la relation tracée sur une réglette propre à la carte.</p><span class="pour">on voit d'un coup ce qui est garanti, entre quelles nuances et selon quelle règle</span><span class="contre">une réglette de plus (environ 90 px) au-dessus de la liste</span></div>
+    <div class="option"><h3>C · Fusion avec l'aperçu</h3><p>La liste passe sous les accolades ; les arcs se tracent sur les vraies rampes, qui restent collées en haut pendant le défilement.</p><span class="pour">un seul module, aucune rampe en double</span><span class="contre">la rampe collée mange environ 110 px en permanence ; lourd à 500 × 520</span></div>
+  </div>
+</section>
+
+<!-- ============ Détail d'une nuance ============ -->
+<section class="bloc" id="detail">
+  <div class="tete">
+    <span class="sur">Clic sur une nuance</span>
+    <h2>L'usage d'abord, la garantie à côté, les chiffres ensuite</h2>
+    <p>Validé en version 1. Il applique maintenant la règle des termes et donne les numéros du partenaire : on sait avec quoi chaque garantie a été mesurée.</p>
+  </div>
+  <div class="scene"><div class="scene-rangee">
+    <div class="fp" role="img" aria-label="Maquette du détail de la nuance Vivid 700, thème Dark">
+      <div class="fp-corps">
+        <div class="detail">
+          <div class="detail-tete"><span class="grosse" style="background:#4596FA"></span><div><b>Vivid · 700</b><br><span style="font-family:'IBM Plex Mono',monospace">#4596FA</span></div><span class="copier">Copier</span></div>
+          <div class="sous-titre-f">Sert à</div>
+          <div class="usage"><span class="mini-btn" style="background:#4596FA;color:#121212">Bouton</span><div class="quoi"><span><span class="tok">solid</span> · repos</span><span class="fr">fond de bouton plein</span><span class="g">✓ texte <span class="tok" style="color:inherit">on-solid</span> (fond) dessus : 6,24:1</span></div></div>
+          <div class="usage"><span class="mini-texte" style="color:#4596FA">Texte</span><div class="quoi"><span><span class="tok">text</span> · repos</span><span class="fr">texte coloré</span><span class="g">✓ sur fond : 6,24:1 · sur <span class="tok" style="color:inherit">surface</span> 100 : 5,78:1</span></div></div>
+          <div class="usage"><span class="mini-champ" style="border-color:#4596FA;width:50px;background:#021F64"></span><div class="quoi"><span><span class="tok">border-control</span> · survol</span><span class="fr">bordure de champ</span><span class="g">✓ sur <span class="tok" style="color:inherit">surface</span> 200 : 5,06:1</span></div></div>
+          <div class="aide">› Mesures détaillées (WCAG, blanc, noir, OKLCH)</div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ Bordures ============ -->
+<section class="bloc" id="cadre">
+  <div class="tete">
+    <span class="sur">Acquis</span>
+    <h2>Bordures, largeur, palette de base, noms</h2>
+  </div>
+  <div class="bords">
+    <figure><div class="ech" style="border:1px solid #444444"></div><figcaption>Aujourd'hui : <span class="mono">#444444</span></figcaption></figure>
+    <figure><div class="ech" style="border:1px solid #5E5E5E"></div><figcaption>Proposé : <span class="mono">#5E5E5E</span></figcaption></figure>
+  </div>
+  <ul>
+    <li><b>Bordures</b> renforcées dans le socle commun, donc aussi dans l'Exporter. Réglées et vérifiées d'abord en sombre ; le thème clair de Figma reçoit l'équivalent (<span class="mono">#D2D2D2</span>) pour ne pas casser qui l'utiliserait.</li>
+    <li><b>Largeur</b> : minimum 500 px, élargissable, ouverture à 600 px.</li>
+    <li><b>Palette de base</b> forcée : le profil choisi prend l'intensité de ta couleur, visible et modifiable dans « Intensités ».</li>
+    <li><b>Réglages</b> : « Intensités » et « Dérive de teinte », cartes repliables.</li>
+    <li><b>Accolades</b> sur deux lignes. La pastille <span class="mono">on-solid</span> se place avant la rampe, dans l'aperçu et dans la réglette des garanties.</li>
+    <li><b>Nombre de nuances</b> réglable dans les Réglages communs, après instruction.</li>
+  </ul>
+</section>
+
+<section class="bloc" id="recap">
+  <div class="tete">
+    <span class="sur">À répondre</span>
+    <h2>Deux questions</h2>
+  </div>
+  <div class="recap"><table>
+    <thead><tr><th></th><th>Question</th><th>Recommandé</th></tr></thead>
+    <tbody>
+      <tr><td><span class="decision">Q1</span></td><td>Termes : nom du design system en police code, français dessous ?</td><td>A · DS + français</td></tr>
+      <tr><td><span class="decision">Q2</span></td><td>Garanties : numéros seuls, réglette et arcs, ou fusion avec l'aperçu ?</td><td>B · réglette et arcs</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Après ta réponse, la phase 2 écrit le nouveau document : ces décisions, plus les cases encore ouvertes de la recette 1 (R4.10, R6 à R9), sans les doublons. La planche générée (R8) reprendra la même organisation des garanties, numéros compris.</p>
+</section>
+
+</main>
