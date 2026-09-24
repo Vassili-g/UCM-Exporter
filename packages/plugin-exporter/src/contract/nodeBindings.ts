@@ -715,7 +715,7 @@ export async function resolveSlotSize(
   // donc nécessaire pour savoir ce que ce calque possède vraiment.
   parent?: SceneNode,
 ): Promise<SlotSize | null> {
-  const fixed = fixedDimensions(node);
+  const fixed = fixedDimensions(node, parent);
   const cellule = parent ? gridCellSizedAxes(parent, node) : { width: false, height: false };
   const trace = estUnTrace(node);
   const axe = (field: 'width' | 'height'): Promise<string | null> | null => {
@@ -760,7 +760,7 @@ export function gridStructuralSize(
   };
   if (!hug.width && !hug.height) return null;
 
-  const fixed = fixedDimensions(node);
+  const fixed = fixedDimensions(node, parent);
   const values = node as unknown as Record<string, unknown>;
   const mesure = (field: 'width' | 'height'): `${number}px` | null => {
     if (!hug[field] || !fixed[field]) return null;

@@ -1628,3 +1628,50 @@ test('sans axe de tailles, une dimension non liée avertit toujours', async () =
   assert.equal(layout.gap, undefined);
   assert.ok(warnings.some((message) => /, gap : aucune variable Figma n'est reliée/.test(message)));
 });
+
+test('un texte masqué en Fill publie son étirement sans réclamer de hauteur', async () => {
+  // Mesuré dans Figma : masqué, l'enfant rend `FIXED` et garde `layoutAlign: STRETCH`.
+  const masque = {
+    type: 'TEXT',
+    id: 'masque',
+    name: 'Label',
+    characters: 'Label',
+    visible: false,
+    componentPropertyReferences: { visible: 'Show label#0:1' },
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'FIXED',
+    layoutAlign: 'STRETCH',
+    layoutGrow: 0,
+    boundVariables: {},
+  };
+  const fige = {
+    type: 'FRAME',
+    id: 'fige',
+    name: 'Badge',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'FIXED',
+    layoutAlign: 'INHERIT',
+    layoutGrow: 0,
+    boundVariables: { fills: [alias('fond')] },
+  };
+  const rangee = {
+    type: 'COMPONENT',
+    name: 'Row',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    boundVariables: {},
+    children: [masque, fige],
+    findAll: findAllOn([masque, fige]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(rangee, resolverFor({ fond: 'c.fond' }), warnings);
+
+  const label = layout.children.find((child) => child.figmaLayer === 'Label' || child.slot === 'label');
+  assert.equal(label?.alignSelf, 'stretch');
+  assert.equal(label?.size, undefined);
+  assert.deepEqual(warnings.filter((warning) => warning.startsWith('Layer « Label »')), []);
+  // Un calque visible figé sans étirement réclame toujours sa variable.
+  assert.ok(warnings.some((warning) => warning.startsWith('Layer « Badge », height')));
+});

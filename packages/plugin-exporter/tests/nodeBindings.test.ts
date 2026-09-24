@@ -9,8 +9,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   BINDING_PATTERNS,
+  resolveContainerSizing,
   resolveField,
   resolveSidedField,
+  resolveSlotSize,
   resolveTokenName,
   SIDE_KEYS,
 } from '../src/contract/nodeBindings';
@@ -403,4 +405,75 @@ test('un carré garde l’exigence d’une variable unique sur ses deux axes', a
 
   assert.equal(result, null);
   assert.ok(warnings.some((warning) => warning.includes('pas reliés à la même variable')));
+});
+
+/** Un auto layout horizontal : la hauteur de ses enfants est l'axe secondaire. */
+const rangee = { type: 'FRAME', name: 'Row', layoutMode: 'HORIZONTAL' } as unknown as SceneNode;
+
+test('un enfant masqué en Fill, que Figma rend Fixed et étiré, ne réclame aucune variable', async () => {
+  // Mesuré dans Figma : masqué, l'enfant rend `FIXED` et garde `layoutAlign: STRETCH`.
+  const texte = {
+    type: 'TEXT',
+    name: 'Label',
+    visible: false,
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'FIXED',
+    layoutAlign: 'STRETCH',
+    layoutGrow: 0,
+    boundVariables: {},
+  } as unknown as SceneNode;
+  const warnings: string[] = [];
+
+  const size = await resolveSlotSize(texte, resolverFor({}), warnings, rangee);
+
+  assert.equal(size, null);
+  assert.deepEqual(warnings, []);
+});
+
+test('un layoutGrow à 1 sur un axe principal Fixed se lit Fill', async () => {
+  // Non mesuré dans Figma : le cas est tenu par symétrie avec l'axe secondaire.
+  const bloc = {
+    type: 'FRAME',
+    name: 'Block',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'HUG',
+    layoutAlign: 'INHERIT',
+    layoutGrow: 1,
+    boundVariables: {},
+  } as unknown as SceneNode;
+  const warnings: string[] = [];
+
+  assert.equal(await resolveSlotSize(bloc, resolverFor({}), warnings, rangee), null);
+  assert.deepEqual(warnings, []);
+});
+
+test('un enfant absolu, un enfant de grille et la racine gardent la lecture du seul menu', async () => {
+  const etire = {
+    type: 'FRAME',
+    name: 'Overlay',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'FIXED',
+    layoutAlign: 'STRETCH',
+    boundVariables: {},
+  };
+  const absolu = { ...etire, layoutPositioning: 'ABSOLUTE' } as unknown as SceneNode;
+  const avertissementsAbsolu: string[] = [];
+  await resolveSlotSize(absolu, resolverFor({}), avertissementsAbsolu, rangee);
+  assert.ok(avertissementsAbsolu.some((warning) => warning.includes('height')));
+
+  const grille = {
+    type: 'FRAME', name: 'Grid', layoutMode: 'GRID', gridColumnCount: 1, gridRowCount: 1,
+  } as unknown as SceneNode;
+  const enfantDeGrille = {
+    ...etire, gridColumnAnchorIndex: 0, gridRowAnchorIndex: 0, gridChildHorizontalAlign: 'MIN',
+    gridChildVerticalAlign: 'MIN',
+  } as unknown as SceneNode;
+  const avertissementsGrille: string[] = [];
+  await resolveSlotSize(enfantDeGrille, resolverFor({}), avertissementsGrille, grille);
+  assert.ok(avertissementsGrille.some((warning) => warning.includes('height')));
+
+  // La racine n'a pas de parent : son axe figé reste une taille de maquette, en `stretch`.
+  const racine = { ...etire, layoutSizingHorizontal: 'FIXED' } as unknown as SceneNode;
+  const sizing = await resolveContainerSizing(racine, resolverFor({}), []);
+  assert.deepEqual(sizing, { width: 'stretch', height: 'stretch' });
 });

@@ -555,6 +555,14 @@ aligne le layer sans rien dire de sa taille. Sur l'axe principal : `FILL` donne
 hug ne retire pas une largeur en fill, sans quoi le contrat perdrait un
 remplissage encore vrai dans Figma.
 
+Une exception, sous un auto layout linéaire : un axe `FIXED` accompagné de
+`layoutAlign: STRETCH` sur l'axe secondaire, ou de `layoutGrow: 1` sur l'axe
+principal, se lit `FILL`. Figma rend ainsi un enfant masqué réglé `Fill` : son
+menu affiche `Fixed`, et il garde son étirement. Le contrat publie alors
+`alignSelf: stretch` ou `flexGrow: 1`, et ne réclame aucune variable pour cet
+axe. Un `HUG` reste un `HUG`. La racine du composant, un enfant absolu et un
+enfant de grille lisent le menu seul.
+
 **Une absence de dimensionnement vaut `Hug`.** Le contrat ne publie que les
 exceptions, et cette lecture est valide parce que les deux autres intentions
 sont couvertes ailleurs : un `Fill` devient `flexGrow` ou `alignSelf`, une

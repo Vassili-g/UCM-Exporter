@@ -2,8 +2,8 @@
 
 ## État
 
-- Lot courant : L2
-- Branche et `HEAD` : `main`, `d295200`
+- Lot courant : L3
+- Branche et `HEAD` : `main`, `5b4ce4f`
 - Dernière porte franchie : aucune
 
 La copie de travail partagée porte le travail non commité d'une autre session
@@ -101,3 +101,37 @@ copiés ; le build y tourne étape par étape.
   test des formes en `-ed` et le scénario sortent rouges. Restauré par copie :
   vert.
 - Écart ou réserve : aucun.
+
+### L3 : un calque en `Fill` masqué ne réclame pas de variable
+
+- Commit : ce commit, après `5b4ce4f`.
+- Commandes :
+  - lectures du menu relevées : `fixedDimensions` (appelée par
+    `resolveSlotSize`, `gridStructuralSize`, `extractIconLayers` et
+    `resolveContainerSizing`), `childSizing`, et `containerSizing`, qui ne lit
+    que la racine. Aucune autre lecture de `layoutSizing…` dans `src/`.
+  - tests écrits d'abord : dans la copie partagée, les deux cas visés de
+    `nodeBindings.test.ts` et le test de `extractLayout.test.ts` sortent
+    rouges contre le moteur de `5b4ce4f` ; le test des gardes (absolu, grille,
+    racine) passe avant et après. Dans le worktree, le scénario sort rouge,
+    « la famille « hauteurDuTexteMasque » sort encore ».
+  - worktree avec les fichiers du lot, `npm test` : 0, dont 903 tests du
+    moteur. `npm run typecheck` : 0. Build étape par étape : 0 à chaque étape.
+- Résultats : `menuDeDimensionnement(node, parent)` est la seule lecture du menu
+  d'un enfant ; `fixedDimensions` et `childSizing` la consultent. Sous un auto
+  layout linéaire, `FIXED` avec `layoutAlign: STRETCH` sur l'axe secondaire, ou
+  avec `layoutGrow: 1` sur l'axe principal, se lit `FILL`. La racine (appel sans
+  parent), un enfant absolu et un enfant de grille lisent le menu seul.
+  `extractIconLayers` passe désormais le parent du calque. Le cas `HUG` avec
+  `STRETCH` reste tenu par « un dimensionnement HUG sur l'axe secondaire prime
+  sur un layoutAlign STRETCH contradictoire » (`extractLayout.test.ts`), inchangé.
+  L'invariant d'`AGENTS.md` sur le menu de dimensionnement reçoit l'exception,
+  et `FORMAT.md`, « Flux et alignement », la décrit. Sur le scénario, la
+  famille du texte masqué passe de 1 à 0 ligne.
+- Mutations : dans le worktree, la ligne qui lit `layoutAlign: STRETCH` retirée
+  de `menuDeDimensionnement` : le scénario, le test d'`extractLayout` et celui
+  de `resolveSlotSize` sortent rouges, message `height` compris. Restauré par
+  copie : vert.
+- Écart ou réserve : aucun. Le cas `layoutGrow: 1` n'a pas été mesuré dans
+  Figma ; comme le plan le prévoit, le commentaire de `menuDeDimensionnement`
+  et le test le disent.

@@ -416,14 +416,38 @@ function alignSelf(value: unknown): AlignSelf | null {
  */
 function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cross: unknown } {
   const parentMode = asPropertyBag(parent).layoutMode;
-  const values = asPropertyBag(child);
-  if (parentMode === 'HORIZONTAL') {
-    return { main: values.layoutSizingHorizontal, cross: values.layoutSizingVertical };
-  }
-  if (parentMode === 'VERTICAL') {
-    return { main: values.layoutSizingVertical, cross: values.layoutSizingHorizontal };
-  }
+  const menu = menuDeDimensionnement(child, parent);
+  if (parentMode === 'HORIZONTAL') return { main: menu.horizontal, cross: menu.vertical };
+  if (parentMode === 'VERTICAL') return { main: menu.vertical, cross: menu.horizontal };
   return { main: undefined, cross: undefined };
+}
+
+/**
+ * Le menu de dimensionnement d'un calque, lu avec son parent.
+ *
+ * Sous un auto layout linéaire, un axe `FIXED` que Figma étire se lit `FILL` :
+ * `layoutAlign: STRETCH` sur l'axe secondaire, `layoutGrow: 1` sur l'axe
+ * principal. Mesuré : un enfant masqué réglé `Fill` rend `FIXED` et garde
+ * `layoutAlign: STRETCH`. Le cas de `layoutGrow` n'a pas été mesuré, et la
+ * lecture le traite de la même façon. `HUG` reste `HUG`, quelle que soit la
+ * valeur historique.
+ *
+ * Sans parent, c'est-à-dire pour la racine du composant, et pour un enfant
+ * absolu ou un enfant de grille, le menu se lit seul.
+ */
+export function menuDeDimensionnement(
+  node: SceneNode,
+  parent?: SceneNode,
+): { horizontal: unknown; vertical: unknown } {
+  const values = asPropertyBag(node);
+  const menu = { horizontal: values.layoutSizingHorizontal, vertical: values.layoutSizingVertical };
+  if (!parent || !isLinearAutoLayout(parent) || isAbsolutePositioned(node)) return menu;
+
+  const principal = asPropertyBag(parent).layoutMode === 'HORIZONTAL' ? 'horizontal' : 'vertical';
+  const secondaire = principal === 'horizontal' ? 'vertical' : 'horizontal';
+  if (menu[secondaire] === 'FIXED' && values.layoutAlign === 'STRETCH') menu[secondaire] = 'FILL';
+  if (menu[principal] === 'FIXED' && values.layoutGrow === 1) menu[principal] = 'FILL';
+  return menu;
 }
 
 /**
@@ -459,13 +483,19 @@ export function containerSizing(node: SceneNode): ContainerSizing {
  * Tout le reste est traité comme figé : un menu que l'API n'expose pas laisse
  * le doute, et mieux vaut réclamer une variable en trop que taire une
  * dimension que le contrat ne saurait pas reconstituer.
+ *
+ * Le parent décide de la lecture (`menuDeDimensionnement`) ; la racine du
+ * composant n'en passe pas.
  */
-export function fixedDimensions(node: SceneNode): { width: boolean; height: boolean } {
-  const values = asPropertyBag(node);
+export function fixedDimensions(
+  node: SceneNode,
+  parent?: SceneNode,
+): { width: boolean; height: boolean } {
+  const menu = menuDeDimensionnement(node, parent);
   const figee = (sizing: unknown) => sizing !== 'HUG' && sizing !== 'FILL';
   return {
-    width: figee(values.layoutSizingHorizontal),
-    height: figee(values.layoutSizingVertical),
+    width: figee(menu.horizontal),
+    height: figee(menu.vertical),
   };
 }
 

@@ -579,6 +579,13 @@ La spécification en lien porte le raisonnement.
   dans `size`, l’absence vaut `Hug`, une dimension figée sans variable avertit.
   Pour le composant : `structure.sizing` est toujours publié, en vocabulaire CSS
   (`stretch`, `fit-content`) et par propriété (`width`, `height`).
+- Sous un auto layout linéaire, un axe `Fixed` que Figma étire se lit `Fill` :
+  `layoutAlign: STRETCH` sur l’axe secondaire, `layoutGrow: 1` sur l’axe
+  principal. Figma rend ainsi un enfant masqué réglé `Fill`, et réclamer sa
+  variable contredirait le `alignSelf: stretch` publié. `Hug` reste `Hug`. La
+  racine, un enfant absolu et un enfant de grille lisent le menu seul.
+  `menuDeDimensionnement` (`flexLayout.ts`) est l’unique lecture du menu d’un
+  enfant. → [spec](./docs/format/FORMAT.md#flux-et-alignement)
 - Ce qui sépare une taille de maquette d’une décision du design system est la
   liaison, jamais le fait d’être figé : sans variable une largeur fixe vaut
   `stretch`, avec variable elle publie son token. Un nombre brut n’est jamais

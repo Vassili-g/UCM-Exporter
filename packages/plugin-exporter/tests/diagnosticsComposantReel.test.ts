@@ -296,6 +296,7 @@ type Famille = keyof typeof FAMILLES;
 const CORRIGEES: ReadonlySet<Famille> = new Set<Famille>([
   'intentionAbsente',
   'etatNonReconnu',
+  'hauteurDuTexteMasque',
 ]);
 
 /** Le nombre de lignes de chaque famille dans une liste de messages. */

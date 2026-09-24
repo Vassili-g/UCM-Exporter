@@ -127,7 +127,7 @@ export async function extractIconLayers(
       // dimension figée à citer, et `slotSize` exige les deux côtés sur la même
       // variable, un seul axe figé ne pourrait donc que produire un
       // avertissement, pour une valeur que le contrat n'a pas à porter.
-      const fixed = fixedDimensions(node);
+      const fixed = fixedDimensions(node, (node.parent ?? undefined) as SceneNode | undefined);
       summary.sizes.add(
         fixed.width && fixed.height
           ? await resolveField(node, BINDING_PATTERNS.slotSize, 'width et height', resolver, warnings)
