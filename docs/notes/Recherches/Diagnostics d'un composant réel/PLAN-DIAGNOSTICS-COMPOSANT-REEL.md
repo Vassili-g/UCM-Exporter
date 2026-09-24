@@ -57,9 +57,9 @@ Ces points sont justes. Aucun lot ne les fait taire.
 - Deux instances de `.componentRules` écrivent le même nom de composant. La
   création refuse déjà de poser un second conteneur :
   `offreDeCreation` rend `null` dès que la page en porte un
-  ([sources.ts:48](../../../../packages/plugin-exporter/src/template/sources.ts#L48)),
+  ([sources.ts:48](../../../../packages/plugin-exporter/src/template/sources.ts)),
   et `extractRules` le cherche dans toute la page, cadres compris
-  ([extractRules.ts:442](../../../../packages/plugin-exporter/src/contract/extractRules.ts#L442)).
+  ([extractRules.ts:442](../../../../packages/plugin-exporter/src/contract/extractRules.ts)).
   Le doublon vient d'une copie manuelle.
 - Les 23 règles posées portent encore le marqueur `[À compléter]`.
 - Le maître `.ruleItem` du fichier est antérieur au maître courant : son calque
@@ -113,111 +113,111 @@ ce plan ; le journal cite son numéro quand un test l'encode.
 ### Code du moteur
 
 - **F6.** Les doublons se fusionnent sur la phrase entière
-  ([localisation.ts:184](../../../../packages/plugin-exporter/src/contract/localisation.ts#L184)).
+  ([localisation.ts:184](../../../../packages/plugin-exporter/src/contract/localisation.ts)).
   `sujet()` écrit `Layer « nom du node »`
-  ([localisation.ts:151](../../../../packages/plugin-exporter/src/contract/localisation.ts#L151)).
+  ([localisation.ts:151](../../../../packages/plugin-exporter/src/contract/localisation.ts)).
   Le nom d'une racine de variant change d'un variant à l'autre, donc chaque
   racine produit sa propre ligne. Le sujet se forme en trois endroits :
   `pousserLocalise`, `pousserNote(…, sujet(…))`
-  ([extractLayout.ts:143](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L143))
+  ([extractLayout.ts:143](../../../../packages/plugin-exporter/src/contract/extractLayout.ts))
   et `pointDe(sujet(…).texte, …)`
-  ([unsupportedProperties.ts:315](../../../../packages/plugin-exporter/src/contract/unsupportedProperties.ts#L315)).
+  ([unsupportedProperties.ts:315](../../../../packages/plugin-exporter/src/contract/unsupportedProperties.ts)).
 - **F7.** Chaque variant reçoit une vue exacte extraite depuis sa vraie racine
-  ([extractStructure.ts:259](../../../../packages/plugin-exporter/src/contract/extractStructure.ts#L259)).
+  ([extractStructure.ts:259](../../../../packages/plugin-exporter/src/contract/extractStructure.ts)).
   Cette extraction passe la racine à `warnUnsupportedProperties`
-  ([extractLayout.ts:749](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L749))
+  ([extractLayout.ts:749](../../../../packages/plugin-exporter/src/contract/extractLayout.ts))
   et à `resolveSizeBounds`
-  ([extractLayout.ts:776](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L776)),
+  ([extractLayout.ts:776](../../../../packages/plugin-exporter/src/contract/extractLayout.ts)),
   d'où les 140 messages `min width` et les 28 messages `effect`. Elle publie
   aussi les enfants de la racine, calque d'onde compris, et relève leurs
-  propriétés ([extractLayout.ts:428](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L428)).
+  propriétés ([extractLayout.ts:428](../../../../packages/plugin-exporter/src/contract/extractLayout.ts)).
 - **F8.** La projection de référence élit le wrapper
-  ([layoutNodes.ts:35](../../../../packages/plugin-exporter/src/contract/layoutNodes.ts#L35)),
+  ([layoutNodes.ts:35](../../../../packages/plugin-exporter/src/contract/layoutNodes.ts)),
   et `warnLayersOutsideLayoutNode` avertit que le calque d'onde « n'y figure
   pas, et le développeur ne le rendra pas »
-  ([extractLayout.ts:641](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L641)).
+  ([extractLayout.ts:641](../../../../packages/plugin-exporter/src/contract/extractLayout.ts)).
   Elle est appelée pour la référence
-  ([extractLayout.ts:746](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L746))
+  ([extractLayout.ts:746](../../../../packages/plugin-exporter/src/contract/extractLayout.ts))
   et pour chaque autre variant
-  ([extractStructure.ts:207](../../../../packages/plugin-exporter/src/contract/extractStructure.ts#L207)),
+  ([extractStructure.ts:207](../../../../packages/plugin-exporter/src/contract/extractStructure.ts)),
   dans le canal `notices`, publié en `UCM_EXPORT_NOTICE`
-  ([exportComponent.ts:366](../../../../packages/plugin-exporter/src/contract/exportComponent.ts#L366)).
+  ([exportComponent.ts:366](../../../../packages/plugin-exporter/src/contract/exportComponent.ts)).
   Le format fait des vues exactes l'autorité
   ([FORMAT.md, « Versions »](../../../format/FORMAT.md#versions) : la
   projection de référence « ne remplace jamais la vue exacte d’une variante »),
   et la procédure du consommateur rend la vue exacte de chaque variant
-  ([procedure.md:22](../../../../packages/cli/procedure.md#L22)). Aucun
+  ([procedure.md:22](../../../../packages/cli/procedure.md)). Aucun
   consommateur ne rend `structure.children`. L'impact écrit par ce message est
   donc faux pour un calque que la vue exacte publie.
 - **F9.** `fixedDimensions` tient pour figé tout axe qui ne lit ni `HUG` ni
-  `FILL` ([flexLayout.ts:463](../../../../packages/plugin-exporter/src/contract/flexLayout.ts#L463)).
+  `FILL` ([flexLayout.ts:463](../../../../packages/plugin-exporter/src/contract/flexLayout.ts)).
   Avec F5, un calque masqué en `Fill` réclame une variable de hauteur, alors que
   `flexItemProperties` publie pour lui `alignSelf: stretch`
-  ([flexLayout.ts:569](../../../../packages/plugin-exporter/src/contract/flexLayout.ts#L569)).
+  ([flexLayout.ts:569](../../../../packages/plugin-exporter/src/contract/flexLayout.ts)).
   Le contrat se contredit sur ce calque. `fixedDimensions` ne reçoit pas le
   parent, et `resolveContainerSizing` l'appelle aussi sur la racine du
-  composant ([nodeBindings.ts:864](../../../../packages/plugin-exporter/src/contract/nodeBindings.ts#L864)).
+  composant ([nodeBindings.ts:864](../../../../packages/plugin-exporter/src/contract/nodeBindings.ts)).
 - **F10.** `STATE_SELECTORS` accepte `disabled` à côté de `disable`, mais
   aucune autre forme en `-ed`
-  ([semantics.ts:28](../../../../packages/plugin-exporter/src/contract/semantics.ts#L28)).
+  ([semantics.ts:28](../../../../packages/plugin-exporter/src/contract/semantics.ts)).
   Aucun lecteur du kit, de la CLI ni de l'adaptateur ne lit ces noms d'état.
 - **F11.** `warnUndeclaredDrawing`
-  ([extractLayout.ts:161](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L161))
+  ([extractLayout.ts:161](../../../../packages/plugin-exporter/src/contract/extractLayout.ts))
   s'applique à tout calque qui n'est pas une dépendance reconnue (garde en
-  [extractLayout.ts:426](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L426)).
+  [extractLayout.ts:426](../../../../packages/plugin-exporter/src/contract/extractLayout.ts)).
   Un composant publié sans règles n'est pas reconnu, donc ses dessins internes
   avertissent. Ce message rend `meta.coverage.portable` partiel
   (`addProjectionWarnings`,
-  [exportComponent.ts:367](../../../../packages/plugin-exporter/src/contract/exportComponent.ts#L367)).
+  [exportComponent.ts:367](../../../../packages/plugin-exporter/src/contract/exportComponent.ts)).
   Le point bloquant « intègre X, dont N propriétés ne sont pas documentées »
   ne passe pas par le moteur : `releverLesImbriques`
-  ([code.ts:1205](../../../../packages/plugin-exporter/src/code.ts#L1205)) le
+  ([code.ts:1205](../../../../packages/plugin-exporter/src/code.ts)) le
   calcule dans le sandbox, `signalerLesImbriques` l'envoie à l'interface seule
-  ([code.ts:1317](../../../../packages/plugin-exporter/src/code.ts#L1317)), et
+  ([code.ts:1317](../../../../packages/plugin-exporter/src/code.ts)), et
   il n'entre qu'au compteur
-  ([code.ts:733](../../../../packages/plugin-exporter/src/code.ts#L733)). Il
+  ([code.ts:733](../../../../packages/plugin-exporter/src/code.ts)). Il
   est absent de `meta.diagnostics` et de la demande de fusion. Deux fonctions
   disent « composant interne » : `dansUnComposantPublie`
-  ([extractLayout.ts:593](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L593))
+  ([extractLayout.ts:593](../../../../packages/plugin-exporter/src/contract/extractLayout.ts))
   et `estUnePieceInterne`
-  ([code.ts:1056](../../../../packages/plugin-exporter/src/code.ts#L1056)).
+  ([code.ts:1056](../../../../packages/plugin-exporter/src/code.ts)).
   Le moteur connaît déjà le maître de chaque instance :
   `scanComposedMatrix` rend `mainByInstanceId`
-  ([composedComponents.ts:497](../../../../packages/plugin-exporter/src/contract/composedComponents.ts#L497)).
+  ([composedComponents.ts:497](../../../../packages/plugin-exporter/src/contract/composedComponents.ts)).
 - **F12.** Le message « aucune règle @usage » ne teste que `rules.intent`
-  ([exportComponent.ts:415](../../../../packages/plugin-exporter/src/contract/exportComponent.ts#L415)).
+  ([exportComponent.ts:415](../../../../packages/plugin-exporter/src/contract/exportComponent.ts)).
   Une règle `@usage` marquée n'alimente pas `intent` et produit déjà sa ligne
   « contient encore [À compléter] » (`signalerNonRedigees`,
-  [extractRules.ts:361](../../../../packages/plugin-exporter/src/contract/extractRules.ts#L361)).
+  [extractRules.ts:361](../../../../packages/plugin-exporter/src/contract/extractRules.ts)).
   L'invariant d'`AGENTS.md` dit qu'une règle marquée « ne produit que son
   warning ». Le commentaire de
-  [template.test.ts:505](../../../../packages/plugin-exporter/tests/template.test.ts#L505)
+  [template.test.ts:505](../../../../packages/plugin-exporter/tests/template.test.ts)
   renvoie pourtant l'absence d'intention « à l'export du composant » : la double
   ligne vient de ce renvoi.
 - **F13.** Le maître `.ruleItem` courant porte le marqueur dans le calque
   `icon` de sa variante `@icons`
-  ([template.test.ts:263](../../../../packages/plugin-exporter/tests/template.test.ts#L263)),
+  ([template.test.ts:263](../../../../packages/plugin-exporter/tests/template.test.ts)),
   et `CALQUES_LUS.icons` l'y cherche
-  ([extractRules.ts:348](../../../../packages/plugin-exporter/src/contract/extractRules.ts#L348)).
+  ([extractRules.ts:348](../../../../packages/plugin-exporter/src/contract/extractRules.ts)).
   La création accepte un maître plus ancien qui écrit `icon-name` sans marqueur :
   `AIDES_LUES` exclut `@icons` par décision
-  ([sources.ts:297](../../../../packages/plugin-exporter/src/template/sources.ts#L297),
-  test en [template.test.ts:431](../../../../packages/plugin-exporter/tests/template.test.ts#L431)).
+  ([sources.ts:297](../../../../packages/plugin-exporter/src/template/sources.ts),
+  test en [template.test.ts:431](../../../../packages/plugin-exporter/tests/template.test.ts)).
   La règle posée avec ce maître est lue comme rédigée, d'où « ni le layer
   modifiable ni le layer strict n'est visible seul ».
 - **F14.** Les enfants d'un cadre sans auto layout ne reçoivent aucune place :
   `flexItemProperties` rend `{}` hors position absolue, grille et auto layout
   linéaire. Le moteur avertit alors « il range N layers mais n'utilise pas
   d'auto layout »
-  ([extractLayout.ts:252](../../../../packages/plugin-exporter/src/contract/extractLayout.ts#L252)).
+  ([extractLayout.ts:252](../../../../packages/plugin-exporter/src/contract/extractLayout.ts)).
   Le format réserve `constraints` et `inset` aux calques en position `Absolute`
   ([FORMAT.md, « Position absolue »](../../../format/FORMAT.md#position-absolue)).
 - **F15.** La détection de collision compare `componentKey`, puis `nodeId`
-  ([identite.ts:91](../../../../packages/kit/src/format/identite.ts#L91)). Elle
+  ([identite.ts:91](../../../../packages/kit/src/format/identite.ts)). Elle
   est juste. Le message nomme les deux composants par leur seul nom et demande
-  d'en renommer un ([depot.ts:381](../../../../packages/plugin-exporter/src/depot.ts#L381)),
+  d'en renommer un ([depot.ts:381](../../../../packages/plugin-exporter/src/depot.ts)),
   alors que l'identité lue porte aussi `fileName`. `VerdictIdentite` est un
-  type public du kit ([format/index.ts:69](../../../../packages/kit/src/format/index.ts#L69)).
+  type public du kit ([format/index.ts:69](../../../../packages/kit/src/format/index.ts)).
 - **F16.** Deux textes normatifs décrivent le comportement que L2 et L3
   changent. `FORMAT.md` énumère les états reconnus et leur priorité
   ([« 4. Modèle d'interaction »](../../../format/FORMAT.md#4-modèle-dinteraction)).
@@ -226,7 +226,7 @@ ce plan ; le journal cite son numéro quand un test l'encode.
   `layoutGrow`, et qu'un axe `Fixed` cite une variable.
 - **F17.** Les messages sur les représentants de tailles d'un wrapper nomment
   leur variant, et un test l'exige
-  ([extractSizes.test.ts:307](../../../../packages/plugin-exporter/tests/extractSizes.test.ts#L307)).
+  ([extractSizes.test.ts:307](../../../../packages/plugin-exporter/tests/extractSizes.test.ts)).
   Ces représentants sont des variants d'un autre component set que celui
   exporté.
 
@@ -367,7 +367,7 @@ Faits : F12. Tests : `rules.test.ts`, `exportComponent.test.ts`.
 
 - [ ] Exposer depuis `extractRules` les tags qui ont des règles marquées
       (la carte `nonRedigees` existe déjà,
-      [extractRules.ts:517](../../../../packages/plugin-exporter/src/contract/extractRules.ts#L517)).
+      [extractRules.ts:517](../../../../packages/plugin-exporter/src/contract/extractRules.ts)).
 - [ ] Dans `exportComponent.ts`, ne pas pousser « aucune règle @usage, @do,
       @dont ou @pairs » quand l'un de ces quatre tags a une règle marquée.
 - [ ] Réécrire le commentaire de `template.test.ts:505` : l'export ne redit
@@ -472,7 +472,7 @@ Faits : F6, F7, F17. Attend H1. Tests : `localisation.test.ts`,
       de leur variant (F17).
 - [ ] Nommer le sujet d'une telle racine selon H1 et garder chaque variant
       comme cible. `sujetNomme`
-      ([localisation.ts:168](../../../../packages/plugin-exporter/src/contract/localisation.ts#L168))
+      ([localisation.ts:168](../../../../packages/plugin-exporter/src/contract/localisation.ts))
       sépare déjà le nom affiché du node ciblé. Le choix se fait à un seul
       endroit, que les trois formes consultent.
 - [ ] Garder le genre `Variant` pour les messages qui parlent d'un variant
@@ -539,7 +539,7 @@ canal du moteur.
 - [ ] Porter le point bloquant dans les avertissements du moteur, avec son
       texte actuel, en perte de portabilité. Vérifier que l'interface le range
       toujours en tête et ne l'affiche pas deux fois, et que le compteur de
-      [code.ts:744](../../../../packages/plugin-exporter/src/code.ts#L744) ne
+      [code.ts:744](../../../../packages/plugin-exporter/src/code.ts) ne
       le compte plus en double.
 - [ ] Dans l'extraction, ne pas émettre `warnUndeclaredDrawing` pour un dessin
       dont l'enfant examiné ou l'un de ses ancêtres, jusqu'au composant, est
@@ -569,7 +569,7 @@ ce message.
 - [ ] Pour chaque variant, ne pas émettre « il n'est pas à l'intérieur de … »
       pour un calque que la vue exacte de ce variant publie. Les chemins publiés
       de chaque vue sont déjà relevés (`exactPathsByVariant`,
-      [extractStructure.ts:274](../../../../packages/plugin-exporter/src/contract/extractStructure.ts#L274)).
+      [extractStructure.ts:274](../../../../packages/plugin-exporter/src/contract/extractStructure.ts)).
       Le relevé des calques écartés doit donc suivre l'extraction des vues
       exactes, ou les consulter. Les deux sites de F8 sont concernés.
 - [ ] Recenser les cas où un calque écarté par l'élection n'est publié par
@@ -604,7 +604,7 @@ compatibilité. Elle part de la piste 1.1 de
       (style lié à ses variables, littéraux pour le reste), ou un champ par
       calque. Dire comment une ombre se compose avec le `border` déjà rendu en
       `box-shadow` (`FORMAT.md`, rôles de rendu ;
-      [types.ts:161](../../../../packages/kit/src/format/types.ts#L161)), et
+      [types.ts:161](../../../../packages/kit/src/format/types.ts)), et
       ce que `tokens.json` publierait (type DTCG `shadow`).
 - [ ] Opacité d'un calque : champ tokenisé, puisque Figma la lie à une
       variable (F3), et règle pour une opacité brute.
