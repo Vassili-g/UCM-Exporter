@@ -100,16 +100,6 @@
   flex-shrink: 0;
 }
 
-.verdict {
-  font-size: var(--libelle);
-  font-weight: 600;
-  line-height: var(--libelle-interligne);
-}
-
-.verdict[data-etat='manque'] {
-  color: var(--texte-danger);
-}
-
 .selecteur {
   position: relative;
   min-width: 0;
@@ -802,7 +792,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: var(--espace-controle);
 }
 
@@ -820,12 +810,6 @@
   border-radius: 4px;
 }
 
-/* Le fond du thème, membre d'une promesse choisie : la même marque que les pastilles désignées. */
-.pastille-du-fond[data-paire='true'] {
-  outline: 2px solid var(--texte);
-  outline-offset: 2px;
-}
-
 .nuancier-surface {
   display: grid;
   gap: var(--espace-controle);
@@ -833,25 +817,34 @@
   border: 1px solid var(--bordure);
   border-radius: var(--rayon);
   color: var(--encre-surface);
-  --colonne-profil: 44px;
+  --colonne-profil: 34px;
+  --colonne-on-solid: 30px;
+}
+
+/*
+ * Une seule trame pour les numéros, les pastilles et les accolades : la
+ * pastille on-solid couvre les deux rangées, et chaque accolade tombe sous ses
+ * nuances. Les rangées ARIA ne créent pas de boîte.
+ */
+.nuancier-grille,
+.accolades-ligne {
+  display: grid;
+  align-items: center;
+  column-gap: 3px;
+  grid-template-columns: var(--colonne-profil) var(--colonne-on-solid) repeat(var(--colonnes), minmax(0, 1fr));
 }
 
 .nuancier-grille {
-  display: grid;
-  gap: var(--espace-serre);
+  row-gap: 3px;
 }
 
-/* Chaque rangée suit la même trame : les numéros restent alignés sur leurs pastilles. */
-.nuancier-rangee,
-.usage-ligne {
-  display: grid;
-  align-items: center;
-  column-gap: 4px;
-  grid-template-columns: var(--colonne-profil) repeat(var(--colonnes), minmax(0, 1fr));
+.nuancier-rangee {
+  display: contents;
 }
 
 .nuancier-numero {
   color: var(--encre-surface-seconde);
+  font-size: 10px;
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -859,12 +852,13 @@
 .nuancier-profil {
   grid-column: 1;
   color: var(--encre-surface-seconde);
+  font-size: 10px;
   font-weight: 600;
 }
 
 .pastille {
   display: flex;
-  height: 32px;
+  height: 28px;
   min-width: 0;
   align-items: center;
   justify-content: center;
@@ -873,11 +867,16 @@
   font-size: var(--corps);
 }
 
+/* on-solid est le fond du thème : un contour tireté le détache de la surface. */
+.pastille-on-solid {
+  height: 100%;
+  border: 1px dashed var(--encre-surface-seconde);
+}
+
 /*
- * Quatre signes distincts ([UI-04]) : la référence porte ◆ dans sa pastille,
- * le focus un contour tireté, la nuance choisie un double anneau, une paire
- * inspectée un trait sous la pastille. Un indice ≈ marque une nuance où soft et
- * vivid se confondent.
+ * Trois signes distincts ([UI-04]) : la référence porte ◆ dans sa pastille,
+ * le focus un contour tireté, la nuance choisie un double anneau. Un indice ≈
+ * marque une nuance où soft et vivid se confondent.
  */
 .pastille:focus-visible {
   outline: 2px dashed var(--encre-surface);
@@ -888,10 +887,6 @@
   box-shadow: 0 0 0 2px var(--bordure-surface), 0 0 0 4px var(--encre-surface);
 }
 
-.pastille[data-paire='true'] {
-  border-bottom: 4px solid var(--encre-surface);
-}
-
 .pastille[data-confondue='true']::after {
   margin-left: 2px;
   content: '≈';
@@ -899,66 +894,45 @@
   opacity: 0.8;
 }
 
-.usages {
+/* Les accolades à trait fin, puis le rôle en police de code et son nom français. */
+.accolades {
   display: grid;
-  gap: 2px;
+  gap: var(--espace-serre);
 }
 
-.usages-familles {
-  display: none;
+.accolades-ligne {
+  row-gap: 1px;
 }
 
-.usages-lignes {
+.accolade {
+  height: 5px;
+  grid-row: 1;
+  border: 1px solid var(--encre-surface-seconde);
+  border-top: 0;
+  border-radius: 0 0 2px 2px;
+}
+
+.accolade-libelle {
   display: grid;
-  gap: 2px;
-}
-
-/* Le sélecteur de famille vit sur la surface : il en prend les encres. */
-.nuancier-surface .bascule-option {
-  color: var(--encre-surface-seconde);
-}
-
-.nuancier-surface .bascule-option[aria-pressed='true'] {
-  background: var(--bordure-surface);
-  color: var(--encre-surface);
-}
-
-.usages-famille {
-  margin-top: var(--espace-serre);
-  color: var(--encre-surface-seconde);
-  font-size: var(--corps);
-  font-weight: 600;
-}
-
-/* Une barre teintée couvre la plage exacte de l'usage ; son nom peut déborder sur les colonnes libres de sa ligne. */
-.usage-barre {
-  height: 16px;
   min-width: 0;
-  padding: 0 var(--espace-serre);
-  overflow: visible;
-  border: 0;
-  border-radius: 3px;
-  background: var(--bordure-surface);
-  color: var(--encre-surface);
-  cursor: pointer;
-  font-size: 10px;
-  text-align: left;
+  grid-row: 2;
   white-space: nowrap;
 }
 
-.usage-barre-fond {
-  grid-column: 2 / -1;
-  border: 1px dashed var(--bordure-surface);
-  background: none;
+.accolade-libelle .code-du-role {
+  color: var(--encre-surface);
 }
 
-.usage-barre[aria-pressed='true'] {
-  box-shadow: inset 0 0 0 2px var(--encre-surface);
+.accolade-nom {
+  color: var(--encre-surface-seconde);
+  font-size: 9px;
+  line-height: 11px;
 }
 
-.usage-barre:focus-visible {
-  outline: 2px dashed var(--encre-surface);
-  outline-offset: 2px;
+.code-du-role {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
 }
 
 /* Le détail tient une place stable quand il s'ouvre, et grandit sans couper son texte. */
@@ -972,19 +946,61 @@
 
 .detail-tete {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--espace-controle);
 }
 
+.detail-tete .bouton-discret {
+  margin-left: auto;
+}
+
+.detail-pastille {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--bordure-surface);
+  border-radius: var(--rayon);
+}
+
 .detail-titre,
-.detail-sous-titre {
+.detail-sous-titre,
+.detail-reference {
   font-weight: 600;
 }
 
-.detail-reference {
-  font-weight: 600;
+.detail-code {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+}
+
+.detail-sous-titre {
+  color: var(--encre-surface-seconde);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.usage-du-detail {
+  display: grid;
+  align-items: center;
+  gap: var(--espace-controle);
+  padding: var(--espace-serre) 0;
+  border-top: 1px solid var(--bordure-surface);
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.usage-quoi {
+  display: grid;
+  gap: 1px;
+}
+
+.usage-garanties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--espace-controle);
+}
+
+.garantie-du-detail {
+  font-weight: 400;
+  text-decoration: none;
 }
 
 .nuancier-detail .ligne-secondaire,
@@ -996,22 +1012,205 @@
   color: var(--encre-surface);
 }
 
-.detail-association {
+.garantie-du-detail[data-verdict='manquee'] {
+  text-decoration: underline;
+}
+
+/*
+ * Un spécimen : la forme que la couleur prend dans une interface. Ses
+ * couleurs viennent du script, comme celles des pastilles.
+ */
+.specimen-cadre {
+  display: grid;
+  width: 64px;
+  height: 26px;
+  place-items: center;
+  border-radius: 4px;
+}
+
+.specimen-forme {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.specimen-forme[data-role='solid'],
+.specimen-forme[data-role='on-solid'] {
+  padding: 1px var(--espace-controle);
+  border-radius: 3px;
+  font-size: 9px;
+}
+
+.specimen-forme[data-role='surface'] {
+  width: 40px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.specimen-forme[data-role='border-control'],
+.specimen-forme[data-role='border-decorative'] {
+  width: 40px;
+  height: 14px;
+  border: 1.5px solid;
+  border-radius: 3px;
+}
+
+.specimen-forme[data-role='focus'] {
+  width: 36px;
+  height: 12px;
+  border-radius: 3px;
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+/* La carte des garanties : la bascule des profils, la réglette, puis une ligne par association. */
+.bascule-des-profils {
+  justify-self: start;
+}
+
+.bascule-des-profils .bascule-option[data-verdict='manquee'] {
+  color: var(--texte-danger);
+}
+
+.reglette-des-garanties {
+  padding: var(--espace-serre) 0;
+  border-radius: var(--rayon);
+}
+
+.reglette-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.reglette-arc {
+  fill: none;
+  stroke: var(--encre-surface);
+  stroke-width: 1.4;
+}
+
+.reglette-bout {
+  fill: var(--encre-surface);
+}
+
+.reglette-arc[data-verdict='manquee'] {
+  stroke: var(--texte-danger);
+  stroke-width: 1.8;
+}
+
+.reglette-bout[data-verdict='manquee'] {
+  fill: var(--texte-danger);
+}
+
+.reglette-reference {
+  font-size: 9px;
+  text-anchor: middle;
+}
+
+.reglette-numero {
+  fill: var(--encre-surface-seconde);
+  font-size: 9.5px;
+  text-anchor: middle;
+}
+
+.reglette-numero[data-vise='true'] {
+  fill: var(--encre-surface);
+  font-weight: 600;
+}
+
+.reglette-on-solid {
+  stroke: var(--encre-surface-seconde);
+  stroke-dasharray: 3 2;
+}
+
+.liste-des-garanties {
   display: grid;
   gap: 2px;
 }
 
-.specimen {
+.garanties-groupe {
   display: flex;
-  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+  padding-top: var(--espace-serre);
+  font-weight: 600;
+}
+
+.garanties-groupe .ligne-secondaire {
+  font-weight: 400;
+}
+
+.garantie {
+  display: grid;
+  align-items: start;
+  gap: var(--espace-controle);
+  padding: var(--espace-controle) var(--espace-serre);
+  border-top: 1px solid var(--bordure);
+  border-radius: 4px;
+  cursor: pointer;
+  grid-template-columns: 140px minmax(0, 1fr);
+}
+
+.garantie[aria-pressed='true'] {
+  border-top-color: transparent;
+  background: var(--fond-survol);
+  box-shadow: inset 2px 0 0 var(--texte);
+}
+
+.garantie:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 1px;
+}
+
+.garantie-qui {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.garantie-etats {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--espace-controle);
 }
 
-.specimen-echantillon {
-  flex-shrink: 0;
-  padding: 2px var(--espace-controle);
-  border-radius: 4px;
+.garantie-etat {
+  display: grid;
+  width: 64px;
+  justify-items: center;
+  gap: 2px;
+}
+
+.garantie-numeros {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.garantie-resultat {
+  color: var(--texte-succes);
+  font-variant-numeric: tabular-nums;
+}
+
+.garantie-resultat[data-verdict='manquee'] {
+  color: var(--texte-danger);
   font-weight: 600;
+}
+
+.garantie-echec {
+  display: grid;
+  gap: var(--espace-serre);
+  padding: 0 var(--espace-serre) var(--espace-controle) 148px;
+  color: var(--texte-danger);
+}
+
+.garantie-decorative {
+  padding: var(--espace-controle) var(--espace-serre) 0;
+  border-top: 1px solid var(--bordure);
+  color: var(--texte-second);
+}
+
+.autre-theme {
+  color: var(--texte-second);
 }
 
 /* Les intensités de la palette, sous le nuancier. */
@@ -1046,6 +1245,12 @@
   font-weight: 600;
 }
 
+.ligne-du-bilan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-controle);
+}
+
 .bilan-de-la-derive[data-etat='manque'] {
   color: var(--texte-danger);
 }
@@ -1065,38 +1270,4 @@
 
 .etat-du-cadre {
   color: var(--texte-second);
-}
-
-/*
- * À 440 px, le nom d'un profil passe au-dessus de sa rangée et les pastilles
- * prennent toute la largeur ; un sélecteur de famille montre une famille
- * d'usages à la fois.
- */
-@media (max-width: 519px) {
-  .nuancier-surface {
-    --colonne-profil: 0px;
-  }
-
-  .nuancier-profil {
-    grid-column: 1 / -1;
-  }
-
-  .nuancier-numeros .nuancier-profil {
-    display: none;
-  }
-
-  .usages-familles {
-    display: flex;
-  }
-
-  .usages-famille {
-    display: none;
-  }
-
-  .usages[data-famille='fonds'] [data-famille]:not([data-famille='fonds']),
-  .usages[data-famille='bordures'] [data-famille]:not([data-famille='bordures']),
-  .usages[data-famille='pleins'] [data-famille]:not([data-famille='pleins']),
-  .usages[data-famille='textes'] [data-famille]:not([data-famille='textes']) {
-    display: none;
-  }
 }

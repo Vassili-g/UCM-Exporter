@@ -1,20 +1,20 @@
 /**
- * Le nuancier de la palette ouverte ([UI-04]) : une surface peinte du fond du
+ * L'aperçu de la palette ouverte ([UI-04]) : une surface peinte du fond du
  * thème choisi, les numéros de nuance alignés sur les rampes Soft et Vivid, la
- * référence exacte repérée ([MOT-17]), les plages de chaque usage par famille,
- * et le détail de la nuance, de l'usage ou de la promesse choisis.
+ * pastille `on-solid` avant elles, la référence exacte repérée ([MOT-17]), les
+ * accolades des rôles, et le détail de la nuance choisie ([UI-10]).
  *
  * Les pastilles forment une grille au sens WAI-ARIA : une seule est atteinte
  * par la tabulation, les flèches, Origine et Fin déplacent le focus, Entrée et
- * Espace choisissent. Le survol signale seulement la cible. La copie d'un code
- * est un bouton du détail, distinct du choix d'une nuance.
+ * Espace choisissent. La pastille `on-solid` est la première colonne des deux
+ * rangées. Le survol signale seulement la cible. La copie d'un code est un
+ * bouton du détail, distinct du choix d'une nuance. Les accolades ne se
+ * focalisent pas.
  */
 import {
-  ASSOCIATIONS,
   PROFILS,
   TABLE_DES_EMPLOIS,
   associationDe,
-  cleDeLAssociation,
   contraste,
   decalagesDeLEmploi,
   emploisDuCran,
@@ -33,19 +33,17 @@ import {
 } from 'ucm-couleur';
 
 import type { AnalyseDePalette } from '../analyse';
-import type { GroupeDePromesses } from '../presentation';
+import { accoladesDe } from '../presentation';
+import { specimenDuRole } from './specimens';
 import {
-  FAMILLES_D_USAGES,
-  NOM_DE_L_EMPLOI,
+  NOM_DE_L_ETAT,
   NOM_DU_PROFIL,
+  NOM_DU_ROLE,
   TEXTES,
-  TEXTES_DE_LA_PLANCHE,
+  TEXTES_DU_DETAIL,
   TEXTES_DU_NUANCIER,
-  associationEcrite,
   contrasteEcrit,
-  emploiEcrit,
   niveauxEcrits,
-  type FamilleDUsages,
 } from './textes';
 
 /** Ce que le nuancier montre. */
@@ -58,10 +56,12 @@ export interface EntreesDuNuancier {
 
 /** Ce que le nuancier demande à l'onglet. */
 export interface GestesDuNuancier {
-  /** Le thème a changé : l'éditeur de dérive et la ligne de référence le suivent. */
+  /** Le thème a changé : la carte des garanties et l'éditeur de dérive le suivent. */
   surMode(): void;
   /** « Modifier » ouvre les couleurs de fond des Réglages communs ([UI-04]). */
   modifierLeFond(): void;
+  /** Une garantie du détail se choisit dans la carte des garanties ([UI-10]). */
+  choisirGarantie(association: Association): void;
 }
 
 export interface NuancierUi {
@@ -71,33 +71,28 @@ export interface NuancierUi {
   tete: HTMLDivElement;
   afficher(entrees: EntreesDuNuancier): void;
   mode(): Mode;
-  /**
-   * Désigne les deux couleurs d'une promesse et montre son spécimen. Une
-   * promesse de l'autre thème bascule le thème, et un bouton ramène au thème
-   * d'avant.
-   */
-  inspecter(groupe: GroupeDePromesses): void;
+  /** Montre un autre thème, et offre de revenir à celui d'avant ([UI-09]). */
+  montrerLeTheme(mode: Mode): void;
 }
 
 type Choix =
   | { readonly nature: 'nuance'; readonly profil: Profil; readonly rang: number }
-  | { readonly nature: 'usage'; readonly emploi: Emploi }
-  | { readonly nature: 'promesse'; readonly association: Association; readonly etat: number };
-
-const nombreDeColonnes = (recette: Recette): string => String(recette.crans.length);
+  | { readonly nature: 'fond' };
 
 /** L'encre qui se lit sur le fond du thème : la sombre ou la claire des couleurs de la planche. */
-function encresSur(fond: Rgb8): { encre: string; seconde: string; bordure: string } {
+export function encresSur(fond: Rgb8): { encre: string; seconde: string; bordure: string } {
   const sombre = contraste(fond, [30, 30, 30]) >= contraste(fond, [245, 245, 245]);
   return sombre
     ? { encre: '#1E1E1E', seconde: 'rgba(30, 30, 30, 0.72)', bordure: 'rgba(30, 30, 30, 0.28)' }
     : { encre: '#F5F5F5', seconde: 'rgba(245, 245, 245, 0.72)', bordure: 'rgba(245, 245, 245, 0.32)' };
 }
 
-function bouton(classe: string, texte = ''): HTMLButtonElement {
+function bouton(classe: 'bouton-discret' | 'bascule-option' | 'lien-de-constat', texte = ''): HTMLButtonElement {
   const element = document.createElement('button');
   element.type = 'button';
-  element.className = classe;
+  if (classe === 'bouton-discret') element.className = 'bouton-discret';
+  else if (classe === 'bascule-option') element.className = 'bascule-option';
+  else element.className = 'lien-de-constat';
   element.textContent = texte;
   return element;
 }
@@ -109,19 +104,19 @@ function paragraphe(texte: string, classe = ''): HTMLParagraphElement {
   return element;
 }
 
-/** Le titre du détail : une nuance ou un usage. */
-function titreDeDetail(texte: string): HTMLParagraphElement {
-  const titre = paragraphe(texte);
-  titre.className = 'detail-titre';
-  return titre;
+/** Un sous-titre du détail : « Sert à », « Nuance libre ». */
+function sousTitre(texte: string): HTMLParagraphElement {
+  const element = paragraphe(texte);
+  element.className = 'detail-sous-titre';
+  return element;
 }
 
-/** Une barre d'usage, qui choisit cet usage ; `surFond` pour `on-solid`, qui n'a pas de nuance. */
-function barreDUsage(texte: string, surFond: boolean): HTMLButtonElement {
-  const barre = bouton('', texte);
-  if (surFond) barre.className = 'usage-barre usage-barre-fond';
-  else barre.className = 'usage-barre';
-  return barre;
+/** Un nom de rôle en police de code. */
+function codeDuRole(texte: string): HTMLElement {
+  const code = document.createElement('code');
+  code.className = 'code-du-role';
+  code.textContent = texte;
+  return code;
 }
 
 /** Copie un texte sans l'API du presse-papiers, que l'iframe d'un plugin peut refuser. */
@@ -137,8 +132,11 @@ function copier(texte: string): void {
   zone.remove();
 }
 
+/** La colonne CSS d'une colonne de l'aperçu : `-2` le nom du profil, `-1` la pastille `on-solid`, `0` la première nuance. */
+const colonne = (rang: number): number => rang + 3;
+
 export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
-  // En-tête : les deux thèmes, le retour après une promesse de l'autre thème, et le fond.
+  // En-tête : les deux thèmes, le retour vers le thème d'avant, et le fond.
   const tete = document.createElement('div');
   tete.className = 'nuancier-tete';
   const bascule = document.createElement('div');
@@ -150,7 +148,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   const fond = document.createElement('div');
   fond.className = 'nuancier-fond';
   const libelleDuFond = document.createElement('span');
-  libelleDuFond.className = 'field-label';
+  libelleDuFond.className = 'libelle-de-champ';
   libelleDuFond.textContent = TEXTES_DU_NUANCIER.fond;
   const pastilleDuFond = document.createElement('span');
   pastilleDuFond.className = 'pastille-du-fond';
@@ -167,30 +165,23 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   grille.className = 'nuancier-grille';
   grille.setAttribute('role', 'grid');
   grille.setAttribute('aria-label', TEXTES.apercu);
-
-  const usages = document.createElement('div');
-  usages.className = 'usages';
-  const familles = document.createElement('div');
-  familles.className = 'bascule usages-familles';
-  familles.setAttribute('role', 'group');
-  familles.setAttribute('aria-label', TEXTES_DU_NUANCIER.familles);
-  const lignesDUsages = document.createElement('div');
-  lignesDUsages.className = 'usages-lignes';
-  usages.append(familles, lignesDUsages);
-
+  const accolades = document.createElement('div');
+  accolades.className = 'accolades';
+  accolades.setAttribute('aria-hidden', 'true');
   const detail = document.createElement('div');
   detail.className = 'nuancier-detail';
   detail.setAttribute('aria-live', 'polite');
   detail.hidden = true;
-  surface.append(grille, usages, detail);
+  surface.append(grille, accolades, detail);
 
   let mode: Mode = 'light';
   let modeDAvant: Mode | null = null;
-  let famille: FamilleDUsages = 'fonds';
   let choix: Choix | null = null;
-  /** La pastille que la tabulation atteint : rang de la rampe, rang de la nuance. */
-  let active = { rampe: 1, cran: 7 };
+  /** La cellule que la tabulation atteint : rang de la rampe, colonne ; la colonne 0 est `on-solid`. */
+  let active = { rampe: 1, colonne: 8 };
   let donnees: EntreesDuNuancier | null = null;
+  /** Les cellules de chaque rangée ; la pastille `on-solid` ouvre les deux. */
+  let cellules: HTMLElement[][] = [];
 
   const boutonsDeMode = (['light', 'dark'] as const).map((valeur) => {
     const choixDuMode = bouton('bascule-option', valeur === 'light' ? TEXTES.modeClair : TEXTES.modeSombre);
@@ -207,38 +198,26 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     if (cible) changerDeMode(cible);
   });
 
-  const boutonsDeFamille = (Object.keys(FAMILLES_D_USAGES) as FamilleDUsages[]).map((valeur) => {
-    const choixDeFamille = bouton('bascule-option', FAMILLES_D_USAGES[valeur].nom);
-    choixDeFamille.addEventListener('click', () => {
-      famille = valeur;
-      dessiner();
-    });
-    familles.append(choixDeFamille);
-    return { valeur, choixDeFamille };
-  });
-
   function changerDeMode(suivant: Mode): void {
     mode = suivant;
     dessiner();
     gestes.surMode();
   }
 
-  function cellules(): HTMLElement[][] {
-    return Array.from(grille.querySelectorAll<HTMLElement>('[role="row"]'))
-      .map((rangee) => Array.from(rangee.querySelectorAll<HTMLElement>('[role="gridcell"]')))
-      .filter((rangee) => rangee.length > 0);
-  }
-
-  function activer(rampe: number, cran: number, focaliser: boolean): void {
-    const toutes = cellules();
-    if (toutes.length === 0) return;
-    const ligne = Math.max(0, Math.min(toutes.length - 1, rampe));
-    const colonne = Math.max(0, Math.min(toutes[ligne].length - 1, cran));
-    active = { rampe: ligne, cran: colonne };
-    toutes.flat().forEach((cellule) => { cellule.tabIndex = -1; });
-    const cible = toutes[ligne][colonne];
+  function activer(rampe: number, rang: number, focaliser: boolean): void {
+    if (cellules.length === 0) return;
+    const ligne = Math.max(0, Math.min(cellules.length - 1, rampe));
+    const place = Math.max(0, Math.min(cellules[ligne].length - 1, rang));
+    active = { rampe: ligne, colonne: place };
+    cellules.flat().forEach((cellule) => { cellule.tabIndex = -1; });
+    const cible = cellules[ligne][place];
     cible.tabIndex = 0;
     if (focaliser) cible.focus();
+  }
+
+  /** Le choix qu'une cellule porte : la colonne 0 est la pastille `on-solid`. */
+  function choixDe(rampe: number, place: number): Choix {
+    return place === 0 ? { nature: 'fond' } : { nature: 'nuance', profil: PROFILS[rampe], rang: place - 1 };
   }
 
   function choisir(suivant: Choix | null): void {
@@ -247,18 +226,18 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   }
 
   grille.addEventListener('keydown', (evenement) => {
-    const largeur = cellules()[active.rampe]?.length ?? 0;
+    const largeur = cellules[active.rampe]?.length ?? 0;
     if (evenement.key === 'Enter' || evenement.key === ' ') {
       evenement.preventDefault();
-      choisir({ nature: 'nuance', profil: PROFILS[active.rampe], rang: active.cran });
-      activer(active.rampe, active.cran, true);
+      choisir(choixDe(active.rampe, active.colonne));
+      activer(active.rampe, active.colonne, true);
       return;
     }
     const cibles: Record<string, [number, number]> = {
-      ArrowRight: [active.rampe, active.cran + 1],
-      ArrowLeft: [active.rampe, active.cran - 1],
-      ArrowDown: [active.rampe + 1, active.cran],
-      ArrowUp: [active.rampe - 1, active.cran],
+      ArrowRight: [active.rampe, active.colonne + 1],
+      ArrowLeft: [active.rampe, active.colonne - 1],
+      ArrowDown: [active.rampe + 1, active.colonne],
+      ArrowUp: [active.rampe - 1, active.colonne],
       Home: [active.rampe, 0],
       End: [active.rampe, largeur - 1],
     };
@@ -268,112 +247,139 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     activer(cible[0], cible[1], true);
   });
 
-  /** Les promesses d'une association dans le thème montré, par état puis par profil. */
-  function promessesDe(association: Association, analyse: AnalyseDePalette): Promesse[] {
-    const cle = cleDeLAssociation(association);
-    return analyse.promesses.filter((promesse) => promesse.mode === mode && cleDeLAssociation(associationDe(promesse.paire)) === cle);
+  /** Les promesses du thème montré qui comptent `emploi` au décalage donné, dans un profil. */
+  function promessesDuRole(analyse: AnalyseDePalette, profil: Profil, emploi: Emploi, decalage: number): Promesse[] {
+    return analyse.promesses.filter((promesse) => promesse.mode === mode && promesse.profil === profil
+      && [promesse.paire.premier, promesse.paire.second].some((membre) => 'emploi' in membre && membre.emploi === emploi && membre.decalage === decalage));
   }
 
-  /** Les rangs qu'une promesse choisie désigne, par profil, et vrai quand le fond du thème en est membre. */
-  function membresDesignes(analyse: AnalyseDePalette, recette: Recette): { rangs: Set<string>; fond: boolean } {
-    const rangs = new Set<string>();
-    let surFond = false;
-    if (choix?.nature !== 'promesse') return { rangs, fond: false };
-    const { association, etat } = choix;
-    for (const promesse of promessesDe(association, analyse).filter((candidate) => etatDeLaPaire(candidate.paire) === etat)) {
-      for (const membre of [promesse.premier, promesse.second]) {
-        if (membre.nature === 'fond') surFond = true;
-        else rangs.add(`${promesse.profil}:${recette.crans.indexOf(membre.cran)}`);
-      }
+  /** Le nom d'un membre dans une relation : « fond », « on-solid » ou « surface 100 ». */
+  function nomDuMembre(promesse: Promesse, rang: 'premier' | 'second'): string {
+    const membre = promesse.paire[rang];
+    if (!('emploi' in membre)) return TEXTES_DU_NUANCIER.fondCourt;
+    const designe = promesse[rang];
+    return designe.nature === 'cran' ? `${membre.emploi} ${designe.cran}` : membre.emploi;
+  }
+
+  /** Une garantie du détail, qui la choisit dans la carte des garanties. */
+  function lienDeGarantie(promesse: Promesse, emploi: Emploi, decalage: number): HTMLButtonElement {
+    const premier = promesse.paire.premier;
+    const estPremier = 'emploi' in premier && premier.emploi === emploi && premier.decalage === decalage;
+    const sens = estPremier ? TEXTES_DU_DETAIL.sur(nomDuMembre(promesse, 'second')) : TEXTES_DU_DETAIL.dessus(nomDuMembre(promesse, 'premier'));
+    const lien = bouton('lien-de-constat', TEXTES_DU_DETAIL.garantie(promesse.verdict === 'tenue', sens, promesse.contraste));
+    lien.classList.add('garantie-du-detail');
+    lien.dataset.verdict = promesse.verdict;
+    lien.addEventListener('click', () => gestes.choisirGarantie(associationDe(promesse.paire)));
+    return lien;
+  }
+
+  /** Une ligne « Sert à » : le spécimen, le rôle et son état, son nom français, puis ses garanties. */
+  function ligneDUsage(emploi: Emploi, decalage: number, specimen: HTMLElement, promesses: readonly Promesse[]): HTMLDivElement {
+    const ligne = document.createElement('div');
+    ligne.className = 'usage-du-detail';
+    const quoi = document.createElement('div');
+    quoi.className = 'usage-quoi';
+    const role = document.createElement('p');
+    role.append(codeDuRole(emploi), ` · ${NOM_DE_L_ETAT[decalage as 0 | 1 | 2] ?? decalage}`);
+    const garanties = document.createElement('p');
+    garanties.className = 'usage-garanties';
+    for (const promesse of promesses) garanties.append(lienDeGarantie(promesse, emploi, decalage));
+    quoi.append(role, paragraphe(NOM_DU_ROLE[emploi], 'ligne-secondaire'), garanties);
+    ligne.append(specimen, quoi);
+    return ligne;
+  }
+
+  /** Les mesures repliées : niveaux WCAG, blanc et noir, OKLCH, nuances identiques ou confondues ([VER-13]). */
+  function mesuresDetaillees(cran: Cran, profil: Profil, rang: number, entrees: EntreesDuNuancier, fondDuMode: Rgb8): HTMLDetailsElement {
+    const { recette, analyse } = entrees;
+    const numero = recette.crans[rang];
+    const mesure = mesurerCran(cran.couleur, fondDuMode, recette.seuils);
+    const repli = document.createElement('details');
+    repli.className = 'constat-detail';
+    const resume = document.createElement('summary');
+    resume.textContent = TEXTES_DU_DETAIL.mesures;
+    repli.append(
+      resume,
+      paragraphe(`${TEXTES_DU_NUANCIER.avecLeFond(contrasteEcrit(mesure.fond))} · ${niveauxEcrits(niveauxWcag(mesure.fond))}`),
+      paragraphe(`${TEXTES_DU_NUANCIER.avecLeBlanc(contrasteEcrit(mesure.blanc))} · ${TEXTES_DU_NUANCIER.avecLeNoir(contrasteEcrit(mesure.noir))}`),
+      paragraphe(TEXTES_DU_NUANCIER.oklch(cran.L, cran.C, cran.H)),
+    );
+    for (const autre of [rang - 1, rang + 1].filter((voisin) => analyse.rampes[profil][mode][voisin]?.hexa === cran.hexa)) {
+      repli.append(paragraphe(TEXTES_DU_NUANCIER.memeCouleur(recette.crans[autre])));
     }
-    return { rangs, fond: surFond };
+    if (entrees.confondues.some((confondue) => confondue.mode === mode && confondue.cran === numero)) {
+      repli.append(paragraphe(TEXTES_DU_NUANCIER.tresProche(profil === 'soft' ? 'vivid' : 'soft')));
+    }
+    return repli;
   }
 
-  function specimen(promesse: Promesse): HTMLDivElement {
-    const bloc = document.createElement('div');
-    bloc.className = 'specimen';
-    const echantillon = document.createElement('span');
-    echantillon.className = 'specimen-echantillon';
-    echantillon.textContent = TEXTES_DE_LA_PLANCHE.specimen;
-    echantillon.style.background = `rgb(${promesse.second.couleur.join(', ')})`;
-    echantillon.style.color = `rgb(${promesse.premier.couleur.join(', ')})`;
-    const mesure = document.createElement('span');
-    mesure.textContent = `${NOM_DU_PROFIL[promesse.profil]} : ${contrasteEcrit(promesse.contraste)} · ${promesse.verdict === 'tenue' ? TEXTES_DE_LA_PLANCHE.tenu : TEXTES_DE_LA_PLANCHE.manque}`;
-    bloc.append(echantillon, mesure);
-    return bloc;
-  }
-
-  /** Le détail d'une association : un état par ligne, le spécimen et le résultat de chaque profil. */
-  function detailDAssociation(association: Association, etats: readonly number[] | null, analyse: AnalyseDePalette): HTMLElement[] {
-    const promesses = promessesDe(association, analyse);
-    const parEtat = [...new Set(promesses.map((promesse) => etatDeLaPaire(promesse.paire)))]
-      .filter((etat) => etats === null || etats.includes(etat))
-      .sort((a, b) => a - b);
-    return parEtat.map((etat) => {
-      const ligne = document.createElement('div');
-      ligne.className = 'detail-association';
-      const titre = paragraphe(associationEcrite(association, etat as 0 | 1 | 2));
-      titre.className = 'detail-sous-titre';
-      const duEtat = promesses.filter((promesse) => etatDeLaPaire(promesse.paire) === etat);
-      const seuil = duEtat[0]?.seuil ?? 0;
-      ligne.append(titre, paragraphe(TEXTES_DU_NUANCIER.minimum(seuil), 'ligne-secondaire'), ...duEtat.map(specimen));
-      return ligne;
+  /** L'en-tête d'un détail : grande pastille, titre, code et « Copier ». */
+  function enTeteDuDetail(couleur: string, titre: string, code: string): HTMLDivElement {
+    const enTete = document.createElement('div');
+    enTete.className = 'detail-tete';
+    const grande = document.createElement('span');
+    grande.className = 'detail-pastille';
+    grande.style.background = couleur;
+    const nomme = document.createElement('div');
+    const nomDuDetail = paragraphe(titre);
+    nomDuDetail.className = 'detail-titre';
+    const codeDuDetail = paragraphe(code);
+    codeDuDetail.className = 'detail-code';
+    nomme.append(nomDuDetail, codeDuDetail);
+    const copie = bouton('bouton-discret', TEXTES_DU_NUANCIER.copier);
+    copie.addEventListener('click', () => {
+      copier(code);
+      copie.textContent = TEXTES_DU_NUANCIER.copie;
     });
+    enTete.append(grande, nomme, copie);
+    return enTete;
   }
 
   function detailDeNuance(profil: Profil, rang: number, entrees: EntreesDuNuancier): HTMLElement[] {
     const { recette, analyse } = entrees;
-    const cran: Cran = analyse.rampes[profil][mode][rang];
-    const numero = recette.crans[rang];
-    const fondDuMode = lireHexa(recette.fonds[mode]);
-    const enTete = document.createElement('div');
-    enTete.className = 'detail-tete';
-    enTete.append(titreDeDetail(TEXTES_DU_NUANCIER.titreDeNuance(NOM_DU_PROFIL[profil], numero, cran.hexa)));
-    const copie = bouton('lien-de-constat', TEXTES_DU_NUANCIER.copier);
-    copie.addEventListener('click', () => {
-      copier(cran.hexa);
-      copie.textContent = TEXTES_DU_NUANCIER.copie;
-    });
-    enTete.append(copie);
-    const blocs: HTMLElement[] = [enTete];
-    const { ancrage } = analyse;
-    if (ancrage.profil === profil && ancrage.rangs[mode] === rang) {
-      const estLaReference = paragraphe(TEXTES_DU_NUANCIER.estLaReference);
-      estLaReference.className = 'detail-reference';
-      blocs.push(estLaReference);
+    const cran = analyse.rampes[profil][mode][rang];
+    const fondDuMode = lireHexa(recette.fonds[mode]) ?? [255, 255, 255];
+    const blocs: HTMLElement[] = [enTeteDuDetail(cran.hexa, TEXTES_DU_DETAIL.titre(profil, recette.crans[rang]), cran.hexa)];
+    if (analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang) {
+      const reference = paragraphe(TEXTES_DU_DETAIL.reference);
+      reference.className = 'detail-reference';
+      blocs.push(reference);
     }
-    const voisins = [rang - 1, rang + 1].filter((autre) => analyse.rampes[profil][mode][autre]?.hexa === cran.hexa);
-    for (const autre of voisins) blocs.push(paragraphe(TEXTES_DU_NUANCIER.memeCouleur(recette.crans[autre]), 'ligne-secondaire'));
     const emplois = emploisDuCran(recette.crans, rang);
-    blocs.push(paragraphe(emplois.length > 0 ? emplois.map(emploiEcrit).join(' · ') : TEXTES_DU_NUANCIER.aucunUsage));
-    if (fondDuMode) {
-      const mesure = mesurerCran(cran.couleur, fondDuMode, recette.seuils);
+    if (emplois.length === 0) {
       blocs.push(
-        paragraphe(`${TEXTES_DU_NUANCIER.avecLeFond(contrasteEcrit(mesure.fond))} · ${niveauxEcrits(niveauxWcag(mesure.fond))}`),
-        paragraphe(`${TEXTES_DU_NUANCIER.avecLeBlanc(contrasteEcrit(mesure.blanc))} · ${TEXTES_DU_NUANCIER.avecLeNoir(contrasteEcrit(mesure.noir))}`, 'ligne-secondaire'),
+        sousTitre(TEXTES_DU_DETAIL.nuanceLibre),
+        paragraphe(TEXTES_DU_NUANCIER.avecLeFond(contrasteEcrit(contraste(cran.couleur, fondDuMode)))),
       );
+    } else {
+      blocs.push(sousTitre(TEXTES_DU_DETAIL.sertA));
+      for (const { emploi, decalage } of emplois) {
+        blocs.push(ligneDUsage(emploi, decalage, specimenDuRole(emploi, cran.couleur, fondDuMode), promessesDuRole(analyse, profil, emploi, decalage)));
+      }
     }
-    if (entrees.confondues.some((confondue) => confondue.mode === mode && confondue.cran === numero)) {
-      blocs.push(paragraphe(TEXTES_DU_NUANCIER.tresProche(profil === 'soft' ? 'vivid' : 'soft'), 'ligne-secondaire'));
-    }
-    const avancees = document.createElement('details');
-    avancees.className = 'constat-detail';
-    const resume = document.createElement('summary');
-    resume.textContent = TEXTES_DU_NUANCIER.mesuresAvancees;
-    avancees.append(resume, paragraphe(TEXTES_DU_NUANCIER.oklch(cran.L, cran.C, cran.H)));
-    blocs.push(avancees);
+    blocs.push(mesuresDetaillees(cran, profil, rang, entrees, fondDuMode));
     return blocs;
   }
 
-  function detailDUsage(emploi: Emploi, entrees: EntreesDuNuancier): HTMLElement[] {
-    const cible = TABLE_DES_EMPLOIS[emploi];
+  /** Le détail de la pastille `on-solid` : le fond de page, posé en texte sur `solid`, et ses garanties par profil. */
+  function detailDuFond(entrees: EntreesDuNuancier): HTMLElement[] {
+    const { recette, analyse } = entrees;
+    const fondDuMode = lireHexa(recette.fonds[mode]) ?? [255, 255, 255];
+    const depart = recette.crans.indexOf(TABLE_DES_EMPLOIS.solid);
+    const fin = recette.crans[Math.min(recette.crans.length - 1, depart + Math.max(...decalagesDeLEmploi('on-solid')))];
     const blocs: HTMLElement[] = [
-      titreDeDetail(cible === 'fond' ? TEXTES_DU_NUANCIER.titreDUsageSurFond(NOM_DE_L_EMPLOI[emploi]) : TEXTES_DU_NUANCIER.titreDUsage(NOM_DE_L_EMPLOI[emploi], cible)),
-      paragraphe(TEXTES_DE_LA_PLANCHE.usage[emploi], 'ligne-secondaire'),
+      enTeteDuDetail(recette.fonds[mode], TEXTES_DU_DETAIL.titreDuFond, recette.fonds[mode]),
+      paragraphe(TEXTES_DU_DETAIL.fondDePage(TABLE_DES_EMPLOIS.solid, fin)),
+      sousTitre(TEXTES_DU_DETAIL.sertA),
     ];
-    const associations = ASSOCIATIONS.filter((association) => association.premier === emploi || association.second === emploi);
-    if (associations.length === 0) blocs.push(paragraphe(TEXTES_DU_NUANCIER.sansPromesse));
-    for (const association of associations) blocs.push(...detailDAssociation(association, null, entrees.analyse));
+    for (const profil of PROFILS) {
+      const promesses = promessesDuRole(analyse, profil, 'on-solid', 0).sort((a, b) => etatDeLaPaire(a.paire) - etatDeLaPaire(b.paire));
+      // Le texte on-solid se montre posé sur le fond plein de son premier état.
+      const plein = analyse.rampes[profil][mode][depart];
+      const ligne = ligneDUsage('on-solid', 0, specimenDuRole('solid', plein.couleur, fondDuMode, fondDuMode), promesses);
+      ligne.querySelector('.usage-quoi p')?.prepend(`${NOM_DU_PROFIL[profil]} · `);
+      blocs.push(ligne);
+    }
     return blocs;
   }
 
@@ -383,63 +389,33 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       detail.hidden = true;
       return;
     }
-    const contenu = choix.nature === 'nuance'
-      ? detailDeNuance(choix.profil, choix.rang, entrees)
-      : choix.nature === 'usage'
-        ? detailDUsage(choix.emploi, entrees)
-        : detailDAssociation(choix.association, [choix.etat], entrees.analyse);
-    detail.replaceChildren(...contenu);
+    detail.replaceChildren(...(choix.nature === 'nuance' ? detailDeNuance(choix.profil, choix.rang, entrees) : detailDuFond(entrees)));
     detail.hidden = false;
   }
 
-  /** Les colonnes qu'un usage occupe, avec l'état de chacune : son cran, puis survol et appui. */
-  function plageDe(emploi: Emploi, recette: Recette): Map<number, number> {
-    const plage = new Map<number, number>();
-    const cible = TABLE_DES_EMPLOIS[emploi];
-    if (cible === 'fond') return plage;
-    const depart = recette.crans.indexOf(cible);
-    if (depart < 0) return plage;
-    for (const decalage of decalagesDeLEmploi(emploi)) {
-      if (depart + decalage < recette.crans.length) plage.set(depart + decalage, decalage);
-    }
-    return plage;
-  }
-
-  function rendreLesUsages(recette: Recette): void {
-    for (const { valeur, choixDeFamille } of boutonsDeFamille) choixDeFamille.setAttribute('aria-pressed', String(valeur === famille));
-    usages.dataset.famille = famille;
-    const lignes: HTMLElement[] = [];
-    for (const [cle, definition] of Object.entries(FAMILLES_D_USAGES) as [FamilleDUsages, typeof FAMILLES_D_USAGES[FamilleDUsages]][]) {
-      const titre = paragraphe(definition.nom);
-      titre.className = 'usages-famille';
-      titre.dataset.famille = cle;
-      lignes.push(titre);
-      for (const emploi of definition.emplois) {
-        const ligne = document.createElement('div');
-        ligne.className = 'usage-ligne';
-        ligne.dataset.famille = cle;
-        const plage = plageDe(emploi, recette);
-        const choisie = choix?.nature === 'usage' && choix.emploi === emploi;
-        if (plage.size === 0) {
-          // on-solid n'a pas de nuance : il prend le fond du thème, que sa ligne nomme.
-          const barre = barreDUsage(`${emploi} · ${TEXTES_DE_LA_PLANCHE.fondDuTheme}`, true);
-          barre.setAttribute('aria-pressed', String(choisie));
-          barre.addEventListener('click', () => choisir({ nature: 'usage', emploi }));
-          ligne.append(barre);
-        } else {
-          const rangs = [...plage.keys()];
-          const debut = Math.min(...rangs);
-          const barre = barreDUsage(emploi, false);
-          barre.style.gridColumn = `${debut + 2} / span ${rangs.length}`;
-          barre.setAttribute('aria-label', `${NOM_DE_L_EMPLOI[emploi]}, ${TEXTES_DU_NUANCIER.plage(rangs.map((rang) => recette.crans[rang]))}`);
-          barre.setAttribute('aria-pressed', String(choisie));
-          barre.addEventListener('click', () => choisir({ nature: 'usage', emploi }));
-          ligne.append(barre);
-        }
-        lignes.push(ligne);
+  /** Les deux lignes d'accolades ([UI-04]), calculées par `accoladesDe`. */
+  function rendreLesAccolades(recette: Recette): void {
+    const lignes = accoladesDe(recette.crans).map((accoladesDeLaLigne) => {
+      const ligne = document.createElement('div');
+      ligne.className = 'accolades-ligne';
+      for (const accolade of accoladesDeLaLigne) {
+        const trait = document.createElement('span');
+        trait.className = 'accolade';
+        trait.style.gridColumn = `${colonne(accolade.debut)} / ${colonne(accolade.fin) + 1}`;
+        const libelle = document.createElement('span');
+        libelle.className = 'accolade-libelle';
+        libelle.style.gridColumn = `${colonne(accolade.libelle.debut)} / ${colonne(accolade.libelle.fin) + 1}`;
+        libelle.style.textAlign = accolade.libelle.alignement;
+        const role = codeDuRole(accolade.emplois.join(' · '));
+        const nom = document.createElement('span');
+        nom.className = 'accolade-nom';
+        nom.textContent = accolade.emplois.map((emploi) => NOM_DU_ROLE[emploi]).join(' · ');
+        libelle.append(role, nom);
+        ligne.append(trait, libelle);
       }
-    }
-    lignesDUsages.replaceChildren(...lignes);
+      return ligne;
+    });
+    accolades.replaceChildren(...lignes);
   }
 
   function dessiner(): void {
@@ -455,28 +431,45 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     surface.style.setProperty('--encre-surface', encres.encre);
     surface.style.setProperty('--encre-surface-seconde', encres.seconde);
     surface.style.setProperty('--bordure-surface', encres.bordure);
-    surface.style.setProperty('--colonnes', nombreDeColonnes(recette));
+    surface.style.setProperty('--colonnes', String(recette.crans.length));
     pastilleDuFond.style.background = recette.fonds[mode];
     hexaDuFond.textContent = recette.fonds[mode];
-    const designes = membresDesignes(analyse, recette);
-    pastilleDuFond.dataset.paire = String(designes.fond);
 
     const numeros = document.createElement('div');
-    numeros.className = 'nuancier-rangee nuancier-numeros';
+    numeros.className = 'nuancier-rangee';
     numeros.setAttribute('role', 'row');
     const coin = document.createElement('span');
     coin.className = 'nuancier-profil';
     coin.setAttribute('role', 'columnheader');
+    coin.style.gridRow = '1';
     numeros.append(coin, ...recette.crans.map((numero, rang) => {
       const entete = document.createElement('span');
-      entete.style.gridColumn = String(rang + 2);
+      entete.style.gridColumn = String(colonne(rang));
+      entete.style.gridRow = '1';
       entete.className = 'nuancier-numero';
       entete.setAttribute('role', 'columnheader');
       entete.textContent = String(numero);
       return entete;
     }));
 
+    // La pastille on-solid : peinte du fond du thème, sur la hauteur des deux rangées.
+    const onSolid = document.createElement('span');
+    onSolid.className = 'pastille pastille-on-solid';
+    onSolid.setAttribute('role', 'gridcell');
+    onSolid.style.gridColumn = String(colonne(-1));
+    onSolid.style.gridRow = '2 / span 2';
+    onSolid.style.background = recette.fonds[mode];
+    onSolid.setAttribute('aria-label', TEXTES_DU_NUANCIER.etiquetteDuFond(recette.fonds[mode]));
+    onSolid.setAttribute('aria-selected', String(choix?.nature === 'fond'));
+    onSolid.addEventListener('click', () => {
+      active = { rampe: active.rampe, colonne: 0 };
+      choisir({ nature: 'fond' });
+      activer(active.rampe, 0, true);
+    });
+    onSolid.addEventListener('focus', () => { active = { rampe: active.rampe, colonne: 0 }; });
+
     const confondues = new Set(entrees.confondues.filter((confondue) => confondue.mode === mode).map((confondue) => confondue.cran));
+    cellules = [];
     const rangees = PROFILS.map((profil, rangDeRampe) => {
       const rangee = document.createElement('div');
       rangee.className = 'nuancier-rangee';
@@ -484,16 +477,19 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       const entete = document.createElement('span');
       entete.className = 'nuancier-profil';
       entete.setAttribute('role', 'rowheader');
+      entete.style.gridRow = String(rangDeRampe + 2);
       entete.textContent = NOM_DU_PROFIL[profil];
       rangee.append(entete);
-      analyse.rampes[profil][mode].forEach((cran, rang) => {
+      if (rangDeRampe === 0) rangee.append(onSolid);
+      const pastilles = analyse.rampes[profil][mode].map((cran, rang) => {
         const numero = recette.crans[rang];
         const pastille = document.createElement('span');
         pastille.className = 'pastille';
         pastille.setAttribute('role', 'gridcell');
         pastille.dataset.cran = String(numero);
         pastille.dataset.profil = profil;
-        pastille.style.gridColumn = String(rang + 2);
+        pastille.style.gridColumn = String(colonne(rang));
+        pastille.style.gridRow = String(rangDeRampe + 2);
         pastille.style.background = cran.hexa;
         pastille.style.color = contraste(cran.couleur, [0, 0, 0]) >= contraste(cran.couleur, [255, 255, 255]) ? '#000000' : '#FFFFFF';
         const reference = analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang;
@@ -509,21 +505,22 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
         }
         pastille.setAttribute('aria-label', etiquettes.join(', '));
         pastille.setAttribute('aria-selected', String(choix?.nature === 'nuance' && choix.profil === profil && choix.rang === rang));
-        pastille.dataset.paire = String(designes.rangs.has(`${profil}:${rang}`));
         pastille.tabIndex = -1;
         pastille.addEventListener('click', () => {
-          active = { rampe: rangDeRampe, cran: rang };
+          active = { rampe: rangDeRampe, colonne: rang + 1 };
           choisir({ nature: 'nuance', profil, rang });
-          activer(rangDeRampe, rang, true);
+          activer(rangDeRampe, rang + 1, true);
         });
-        pastille.addEventListener('focus', () => { active = { rampe: rangDeRampe, cran: rang }; });
-        rangee.append(pastille);
+        pastille.addEventListener('focus', () => { active = { rampe: rangDeRampe, colonne: rang + 1 }; });
+        return pastille;
       });
+      rangee.append(...pastilles);
+      cellules.push([onSolid, ...pastilles]);
       return rangee;
     });
     grille.replaceChildren(numeros, ...rangees);
-    activer(active.rampe, active.cran, false);
-    rendreLesUsages(recette);
+    activer(active.rampe, active.colonne, false);
+    rendreLesAccolades(recette);
     rendreLeDetail(entrees);
   }
 
@@ -535,15 +532,10 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       donnees = entrees;
       dessiner();
     },
-    inspecter(groupe) {
-      if (groupe.mode !== mode) {
-        modeDAvant = mode;
-        mode = groupe.mode;
-        gestes.surMode();
-      }
-      choix = { nature: 'promesse', association: groupe.association, etat: groupe.etat };
-      dessiner();
-      detail.scrollIntoView({ block: 'nearest' });
+    montrerLeTheme(suivant) {
+      if (suivant === mode) return;
+      modeDAvant = mode;
+      changerDeMode(suivant);
     },
   };
 }

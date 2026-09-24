@@ -36,13 +36,14 @@ import {
 } from '../edition';
 import type { EtatDeLaPlanche, LectureDeSelection, ProfilDuDocument } from '../lecture';
 import { fraicheurDUnePalette } from '../planche/fraicheur';
-import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction, type GroupeDePromesses } from '../presentation';
+import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction } from '../presentation';
 import { blocDeConstat, listeDesMessages, type Message } from './constats';
 import { createCarte } from './carte';
 import { createCreation } from './creation';
 import { createEditeur } from './derive/editeur';
 import type { EtatDuDessin, GestesDuResultat } from './dessin';
 import type { StatutDuRangement } from './frontiere';
+import { createGaranties } from './garanties';
 import { createGeneration, type CadreDeLaPalette } from './generation';
 import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
 import { createIntensites } from './intensites';
@@ -57,7 +58,6 @@ import {
   TEXTES_DE_LA_BASE,
   TEXTES_DE_LA_DERIVE,
   TEXTES_DE_L_ONGLET,
-  bilanDesPromesses,
   confirmationDeSuppression,
   couleurRamenee,
   hexaInvalide,
@@ -71,7 +71,6 @@ import {
   recetteModifieeAilleurs,
   resumeDeLaDerive,
   resumeDesIntensites,
-  verdict,
   type Constat,
 } from './textes';
 
@@ -207,15 +206,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const titreDeConfiguration = document.createElement('h2');
   titreDeConfiguration.className = 'titre-de-premier-rang';
   titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre;
-  const verdictDeLaPalette = document.createElement('span');
-  verdictDeLaPalette.className = 'verdict';
-  verdictDeLaPalette.setAttribute('aria-live', 'polite');
   const indication = document.createElement('span');
   indication.className = 'etat-rangement ligne-secondaire';
   indication.setAttribute('aria-live', 'polite');
   const teteDeConfiguration = document.createElement('div');
   teteDeConfiguration.className = 'tete-de-configuration';
-  teteDeConfiguration.append(titreDeConfiguration, verdictDeLaPalette, indication);
+  teteDeConfiguration.append(titreDeConfiguration, indication);
 
   // Carte Couleur de base ([UI-11]).
   const pipette = document.createElement('input');
@@ -272,6 +268,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const nuancier = createNuancier({
     surMode: () => rendre(),
     modifierLeFond: () => demandes.ouvrirReglages('fonds'),
+    choisirGarantie: (association) => garanties.choisir(association),
   });
   const carteDApercu = createCarte({ titre: TEXTES_DE_L_ONGLET.apercu });
   carteDApercu.tete.append(nuancier.tete);
@@ -279,6 +276,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   repereDeReference.className = 'repere-de-la-reference';
   carteDApercu.corps.append(repereDeReference, nuancier.element);
   const messagesDApercu = document.createElement('div');
+
+  // Carte Garanties de contraste ([UI-09]) : elle suit le thème de l'aperçu.
+  const garanties = createGaranties({
+    ouvrir: (cible) => ouvrir(cible),
+    montrerLeTheme: (mode) => nuancier.montrerLeTheme(mode),
+  });
 
   // Cartes repliables Intensités et Dérive de teinte ([UI-12]).
   const carteDesIntensites = createCarte({ titre: TEXTES_DE_L_ONGLET.intensites, repliable: { ouverte: false } });
@@ -296,6 +299,10 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     previsualiser: (suivante) => modifier(suivante),
     valider: (suivante) => {
       if (recette) valider(remplacerPalette(recette, suivante));
+    },
+    voirLesGaranties: () => {
+      garanties.element.scrollIntoView({ block: 'start' });
+      garanties.element.querySelector<HTMLElement>('.carte-bascule')?.focus({ preventScroll: true });
     },
   });
   carteDeLaDerive.corps.append(editeur.element);
@@ -321,6 +328,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     carteDeBase.element,
     carteDApercu.element,
     messagesDApercu,
+    garanties.element,
     carteDesIntensites.element,
     carteDeLaDerive.element,
     messagesDeLaDerive,
@@ -358,11 +366,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       carteDeLaDerive.ouvrir();
       if (carteDeLaDerive.estOuverte()) editeur.focaliser();
     }
-  }
-
-  function inspecter(groupe: GroupeDePromesses): void {
-    nuancier.inspecter(groupe);
-    rendre();
   }
 
   function ouverte(): Palette | null {
@@ -529,10 +532,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     zoneDeLaNote.replaceChildren(...(note ? [blocDeConstat(note, 'notice')] : []));
     zoneDeLaNote.hidden = !note;
 
-    verdictDeLaPalette.textContent = analyse.manquees === 0
-      ? `${verdict(0)} · ${bilanDesPromesses(analyse.promesses.length, analyse.promesses.length)}`
-      : verdict(analyse.manquees);
-    verdictDeLaPalette.dataset.etat = analyse.manquees > 0 ? 'manque' : 'pret';
     poser(hexa, courante.reference);
     poser(pipette, courante.reference.toLowerCase());
     poser(nom, courante.nom ?? '');
@@ -550,7 +549,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       const trouvee = lue.palettes.find((candidate) => candidate.id === id);
       return trouvee ? nomDeLaPalette(trouvee) : id;
     };
-    const messages = messagesDeLaPalette(analyse, courante, { recette: lue, nomDe }, nomDeLaPalette(courante), inspecter);
+    const messages = messagesDeLaPalette(analyse, courante, { recette: lue, nomDe });
+    garanties.afficher({ recette: lue, palette: courante, analyse, mode: nuancier.mode() });
     intensites.afficher(lue, courante, analyse.part, messages.intensite);
     const pointsDIntensite = messages.intensite.filter((message) => message.severite !== 'notice').length;
     carteDesIntensites.poserResume(resumeDesIntensites(courante.parts?.origine, courante.base, analyse.parts, pointsDIntensite));

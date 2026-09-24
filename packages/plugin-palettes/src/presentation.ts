@@ -6,12 +6,16 @@
  */
 import {
   ASSOCIATIONS,
+  EMPLOIS,
   MODES,
+  TABLE_DES_EMPLOIS,
   associationDe,
   cleDeLAssociation,
+  decalagesDeLEmploi,
   etatDeLaPaire,
   type Alerte,
   type Association,
+  type Emploi,
   type EtatDePaire,
   type Mode,
   type Palette,
@@ -125,4 +129,66 @@ export function ciblesDeLAlerte(alerte: Alerte, palette: Palette | null): CibleD
     case 'fond-hors-courbe':
       return ['fonds'];
   }
+}
+
+/**
+ * Une accolade de l'aperçu ([UI-04]) : les rôles qui visent les mêmes
+ * nuances, et les colonnes qu'elle couvre. La colonne `-1` est celle de la
+ * pastille `on-solid`, `-2` celle du nom des profils ; `0` est la première
+ * nuance. Le libellé occupe des colonnes libres de sa ligne, sans chevaucher
+ * son voisin.
+ */
+export interface Accolade {
+  readonly emplois: readonly Emploi[];
+  readonly debut: number;
+  readonly fin: number;
+  readonly libelle: { readonly debut: number; readonly fin: number; readonly alignement: 'center' | 'start' | 'end' };
+}
+
+/**
+ * Les accolades de l'aperçu, sur deux lignes au plus. Les rôles qui partent de
+ * la même nuance se réunissent, sur l'union de leurs plages : `focus` n'a pas
+ * d'état, et se lit avec `border-control` ; chaque accolade prend la première ligne où elle ne
+ * chevauche aucune autre, dans l'ordre de `EMPLOIS`. Un libellé s'étend
+ * autant à gauche qu'à droite de son accolade quand il le peut, et reste
+ * centré ; sinon il prend toute sa zone libre, aligné du côté de l'accolade.
+ */
+export function accoladesDe(crans: readonly number[]): Accolade[][] {
+  const groupes: { emplois: Emploi[]; debut: number; fin: number }[] = [];
+  for (const emploi of EMPLOIS) {
+    const cible = TABLE_DES_EMPLOIS[emploi];
+    let debut = -1;
+    let fin = -1;
+    if (cible !== 'fond') {
+      debut = crans.indexOf(cible);
+      if (debut < 0) continue;
+      fin = Math.min(crans.length - 1, debut + Math.max(...decalagesDeLEmploi(emploi)));
+    }
+    const meme = groupes.find((groupe) => groupe.debut === debut);
+    if (meme) {
+      meme.emplois.push(emploi);
+      meme.fin = Math.max(meme.fin, fin);
+    }
+    else groupes.push({ emplois: [emploi], debut, fin });
+  }
+  const lignes: { emplois: Emploi[]; debut: number; fin: number }[][] = [];
+  for (const groupe of groupes) {
+    const libre = lignes.find((ligne) => ligne.every((autre) => groupe.fin < autre.debut || groupe.debut > autre.fin));
+    if (libre) libre.push(groupe);
+    else lignes.push([groupe]);
+  }
+  return lignes.map((ligne) => {
+    const triee = [...ligne].sort((a, b) => a.debut - b.debut);
+    let borne = -2;
+    return triee.map((groupe, rang): Accolade => {
+      const suivante = triee[rang + 1];
+      const zone = { debut: borne, fin: suivante ? suivante.debut - 1 : crans.length - 1 };
+      const marge = Math.min(groupe.debut - zone.debut, zone.fin - groupe.fin);
+      const libelle = marge > 0
+        ? { debut: groupe.debut - marge, fin: groupe.fin + marge, alignement: 'center' as const }
+        : { ...zone, alignement: groupe.debut === zone.debut ? ('start' as const) : ('end' as const) };
+      borne = libelle.fin + 1;
+      return { ...groupe, libelle };
+    });
+  });
 }

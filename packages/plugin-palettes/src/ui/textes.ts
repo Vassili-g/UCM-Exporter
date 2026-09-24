@@ -65,7 +65,6 @@ export const TEXTES = {
   selectionVide: 'Sélectionnez un calque dans Figma pour récupérer sa couleur.',
   selectionSansRemplissage: 'Sélectionnez un calque avec une couleur de remplissage unie, visible et sans transparence.',
   detailTechnique: 'Détail technique',
-  voirLesDeuxCouleurs: 'Voir les deux couleurs',
   ouvrirLesReglages: 'Ouvrir les réglages communs',
   reglagesCommuns: 'Réglages communs',
   retour: 'Retour aux palettes et à la planche',
@@ -357,46 +356,83 @@ export function resumeDeLaDerive(palette: Palette, grise: boolean, points: numbe
   return `${reglage}${pointsAVerifier(points)}`;
 }
 
-/** Le détail de la dérive : une ligne, ou une par profil déliée. */
-export function ligneDeLaDerive(palette: Palette): string {
-  const { lien, soft, vivid } = palette.derive;
-  return lien ? uneDerive(vivid) : `soft : ${uneDerive(soft)} · vivid : ${uneDerive(vivid)}`;
-}
-
-/** Le nom d'un emploi en français, son identifiant entre parenthèses ; la clé reste celle des données. */
-export const NOM_DE_L_EMPLOI: Record<Emploi, string> = {
-  solid: 'Fond plein (solid)',
-  'on-solid': 'Texte sur fond plein (on-solid)',
-  text: 'Texte coloré (text)',
-  surface: 'Fond léger (surface)',
-  'border-control': 'Bordure de contrôle (border-control)',
-  'border-decorative': 'Bordure décorative (border-decorative)',
-  focus: 'Contour de focus (focus)',
+/** Le nom français d'un rôle, sous son nom en police de code (N030) ; la clé reste celle des données. */
+export const NOM_DU_ROLE: Record<Emploi, string> = {
+  solid: 'fond plein',
+  'on-solid': 'texte sur fond plein',
+  text: 'texte coloré',
+  surface: 'fond léger',
+  'border-control': 'bordure de champ',
+  'border-decorative': 'séparateur',
+  focus: 'anneau de focus',
 };
 
-/** Les familles d'usages du nuancier ([UI-04]), et les emplois de chacune. */
-export const FAMILLES_D_USAGES = {
-  fonds: { nom: 'Fonds', emplois: ['surface'] },
-  bordures: { nom: 'Bordures et focus', emplois: ['border-decorative', 'border-control', 'focus'] },
-  pleins: { nom: 'Fonds pleins', emplois: ['solid'] },
-  textes: { nom: 'Textes', emplois: ['text', 'on-solid'] },
-} as const satisfies Record<string, { readonly nom: string; readonly emplois: readonly Emploi[] }>;
+/** Le nom d'un emploi en une phrase, son identifiant entre parenthèses : « Fond plein (solid) ». */
+export const NOM_DE_L_EMPLOI = Object.fromEntries(
+  (Object.keys(NOM_DU_ROLE) as Emploi[]).map((emploi) => [emploi, `${NOM_DU_ROLE[emploi][0].toUpperCase()}${NOM_DU_ROLE[emploi].slice(1)} (${emploi})`]),
+) as Record<Emploi, string>;
 
-export type FamilleDUsages = keyof typeof FAMILLES_D_USAGES;
+/** L'état d'une paire, sous son spécimen (N033). */
+export const NOM_DE_L_ETAT: Record<EtatDePaire, string> = { 0: 'repos', 1: 'survol', 2: 'appui' };
+
+/** Le résultat d'un profil (N035) : « Vivid ✓ », « Vivid ✗ 2 ». */
+export function resultatDuProfil(profil: Profil, manquees: number): string {
+  return manquees === 0 ? `${NOM_DU_PROFIL[profil]} ✓` : `${NOM_DU_PROFIL[profil]} ✗ ${manquees}`;
+}
+
+/** Le même résultat, pour l'assistance technique ([UI-09]). */
+export function resultatDuProfilEnMots(profil: Profil, manquees: number): string {
+  if (manquees === 0) return `${NOM_DU_PROFIL[profil]} : toutes les garanties sont respectées`;
+  return manquees === 1 ? `${NOM_DU_PROFIL[profil]} : 1 garantie manquée` : `${NOM_DU_PROFIL[profil]} : ${manquees} garanties manquées`;
+}
+
+/** Les textes de la carte « Garanties de contraste » ([UI-09], N031 à N038). */
+export const TEXTES_DES_GARANTIES = {
+  theme: (mode: Mode) => `Thème ${NOM_DU_MODE[mode]}`,
+  profils: 'Profil des garanties',
+  textes: 'Textes lisibles',
+  visibles: 'Éléments visibles',
+  minimum: (seuil: number) => `minimum ${seuilEcrit(seuil)}:1`,
+  sur: 'sur',
+  fond: 'fond',
+  legende: 'Trait plein : repos · tireté : survol · pointillé : appui. L’état avance d’une nuance, texte et fond ensemble.',
+  onSolid: 'on-solid est le fond de page du thème, neutral.50 du design system.',
+  decoratif: (numero: number) => `${numero} · séparateur, sans minimum de contraste`,
+  specimenBouton: 'Bouton',
+  specimenTexte: 'Texte',
+  autreTheme: (mode: Mode, nombre: number) => (nombre === 1
+    ? `Thème ${NOM_DU_MODE[mode]} : 1 garantie manquée`
+    : `Thème ${NOM_DU_MODE[mode]} : ${nombre} garanties manquées`),
+  voirLeTheme: (mode: Mode) => `Voir le thème ${NOM_DU_MODE[mode]}`,
+  echec: (etat: EtatDePaire, contraste: number, seuil: number) =>
+    `${NOM_DE_L_ETAT[etat][0].toUpperCase()}${NOM_DE_L_ETAT[etat].slice(1)} : ${contrasteEcrit(contraste)} pour un minimum de ${seuilEcrit(seuil)}:1`,
+  numeros: (premier: string, second: string) => `${premier} / ${second}`,
+  resultat: (tenue: boolean, contraste: number) => `${tenue ? '✓' : '✗'} ${ecrireContraste(contraste)}`,
+  voirLesGaranties: 'Voir les garanties',
+  bilan: (soft: string, vivid: string) => `Garanties : ${soft} · ${vivid}`,
+} as const;
+
+/** Les textes du détail d'une nuance ([UI-10], N039). */
+export const TEXTES_DU_DETAIL = {
+  titre: (profil: Profil, numero: number) => `${NOM_DU_PROFIL[profil]} · ${numero}`,
+  reference: '◆ Votre couleur de référence exacte',
+  sertA: 'Sert à',
+  nuanceLibre: 'Nuance libre : aucun usage prévu',
+  mesures: 'Mesures détaillées',
+  titreDuFond: 'on-solid · fond du thème',
+  fondDePage: (debut: number, fin: number) => `Fond de page du thème, neutral.50 du design system. Il se pose en texte sur solid ${debut} à ${fin}.`,
+  garantie: (tenue: boolean, sens: string, contraste: number) => `${tenue ? '✓' : '✗'} ${sens} : ${contrasteEcrit(contraste)}`,
+  sur: (partenaire: string) => `sur ${partenaire}`,
+  dessus: (partenaire: string) => `${partenaire} dessus`,
+} as const;
 
 /** Les textes du nuancier et de son détail ([UI-04]). */
 export const TEXTES_DU_NUANCIER = {
   fond: 'Fond',
   modifier: 'Modifier',
-  familles: 'Familles d’usages',
   reference: 'Référence',
   copier: 'Copier le code',
   copie: 'Code copié',
-  estLaReference: 'Cette nuance est votre couleur de référence exacte.',
-  aucunUsage: 'Aucun usage prédéfini',
-  mesuresAvancees: 'Mesures avancées',
-  sansPromesse: 'Cet usage n’a pas de promesse de contraste.',
-  titreDeNuance: (profil: string, numero: number, hexa: string) => `${profil} · nuance ${numero} · ${hexa}`,
   etiquetteDeNuance: (profil: string, numero: number, hexa: string) => `Profil ${profil}, nuance ${numero}, couleur ${hexa}`,
   memeCouleur: (numero: number) => `Même couleur que la nuance ${numero}.`,
   avecLeFond: (valeur: string) => `Contraste avec le fond : ${valeur}`,
@@ -404,11 +440,9 @@ export const TEXTES_DU_NUANCIER = {
   avecLeNoir: (valeur: string) => `Avec le noir : ${valeur}`,
   tresProche: (profil: string) => `Très proche de ${profil}`,
   oklch: (L: number, C: number, H: number) => `Luminosité L : ${ecrireArrondi(L, 3)} · chroma C : ${ecrireArrondi(C, 3)} · teinte H : ${Math.round(H) % 360}°`,
-  titreDUsage: (nom: string, cran: number) => `${nom} · nuance ${cran}`,
-  titreDUsageSurFond: (nom: string) => `${nom} · ${TEXTES_DE_LA_PLANCHE.fondDuTheme}`,
-  minimum: (seuil: number) => `Minimum demandé : ${seuilEcrit(seuil)}:1`,
-  plage: (numeros: readonly number[]) => `nuances ${numeros.join(', ')}`,
   revenirAuTheme: (mode: Mode) => `Revenir au thème ${NOM_DU_MODE[mode]}`,
+  fondCourt: 'fond',
+  etiquetteDuFond: (hexa: string) => `on-solid, fond du thème, couleur ${hexa}`,
 } as const;
 
 const ETATS_DU_DECALAGE = ['', ' au survol', ' à l’appui'];
@@ -426,30 +460,6 @@ function membre(membrePaire: MembrePaire): string {
 export function associationEcrite(association: Association, etat: EtatDePaire): string {
   const second = association.second === 'fond' ? 'fond de page' : NOM_DE_L_EMPLOI[association.second];
   return `${NOM_DE_L_EMPLOI[association.premier]} sur ${second}${ETATS_DU_DECALAGE[etat]}`;
-}
-
-/** Ce qu'une nuance de l'aperçu montre dans son détail ([UI-04]). */
-export interface DetailDuCran {
-  readonly nom: string;
-  readonly hexa: string;
-  readonly fond: number;
-  readonly seuilTenu: number | null;
-  readonly blanc: number;
-  readonly noir: number;
-  readonly emplois: readonly EmploiDUnCran[];
-}
-
-export function detailDuCran(detail: DetailDuCran): string {
-  const seuil = detail.seuilTenu === null ? 'Aucun minimum atteint' : `${seuilEcrit(detail.seuilTenu)}:1`;
-  const emplois = detail.emplois.length > 0 ? detail.emplois.map(emploiEcrit).join(', ') : 'Aucun usage prédéfini';
-  return [
-    detail.nom,
-    detail.hexa,
-    `Contraste avec le fond : ${contrasteEcrit(detail.fond)} · minimum atteint : ${seuil}`,
-    `Avec le blanc : ${contrasteEcrit(detail.blanc)}`,
-    `Avec le noir : ${contrasteEcrit(detail.noir)}`,
-    emplois,
-  ].join(' · ');
 }
 
 /** Les niveaux WCAG d'un contraste, en mots ([VER-13]). */

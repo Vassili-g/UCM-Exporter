@@ -95,6 +95,7 @@ const importer = (contenu) => ({ fichier: { dans: '#panneau-planche input[type="
 
 const ouvrirLaConfiguration = { clic: '[aria-label="Ouvrir les réglages communs"]' };
 const dessinerLaPalette = { clic: '.generation-ligne .btn' };
+const deplierLaDerive = { clic: '[aria-label="Dérive de teinte"] .carte-bascule' };
 
 /** Sept palettes : une de plus que le seuil au-delà duquel tout dessiner se confirme. */
 const SEPT_PALETTES = [
@@ -163,7 +164,7 @@ const ETATS = [
     id: 'promesses-manquees',
     titre: 'Palette avec promesses manquées',
     quand: 'La courbe claire place le cran 700 à 0,55 : text sur surface ne tient plus 4,5 en clair.',
-    regarder: 'Le verdict et la première promesse manquée sans défiler à 440 × 520, et le focus clavier déplacé sur la rampe.',
+    regarder: 'La bascule « Soft ✗ » et « Vivid ✗ » des garanties, la ligne text sur surface choisie en échec, et le focus clavier déplacé sur la rampe.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU, JAUNE], cranSeptCentsPlusClair)),
@@ -174,7 +175,7 @@ const ETATS = [
     id: 'alertes-seules',
     titre: 'Palette avec alertes seules',
     quand: 'Une référence jaune, plus vive que vivid : Vivid la porte au 300 en Light.',
-    regarder: 'Le verdict « Prête », la ligne « Référence : Vivid · nuance 300 », et la notice en couleur secondaire.',
+    regarder: 'Les garanties respectées, la ligne « Référence : Vivid · nuance 300 », et la notice en couleur secondaire.',
     existe: true,
     atteinte: [etatDuFichier(rangee([JAUNE, BLEU]))],
   },
@@ -260,7 +261,7 @@ const ETATS = [
     quand: 'Le designer déplie l’éditeur d’une palette au préréglage, soft et vivid liés.',
     regarder: 'Une seule ligne brisée, le pivot sur 0° dans la colonne 600, qui porte #1E6FD9, les deux poignées et leurs étiquettes, la bande et la rampe sous les mêmes colonnes.',
     existe: true,
-    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '.bouton-deplier' }],
+    atteinte: [etatDuFichier(rangee([BLEU])), deplierLaDerive],
   },
   {
     id: 'derive-deliee-libre',
@@ -270,7 +271,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       etatDuFichier(rangee([{ ...BLEU, derive: { lien: false, soft: BLEU.derive.soft, vivid: { clair: 20, sombre: -25, origine: 'libre' } } }])),
-      { clic: '.bouton-deplier' },
+      deplierLaDerive,
     ],
   },
   {
@@ -279,7 +280,7 @@ const ETATS = [
     quand: 'La référence #0B1F4B est plus sombre que le bout sombre de la rampe.',
     regarder: 'La poignée sombre masquée, sa note sous le graphe, et le pivot dans la colonne 950, qui porte la référence.',
     existe: true,
-    atteinte: [etatDuFichier(rangee([palette('p-2b7e40c1', 'Nuit', '#0B1F4B')])), { clic: '.bouton-deplier' }],
+    atteinte: [etatDuFichier(rangee([palette('p-2b7e40c1', 'Nuit', '#0B1F4B')])), deplierLaDerive],
   },
   {
     id: 'dessin-en-cours',
@@ -459,23 +460,15 @@ const ETATS = [
     quand: 'Une référence peu intense, #A0B599 : Soft la porte, dans les deux thèmes. Le designer déplie la dérive.',
     regarder: 'La ligne « Référence : Soft · nuance 400 », le ◆ dans la pastille Soft 400, puis dans l’éditeur la ligne et la rampe de Soft, et le pivot dans la colonne 400.',
     existe: true,
-    atteinte: [etatDuFichier(rangee([palette('p-6a0b5990', 'Sauge', '#A0B599')])), { clic: '.bouton-deplier' }],
+    atteinte: [etatDuFichier(rangee([palette('p-6a0b5990', 'Sauge', '#A0B599')])), deplierLaDerive],
   },
   {
     id: 'reference-vivid',
     titre: 'Référence Vivid',
     quand: 'Une référence intense, #A855F7 : Vivid la porte, en 600 en Light et en 700 en Dark. Le designer passe au thème Dark.',
-    regarder: 'Le ◆ dans la pastille Vivid 700 du thème Dark, la ligne « Référence : Vivid · nuance 700 », et la promesse à corriger que l’ancrage fait apparaître.',
+    regarder: 'Le ◆ dans la pastille Vivid 700 du thème Dark, la ligne « Référence : Vivid · nuance 700 », et la garantie manquée que l’ancrage fait apparaître.',
     existe: true,
     atteinte: [etatDuFichier(rangee([palette('p-a855f700', 'Violet', '#A855F7')])), { clic: '.nuancier-tete .bascule-option:nth-child(2)' }],
-  },
-  {
-    id: 'promesse-choisie',
-    titre: 'Promesse choisie',
-    quand: 'Le designer clique « Voir les deux couleurs » sous « Texte coloré sur Fond léger » : ses deux couleurs sont désignées.',
-    regarder: 'Les deux pastilles marquées d’un trait par profil, et le détail : l’association, le minimum, un spécimen par profil et son résultat.',
-    existe: true,
-    atteinte: [etatDuFichier(rangee([BLEU, JAUNE], cranSeptCentsPlusClair)), { clic: '[data-geste="inspecter"]' }],
   },
   {
     id: 'fond-personnalise',
@@ -510,49 +503,49 @@ const ETATS = [
     id: 'garanties-respectees',
     titre: 'Garanties respectées',
     quand: 'Bleu tient toutes ses garanties : la carte s’ouvre sur text sur surface.',
-    regarder: null,
-    existe: false,
-    attendu: 'V4.2',
+    regarder: 'La bascule « Soft ✓ » et « Vivid ✓ », Vivid pressé, trois arcs de 100 vers 700, 200 vers 800 et 300 vers 900 sur la réglette, et les numéros sous chaque spécimen.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU]))],
   },
   {
     id: 'garantie-en-echec',
     titre: 'Garantie en échec',
     quand: 'La courbe claire place le cran 700 à 0,55 : text sur surface manque 4,5 en Light.',
-    regarder: null,
-    existe: false,
-    attendu: 'V4.7',
+    regarder: 'La bascule « ✗ », la ligne en échec choisie d’office, son arc de la couleur de danger, l’état fautif et ses liens vers les réglages.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU, JAUNE], cranSeptCentsPlusClair))],
   },
   {
     id: 'garantie-autre-theme',
     titre: 'Garantie de l’autre thème',
     quand: 'L’aperçu montre le thème Dark, et le thème Light a des garanties manquées : le designer suit la ligne qui les compte.',
-    regarder: null,
-    existe: false,
-    attendu: 'V4.5',
+    regarder: 'L’aperçu revenu au thème Light, « Revenir au thème Dark » dans son en-tête, et la carte des garanties sur les échecs du thème Light.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU, JAUNE], cranSeptCentsPlusClair)), { clic: '.nuancier-tete .bascule-option:nth-child(2)' }, { clic: '.autre-theme .lien-de-constat' }],
   },
   {
     id: 'detail-de-la-reference',
     titre: 'Détail de la référence',
     quand: 'Le designer choisit la nuance Vivid 600 de Bleu, qui porte la référence.',
-    regarder: null,
-    existe: false,
-    attendu: 'V5.1',
+    regarder: 'La grande pastille, « Vivid · 600 », « ◆ Votre couleur de référence exacte », et sous « Sert à » les rôles border-control et focus avec leurs garanties et les numéros du partenaire.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '[aria-label^="Profil Vivid, nuance 600,"]' }],
   },
   {
     id: 'nuance-libre',
     titre: 'Nuance libre',
     quand: 'Le designer choisit la nuance Vivid 500, qu’aucun rôle n’emploie.',
-    regarder: null,
-    existe: false,
-    attendu: 'V5.4',
+    regarder: '« Nuance libre : aucun usage prévu », son contraste avec le fond, et les mesures détaillées repliées.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '[aria-label^="Profil Vivid, nuance 500,"]' }],
   },
   {
     id: 'cartes-repliees',
     titre: 'Cartes repliées',
-    quand: 'Une palette aux profils confondus : les cartes Intensités et Dérive de teinte sont repliées.',
-    regarder: null,
-    existe: false,
-    attendu: 'V6.1',
+    quand: 'Bleu à l’ouverture : les cartes Intensités et Dérive de teinte sont repliées.',
+    regarder: 'Les deux cartes repliées sur une ligne chacune, leur chevron, et leur résumé aligné à droite.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU]))],
   },
   {
     id: 'generation-partielle',

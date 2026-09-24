@@ -220,7 +220,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/configuration.ts     les champs de la configuration, fonds et seuils compris, et les palettes que chacun touche
   src/importation.ts       un fichier importé, classé comme la recette rangée, et son écart avec elle
   src/rapport.ts           le rapport de vérification : crans, promesses, alertes, empreinte et écarts du dernier dessin
-  src/presentation.ts      les promesses manquées groupées, la place de chaque alerte et le réglage que chaque message ouvre
+  src/presentation.ts      les promesses manquées groupées, la place de chaque alerte, le réglage que chaque message ouvre, les accolades de l'aperçu
   src/planche/modele.ts    le modèle pur d'un cadre de planche : cadres, textes, peintures, noms de calque, empreinte
   src/planche/fraicheur.ts chaque cadre à jour, périmé ou jamais dessiné, et les cadres orphelins et copiés
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
@@ -231,7 +231,9 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
   src/ui/ongletPalettes.ts le sélecteur, puis « Configuration de la palette » en cartes, chaque message sous la sienne
   src/ui/carte.ts          une carte de la configuration, fixe ou repliable, avec son résumé
-  src/ui/nuancier.ts       l'aperçu peint du fond du thème : pastilles en grille, plages des usages, détail d'une nuance
+  src/ui/nuancier.ts       l'aperçu peint du fond du thème : pastille on-solid, pastilles en grille, accolades des rôles, détail d'une nuance
+  src/ui/garanties.ts      la carte des garanties : bascule Soft/Vivid, réglette et arcs, une ligne par association
+  src/ui/specimens.ts      le spécimen d'un rôle : bouton, texte, champ, anneau, trait ou aplat
   src/ui/selecteur.ts      la palette ouverte, en liste déroulante avec la pastille de chaque référence
   src/ui/creation.ts       une palette neuve, par sa référence ou par la couleur de la sélection
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer

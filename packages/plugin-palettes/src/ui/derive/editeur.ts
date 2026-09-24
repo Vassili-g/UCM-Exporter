@@ -10,6 +10,7 @@
  * (E21).
  */
 import {
+  PROFILS,
   boutsDe,
   ecrireArrondi,
   referenceDe,
@@ -25,7 +26,7 @@ import {
 import { lireNombre } from '../../configuration';
 import { appliquerPrereglage, lierLesProfils, prereglageDe, reglerBout } from '../../edition';
 import type { AnalyseDePalette } from '../../analyse';
-import { TEXTES_DE_LA_DERIVE, bilanDesPromesses, repereTailwind, valeurDePoignee, verdict } from '../textes';
+import { TEXTES_DES_GARANTIES, TEXTES_DE_LA_DERIVE, repereTailwind, resultatDuProfil, valeurDePoignee } from '../textes';
 import { CADRE, HAUTEUR_TOTALE, createGraphe } from './graphe';
 import { angleDuGlisser, echelleDe } from './geometrie';
 
@@ -35,6 +36,8 @@ export interface GestesDeLEditeur {
   previsualiser(palette: Palette): void;
   /** À la fin d'un geste : la palette se range. */
   valider(palette: Palette): void;
+  /** « Voir les garanties » mène à leur carte ([DER-17]). */
+  voirLesGaranties(): void;
 }
 
 export interface EditeurUi {
@@ -302,11 +305,19 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
   const note = document.createElement('p');
   note.className = 'ligne-secondaire';
 
-  // Le bilan suit le réglage ; il ne s'annonce qu'à la fin du geste, jamais à chaque mouvement ([DER-17]).
-  const bilan = document.createElement('p');
+  // Le résultat des garanties suit le réglage ; il ne s'annonce qu'à la fin du geste, jamais à chaque mouvement ([DER-17]).
+  const bilan = document.createElement('span');
   bilan.className = 'bilan-de-la-derive';
   bilan.setAttribute('aria-live', 'polite');
-  element.append(entete, confirmation, svg, zoneDesReglettes, note, bilan);
+  const voirLesGaranties = document.createElement('button');
+  voirLesGaranties.type = 'button';
+  voirLesGaranties.className = 'lien-de-constat';
+  voirLesGaranties.textContent = TEXTES_DES_GARANTIES.voirLesGaranties;
+  voirLesGaranties.addEventListener('click', () => gestes.voirLesGaranties());
+  const ligneDuBilan = document.createElement('p');
+  ligneDuBilan.className = 'ligne-du-bilan';
+  ligneDuBilan.append(bilan, voirLesGaranties);
+  element.append(entete, confirmation, svg, zoneDesReglettes, note, ligneDuBilan);
 
   // Ctrl+Z ou Cmd+Z défait le dernier réglage, hors d'un champ texte (E21).
   element.addEventListener('keydown', (evenement) => {
@@ -330,7 +341,9 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     if (lie) profil = ancrage.profil;
     graphe.afficher({ recette, palette, profil, rampe: rampes[profil].light, ancrage, echelle: echelleCourante() });
     if (!glisse && analyse) {
-      bilan.textContent = analyse.manquees === 0 ? bilanDesPromesses(analyse.promesses.length, analyse.promesses.length) : verdict(analyse.manquees);
+      const suivie = analyse;
+      const [soft, vivid] = PROFILS.map((duProfil) => resultatDuProfil(duProfil, suivie.promesses.filter((promesse) => promesse.profil === duProfil && promesse.verdict === 'manquee').length));
+      bilan.textContent = TEXTES_DES_GARANTIES.bilan(soft, vivid);
       bilan.dataset.etat = analyse.manquees > 0 ? 'manque' : 'pret';
     }
     // Le graphe s'est redessiné : la poignée qui avait le focus le reprend.

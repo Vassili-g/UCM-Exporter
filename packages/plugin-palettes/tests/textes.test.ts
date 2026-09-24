@@ -8,10 +8,13 @@ import type { GroupeDePromesses } from '../src/presentation';
 import {
   constatDAlerte,
   constatDeGroupe,
-  detailDuCran,
   dessinInterrompu,
   ecartDePeinture,
-  ligneDeLaDerive,
+  resultatDuProfil,
+  resultatDuProfilEnMots,
+  resumeDeLaDerive,
+  resumeDesIntensites,
+  TEXTES_DES_GARANTIES,
   niveauxEcrits,
   nommerChamp,
   recetteFuture,
@@ -156,21 +159,20 @@ test('l’exception de Figma et l’exemple d’écart se lisent dans le détail
   assert.match(ecart.detail ?? '', /soft\/light\/50 : couleur absente dans l’aperçu, #FAF5F5 sur la planche/);
 });
 
-test('E22 : la dérive repliée se résume sur une ligne, un profil ou deux', () => {
-  assert.equal(ligneDeLaDerive(RECETTE.palettes[0]), 'soft : Tailwind · nuances claires : −7,5° · nuances sombres : +5,1° · vivid : Personnalisée · nuances claires : +6,0° · nuances sombres : 0,0°');
+test('[UI-12] une carte repliée se résume : préréglage et synchronisation, origine et intensités, points à vérifier', () => {
+  assert.equal(resumeDeLaDerive(RECETTE.palettes[0], false, 0), 'Soft Tailwind · Vivid Personnalisée · désynchronisée');
   const liee = { ...RECETTE.palettes[0], derive: { ...RECETTE.palettes[0].derive, lien: true } };
-  assert.equal(ligneDeLaDerive(liee), 'Personnalisée · nuances claires : +6,0° · nuances sombres : 0,0°');
+  assert.equal(resumeDeLaDerive(liee, false, 1), 'Personnalisée · synchronisée · 1 point à vérifier');
+  assert.equal(resumeDeLaDerive(liee, true, 0), 'Désactivée pour une couleur presque grise');
+  assert.equal(resumeDesIntensites(undefined, undefined, { soft: 0.45, vivid: 0.95 }, 0), 'Communes · Soft 0,45 · Vivid 0,95');
+  assert.equal(resumeDesIntensites(undefined, 'vivid', { soft: 0.3, vivid: 0.3 }, 2), 'Palette de base Vivid · Soft 0,3 · Vivid 0,3 · 2 points à vérifier');
+  assert.equal(resumeDesIntensites('designer', 'vivid', { soft: 0.2, vivid: 0.8 }, 0), 'Propres · Soft 0,2 · Vivid 0,8');
 });
 
-test('[UI-04] le détail d’une nuance donne son nom, son hexa, ses contrastes et ses usages', () => {
-  const texte = detailDuCran({
-    nom: 'vivid.700',
-    hexa: '#0E5DC6',
-    fond: 5.768,
-    seuilTenu: 4.5,
-    blanc: 6.17,
-    noir: 3.4,
-    emplois: [{ emploi: 'solid', decalage: 0 }, { emploi: 'border-control', decalage: 1 }],
-  });
-  assert.equal(texte, 'vivid.700 · #0E5DC6 · Contraste avec le fond : 5,76:1 · minimum atteint : 4,5:1 · Avec le blanc : 6,17:1 · Avec le noir : 3,40:1 · Fond plein (solid), Bordure de contrôle (border-control) au survol');
+test('[UI-09] le résultat d’un profil se lit en signe et en mots', () => {
+  assert.equal(resultatDuProfil('soft', 0), 'Soft ✓');
+  assert.equal(resultatDuProfil('vivid', 2), 'Vivid ✗ 2');
+  assert.equal(resultatDuProfilEnMots('vivid', 1), 'Vivid : 1 garantie manquée');
+  assert.equal(resultatDuProfilEnMots('soft', 0), 'Soft : toutes les garanties sont respectées');
+  assert.equal(TEXTES_DES_GARANTIES.echec(0, 2.924, 3), 'Repos : 2,92:1 pour un minimum de 3:1');
 });

@@ -20,8 +20,6 @@ export interface OptionsDuBloc {
   /** Les réglages que le message nomme ; chacun devient un lien qui l'ouvre. */
   readonly cibles?: readonly CibleDAction[];
   readonly ouvrir?: (cible: CibleDAction) => void;
-  /** Désigne dans le nuancier les deux couleurs que le message relie ([UI-04]). */
-  readonly inspecter?: () => void;
 }
 
 /**
@@ -52,26 +50,17 @@ export function blocDeConstat(constat: ConstatIllustre, severite: Severite, opti
   const geste = paragraphe(constat.geste);
   geste.className = 'constat-geste';
   bloc.append(geste);
-  const { cibles, ouvrir, inspecter } = options;
-  if ((cibles && cibles.length > 0 && ouvrir) || inspecter) {
+  const { cibles, ouvrir } = options;
+  if (cibles && cibles.length > 0 && ouvrir) {
     const liens = document.createElement('div');
     liens.className = 'constat-liens';
-    if (inspecter) {
-      const voir = document.createElement('button');
-      voir.type = 'button';
-      voir.className = 'lien-de-constat';
-      voir.dataset.geste = 'inspecter';
-      voir.textContent = TEXTES.voirLesDeuxCouleurs;
-      voir.addEventListener('click', () => inspecter());
-      liens.append(voir);
-    }
-    for (const cible of ouvrir ? cibles ?? [] : []) {
+    for (const cible of cibles) {
       const lien = document.createElement('button');
       lien.type = 'button';
       lien.className = 'lien-de-constat';
       lien.dataset.cible = cible;
       lien.textContent = LIBELLES_DES_CIBLES[cible];
-      lien.addEventListener('click', () => ouvrir?.(cible));
+      lien.addEventListener('click', () => ouvrir(cible));
       liens.append(lien);
     }
     bloc.append(liens);
@@ -94,7 +83,6 @@ export interface Message {
   readonly cibles: readonly CibleDAction[];
   /** Le poids du message dans le compte de son groupe : deux profils manqués comptent deux promesses. */
   readonly compte: number;
-  readonly inspecter?: () => void;
 }
 
 const TITRES: Record<Severite, string> = {
@@ -121,7 +109,7 @@ export function listeDesMessages(messages: readonly Message[], ouvrir: (cible: C
       titre.className = `constats-titre constats-titre-${severite}`;
       liste.append(titre);
     }
-    liste.append(blocDeConstat(message.constat, message.severite, { cibles: message.cibles, ouvrir, inspecter: message.inspecter }));
+    liste.append(blocDeConstat(message.constat, message.severite, { cibles: message.cibles, ouvrir }));
   }
   return liste;
 }

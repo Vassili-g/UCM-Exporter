@@ -271,26 +271,31 @@ dans « Intensités » ce que ce choix a modifié.
 
 ## Lot V3 : aperçu
 
-- [ ] **V3.1** Placer « ◆ Référence : Vivid · nuance 600 » au-dessus du
+- [x] **V3.1** Placer « ◆ Référence : Vivid · nuance 600 » au-dessus du
   nuancier, sous le titre de la carte. La bascule Light/Dark et le fond du
   thème passent dans l’en-tête de la carte.
-- [ ] **V3.2** Ajouter avant les rampes une pastille `on-solid`, peinte du
+- [x] **V3.2** Ajouter avant les rampes une pastille `on-solid`, peinte du
   fond du thème, sur la hauteur des deux rangées, avec un contour tireté qui
   la détache de la surface. Elle se choisit comme une nuance ; son détail
   suit V5.3.
-- [ ] **V3.3** Remplacer les familles d’usages par deux lignes d’accolades à
+- [x] **V3.3** Remplacer les familles d’usages par deux lignes d’accolades à
   trait fin, sous les numéros. Ligne 1 : `on-solid`, `surface` (100 à 300),
   `solid · text` (700 à 900). Ligne 2 : `border-decorative` (300),
   `border-control · focus` (600 à 800). Chaque accolade porte le nom du rôle,
   puis son nom français dessous. Les plages se calculent depuis
   `TABLE_DES_EMPLOIS` et `decalagesDeLEmploi`, sans table recopiée.
-- [ ] **V3.4** Une accolade ne couvre que des nuances de rôle. Un libellé plus
+  Fait : `accoladesDe` (`src/presentation.ts`) réunit les rôles qui partent
+  de la même nuance, sur l’union de leurs plages : `focus` n’a pas d’état et
+  se lit avec `border-control`, comme le plan l’écrit.
+- [x] **V3.4** Une accolade ne couvre que des nuances de rôle. Un libellé plus
   large que son accolade déborde sur les colonnes libres de sa ligne, sans
   chevaucher le libellé voisin. Vérifier à 500 px et à 600 px.
-- [ ] **V3.5** Retirer `FAMILLES_D_USAGES`, le sélecteur de famille sous
+  Fait : chaque libellé prend une zone libre de sa ligne, calculée de gauche
+  à droite ; la vérification visuelle à 500 et 600 px reste à faire.
+- [x] **V3.5** Retirer `FAMILLES_D_USAGES`, le sélecteur de famille sous
   520 px et leurs textes. Les états repos, survol et appui ne se dessinent pas
   dans les accolades ; le détail d’une nuance les nomme.
-- [ ] **V3.6** Conserver la grille WAI-ARIA des pastilles (R4.9) et les
+- [x] **V3.6** Conserver la grille WAI-ARIA des pastilles (R4.9) et les
   signes de R2.4. Les accolades ne sont pas focalisables.
 
 Critère : sans cliquer, le designer lit quelles nuances servent à quel rôle,
@@ -298,42 +303,49 @@ et retrouve la couleur du texte posé sur un fond plein.
 
 ## Lot V4 : carte des garanties
 
-- [ ] **V4.1** Ajouter la carte « Garanties de contraste » sous l’aperçu.
+- [x] **V4.1** Ajouter la carte « Garanties de contraste » sous l’aperçu.
   Elle suit le thème choisi dans l’aperçu et le nomme dans son en-tête. Elle
   est dépliée à l’ouverture ; son état replié se conserve pendant la session.
-- [ ] **V4.2** Poser une bascule Soft/Vivid. Chaque segment porte le résultat
+- [x] **V4.2** Poser une bascule Soft/Vivid. Chaque segment porte le résultat
   de son profil : ✓, ou ✗ suivi du nombre de promesses manquées. À
   l’ouverture d’une palette, le profil porteur est choisi. Repliée, la carte
   garde ces deux résultats dans son en-tête.
-- [ ] **V4.3** Dessiner une réglette : la case `on-solid`, puis les onze
+- [x] **V4.3** Dessiner une réglette : la case `on-solid`, puis les onze
   nuances du profil choisi, numérotées, sur le fond du thème. La garantie
   choisie s’y trace par un arc par état, de la nuance du premier membre à
   celle du second. Le repos a un trait plein, le survol un tireté, l’appui un
   pointillé ; une légende d’une ligne les nomme. Un arc en échec prend la
   couleur de danger.
-- [ ] **V4.4** Lister une ligne par association (section 9.4 de la
+  Fait : `src/ui/garanties.ts`, réglette SVG sur le fond du thème.
+- [x] **V4.4** Lister une ligne par association (section 9.4 de la
   spécification), en deux groupes : « Textes lisibles », minimum texte, et
   « Éléments visibles », minimum non textuel. Chaque groupe affiche son
   minimum, lu dans la recette. Une ligne porte la relation (`text` sur
   `surface`), son nom français, puis un spécimen par état. Sous chaque
   spécimen : les deux numéros (« 700 / 100 », « fond / 700 »), le ratio avec
   ✓ ou ✗, puis l’état.
-- [ ] **V4.5** Une ligne se choisit au clic ou au clavier. Au départ, la
+- [x] **V4.5** Une ligne se choisit au clic ou au clavier. Au départ, la
   première ligne en échec est choisie ; sinon `text` sur `surface`. Le choix
   redessine les arcs et se conserve au changement de profil. Une garantie
   choisie depuis un message situé dans l’autre thème bascule le thème de
   l’aperçu et offre le retour (R4.7).
-- [ ] **V4.6** Terminer la liste par une ligne sans spécimen :
+  Fait : les promesses n’étant plus des messages, la ligne « Thème Light :
+  2 garanties manquées · Voir le thème Light » de la carte joue ce rôle.
+- [x] **V4.6** Terminer la liste par une ligne sans spécimen :
   `border-decorative` 300, séparateur sans minimum de contraste.
-- [ ] **V4.7** Porter l’échec sur sa ligne : état fautif, ratio et minimum,
+- [x] **V4.7** Porter l’échec sur sa ligne : état fautif, ratio et minimum,
   puis le lien vers le réglage qui peut agir, choisi par
   `ciblesDeLaPromesse` et routé par `data-cible`. Le groupe de messages
   « Promesses à corriger » disparaît de la liste des messages. Le compte des
   contrôles reste celui de `[VER-06]`, par paire, thème et profil.
-- [ ] **V4.8** Retirer le verdict « Prête » de la tête de la configuration et
+  Fait : les promesses quittent `messagesDeLaPalette` ; « Voir les deux
+  couleurs » disparaît avec elles.
+- [x] **V4.8** Retirer le verdict « Prête » de la tête de la configuration et
   du bilan sous l’éditeur de dérive. Le bilan de la dérive (`[DER-17]`)
   renvoie à la carte des garanties.
-- [ ] **V4.9** Donner à chaque ligne une étiquette accessible qui dit la
+  Fait : « Garanties : Soft ✓ · Vivid ✗ 2 » et « Voir les garanties » sous
+  les réglettes de la dérive.
+- [x] **V4.9** Donner à chaque ligne une étiquette accessible qui dit la
   relation, les numéros, les ratios et le résultat. La réglette et ses arcs
   sont décoratifs pour l’assistance technique. Le résultat du profil non
   affiché s’annonce dans la bascule.
@@ -343,20 +355,20 @@ garanties, entre quelles nuances et dans quel état une garantie échoue.
 
 ## Lot V5 : détail d’une nuance
 
-- [ ] **V5.1** En tête : grande pastille, « Vivid · 700 », code
+- [x] **V5.1** En tête : grande pastille, « Vivid · 700 », code
   hexadécimal, bouton Copier. La référence ajoute « ◆ Votre couleur de
   référence exacte ».
-- [ ] **V5.2** Sous « Sert à », une ligne par usage de la nuance : un
+- [x] **V5.2** Sous « Sert à », une ligne par usage de la nuance : un
   spécimen, le rôle et l’état (`solid` · repos), son nom français, puis la
   garantie qui le concerne avec le numéro du partenaire (« ✓ sur `surface`
   100 : 5,78:1 »). Un clic sur la garantie la choisit dans la carte des
   garanties.
-- [ ] **V5.3** La pastille `on-solid` a son propre détail : fond de page du
+- [x] **V5.3** La pastille `on-solid` a son propre détail : fond de page du
   thème, `neutral.50` du design system, texte posé sur `solid` 700 à 900,
   avec les garanties de ces trois états.
-- [ ] **V5.4** Une nuance sans rôle affiche « Nuance libre : aucun usage
+- [x] **V5.4** Une nuance sans rôle affiche « Nuance libre : aucun usage
   prévu » et son contraste avec le fond.
-- [ ] **V5.5** Replier sous « Mesures détaillées » les niveaux WCAG
+- [x] **V5.5** Replier sous « Mesures détaillées » les niveaux WCAG
   (`[VER-13]`), les contrastes avec le blanc et le noir, les valeurs OKLCH et
   la mention d’une nuance identique à une autre.
 

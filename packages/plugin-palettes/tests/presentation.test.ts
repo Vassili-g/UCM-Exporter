@@ -5,7 +5,7 @@ import test from 'node:test';
 import { recetteParDefaut, verifierPromesses, type Alerte, type Recette } from 'ucm-couleur';
 
 import { changerReference } from '../src/edition';
-import { ciblesDeLAlerte, groupesManques, placeDeLAlerte } from '../src/presentation';
+import { accoladesDe, ciblesDeLAlerte, groupesManques, placeDeLAlerte } from '../src/presentation';
 
 const DEFAUT = recetteParDefaut();
 const BLEU = changerReference(DEFAUT, {
@@ -63,4 +63,12 @@ test('[VER-11] [ENT-11] des profils confondus sous une palette de base forcée m
   const alerte: Alerte = { code: 'profils-confondus', palette: BLEU.id, crans: [], seuil: 0.02 };
   assert.deepEqual(ciblesDeLAlerte(alerte, { ...BLEU, base: 'vivid' }), ['intensites-palette']);
   assert.deepEqual(ciblesDeLAlerte(alerte, BLEU), ['intensites-communes']);
+});
+
+test('[UI-04] les accolades se déduisent de la table des emplois : deux lignes, des libellés qui ne se chevauchent pas', () => {
+  const decrire = accoladesDe(DEFAUT.crans).map((ligne) => ligne.map((accolade) => `${accolade.emplois.join('·')} ${accolade.debut}-${accolade.fin} [${accolade.libelle.debut}-${accolade.libelle.fin} ${accolade.libelle.alignement}]`));
+  assert.deepEqual(decrire, [
+    ['on-solid -1--1 [-2-0 center]', 'surface 1-3 [1-6 start]', 'solid·text 7-9 [7-10 start]'],
+    ['border-decorative 3-3 [1-5 center]', 'border-control·focus 6-8 [6-10 start]'],
+  ]);
 });
