@@ -2,6 +2,8 @@
  * Les gestes de la recette en fichier (section 10.1) : exporter, importer
  * avec l'écart et sa confirmation ([REC-08]), et, quand la recette rangée est
  * illisible ou future, repartir de la recette par défaut ([REC-11], E19).
+ * Sur une recette lisible, le rapport de vérification s'exporte aussi
+ * ([VER-01]).
  * L'onglet Planche les porte ; le bloquant de l'onglet Palettes aussi.
  */
 import type { Classement, Recette } from 'ucm-couleur';
@@ -27,6 +29,7 @@ export interface GestesDeLaRecetteUi {
 /** Ce que les gestes demandent au reste de l'interface. */
 export interface DemandesDeLaRecette {
   exporter(): void;
+  exporterLeRapport(): void;
   lire(texte: string): LectureDImport;
   /** Remplace la recette du fichier : l'import confirmé, ou le départ de la recette par défaut. */
   remplacer(recette: Recette): void;
@@ -52,12 +55,14 @@ export function createGestesDeLaRecette(demandes: DemandesDeLaRecette): GestesDe
 
   const repartir = createButton({ label: TEXTES_DE_LA_RECETTE.repartir, variant: 'secondary', onClick: () => montrer(confirmationDuDepart()) });
   repartir.hidden = true;
+  const rapport = createButton({ label: TEXTES_DE_LA_RECETTE.exporterLeRapport, variant: 'secondary', onClick: () => demandes.exporterLeRapport() });
   const ligne = document.createElement('div');
   ligne.className = 'creation-ligne';
   ligne.append(
     createButton({ label: TEXTES_DE_LA_RECETTE.exporter, variant: 'secondary', onClick: () => demandes.exporter() }),
     createButton({ label: TEXTES_DE_LA_RECETTE.importer, variant: 'secondary', onClick: () => fichier.click() }),
     repartir,
+    rapport,
     fichier,
   );
   const zone = document.createElement('div');
@@ -124,7 +129,9 @@ export function createGestesDeLaRecette(demandes: DemandesDeLaRecette): GestesDe
   return {
     element,
     afficher(classement) {
-      repartir.hidden = classement.etat !== 'future' && classement.etat !== 'illisible';
+      const bloquante = classement.etat === 'future' || classement.etat === 'illisible';
+      repartir.hidden = !bloquante;
+      rapport.hidden = bloquante;
     },
   };
 }

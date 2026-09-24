@@ -14,6 +14,8 @@ import { createOnglets } from 'ucm-plugin-socle/src/ui/Onglets';
 import { createResizeGrip } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
 import { lireLImport } from '../importation';
+import type { EcartDePeinture } from '../planche/peints';
+import { rapportDeLaRecette } from '../rapport';
 import type { PluginMessage } from '../messages';
 import { ecartsDePeinture } from '../planche/peints';
 import { createConfiguration } from './configuration';
@@ -83,8 +85,17 @@ function remplacerLaRecette(recette: Recette): void {
   panneauDeConfiguration.afficher();
 }
 
+/** Les écarts de peinture du dernier dessin, que le rapport reprend (L6.14). */
+let ecartsDuDernierDessin: readonly EcartDePeinture[] | null = null;
+
 const demandesDeLaRecette: DemandesDeLaRecette = {
   exporter: () => telecharger('palettes.recette.json', texteAExporter()),
+  exporterLeRapport() {
+    const recette = ongletPalettes.recette();
+    if (!recette) return;
+    const rapport = rapportDeLaRecette(recette, frontiere.empreinte(), dernierEtat?.profil ?? 'SRGB', ecartsDuDernierDessin);
+    telecharger('palettes.rapport.json', JSON.stringify(rapport, null, 2));
+  },
   lire: (texte) => lireLImport(texte, ongletPalettes.recette()),
   remplacer: remplacerLaRecette,
   recetteParDefaut,
@@ -132,6 +143,7 @@ travail.append(onglets.liste, ongletPalettes.element, ongletPlanche.element);
 
 // Pendant un dessin, aucun geste n'est possible : les panneaux se figent, la progression se lit.
 suivi.abonner((etat) => {
+  if (etat.phase === 'fini' && etat.resultat.issue === 'dessinee') ecartsDuDernierDessin = etat.ecarts;
   const enCours = etat.phase === 'en-cours';
   ongletPalettes.element.inert = enCours;
   ongletPlanche.element.inert = enCours;

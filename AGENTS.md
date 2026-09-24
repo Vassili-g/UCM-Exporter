@@ -218,6 +218,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
   src/configuration.ts     les champs de la configuration, fonds et seuils compris, et les palettes que chacun touche
   src/importation.ts       un fichier importé, classé comme la recette rangée, et son écart avec elle
+  src/rapport.ts           le rapport de vérification : crans, promesses, alertes, empreinte et écarts du dernier dessin
   src/planche/modele.ts    le modèle pur d'un cadre de planche : cadres, textes, peintures, noms de calque, empreinte
   src/planche/fraicheur.ts chaque cadre à jour, périmé ou jamais dessiné, et les cadres orphelins et copiés
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
@@ -236,7 +237,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
   src/ui/configuration.ts  courbes, parts, fonds et seuils derrière l'engrenage, avec la garantie des courbes
   src/ui/avance.ts         la section repliée « Avancé » d'une palette : ses parts propres et leur origine
-  src/ui/gestesDeLaRecette.ts exporter, importer avec l'écart, repartir de la recette par défaut
+  src/ui/gestesDeLaRecette.ts exporter la recette ou le rapport, importer avec l'écart, repartir de la recette par défaut
   src/ui/telechargement.ts le fichier proposé au designer, par un lien vers un blob
   src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG ; glisser, clavier, réglettes, préréglage, lien, annulation
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2

@@ -596,7 +596,7 @@ Spécification : [section 8.3](./RECHERCHE-PLUGIN-PALETTES.md#83-la-recette-comm
 - [x] **L7.3** Export de la recette [REC-07] ; import avec écart par
   identifiant et confirmation [REC-08].
 - [x] **L7.4** Gestes de sortie d'une recette illisible ou future (E19).
-- [ ] **L7.5** Rapport [VER-01] [VER-02], avec les écarts de L6.14.
+- [x] **L7.5** Rapport [VER-01] [VER-02], avec les écarts de L6.14.
 - [x] **L7.6** Galerie : import invalide, écart d'import, états bloquants
   avec leurs gestes.
 - [x] **L7.7** `test:ui` : exporter, modifier le JSON, importer, voir l'écart,

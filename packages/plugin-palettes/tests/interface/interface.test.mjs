@@ -1143,3 +1143,45 @@ test('le banc de galerie joue un fichier : l’écart d’import attend sa confi
     await page.close();
   }
 });
+
+/** Le rapport que « Exporter le rapport » propose, relu en JSON. */
+async function exporterLeRapport(page) {
+  const [telechargement] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Exporter le rapport' }).click(),
+  ]);
+  assert.equal(telechargement.suggestedFilename(), 'palettes.rapport.json');
+  return JSON.parse(readFileSync(await telechargement.path(), 'utf8'));
+}
+
+test('[VER-01] [VER-02] le rapport porte l’empreinte de la recette, ses palettes, et les écarts du dernier dessin', async () => {
+  const page = await ouvrirSur('planche-a-jour');
+  try {
+    await ouvrirLaPlanche(page);
+    const avant = await exporterLeRapport(page);
+    assert.equal(avant.empreinte, messageDe('planche-a-jour').empreinte);
+    assert.deepEqual(avant.palettes.map(({ nom }) => nom), ['Bleu', 'Jaune']);
+    assert.equal(avant.palettes[0].promesses.length, 56);
+    assert.equal(avant.ecartsDuDernierDessin, null, 'aucun dessin depuis l’ouverture');
+
+    await page.getByRole('button', { name: 'Dessiner toutes les palettes' }).click();
+    const peints = [{ palette: ID_DU_BLEU, nom: 'vivid/light/700', hexa: '#000000' }];
+    await envoyer(page, dessinDe((await dessinEnvoye(page, 1)).demande, { issue: 'dessinee', page: '40:1', cadres: [], peints }));
+    const apres = await exporterLeRapport(page);
+    assert.deepEqual(apres.ecartsDuDernierDessin.map(({ nom, peint }) => [nom, peint]), [['vivid/light/700', '#000000']]);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[VER-01] une recette illisible n’a pas de rapport à exporter', async () => {
+  const page = await ouvrir();
+  try {
+    await envoyer(page, messageDe('recette-illisible'));
+    await ouvrirLaPlanche(page);
+    assert.equal(await page.getByRole('button', { name: 'Exporter la recette' }).count(), 1);
+    assert.equal(await page.getByRole('button', { name: 'Exporter le rapport' }).count(), 0);
+  } finally {
+    await page.close();
+  }
+});

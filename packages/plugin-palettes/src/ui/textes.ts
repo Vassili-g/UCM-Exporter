@@ -508,6 +508,7 @@ export const TEXTES_DE_LA_RECETTE = {
   exporter: 'Exporter la recette',
   importer: 'Importer une recette',
   repartir: 'Repartir de la recette par défaut',
+  exporterLeRapport: 'Exporter le rapport',
   confirmerLImport: 'Importer',
   confirmerLeDepart: 'Repartir',
   annuler: 'Annuler',

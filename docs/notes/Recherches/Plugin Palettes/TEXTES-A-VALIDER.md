@@ -261,7 +261,7 @@ Lignes simples, sans les trois parties :
   parts de cette palette. », « Référence presque grise : les deux profils
   prennent sa part de chroma, {part}. » ;
 - recette en fichier : « Exporter la recette », « Importer une recette »,
-  « Repartir de la recette par défaut » ; confirmation du départ : « Repartir
+  « Repartir de la recette par défaut », « Exporter le rapport » ; confirmation du départ : « Repartir
   de la recette par défaut ? La recette rangée sera remplacée : exportez-la
   d'abord pour la garder. », gestes « Repartir » et « Annuler » ;
 - écart d'import : « Importer « {fichier} » ? », puis « Palettes ajoutées :
