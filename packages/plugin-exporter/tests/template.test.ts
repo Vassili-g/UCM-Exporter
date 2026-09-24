@@ -503,8 +503,9 @@ test('un conteneur fraîchement posé se relit en avertissements du marqueur, et
     'Layer « .ruleItem » : une règle @icons',
   ]);
   // Le séparateur n'écrit rien : il traverse la lecture sans un mot. Le
-  // conteneur n'est pas vide non plus, et l'absence d'intention se dit
-  // ailleurs, à l'export du composant.
+  // conteneur n'est pas vide non plus. L'export ne redit l'absence d'intention
+  // que lorsqu'aucune règle d'intention n'est posée : ici, la ligne du `@usage`
+  // marqué demande déjà le geste.
   const autres = rules.warnings.filter((message) => !message.includes('[À compléter]'));
   assert.deepEqual(autres, []);
 });

@@ -50,6 +50,8 @@ function variant(nom: string, enfantsEnPlus: any[] = [], reglagesDuTexte: any = 
 function monterFigma(options: {
   selection?: unknown[];
   avecRegles?: boolean;
+  /** Les règles du conteneur, à la place de la seule règle @usage rédigée. */
+  regles?: () => any[];
   /** Calques ajoutés à chaque variant. Une fabrique : les ids doivent différer. */
   enfantsDuVariant?: () => any[];
   /** Composants que la page reconnaît comme unifiés, par leur conteneur de règles. */
@@ -85,7 +87,10 @@ function monterFigma(options: {
 
   const enfantsDeLaPage: any[] = [componentSet];
   if (options.avecRegles !== false) {
-    enfantsDeLaPage.push(conteneurDeRegles('Button', [regleUsage('Action principale')]));
+    enfantsDeLaPage.push(conteneurDeRegles(
+      'Button',
+      options.regles?.() ?? [regleUsage('Action principale')],
+    ));
   }
   for (const nom of options.dependancesContractees ?? []) {
     enfantsDeLaPage.push(conteneurDeRegles(nom));
@@ -387,6 +392,41 @@ test('handleExportComponent exporte sans règles et diagnostique la documentatio
         'aucune règle @usage, @do, @dont ou @pairs n’est déclarée',
       )),
     );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+const INTENTION_ABSENTE = 'aucune règle @usage, @do, @dont ou @pairs n’est déclarée';
+
+test('une règle d’intention marquée ne produit que la ligne de son marqueur', async () => {
+  const figmaFaux = monterFigma({
+    regles: () => [regleUsage('[À compléter] Décrivez le composant.')],
+  });
+  try {
+    const messages = messagesDe(JSON.parse((await handleExportComponent()).content));
+
+    assert.deepEqual(messages.filter((message) => message.includes('@usage')), [
+      'Layer « .ruleItem » : une règle @usage contient encore « [À compléter] ». Le développeur '
+      + 'ne recevra pas sa documentation. Remplacez « [À compléter] » par le texte de la règle, '
+      + 'ou supprimez-la, puis réexportez.',
+    ]);
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('un conteneur sans règle d’intention redit l’intention absente', async () => {
+  const figmaFaux = monterFigma({
+    regles: () => [regle('@prop', [
+      node('TEXT', 'prop', [], { characters: 'variant.contained' }),
+      node('TEXT', 'content', [], { characters: '[À compléter] Décrivez cette valeur.' }),
+    ])],
+  });
+  try {
+    const messages = messagesDe(JSON.parse((await handleExportComponent()).content));
+
+    assert.equal(messages.filter((message) => message.includes(INTENTION_ABSENTE)).length, 1);
   } finally {
     figmaFaux.restaurer();
   }

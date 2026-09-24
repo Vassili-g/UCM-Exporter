@@ -13,6 +13,7 @@ import {
 } from './componentTree';
 import { indexContractedNamesInDocument, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
+import { TAGS_D_INTENTION } from './rulesModel';
 import { extractStructure } from './extractStructure';
 import { collidingVariantAxes, extractContractPropertyModel } from './parsers';
 import { buildContractPropertySurface } from './propertySurface';
@@ -413,7 +414,8 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   }
   warningCursor = warnings.length;
   const intent = rules.intent;
-  if (!intent) {
+  const intentionARediger = rules.tagsARediger.some((tag) => TAGS_D_INTENTION.includes(tag));
+  if (!intent && !intentionARediger) {
     pousserSansNode(warnings, 'Règles d’usage', {
       manque: 'aucune règle @usage, @do, @dont ou @pairs n’est déclarée.',
       impact: 'Le contrat dira comment utiliser le composant, mais pas quand.',

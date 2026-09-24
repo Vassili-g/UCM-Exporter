@@ -292,6 +292,11 @@ const FAMILLES = {
 
 type Famille = keyof typeof FAMILLES;
 
+/** Les familles qu'un lot du plan a fait taire sur ce scénario. */
+const CORRIGEES: ReadonlySet<Famille> = new Set<Famille>([
+  'intentionAbsente',
+]);
+
 /** Le nombre de lignes de chaque famille dans une liste de messages. */
 function compterLesFamilles(messages: readonly string[]): Record<Famille, number> {
   const comptes = {} as Record<Famille, number>;
@@ -312,7 +317,7 @@ async function exporterLeScenario() {
   }
 }
 
-test('le scénario du composant réel passe les lois et reproduit ses familles de messages', async () => {
+test('le scénario du composant réel passe les lois, et seules les familles corrigées se taisent', async () => {
   const { resultat, contrat, comptes } = await exporterLeScenario();
 
   // Le plugin, `meta.diagnostics` et la demande de fusion lisent la même liste.
@@ -320,7 +325,11 @@ test('le scénario du composant réel passe les lois et reproduit ses familles d
     contrat.meta.diagnostics.map((diagnostic: { message: string }) => diagnostic.message),
     resultat.warnings,
   );
-  for (const [famille, lignes] of Object.entries(comptes)) {
+  for (const [famille, lignes] of Object.entries(comptes) as Array<[Famille, number]>) {
+    if (CORRIGEES.has(famille)) {
+      assert.equal(lignes, 0, `la famille « ${famille} » sort encore`);
+      continue;
+    }
     assert.ok(lignes > 0, `la famille « ${famille} » ne sort pas`);
   }
 });

@@ -572,6 +572,19 @@ test('un composant sans conteneur n’a aucune règle qui attende son texte', as
   const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
 
   assert.equal(rules.aRediger, 0);
+  assert.deepEqual(rules.tagsARediger, []);
+});
+
+test('la lecture nomme les tags dont une règle attend encore son texte', async (t) => {
+  monterPage(t, [conteneur('Root', [
+    regle('@usage', [texte('content', `${MARQUEUR} Décrivez le composant.`)]),
+    regle('@do', [texte('content', 'Pour l’action principale.')]),
+    regle('@prop', [texte('prop', 'tone.a'), texte('content', `${MARQUEUR} Décrivez-la.`)]),
+  ])]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.deepEqual([...rules.tagsARediger].sort(), ['prop', 'usage']);
 });
 
 test('l’avertissement du marqueur nomme « .ruleItem », quel que soit le nom du calque', async (t) => {

@@ -2,8 +2,8 @@
 
 ## État
 
-- Lot courant : L0
-- Branche et `HEAD` : `main`, `4bb233f`
+- Lot courant : L1
+- Branche et `HEAD` : `main`, `800e5b4`
 - Dernière porte franchie : aucune
 
 La copie de travail partagée porte le travail non commité d'une autre session
@@ -56,3 +56,25 @@ copiés ; le build y tourne étape par étape.
 - Écart ou réserve : la référence était rouge à `9805abb` par le plan lui-même.
   La cause est identifiée et corrigée par `4bb233f` sans changer le sens du
   plan ; le travail a repris sans passer par le mainteneur.
+
+### L1 : une règle d'intention marquée ne produit que sa ligne
+
+- Commit : ce commit, après `800e5b4`.
+- Commandes :
+  - tests écrits d'abord, lancés dans le worktree contre le moteur de
+    `800e5b4` : quatre rouges, pour la raison attendue. Le scénario : « la
+    famille « intentionAbsente » sort encore ». L'export d'un `@usage` marqué :
+    deux lignes au lieu d'une. `tagsARediger` : absent.
+  - copie partagée, `rules`, `exportComponent`, `diagnosticsComposantReel`,
+    `template` et `code` : 196 verts, 0 échec. `tsc --noEmit` : 0.
+  - worktree avec les fichiers du lot, `npm test` : 0, dont 897 tests du
+    moteur. `npm run typecheck` : 0. Build étape par étape : 0 à chaque étape.
+- Résultats : `extractRules` expose `tagsARediger`. L'export ne pousse
+  « aucune règle @usage, @do, @dont ou @pairs » que si aucun tag de
+  `TAGS_D_INTENTION` n'a de règle marquée. Un conteneur dont la seule règle est
+  un `@prop` marqué garde ce message. Sur le scénario, la famille « intention
+  absente » passe de 1 à 0 ligne.
+- Mutations : dans le worktree, la condition redevient `if (!intent)` : le
+  scénario et « une règle d'intention marquée ne produit que la ligne de son
+  marqueur » sortent rouges. Restauré par copie : vert.
+- Écart ou réserve : aucun.

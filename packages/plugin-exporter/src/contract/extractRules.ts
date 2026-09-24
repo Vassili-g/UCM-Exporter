@@ -156,6 +156,12 @@ export type ExtractedRules = RulesResult & {
    * après en avoir créé vingt-deux.
    */
   aRediger: number;
+  /**
+   * Les tags qui ont au moins une règle marquée. L'export ne redit pas
+   * l'absence d'intention quand une règle d'intention attend son texte : la
+   * ligne du marqueur demande déjà le geste.
+   */
+  tagsARediger: readonly RuleTag[];
 };
 
 /**
@@ -506,6 +512,7 @@ export async function extractRules(
       sectionFound: false,
       releve,
       aRediger: 0,
+      tagsARediger: [],
     };
   }
 
@@ -602,5 +609,6 @@ export async function extractRules(
     sectionFound: true,
     releve,
     aRediger: [...nonRedigees.values()].reduce((total, regles) => total + regles.length, 0),
+    tagsARediger: [...nonRedigees.keys()],
   };
 }

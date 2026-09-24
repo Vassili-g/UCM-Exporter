@@ -19,6 +19,9 @@ export type RuleTag =
   | 'icons'
   | 'default';
 
+/** Les tags qui alimentent `intent`. */
+export const TAGS_D_INTENTION: readonly RuleTag[] = ['usage', 'do', 'dont', 'pairs'];
+
 /** Reconnaît un tag porté par une valeur de variante Figma. */
 export function ruleTagFromValue(value: string): RuleTag | null {
   const match = /^@?(usage|prop|boolean|do|dont|pairs|icons|default)$/i.exec(value);
