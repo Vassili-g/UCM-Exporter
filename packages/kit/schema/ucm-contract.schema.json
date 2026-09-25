@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-13.0.schema.json",
-  "title": "Contrat de composant UCM 13.0",
+  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-14.0.schema.json",
+  "title": "Contrat de composant UCM 14.0",
   "description": "Ce schéma décrit la FORME d'un contrat, pas sa cohérence interne. Il ne vérifie pas les renvois internes : une entrée de `variants` peut citer une vue absente de `variantViews`, une icône un slot absent de `structure`, un token une référence inexistante. Il ne contraint pas non plus le FORMAT des valeurs : une référence de token `{chemin.du.token}`, une mesure `120px` et une piste `1fr` y sont de simples chaînes, parce que TypeScript les décrit par des types que JSON Schema ne sait pas porter. Un contrat valide au sens de ce schéma reste donc à vérifier par un consommateur.",
-  "x-ucm-contract-version": "13.0",
+  "x-ucm-contract-version": "14.0",
   "$ref": "#/definitions/Contract",
   "definitions": {
     "Contract": {
@@ -72,12 +72,22 @@
           },
           "description": "Catalogue des emplacements de peintures et de contours."
         },
+        "viewEffects": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/EffectStyleUse"
+            }
+          },
+          "description": "Catalogue des applications d'effect styles."
+        },
         "variantViews": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/ContractVariantView"
           },
-          "description": "Vues exactes : cinq renvois vers les catalogues ci-dessus."
+          "description": "Vues exactes : six renvois vers les catalogues ci-dessus."
         },
         "propertyBindingDefinitions": {
           "type": "object",
@@ -119,6 +129,13 @@
           },
           "description": "Text styles réellement utilisés, liés à leurs tokens DTCG."
         },
+        "effectStyles": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/EffectStyleDefinition"
+          },
+          "description": "Effect styles réellement utilisés, liés à leurs tokens DTCG."
+        },
         "composes": {
           "type": "array",
           "items": {
@@ -156,7 +173,7 @@
         "contractVersion": {
           "type": "string",
           "description": "Version du schéma du contrat, à incrémenter à chaque changement de forme.",
-          "const": "13.0"
+          "const": "14.0"
         },
         "exportedAt": {
           "type": "string",
@@ -603,6 +620,10 @@
           "type": "string",
           "description": "Rotation du calque qui porte le flux du composant, à la règle de `ChildStructure.rotation`. Rare, mais un wrapper de dimensions tourné est une décision de design comme une autre, et rien d'autre ne la porterait."
         },
+        "opacity": {
+          "type": "string",
+          "description": "Opacité du composant, à la règle de `ChildStructure.opacity`."
+        },
         "wrap": {
           "type": "boolean",
           "const": true,
@@ -670,7 +691,7 @@
         },
         "size": {
           "$ref": "#/definitions/SlotSize",
-          "description": "Dimension figée du calque (ex. taille d'icône), relevée sur les axes que Figma tient en `Fixed`. Un axe en `Hug` ou en `Fill` n'apparaît pas ici : il est déjà décrit par l'absence, ou par `flexGrow` / `alignSelf`.\n\nSous un parent `layout: grid`, l'absence se lit autrement : remplir sa cellule est le défaut d'un enfant de grille (`stretch` en CSS) et c'est donc la cellule qui décide, décrite par `columnSizes` / `rowSizes` et par la place du layer. Un layer explicitement aligné dans sa cellule ne s'étire plus : sa dimension redevient la sienne, et l'absence reprend son sens ordinaire."
+          "description": "Dimension figée du calque (ex. taille d'icône), relevée sur les axes que Figma tient en `Fixed`. Un axe en `Hug` ou en `Fill` n'apparaît pas ici : il est déjà décrit par l'absence, ou par `flexGrow` / `alignSelf`.\n\nSous un parent `layout: grid`, l'absence se lit autrement : remplir sa cellule est le défaut d'un enfant de grille (`stretch` en CSS) et c'est donc la cellule qui décide, décrite par `columnSizes` / `rowSizes` et par la place du layer. Un layer explicitement aligné dans sa cellule ne s'étire plus : sa dimension redevient la sienne, et l'absence reprend son sens ordinaire.\n\nSous un parent sans auto layout, Figma ne propose que `Fixed`, sauf à un texte à taille automatique. L'absence y signale donc une dimension sans variable, que l'export a signalée, quelle que soit la contrainte du layer."
         },
         "structuralSize": {
           "$ref": "#/definitions/GridStructuralSize",
@@ -687,7 +708,7 @@
         "position": {
           "type": "string",
           "const": "absolute",
-          "description": "Le layer est hors du flux de son parent. `constraints` dit à quels bords il s'accroche, `inset` à quelle distance de ces bords il se trouve."
+          "description": "Le layer est placé par ses contraintes : il est hors du flux de son parent, ou son parent n'a pas d'auto layout. `constraints` dit à quels bords il s'accroche, `inset` à quelle distance de ces bords il se trouve."
         },
         "constraints": {
           "$ref": "#/definitions/LayoutConstraints"
@@ -699,6 +720,10 @@
         "rotation": {
           "type": "string",
           "description": "Rotation du layer, dans la convention et l'unité de CSS, donc l'opposé du compte trigonométrique de Figma, et prête pour `transform: rotate(…)`.\n\nL'origine est le centre du layer, le défaut de `transform-origin` : c'est aussi le point sur lequel `inset` est calculé, si bien qu'un layer hors du flux tourné retombe exactement où Figma le montre. Une rotation imbriquée se compose d'elle-même, comme dans Figma.\n\nAbsente sous le centième de degré : Figma stocke des flottants, et une transformation successive laisse des résidus qu'aucun écran ne rend."
+        },
+        "opacity": {
+          "type": "string",
+          "description": "Opacité du layer : la référence du token qui la porte, exprimé de 0 à 100 comme dans le panneau Figma. Absente quand le layer est opaque.\n\nSur une dépendance, elle n'est publiée que si l'instance diffère de son composant principal : le contrat de la dépendance porte déjà la sienne."
         },
         "columnStart": {
           "type": "number",
@@ -952,7 +977,7 @@
         "flex-column",
         "grid"
       ],
-      "description": "Disposition d'un conteneur, dans le vocabulaire de CSS.\n\n`grid` n'est pas un repli : Figma y expose deux gaps liables à une variable et le nombre de ses pistes, soit exactement ce que le contrat sait porter. Un conteneur sans auto layout reste décrit comme une rangée, faute de mieux, et le dit."
+      "description": "Disposition d'un conteneur, dans le vocabulaire de CSS.\n\n`grid` n'est pas un repli : Figma y expose deux gaps liables à une variable et le nombre de ses pistes, soit exactement ce que le contrat sait porter. Un conteneur sans auto layout reste décrit comme une rangée, sous un avertissement. Ses enfants ne suivent pas ce flux : chacun porte `position: \"absolute\"`, et ses contraintes le placent."
     },
     "GridTrack": {
       "type": "string",
@@ -1224,6 +1249,28 @@
       "additionalProperties": false,
       "description": "Emplacements exacts des peintures et contours d'une vue, par clé de feuille.\n\nUn groupe vide n'est pas écrit : un composant qui ne peint aucun contour n'a pas de `strokes`, et l'absence le dit aussi bien que `{}`. Les clés d'un groupe, elles, sont des données (elles nomment les couleurs) et une clé sans cible survivrait donc à l'élision."
     },
+    "EffectStyleUse": {
+      "type": "object",
+      "properties": {
+        "slotPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Chemin de slots depuis `structure.children` ; `[]` désigne la racine."
+        },
+        "style": {
+          "type": "string",
+          "description": "Clé d'une entrée de `Contract.effectStyles`."
+        }
+      },
+      "required": [
+        "slotPath",
+        "style"
+      ],
+      "additionalProperties": false,
+      "description": "Application d'un effect style à un calque d'une vue."
+    },
     "ContractVariantView": {
       "type": "object",
       "properties": {
@@ -1246,13 +1293,17 @@
         "paintPlacements": {
           "type": "string",
           "description": "Clé d'une entrée de `Contract.viewPaintPlacements`."
+        },
+        "effects": {
+          "type": "string",
+          "description": "Clé d'une entrée de `Contract.viewEffects`."
         }
       },
       "required": [
         "structure"
       ],
       "additionalProperties": false,
-      "description": "Vue publiée : cinq renvois vers les catalogues de parties.\n\nChaque partie est partagée par égalité stricte de son bloc JSON, aucun merge, aucun défaut, aucun héritage : résoudre les cinq renvois redonne la vue exacte, au bit près. Seule la granularité du partage change : deux vues qui ne diffèrent que par leurs peintures cessent de republier tout leur arbre de slots, et leur divergence reste lisible sur le renvoi qui diffère.\n\nUne partie vide n'est pas cataloguée : son renvoi est simplement absent, à la règle commune des valeurs neutres."
+      "description": "Vue publiée : six renvois vers les catalogues de parties.\n\nChaque partie est partagée par égalité stricte de son bloc JSON, aucun merge, aucun défaut, aucun héritage : résoudre les six renvois redonne la vue exacte, au bit près. Seule la granularité du partage change : deux vues qui ne diffèrent que par leurs peintures cessent de republier tout leur arbre de slots, et leur divergence reste lisible sur le renvoi qui diffère.\n\nUne partie vide n'est pas cataloguée : son renvoi est simplement absent, à la règle commune des valeurs neutres."
     },
     "PropertyBindingDefinition": {
       "type": "object",
@@ -1748,6 +1799,86 @@
       },
       "additionalProperties": false,
       "description": "Les propriétés d'un text style qu'aucune variable Figma ne peut porter.\n\nChaque clé est une propriété CSS, et sa valeur s'écrit telle quelle dans la déclaration. Une propriété à sa valeur par défaut dans Figma est absente."
+    },
+    "EffectStyleDefinition": {
+      "type": "object",
+      "properties": {
+        "figmaName": {
+          "type": "string"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/ShadowEffect"
+              },
+              {
+                "$ref": "#/definitions/BlurEffect"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "figmaName",
+        "effects"
+      ],
+      "additionalProperties": false,
+      "description": "Définition d'un effect style utilisé par le composant.\n\n`effects` suit l'ordre de CSS : le premier effet peint au-dessus des autres."
+    },
+    "ShadowEffect": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "drop-shadow",
+            "inner-shadow"
+          ]
+        },
+        "color": {
+          "type": "string"
+        },
+        "offsetX": {
+          "type": "string"
+        },
+        "offsetY": {
+          "type": "string"
+        },
+        "blur": {
+          "type": "string",
+          "description": "Rayon de flou de Figma, qui est aussi celui de `box-shadow`."
+        },
+        "spread": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "Une ombre d'un effect style. Chaque valeur est une référence de token.\n\n`offsetX`, `offsetY`, `blur` et `spread` absents valent zéro. `color` n'a pas de valeur neutre : son absence a été signalée au designer à l'export."
+    },
+    "BlurEffect": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "layer-blur",
+            "backdrop-blur"
+          ]
+        },
+        "blur": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "Un flou d'un effect style : `filter` pour `layer-blur`, `backdrop-filter` pour `backdrop-blur`. `blur` est le rayon de Figma, que `blur()` reçoit divisé par deux."
     },
     "ContractSample": {
       "type": "object",

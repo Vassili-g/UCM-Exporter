@@ -26,9 +26,11 @@ export const CARACTERISTIQUES = [
   { id: "dimensions-par-taille", relevee: "structure.sizes" },
   { id: "position-absolue", relevee: "un slot position absolute" },
   { id: "rotation", relevee: "une rotation" },
+  { id: "opacite", relevee: "une opacity" },
   { id: "peinture", relevee: "une clé de variants[].tokens" },
   { id: "contour-border", relevee: "une clé de variants[].strokes dont le rôle est border" },
   { id: "contour-ring", relevee: "une clé de variants[].strokes dont le rôle est ring" },
+  { id: "ombre", relevee: "un usage d'effect style" },
   { id: "typographie", relevee: "un usage de typographie" },
   { id: "troncature", relevee: "un lineClamp" },
   { id: "icone", relevee: "une entrée de icons" },
@@ -50,6 +52,8 @@ const RENDU = ["peinture", ...CONTOURS];
  * sienne.
  */
 export const CHAMPS = {
+  "BlurEffect.blur": "ombre",
+  "BlurEffect.type": "ombre",
   "BooleanProp.default": "toujours",
   "BooleanProp.description": "toujours",
   "BooleanProp.type": "toujours",
@@ -70,6 +74,7 @@ export const CHAMPS = {
   "ChildStructure.justifyContent": "disposition",
   "ChildStructure.justifySelf": "grille",
   "ChildStructure.layout": { parValeur: { "flex-row": "disposition", "flex-column": "disposition", grid: "grille" } },
+  "ChildStructure.opacity": "opacite",
   "ChildStructure.optional": "toujours",
   "ChildStructure.padding": "dimensions",
   "ChildStructure.position": { parValeur: { absolute: "position-absolue" } },
@@ -96,6 +101,7 @@ export const CHAMPS = {
   "ContainerSizing.width": "dimensions",
   "Contract.*": "toujours",
   "Contract.composes": "composition",
+  "Contract.effectStyles": "ombre",
   "Contract.icons": "icone",
   "Contract.intent": "toujours",
   "Contract.meta": "toujours",
@@ -110,6 +116,7 @@ export const CHAMPS = {
   "Contract.variantViews": "toujours",
   "Contract.variants": "toujours",
   "Contract.viewComposes": "composition",
+  "Contract.viewEffects": "ombre",
   "Contract.viewIcons": "icone",
   "Contract.viewPaintPlacements": RENDU,
   "Contract.viewStructures": "toujours",
@@ -140,10 +147,14 @@ export const CHAMPS = {
   "ContractVariant.values": "toujours",
   "ContractVariant.view": "toujours",
   "ContractVariantView.composes": "composition",
+  "ContractVariantView.effects": "ombre",
   "ContractVariantView.icons": "icone",
   "ContractVariantView.paintPlacements": RENDU,
   "ContractVariantView.structure": "toujours",
   "ContractVariantView.typography": "typographie",
+  "EffectStyleDefinition.effects": "ombre",
+  "EffectStyleUse.slotPath": "ombre",
+  "EffectStyleUse.style": "ombre",
   "EnumProp.*": "toujours",
   "EnumProp.default": "toujours",
   "EnumProp.descriptions": "toujours",
@@ -206,6 +217,12 @@ export const CHAMPS = {
   "SampleText.figmaLayer": "echantillon",
   "SampleText.slotPath": "echantillon",
   "SampleText.value": "echantillon",
+  "ShadowEffect.blur": "ombre",
+  "ShadowEffect.color": "ombre",
+  "ShadowEffect.offsetX": "ombre",
+  "ShadowEffect.offsetY": "ombre",
+  "ShadowEffect.spread": "ombre",
+  "ShadowEffect.type": "ombre",
   "SizeBounds.maxHeight": "dimensions",
   "SizeBounds.maxWidth": "dimensions",
   "SizeBounds.minHeight": "dimensions",
@@ -276,6 +293,7 @@ export const CHAMPS = {
   "VariantStructure.gap": "disposition",
   "VariantStructure.justifyContent": "disposition",
   "VariantStructure.layout": { parValeur: { "flex-row": "disposition", "flex-column": "disposition", grid: "grille" } },
+  "VariantStructure.opacity": "opacite",
   "VariantStructure.padding": "dimensions",
   "VariantStructure.radius": "dimensions",
   "VariantStructure.rotation": "rotation",
@@ -306,6 +324,7 @@ export const SANS_AIDE = {
   "ContractMeta.url": IDENTITE_FIGMA,
   "ContractVariant.figmaName": IDENTITE_FIGMA,
   "ContractVariant.nodeId": IDENTITE_FIGMA,
+  "EffectStyleDefinition.figmaName": IDENTITE_FIGMA,
   "EnumProp.figmaName": IDENTITE_FIGMA,
   "FigmaVariantLabels.*": IDENTITE_FIGMA,
   "FigmaVariantLabels.axes": IDENTITE_FIGMA,
@@ -358,6 +377,8 @@ export function caracteristiquesDuContrat(contrat, contratsParNom = new Map(), c
   const variants = Array.isArray(valeur.variants) ? valeur.variants.filter(estObjet) : [];
   const usages = Object.values(estObjet(valeur.viewTypographies) ? valeur.viewTypographies : {})
     .flatMap((liste) => (Array.isArray(liste) ? liste.filter(estObjet) : []));
+  const usagesDEffets = Object.values(estObjet(valeur.viewEffects) ? valeur.viewEffects : {})
+    .flatMap((liste) => (Array.isArray(liste) ? liste.filter(estObjet) : []));
   const etats = estObjet(valeur.stateModel?.states) ? valeur.stateModel.states : {};
 
   relever("reference-token", collecterReferences(sansEchantillon(valeur)).size > 0);
@@ -370,6 +391,7 @@ export function caracteristiquesDuContrat(contrat, contratsParNom = new Map(), c
   relever("dimensions-par-taille", nonVide(valeur.structure?.sizes));
   relever("position-absolue", noeuds.some(({ position }) => position === "absolute"));
   relever("rotation", noeuds.some(({ rotation }) => rotation !== undefined));
+  relever("opacite", noeuds.some(({ opacity }) => opacity !== undefined));
   relever("peinture", variants.some(({ tokens }) => nonVide(tokens)));
   for (const { strokes } of variants) {
     for (const cle of Object.keys(estObjet(strokes) ? strokes : {})) {
@@ -378,6 +400,7 @@ export function caracteristiquesDuContrat(contrat, contratsParNom = new Map(), c
       relever("contour-ring", role === "ring");
     }
   }
+  relever("ombre", usagesDEffets.length > 0);
   relever("typographie", usages.length > 0);
   relever("troncature", usages.some(({ lineClamp }) => lineClamp !== undefined));
   relever("icone", nonVide(valeur.icons));

@@ -11,12 +11,12 @@ import test from "node:test";
 import { check, lireArguments, releveDuDiff } from "../src/check.mjs";
 import { executer } from "../src/ucm.mjs";
 
-/** Contrat 12.0 minimal et valide, citant une seule référence de token. */
+/** Contrat 14.0 minimal et valide, citant une seule référence de token. */
 function contrat(nom) {
   return {
     name: nom,
     meta: {
-      contractVersion: "12.0",
+      contractVersion: "14.0",
       exportedAt: "2026-01-01T00:00:00.000Z",
       figma: { fileName: "f", nodeId: "1:1" },
       coverage: { portable: "complete" },

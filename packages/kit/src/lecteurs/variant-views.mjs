@@ -1,8 +1,8 @@
 /**
  * L'unique endroit où ce repository résout les renvois d'un contrat.
  *
- * Depuis la 11.0, un contrat ne recopie plus rien : une vue est cinq renvois
- * vers cinq catalogues de parties, `structure` renvoie au catalogue des
+ * Depuis la 11.0, un contrat ne recopie plus rien : une vue est un jeu de
+ * renvois vers les catalogues de parties, `structure` renvoie au catalogue des
  * structures, le nom Figma d'un variant se rebâtit depuis une table
  * d'étiquettes, et deux champs qui se dérivaient (l'index des tokens, le
  * miroir des avertissements) ne sont plus publiés du tout.
@@ -27,9 +27,10 @@ function resoudre(catalogue, renvoi, defaut) {
 }
 
 /**
- * La vue exacte d'un variant, toujours rendue sous la même forme : un objet à
- * cinq parties. Inline en v8, cataloguée en bloc de la v9 à la 10.3, cataloguée
- * partie par partie depuis la 11.0.
+ * La vue exacte d'un variant. Inline en v8, cataloguée en bloc de la v9 à la
+ * 10.3, cataloguée partie par partie depuis la 11.0. Depuis la 11.0, elle est
+ * toujours rendue avec ses six parties : `effects`, que la 14.0 ajoute, vaut
+ * `[]` quand la vue n'y renvoie pas.
  */
 export function vueExacteDuVariant(contrat, variant) {
   if (majeure(contrat) < 9) return variant;
@@ -42,6 +43,7 @@ export function vueExacteDuVariant(contrat, variant) {
     composes: resoudre(contrat.viewComposes, vue.composes, []),
     icons: resoudre(contrat.viewIcons, vue.icons, {}),
     paintPlacements: resoudre(contrat.viewPaintPlacements, vue.paintPlacements, {}),
+    effects: resoudre(contrat.viewEffects, vue.effects, []),
   };
 }
 

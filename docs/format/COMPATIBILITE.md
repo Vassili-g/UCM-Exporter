@@ -70,8 +70,9 @@ de ces classes, et la nomme.
 version précédente, qui ignore le nouveau champ. Si son rendu reste conforme à
 la maquette, l'ajout relève de la classe 1. S'il s'en écarte, l'ajout relève de
 la classe 2, même quand aucun renvoi de vue ne change : `rotation` en 12.0,
-`textTransform` en 13.0. Le coût ne départage pas les deux classes : la fenêtre
-de lecture se referme d'un cran à chaque version, mineure comprise.
+`textTransform` en 13.0, `opacity` en 14.0. Le coût ne départage pas les deux
+classes : la fenêtre de lecture se referme d'un cran à chaque version, mineure
+comprise.
 
 **La classe 4 est la seule qu'aucun contrôle ne peut attraper**, et son coût
 vient de là : la forme ne bouge pas, donc le schéma et les lecteurs acceptent un

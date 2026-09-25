@@ -6,7 +6,8 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { champsInvalidesDuContrat } from "../src/lecteurs/validation-contrat.mjs";
 import { validerGrapheDesContrats } from "../src/lecteurs/validation-graphe-contrats.mjs";
-import { contratCourant, contrat120, contrat130 } from "./contrats-fabriques.mjs";
+import { vueExacteDuVariant } from "../src/lecteurs/variant-views.mjs";
+import { contratCourant, contrat120, contrat130, contrat140 } from "./contrats-fabriques.mjs";
 
 function contrat(nom, composes = [], children = []) {
   return {
@@ -1975,4 +1976,103 @@ test("un champ de la 13.0 publié sous une version antérieure est refusé", () 
     "viewTypographies.ty1[0].textAlign",
     "viewTypographies.ty1[0].textOverflow",
   ]);
+});
+
+test("la 14.0 accepte les effect styles, leurs usages, la racine comprise, et l'opacité", () => {
+  assert.deepEqual(champsInvalidesDuContrat(contrat140()), []);
+});
+
+test("la vue résout le renvoi effects, et une vue sans effet rend une liste vide", () => {
+  const valeur = contrat140();
+  assert.deepEqual(vueExacteDuVariant(valeur, valeur.variants[0]).effects, valeur.viewEffects.ef1);
+  delete valeur.variantViews.v1.effects;
+  delete valeur.viewEffects;
+  delete valeur.effectStyles;
+  assert.deepEqual(vueExacteDuVariant(valeur, valeur.variants[0]).effects, []);
+  assert.deepEqual(champsInvalidesDuContrat(valeur), []);
+});
+
+test("un champ de la 14.0 publié sous une version antérieure est refusé", () => {
+  const casse = contrat140();
+  casse.meta.contractVersion = "13.0";
+  assert.deepEqual(champsInvalidesDuContrat(casse).sort(), [
+    "effectStyles",
+    "variantViews.v1.effects",
+    "viewEffects",
+    "viewStructures.st1.children[1].opacity",
+    "viewStructures.st1.opacity",
+  ]);
+});
+
+test("un renvoi effects qui ne pointe nulle part est refusé", () => {
+  const casse = contrat140();
+  casse.variantViews.v1.effects = "ef9";
+  assert.deepEqual(champsInvalidesDuContrat(casse).sort(), [
+    "effectStyles.blur.backdrop",
+    "effectStyles.shadow.focus",
+    "variantViews.v1.effects",
+    "viewEffects.ef1",
+  ]);
+});
+
+test("une entrée de viewEffects qu'aucune vue ne cite est refusée", () => {
+  const casse = contrat140();
+  casse.viewEffects.ef2 = [{ slotPath: [], style: "shadow.focus" }];
+  assert.deepEqual(champsInvalidesDuContrat(casse), ["viewEffects.ef2"]);
+});
+
+test("un usage d'effet qui ne désigne aucun calque de sa vue est refusé", () => {
+  const casse = contrat140();
+  casse.viewEffects.ef1[1].slotPath = ["absent"];
+  assert.deepEqual(champsInvalidesDuContrat(casse), ["viewEffects.ef1[1]"]);
+});
+
+test("un usage d'effet dont le style manque au catalogue est refusé", () => {
+  const casse = contrat140();
+  casse.viewEffects.ef1[0].style = "shadow.absent";
+  // Le style que l'usage citait n'est plus cité par personne.
+  assert.deepEqual(champsInvalidesDuContrat(casse).sort(), [
+    "effectStyles.shadow.focus",
+    "viewEffects.ef1[0]",
+  ]);
+});
+
+test("un effect style qu'aucun usage ne cite est refusé", () => {
+  const casse = contrat140();
+  casse.effectStyles.orphelin = { figmaName: "Orphelin", effects: [{ type: "layer-blur" }] };
+  assert.deepEqual(champsInvalidesDuContrat(casse), ["effectStyles.orphelin"]);
+});
+
+test("un effet hors du format est refusé, par type et par champ", () => {
+  const casse = contrat140();
+  casse.effectStyles["shadow.focus"].effects[0].offsetX = 4;
+  casse.effectStyles["shadow.focus"].effects[1].type = "noise";
+  casse.effectStyles["blur.backdrop"].effects[0].color = "{effects.shadow.color}";
+  assert.deepEqual(champsInvalidesDuContrat(casse).sort(), [
+    "effectStyles.blur.backdrop.effects[0].color",
+    "effectStyles.shadow.focus.effects[0].offsetX",
+    "effectStyles.shadow.focus.effects[1]",
+  ]);
+});
+
+test("un effect style sans effet ni nom Figma est refusé", () => {
+  const casse = contrat140();
+  casse.effectStyles["blur.backdrop"].effects = [];
+  delete casse.effectStyles["shadow.focus"].figmaName;
+  assert.deepEqual(champsInvalidesDuContrat(casse).sort(), [
+    "effectStyles.blur.backdrop.effects",
+    "effectStyles.shadow.focus.figmaName",
+  ]);
+});
+
+test("une opacité qui n'est pas une référence est refusée", () => {
+  const casse = contrat140();
+  casse.viewStructures.st1.opacity = 0.5;
+  assert.deepEqual(champsInvalidesDuContrat(casse), ["viewStructures.st1.opacity"]);
+});
+
+test("un variant qui recopie ses effets au lieu de les renvoyer est refusé", () => {
+  const casse = contrat140();
+  casse.variants[0].effects = casse.viewEffects.ef1;
+  assert.deepEqual(champsInvalidesDuContrat(casse), ["variants[0].effects"]);
 });

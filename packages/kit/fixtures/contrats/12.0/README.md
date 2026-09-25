@@ -1,17 +1,19 @@
-# Corpus 12.0 figé, le jeu N-1
+# Corpus 12.0 figé, hors de la fenêtre de lecture
 
 Ces quatre contrats sont un **instantané assumé**, et c'est la seule chose qui
 les rend utiles.
 
 ## Pourquoi ils existent
 
-La fenêtre de lecture porte deux versions, la courante et la précédente
-([COMPATIBILITE.md](../../../../../docs/format/COMPATIBILITE.md)). Le moteur ne
-fabrique que la courante (`src/contract/exportComponent.ts`) : la précédente
-n'est donc observable qu'à partir de contrats que plus rien ne sait produire.
-`tests/fenetre-de-lecture.test.mjs` les passe par tous les lecteurs, et
-`tests/refus-enregistres.test.mjs` mesure sur eux les contrôles qu'un élagage
-des validateurs ne doit pas emporter.
+La fenêtre de lecture porte la 13.0 et la 14.0
+([COMPATIBILITE.md](../../../../../docs/format/COMPATIBILITE.md)), et le jeu N-1 est
+[celui de la 13.0](../13.0/README.md). `validation-contrat.mjs` garde pourtant
+le code qui lit la 12.0 et les versions antérieures.
+
+`tests/refus-enregistres.test.mjs` mesure sur ce jeu les contrôles que ce code
+exerce. Sans lui, un élagage des validateurs marquerait « jamais atteint » les
+chemins propres à la 12.0. Il les supprimerait sans que l'empreinte enregistrée
+change.
 
 ## Ce qu'ils ne sont pas
 
@@ -20,7 +22,7 @@ Ils ne testent pas le moteur. `AGENTS.md` interdit qu'un contrat commité serve 
 ne s'y verrait jamais. Seuls les **lecteurs** les lisent.
 
 Ils ne sont pas non plus une source à rafraîchir. **Un réexport les rendrait
-inutiles** : ils cesseraient d'être N-1.
+inutiles** : ils cesseraient de documenter la 12.0.
 
 ## Provenance
 
@@ -51,6 +53,6 @@ a92c61771488e0e9a04a01b7f0aca67d89d9cdaa4e7e95fa6a4b9cf3060ad1ba  Button.contrac
 
 ## Cycle de vie
 
-Ce dossier vit tant que la fenêtre de lecture inclut la 12.0. Il disparaît quand
-elle se referme au-dessus, au même moment que le code de compatibilité qu'il
-couvre, jamais avant.
+La fenêtre de lecture ne porte plus la 12.0. Ce dossier disparaît avec le code de
+compatibilité qu'il couvre, jamais avant : retirer ce code de
+`validation-contrat.mjs`, puis ce dossier dans le même commit.

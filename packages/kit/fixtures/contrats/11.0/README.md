@@ -5,9 +5,9 @@ les rend utiles.
 
 ## Pourquoi ils existent
 
-La fenêtre de lecture porte la 12.0 et la 13.0
+La fenêtre de lecture porte la 13.0 et la 14.0
 ([COMPATIBILITE.md](../../../../../docs/format/COMPATIBILITE.md)), et le jeu N-1 est
-[celui de la 12.0](../12.0/README.md). `validation-contrat.mjs` garde pourtant
+[celui de la 13.0](../13.0/README.md). `validation-contrat.mjs` garde pourtant
 le code qui lit la 11.0 et les versions antérieures.
 
 `tests/refus-enregistres.test.mjs` mesure sur ce jeu les contrôles que ce code

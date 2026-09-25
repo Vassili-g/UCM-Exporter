@@ -7,7 +7,8 @@ quand: position-absolue
 
 Un slot `position: "absolute"` sort du flux. `constraints` dit à quels bords il
 s'accroche, `inset` à quelle distance, en pixels. Aucune distance absente ne se
-calcule.
+calcule. Tous les enfants d'un conteneur sans auto layout portent cette
+position : le `layout` de ce conteneur ne place alors aucun d'eux.
 
 ## Écriture par défaut
 

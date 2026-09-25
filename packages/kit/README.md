@@ -10,7 +10,7 @@ the repository that implements the component. The plugin and the readers both
 import the format from this package.
 
 ```sh
-npm install @ucm-kit/core@0.1.40
+npm install @ucm-kit/core@0.1.41
 ```
 
 Most repositories never call this package directly. They run
@@ -56,7 +56,7 @@ The direction names who fixes the gap:
 - **too new.** The contract comes from a plugin ahead of this repository. A
   developer upgrades this package; no re-export helps.
 
-**This release reads two contract versions, `12.0` and `13.0`**, the previous
+**This release reads two contract versions, `13.0` and `14.0`**, the previous
 one and the current one, so a consumer stays green until its contracts are
 re-exported. The lower bound moves up by one version with each contract
 version. `VERSION_CONTRAT_MINIMALE` and `VERSION_CONTRAT_MAXIMALE` expose the

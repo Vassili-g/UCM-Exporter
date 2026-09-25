@@ -16,7 +16,7 @@ plage. Tout écart hors plage est refusé dans les deux sens, parce que le geste
 correctif n'appartient pas à la même personne : un contrat plus ancien se répare
 par un réexport, un contrat plus récent par une adaptation des lecteurs.
 
-**La version courante est la 13.0**, et `CONTRACT_VERSION`
+**La version courante est la 14.0**, et `CONTRACT_VERSION`
 (`packages/kit/src/format/version.ts`) en est le seul endroit où elle s'écrit.
 Une plage ouverte chez un consommateur reste un choix explicite et
 **temporaire** : la laisser survivre à sa migration ferait rentrer en silence un
@@ -224,6 +224,42 @@ La fenêtre de lecture porte la 12.0 et la 13.0.
 identique à son équivalent 12.0, à `meta.contractVersion` près, quand les textes
 du composant gardent les valeurs par défaut de Figma pour chaque réglage de
 cette entrée.
+
+## 14.0
+
+Le contrat publie les ombres, les flous et l'opacité, et place les enfants d'un
+conteneur sans auto layout.
+
+1. **`effectStyles`, `viewEffects` et le renvoi `effects` d'une vue.** Classe
+   2, ajout qui change la résolution d'une vue : un lecteur 13.0 qui les ignore
+   rend le composant sans son ombre. `effectStyles.<clé>.effects` liste des
+   ombres (`drop-shadow`, `inner-shadow`) et des flous (`layer-blur`,
+   `backdrop-blur`), dont chaque champ est une référence de token, dans l'ordre
+   de CSS. Un usage de `viewEffects` situe un style sur un calque de la vue,
+   `[]` désignant la racine. Une vue est faite de six renvois.
+2. **`opacity` sur le composant et sur chaque slot**, une référence de token
+   exprimé de 0 à 100. Classe 2 : un lecteur 13.0 rend opaque ce que la
+   maquette montre transparent. Une dépendance ne la porte que si son instance
+   diffère de son composant principal.
+3. **Les enfants d'un conteneur sans auto layout portent
+   `position: "absolute"`, `constraints` et `inset`.** Classe 1 : ces champs
+   sont connus d'un lecteur 13.0, qui place ces enfants sans rien apprendre.
+
+Au réexport, se taisent l'avertissement d'un effet posé par un effect style
+dont le moteur écrit chaque effet, celui d'une opacité reliée à une variable,
+et la disposition perdue des enfants d'un conteneur sans auto layout.
+Avertissent : un effet sans effect style, un effect style introuvable ou dont
+le calque s'écarte, un champ d'effet sans variable, un effet que le moteur
+n'écrit pas (bruit, texture, verre, shader, flou progressif), une opacité sans
+variable, et une dimension figée sans variable d'un composant sans auto layout.
+
+La fenêtre de lecture porte la 13.0 et la 14.0.
+
+**Ce qui ne change pas** : tout le reste de la 13.0. L'absence d'auto layout
+avertit toujours, et un axe figé d'un enfant placé réclame toujours sa variable,
+quelle que soit sa contrainte. Un contrat 14.0 est identique à son équivalent
+13.0, à `meta.contractVersion` près, quand le composant n'a ni effet, ni
+opacité, ni conteneur sans auto layout.
 
 ---
 

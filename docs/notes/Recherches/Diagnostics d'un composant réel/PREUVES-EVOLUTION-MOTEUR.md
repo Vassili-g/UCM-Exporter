@@ -2,8 +2,8 @@
 
 ## État
 
-- Lot courant : E1, puis la porte H1
-- Branche et `HEAD` de départ : `main`, `92e7cff`
+- Lot courant : porte H1, puis E2
+- Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
 - Portes franchies : H0 (reste le rang des ombres dans `effects`) et H2
 
 La copie de travail partagée porte le travail non commité d'autres sessions
@@ -73,6 +73,64 @@ copiés ; le build y tourne étape par étape.
     seul garde le nom de son calque… » échoue. Restauré par copie : vert.
 - `SPEC.md`, « Racine de variant » : le canal des couleurs reprend les racines
   déclarées.
+- Écart ou réserve : aucun.
+
+### E1 : le kit connaît la 14.0
+
+- Commit : ce commit, précédé de `b377c39`. Ce commit d'une autre session,
+  arrivé pendant le lot, ne touche aucun fichier du lot : la vérification
+  porte sur `71fc6c9`.
+- Forme : `effectStyles`, `viewEffects`, le renvoi `effects` d'une vue et
+  `opacity` sur le composant et sur chaque slot, dans `types.ts` et le schéma.
+  `CONTRACT_VERSION` vaut 14.0, la fenêtre de lecture 13.0 à 14.0.
+  `vueExacteDuVariant` rend `effects`, `[]` sans renvoi. `validerEffets140` et
+  `validerOpacite140` refusent ces champs avant la 14.0, un effet hors du
+  format, un usage qui ne joint ni un calque de sa vue ni un style, et un
+  style qu'aucun usage ne cite. Deux aides, `ombre` et `opacite` ;
+  `position-absolue` couvre les enfants d'un conteneur sans auto layout.
+- Jeu figé 13.0 : les quatre contrats de UCM-Playground, pris par
+  `git show 2f2f9b8:<chemin>`, en LF. Le jeu 12.0 passe hors de la fenêtre.
+- `refus-enregistres.json` : les onze entrées existantes gardent leurs
+  contrôles, leurs comptes et leur empreinte. Cinq entrées s'ajoutent : le jeu
+  13.0 et `fabrique/14.0`.
+- Paquets : `@ucm-kit/core` 0.1.41, `@ucm-kit/cli` 0.1.49,
+  `@ucm-kit/adapter-typescript` 0.1.42, le noyau épinglé à l'exact dans les
+  deux autres. Rien n'est publié : la section 4 du plan met la publication hors
+  de son périmètre, et E10 la rappelle.
+- Tests vus rouges avant le changement : quatorze, dont les onze du
+  validateur, la fenêtre et les deux caractéristiques. Le test du contrat 14.0
+  valide passait déjà : le validateur ignorait les champs inconnus.
+- Commandes, worktree à `71fc6c9` avec les fichiers du lot : `npm test` : 0
+  (kit 404 tests, CLI 170, adaptateur 23, plugin 931, racine 25).
+  `npm run typecheck` : 0. Build étape par étape (kit, puis `build:code`,
+  `build:ui` et `build:manifest` des deux plugins) : 0 à chaque étape ;
+  `dist/code.js` porte `CONTRACT_VERSION = "14.0"`.
+- Mutations, dans le worktree, chacune restaurée par copie puis revue verte :
+  - `effects` retiré de la liste des clés d'une vue : « un variant qui recopie
+    ses effets… » échoue ;
+  - appel à `validerEffets140` retiré : six tests échouent ;
+  - appel à `validerOpacite140` retiré : deux tests échouent ;
+  - `effects` retiré de la résolution de `variant-views.mjs` : « la vue résout
+    le renvoi effects… » échoue ;
+  - `[]` traité comme un chemin ordinaire : huit tests échouent, dont celui du
+    contrat 14.0 valide ;
+  - `effects` retiré de `CATALOGUES_DE_VUES_11` : aucun test n'échouait. Deux
+    tests s'ajoutent, un renvoi qui ne pointe nulle part et une entrée de
+    `viewEffects` qu'aucune vue ne cite ; la mutation les fait échouer.
+- Écarts à la liste des fichiers du lot :
+  - `packages/plugin-exporter/src/contract/elideNeutrals.ts` protège
+    `viewEffects.*`. La loi qui confronte `ENTREES_PROTEGEES` au schéma
+    l'exigeait dès le schéma régénéré ; aucune autre ligne du moteur ne bouge.
+  - `packages/cli/tests/check.test.mjs` et
+    `packages/kit/tests/controleRepository.test.mjs` fabriquaient un contrat
+    12.0, sorti de la fenêtre : ils fabriquent un contrat 14.0.
+  - `ExpandedVariantView.effects` est facultatif : le moteur construit cette
+    vue (`compactVariants.ts`), et un champ requis cassait sa compilation dans
+    un lot qui ne le touche pas. E3 le remplit.
+- Reportés à E3, qui écrit les effets : « cinq renvois » dans `FORMAT.md`,
+  `AGENTS.md` et le glossaire de `POUR-LES-DESIGNERS.md`. Le plan ajoute ce
+  dernier à E3. L'entrée 14.0 de `CHANGELOG-FORMAT.md` décrit la version que
+  E2 à E4 terminent ; le plugin ne se publie pas avant E10.
 - Écart ou réserve : aucun.
 
 ### Porte H : réponses reçues

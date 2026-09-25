@@ -1156,7 +1156,7 @@ function validerVersion8(contrat, invalides, capacites, formeDuSizing) {
         invalides.push(`${prefixe}.sample`);
       }
       for (const legacyField of [
-        "structure", "typography", "composes", "icons", "paintPlacements",
+        "structure", "typography", "composes", "icons", "paintPlacements", "effects",
       ]) {
         if (variant[legacyField] !== undefined) invalides.push(`${prefixe}.${legacyField}`);
       }
@@ -1319,6 +1319,7 @@ const CATALOGUES_DE_VUES_11 = {
   composes: "viewComposes",
   icons: "viewIcons",
   paintPlacements: "viewPaintPlacements",
+  effects: "viewEffects",
 };
 
 /** Nom Figma exact reconstitué depuis le dictionnaire compact du schéma 11.0. */
@@ -1585,6 +1586,121 @@ function validerTypographie130(contrat, invalides) {
   }
 }
 
+/** Les champs qu'un effet porte selon son type, `type` excepté. */
+const CHAMPS_D_EFFET = {
+  "drop-shadow": new Set(["color", "offsetX", "offsetY", "blur", "spread"]),
+  "inner-shadow": new Set(["color", "offsetX", "offsetY", "blur", "spread"]),
+  "layer-blur": new Set(["blur"]),
+  "backdrop-blur": new Set(["blur"]),
+};
+
+/** Valide un effet d'un effect style : un type connu, et ses seuls champs, en références. */
+function validerEffet(effet, prefixe, invalides) {
+  if (!estObjet(effet) || !Object.hasOwn(CHAMPS_D_EFFET, effet.type)) {
+    invalides.push(prefixe);
+    return;
+  }
+  for (const [champ, valeur] of Object.entries(effet)) {
+    if (champ === "type") continue;
+    if (!CHAMPS_D_EFFET[effet.type].has(champ) || !estTexte(valeur)) {
+      invalides.push(`${prefixe}.${champ}`);
+    }
+  }
+}
+
+/**
+ * Valide ce que la 14.0 ajoute pour les effets : le catalogue `effectStyles`,
+ * le catalogue `viewEffects` et le renvoi `effects` d'une vue.
+ *
+ * Un usage joint un calque de la vue qui le cite, `[]` désignant la racine, et
+ * un style du catalogue ; un style qu'aucun usage ne cite est refusé, comme un
+ * text style. L'existence du renvoi et les entrées orphelines de `viewEffects`
+ * relèvent de `CATALOGUES_DE_VUES_11`.
+ */
+function validerEffets140(contrat, invalides) {
+  const effets140 = versionAuMoins(contrat, 14, 0);
+  const styles = contrat?.effectStyles;
+  const catalogue = contrat?.viewEffects;
+  if (styles !== undefined && (!effets140 || !estObjet(styles))) invalides.push("effectStyles");
+  if (catalogue !== undefined && (!effets140 || !estObjet(catalogue))) invalides.push("viewEffects");
+
+  for (const [cle, definition] of Object.entries(estObjet(styles) ? styles : {})) {
+    const prefixe = `effectStyles.${cle}`;
+    if (!estObjet(definition)) {
+      invalides.push(prefixe);
+      continue;
+    }
+    if (!estTexte(definition.figmaName)) invalides.push(`${prefixe}.figmaName`);
+    if (!Array.isArray(definition.effects) || definition.effects.length === 0) {
+      invalides.push(`${prefixe}.effects`);
+      continue;
+    }
+    for (const [index, effet] of definition.effects.entries()) {
+      validerEffet(effet, `${prefixe}.effects[${index}]`, invalides);
+    }
+  }
+
+  const stylesCites = new Set();
+  for (const [viewId, renvois] of Object.entries(
+    estObjet(contrat?.variantViews) ? contrat.variantViews : {},
+  )) {
+    const reference = renvois?.effects;
+    if (reference === undefined) continue;
+    if (!effets140) invalides.push(`variantViews.${viewId}.effects`);
+    const usages = estObjet(catalogue) ? catalogue[reference] : undefined;
+    if (usages === undefined) continue;
+    if (!Array.isArray(usages)) {
+      invalides.push(`viewEffects.${reference}`);
+      continue;
+    }
+    const slots = cheminsDeSlots(vueExacteDuVariant(contrat, { view: viewId })?.structure?.children);
+    for (const [index, usage] of usages.entries()) {
+      if (estTexte(usage?.style)) stylesCites.add(usage.style);
+      if (
+        !estObjet(usage)
+        || !Array.isArray(usage.slotPath)
+        || !usage.slotPath.every(estTexte)
+        || (usage.slotPath.length > 0 && !slots.has(JSON.stringify(usage.slotPath)))
+        || !estTexte(usage.style)
+        || !Object.hasOwn(estObjet(styles) ? styles : {}, usage.style)
+      ) invalides.push(`viewEffects.${reference}[${index}]`);
+    }
+  }
+  for (const cle of Object.keys(estObjet(styles) ? styles : {})) {
+    if (!stylesCites.has(cle)) invalides.push(`effectStyles.${cle}`);
+  }
+}
+
+/**
+ * Valide `opacity`, que la 14.0 ajoute au composant et à chaque slot : une
+ * référence de token, jamais un nombre.
+ */
+function validerOpacite140(contrat, invalides) {
+  const opacite140 = versionAuMoins(contrat, 14, 0);
+
+  const validerOpacite = (valeur, chemin) => {
+    if (valeur === undefined) return;
+    if (!opacite140 || !estTexte(valeur)) invalides.push(chemin);
+  };
+
+  const parcourir = (children, prefixe) => {
+    for (const [index, child] of (Array.isArray(children) ? children : []).entries()) {
+      if (!estObjet(child)) continue;
+      const chemin = `${prefixe}[${index}]`;
+      validerOpacite(child.opacity, `${chemin}.opacity`);
+      parcourir(child.children, `${chemin}.children`);
+    }
+  };
+
+  for (const [vue, structure] of Object.entries(
+    estObjet(contrat?.viewStructures) ? contrat.viewStructures : {},
+  )) {
+    if (!estObjet(structure)) continue;
+    validerOpacite(structure.opacity, `viewStructures.${vue}.opacity`);
+    parcourir(structure.children, `viewStructures.${vue}.children`);
+  }
+}
+
 function champsInvalidesDeLaFormeCanonique(contrat) {
   const invalides = [];
   const requis = [
@@ -1670,6 +1786,8 @@ function champsInvalidesDeLaFormeCanonique(contrat) {
   validerPlacement120(contrat, invalides);
   validerKeyRoles120(contrat, invalides);
   validerTypographie130(contrat, invalides);
+  validerEffets140(contrat, invalides);
+  validerOpacite140(contrat, invalides);
   return invalides;
 }
 

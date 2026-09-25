@@ -276,6 +276,47 @@ export type TextStyleUse = {
   textOverflow?: 'ellipsis';
 };
 
+/**
+ * Une ombre d'un effect style. Chaque valeur est une référence de token.
+ *
+ * `offsetX`, `offsetY`, `blur` et `spread` absents valent zéro. `color` n'a pas
+ * de valeur neutre : son absence a été signalée au designer à l'export.
+ */
+export type ShadowEffect = {
+  type: 'drop-shadow' | 'inner-shadow';
+  color?: string;
+  offsetX?: string;
+  offsetY?: string;
+  /** Rayon de flou de Figma, qui est aussi celui de `box-shadow`. */
+  blur?: string;
+  spread?: string;
+};
+
+/**
+ * Un flou d'un effect style : `filter` pour `layer-blur`, `backdrop-filter` pour
+ * `backdrop-blur`. `blur` est le rayon de Figma, que `blur()` reçoit divisé par
+ * deux.
+ */
+export type BlurEffect = { type: 'layer-blur' | 'backdrop-blur'; blur?: string };
+
+/**
+ * Définition d'un effect style utilisé par le composant.
+ *
+ * `effects` suit l'ordre de CSS : le premier effet peint au-dessus des autres.
+ */
+export type EffectStyleDefinition = {
+  figmaName: string;
+  effects: Array<ShadowEffect | BlurEffect>;
+};
+
+/** Application d'un effect style à un calque d'une vue. */
+export type EffectStyleUse = {
+  /** Chemin de slots depuis `structure.children` ; `[]` désigne la racine. */
+  slotPath: string[];
+  /** Clé d'une entrée de `Contract.effectStyles`. */
+  style: string;
+};
+
 /** Répartition des enfants sur l'axe principal d'un conteneur Flex. */
 export type JustifyContent = 'flex-start' | 'center' | 'flex-end' | 'space-between';
 
@@ -359,8 +400,9 @@ export type LayoutInset = Partial<Record<'top' | 'right' | 'bottom' | 'left', `$
  *
  * `grid` n'est pas un repli : Figma y expose deux gaps liables à une
  * variable et le nombre de ses pistes, soit exactement ce que le contrat sait
- * porter. Un conteneur sans auto layout reste décrit comme une rangée, faute de
- * mieux, et le dit.
+ * porter. Un conteneur sans auto layout reste décrit comme une rangée, sous un
+ * avertissement. Ses enfants ne suivent pas ce flux : chacun porte
+ * `position: "absolute"`, et ses contraintes le placent.
  */
 export type LayoutDirection = 'flex-row' | 'flex-column' | 'grid';
 
@@ -530,6 +572,10 @@ export type ChildStructure = {
    * place du layer. Un layer explicitement aligné dans sa cellule ne s'étire
    * plus : sa dimension redevient la sienne, et l'absence reprend son sens
    * ordinaire.
+   *
+   * Sous un parent sans auto layout, Figma ne propose que `Fixed`, sauf à un
+   * texte à taille automatique. L'absence y signale donc une dimension sans
+   * variable, que l'export a signalée, quelle que soit la contrainte du layer.
    */
   size?: SlotSize;
   /**
@@ -558,7 +604,8 @@ export type ChildStructure = {
   /** Exception d'alignement de ce layer dans l'auto layout de son parent. */
   alignSelf?: AlignSelf;
   /**
-   * Le layer est hors du flux de son parent. `constraints` dit à quels bords il
+   * Le layer est placé par ses contraintes : il est hors du flux de son parent,
+   * ou son parent n'a pas d'auto layout. `constraints` dit à quels bords il
    * s'accroche, `inset` à quelle distance de ces bords il se trouve.
    */
   position?: 'absolute';
@@ -578,6 +625,14 @@ export type ChildStructure = {
    * transformation successive laisse des résidus qu'aucun écran ne rend.
    */
   rotation?: `${number}deg`;
+  /**
+   * Opacité du layer : la référence du token qui la porte, exprimé de 0 à 100
+   * comme dans le panneau Figma. Absente quand le layer est opaque.
+   *
+   * Sur une dépendance, elle n'est publiée que si l'instance diffère de son
+   * composant principal : le contrat de la dépendance porte déjà la sienne.
+   */
+  opacity?: string;
   /**
    * Place du layer dans la grille de son parent.
    *
@@ -848,6 +903,8 @@ export type ContractStructure = {
    * une décision de design comme une autre, et rien d'autre ne la porterait.
    */
   rotation?: `${number}deg`;
+  /** Opacité du composant, à la règle de `ChildStructure.opacity`. */
+  opacity?: string;
   /**
    * Le composant passe à la ligne. Ce n'est pas une dimension mais une
    * propriété de flux : elle reste ici même quand `sizes` porte les dimensions.
@@ -918,13 +975,15 @@ export type ExpandedVariantView = {
   icons: Record<string, VariantIconPlacement>;
   /** Calques exacts que chaque clé de peinture ou de contour habille. */
   paintPlacements: VariantPaintPlacements;
+  /** Effect styles appliqués aux calques de la vue ; absente quand aucun n'en porte. */
+  effects?: EffectStyleUse[];
 };
 
 /**
- * Vue publiée : cinq renvois vers les catalogues de parties.
+ * Vue publiée : six renvois vers les catalogues de parties.
  *
  * Chaque partie est partagée par égalité stricte de son bloc JSON, aucun
- * merge, aucun défaut, aucun héritage : résoudre les cinq renvois redonne la
+ * merge, aucun défaut, aucun héritage : résoudre les six renvois redonne la
  * vue exacte, au bit près. Seule la granularité du partage change : deux vues
  * qui ne diffèrent que par leurs peintures cessent de republier tout leur arbre
  * de slots, et leur divergence reste lisible sur le renvoi qui diffère.
@@ -943,6 +1002,8 @@ export type ContractVariantView = {
   icons?: string;
   /** Clé d'une entrée de `Contract.viewPaintPlacements`. */
   paintPlacements?: string;
+  /** Clé d'une entrée de `Contract.viewEffects`. */
+  effects?: string;
 };
 
 /**
@@ -1319,7 +1380,9 @@ export type Contract = {
   viewIcons?: Record<string, Record<string, VariantIconPlacement>>;
   /** Catalogue des emplacements de peintures et de contours. */
   viewPaintPlacements?: Record<string, VariantPaintPlacements>;
-  /** Vues exactes : cinq renvois vers les catalogues ci-dessus. */
+  /** Catalogue des applications d'effect styles. */
+  viewEffects?: Record<string, EffectStyleUse[]>;
+  /** Vues exactes : six renvois vers les catalogues ci-dessus. */
   variantViews: Record<string, ContractVariantView>;
   /** Définitions stables des liaisons natives, réutilisées par les variants. */
   propertyBindingDefinitions?: Record<string, PropertyBindingDefinition>;
@@ -1341,6 +1404,8 @@ export type Contract = {
   icons?: Record<string, IconDefinition>;
   /** Text styles réellement utilisés, liés à leurs tokens DTCG. */
   textStyles?: Record<string, TextStyleDefinition>;
+  /** Effect styles réellement utilisés, liés à leurs tokens DTCG. */
+  effectStyles?: Record<string, EffectStyleDefinition>;
   /**
    * Les composants unifiés que celui-ci embarque. Absent pour un composant
    * simple ; présent, il fait de ce contrat celui d'un composé.

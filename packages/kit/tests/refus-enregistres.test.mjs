@@ -7,7 +7,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { champsInvalidesDuContrat } from "../src/lecteurs/validation-contrat.mjs";
-import { contrat120, contrat130, contratCourant } from "./contrats-fabriques.mjs";
+import { contrat120, contrat130, contrat140, contratCourant } from "./contrats-fabriques.mjs";
 
 const ici = dirname(fileURLToPath(import.meta.url));
 const racineDesFiges = join(ici, "..", "fixtures", "contrats");
@@ -136,11 +136,12 @@ export function corpusDeMesure() {
       ]));
   // Les fabriqués atteignent ce que le corpus réel n'exerce pas : un layer hors
   // du flux, une rotation, des rôles nommés, une typographie en capitales et
-  // coupée. Sans eux, un élagage pourrait retirer un contrôle 12.0 ou 13.0
-  // sans que l'empreinte enregistrée change.
+  // coupée, une ombre et une opacité. Sans eux, un élagage pourrait retirer un
+  // contrôle 12.0, 13.0 ou 14.0 sans que l'empreinte enregistrée change.
   entrees.push(["fabrique/courant", contratCourant()]);
   entrees.push(["fabrique/12.0", contrat120()]);
   entrees.push(["fabrique/13.0", contrat130()]);
+  entrees.push(["fabrique/14.0", contrat140()]);
   return entrees;
 }
 

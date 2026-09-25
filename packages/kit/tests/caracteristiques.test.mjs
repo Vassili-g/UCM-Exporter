@@ -17,7 +17,7 @@ import { contratCourant } from "./contrats-fabriques.mjs";
 /** Un contrat minimal sans aucune caractéristique au-delà de `toujours` et `dimensions`. */
 function base() {
   const contrat = contratCourant();
-  contrat.meta.contractVersion = "13.0";
+  contrat.meta.contractVersion = "14.0";
   delete contrat.viewStructures.st1.layout;
   return contrat;
 }
@@ -49,6 +49,7 @@ const PORTER = {
   "dimensions-par-taille": (contrat) => { contrat.structure.sizes = { small: { gap: "{espace}" } }; },
   "position-absolue": (contrat) => { contrat.viewStructures.st1.children = [{ slot: "badge", position: "absolute" }]; },
   rotation: (contrat) => { contrat.viewStructures.st1.children = [{ slot: "badge", rotation: "45deg" }]; },
+  opacite: (contrat) => { contrat.viewStructures.st1.children = [{ slot: "badge", opacity: "{fixe}" }]; },
   peinture: (contrat) => { contrat.variants[0].tokens = { background: "{couleurs.fond}" }; },
   "contour-border": (contrat) => {
     contrat.variants[0].strokes = { contour: { color: "{fixe}", width: "{fixe}", align: "inside" } };
@@ -56,6 +57,7 @@ const PORTER = {
   },
   "contour-ring": (contrat) => { contrat.variants[0].strokes = { ring: { color: "{fixe}", align: "outside" } }; },
   typographie: (contrat) => { contrat.viewTypographies = { ty1: [{ slotPath: ["label"], style: "corps" }] }; },
+  ombre: (contrat) => { contrat.viewEffects = { ef1: [{ slotPath: [], style: "focus" }] }; },
   troncature: (contrat) => {
     contrat.viewTypographies = { ty1: [{ slotPath: ["label"], style: "corps", lineClamp: 2 }] };
   },

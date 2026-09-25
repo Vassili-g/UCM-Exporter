@@ -1,10 +1,10 @@
 # Plan d'évolution du moteur : propriétés visuelles et messages de racine
 
-> Statut : en cours. E0 et E5 sont faits, H0 et H2 franchies ; leurs preuves
-> et décisions sont dans
-> [PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md). Le prochain lot
-> est E1, puis la porte H1. Ce plan réunit deux sujets qui touchent les mêmes
-> sites du moteur. Le premier exécute les décisions de H3
+> Statut : en cours. E0, E5 et E1 sont faits, H0 et H2 franchies ; leurs
+> preuves et décisions sont dans
+> [PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md). La porte H1
+> est ouverte : les textes de la section 9 attendent le mainteneur. Ce plan
+> réunit deux sujets qui touchent les mêmes sites du moteur. Le premier exécute les décisions de H3
 > ([DECISION-PROPRIETES-VISUELLES.md](./DECISION-PROPRIETES-VISUELLES.md)) et
 > fait passer le contrat en 14.0. Le second étend le regroupement des messages
 > de racine (L6 du [plan précédent](./PLAN-DIAGNOSTICS-COMPOSANT-REEL.md)) aux
@@ -436,8 +436,8 @@ première action sans preuve.
 
 ## 7. Lots
 
-Ordre : E0 (fait), E5 (fait), H0 et H2 (franchies), E1, porte H1, E2, E3, E4,
-E6, E7, E8, E9, E10.
+Ordre : E0 (fait), E5 (fait), H0 et H2 (franchies), E1 (fait), porte H1, E2,
+E3, E4, E6, E7, E8, E9, E10.
 
 E1 n'attend plus rien : il ne dépend d'aucun texte de H1. La porte H1 vient
 après lui ; l'agent y présente la section 9 et s'arrête.
@@ -539,29 +539,29 @@ Fichiers autorisés : `packages/kit/src/format/types.ts`, `version.ts`,
 `docs/format/CHANGELOG-FORMAT.md`, `docs/format/COMPATIBILITE.md` ;
 `.agents/skills/consommer-contrat/SKILL.md`.
 
-- [ ] Tests d'abord, dans `validation-contrats.test.mjs` et
+- [x] Tests d'abord, dans `validation-contrats.test.mjs` et
       `contrats-fabriques.mjs` : un contrat 14.0 avec `effectStyles`,
       `viewEffects`, le renvoi `effects` et `opacity` est valide ; le même
       contrat marqué 13.0 est refusé sur chacun de ces champs ; un usage dont le
       `slotPath` ne désigne aucun calque de sa vue, ou dont le style manque au
       catalogue, est refusé ; `[]` désigne la racine. Les voir rouges.
-- [ ] `types.ts` : les types de la section 4, et les commentaires de
+- [x] `types.ts` : les types de la section 4, et les commentaires de
       `ChildStructure.position`, `ChildStructure.size` et `LayoutDirection`
       réécrits pour le cadre libre. `npm run schema` dans `packages/kit`.
-- [ ] `version.ts` : `CONTRACT_VERSION = '14.0'` ; `version-contrat.mjs` :
+- [x] `version.ts` : `CONTRACT_VERSION = '14.0'` ; `version-contrat.mjs` :
       fenêtre 13.0 à 14.0.
-- [ ] `validation-contrat.mjs` : `validerEffets140` et `validerOpacite140`, sur
+- [x] `validation-contrat.mjs` : `validerEffets140` et `validerOpacite140`, sur
       le modèle de `validerTypographie130` ; `effects` dans la liste des clés
       d'une vue et dans `CATALOGUES_DE_VUES_11`. `variant-views.mjs` résout le
       sixième renvoi, vide par défaut.
-- [ ] Jeu figé : copier les quatre contrats 13.0 de UCM-Playground par
+- [x] Jeu figé : copier les quatre contrats 13.0 de UCM-Playground par
       `git show 2f2f9b8:<chemin>`, jamais depuis sa copie de travail ;
       `README.md` avec provenance et empreintes SHA-256, sur le modèle du jeu
       12.0. Le README du jeu 12.0 passe « hors de la fenêtre », comme celui de
       11.0 ; ses contrats restent, avec le code qui les lit.
-- [ ] `npm run refus` dans `packages/kit`, puis relire le diff de
+- [x] `npm run refus` dans `packages/kit`, puis relire le diff de
       `refus-enregistres.json` : aucun refus existant ne disparaît.
-- [ ] `caracteristiques.mjs` : deux caractéristiques, `ombre` et `opacite`, et
+- [x] `caracteristiques.mjs` : deux caractéristiques, `ombre` et `opacite`, et
       chaque couple nouveau dans `CHAMPS`. Deux aides, `ombre.md` et
       `opacite.md`, avec Sens, Écriture par défaut et Preuve ;
       `position-absolue.md` étendue aux enfants d'un cadre libre. `ombre.md`
@@ -572,19 +572,19 @@ Fichiers autorisés : `packages/kit/src/format/types.ts`, `version.ts`,
       des ombres dans `effects` du contrat se définit ici, la première peinte
       au-dessus comme en CSS ; E3 y traduit l'ordre de Figma. `opacite.md` dit
       de diviser la valeur du token par 100 (M1).
-- [ ] `CHANGELOG-FORMAT.md` : l'entrée 14.0, avec la classe de chaque point
+- [x] `CHANGELOG-FORMAT.md` : l'entrée 14.0, avec la classe de chaque point
       (section 4), ce que le réexport fait taire, la fenêtre, et ce qui ne
       change pas. `COMPATIBILITE.md` : `textTransform` en 13.0 reste l'exemple ;
       ajouter `opacity` en 14.0 dans la phrase qui classe un ajout.
-- [ ] Monter `@ucm-kit/core` en 0.1.41, `@ucm-kit/cli` en 0.1.49 et
+- [x] Monter `@ucm-kit/core` en 0.1.41, `@ucm-kit/cli` en 0.1.49 et
       `@ucm-kit/adapter-typescript` en 0.1.42 ; épingler le noyau 0.1.41 dans
       les deux ; réécrire chaque numéro montré par une commande (F23) ;
       `npm install` pour le verrou. `pinDocumente`, `monorepoCoherent` et
       `versionSuitLeContenu` passent.
-- [ ] Chercher `13.0`, `12.0` et « cinq renvois » dans `README.md`, les
+- [x] Chercher `13.0`, `12.0` et « cinq renvois » dans `README.md`, les
       README des paquets, `docs/` hors `notes/` et la skill
       `consommer-contrat`, et corriger ce qui décrit la fenêtre ou la vue.
-- [ ] Mutation : retirer `effects` de la liste des clés d'une vue, constater le
+- [x] Mutation : retirer `effects` de la liste des clés d'une vue, constater le
       refus du contrat 14.0.
 
 ### E2 : l'opacité se publie
@@ -669,6 +669,7 @@ Faits : F1 à F4, F10 à F12. Attend E1, H0 (M2, M3) et H1 (textes 9.1.2 à
       `SPEC.md` citent ; « Sortie » passe à six renvois ; « 8. Rendu
       sémantique » dit la composition avec `border`. `AGENTS.md` : la vue est
       six renvois, et l'invariant des propriétés à effet visuel.
+      `docs/guides/POUR-LES-DESIGNERS.md`, glossaire : la vue suit six renvois.
       `SPEC.md` : la lecture d'un effect style.
 - [ ] Mutation : lire les liaisons sur le calque au lieu du style, constater
       l'échec du test du champ sans variable.

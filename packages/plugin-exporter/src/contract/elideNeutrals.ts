@@ -46,7 +46,7 @@ export const ENTREES_PROTEGEES: readonly string[] = [
   // Une clé de peinture sans cible vaudrait `[]` ; la clé nomme la couleur.
   'viewPaintPlacements.*.fills.*',
   'viewPaintPlacements.*.strokes.*',
-  // Les six suivantes ne sont jamais vides en pratique : `compactVariants`
+  // Les sept suivantes ne sont jamais vides en pratique : `compactVariants`
   // ne catalogue pas une partie vide, et un axe sans valeur n'existe pas. Elles
   // sont protégées quand même : leur clé est citée ailleurs, par
   // `variantViews[].*`, `variants[].sample` ou `structure.variantAxes`, et une
@@ -55,6 +55,7 @@ export const ENTREES_PROTEGEES: readonly string[] = [
   'viewComposes.*',
   'viewIcons.*',
   'viewPaintPlacements.*',
+  'viewEffects.*',
   'samples.*',
   'figmaVariantLabels.values.*',
 ];

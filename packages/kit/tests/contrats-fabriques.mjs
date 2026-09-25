@@ -86,3 +86,46 @@ export function contrat130() {
   valeur.variantViews.v1.typography = "ty1";
   return valeur;
 }
+
+/**
+ * Contrat 14.0 minimal : la 13.0, plus les effets et l'opacité que la 14.0
+ * ajoute.
+ *
+ * Le premier style porte deux ombres, la seconde sans décalage ni flou ; le
+ * second, un flou d'arrière-plan. La racine, par `[]`, et le slot `badge`
+ * portent chacun un usage et une opacité.
+ */
+export function contrat140() {
+  const valeur = contrat130();
+  valeur.meta.contractVersion = "14.0";
+  valeur.effectStyles = {
+    "shadow.focus": {
+      figmaName: "Shadow/Focus",
+      effects: [
+        {
+          type: "drop-shadow",
+          color: "{effects.shadow.color}",
+          offsetX: "{effects.shadow.x}",
+          offsetY: "{effects.shadow.y}",
+          blur: "{effects.shadow.blur}",
+          spread: "{effects.shadow.spread}",
+        },
+        { type: "inner-shadow", color: "{effects.inner.color}" },
+      ],
+    },
+    "blur.backdrop": {
+      figmaName: "Blur/Backdrop",
+      effects: [{ type: "backdrop-blur", blur: "{effects.blur}" }],
+    },
+  };
+  valeur.viewEffects = {
+    ef1: [
+      { slotPath: [], style: "shadow.focus" },
+      { slotPath: ["badge"], style: "blur.backdrop" },
+    ],
+  };
+  valeur.variantViews.v1.effects = "ef1";
+  valeur.viewStructures.st1.opacity = "{opacity.muted}";
+  valeur.viewStructures.st1.children[1].opacity = "{opacity.overlay}";
+  return valeur;
+}
