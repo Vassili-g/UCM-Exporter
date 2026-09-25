@@ -3,7 +3,7 @@
  * celles de l'aperçu (L6.14). Les deux viennent du même moteur et de la même
  * recette : un écart attendu vaut zéro, et tout écart se signale.
  */
-import { MODES, PROFILS, rampesDe, type Recette } from 'ucm-couleur';
+import { MODES, PROFILS, grilleDe, rampesDe, type Recette } from 'ucm-couleur';
 
 import type { CouleurPeinte } from '../ecriture/planche';
 import { nomDePastille } from './modele';
@@ -21,9 +21,10 @@ export function ecartsDePeinture(recette: Recette, peints: readonly CouleurPeint
   const apercus = new Map<string, string>();
   for (const palette of recette.palettes) {
     const rampes = rampesDe(recette, palette);
+    const { crans } = grilleDe(recette, palette);
     for (const profil of PROFILS) {
       for (const mode of MODES) {
-        rampes[profil][mode].forEach((cran, rang) => apercus.set(`${palette.id} ${nomDePastille(profil, mode, recette.crans[rang])}`, cran.hexa));
+        rampes[profil][mode].forEach((cran, rang) => apercus.set(`${palette.id} ${nomDePastille(profil, mode, crans[rang])}`, cran.hexa));
       }
     }
   }

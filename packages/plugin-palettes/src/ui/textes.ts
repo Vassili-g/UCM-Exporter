@@ -75,6 +75,8 @@ export const TEXTES = {
   ouvrirLesReglages: 'Ouvrir les réglages communs',
   reglagesCommuns: 'Réglages communs',
   retour: 'Retour aux palettes et à la planche',
+  // N102 : le bilan d'une palette libre, à la place des résultats Soft et Vivid (W3.5, W6.6).
+  paletteLibre: (nombre: number) => `Palette libre · ${nombre} nuances`,
 } as const;
 
 /**
@@ -132,10 +134,11 @@ export const TEXTES_DE_CONFIGURATION = {
   retablir: 'Rétablir',
   // N059 : la garantie des courbes ne remplace pas celles des palettes (V9.4).
   garantieCommune: 'Cette vérification porte sur les courbes communes, pour toutes les teintes. Les garanties d’une palette se lisent dans sa carte « Garanties de contraste ».',
-  // N060 : « Rétablir » des courbes, quand la liste des nuances a changé par import.
-  courbesSansDefaut: 'Ces réglages n’ont pas les onze nuances par défaut : les courbes par défaut ne s’y appliquent pas.',
-  // N091 : le titre de chaque ligne de la table des courbes (W4.3).
+  // N060, réécrit en W6.4 : « Rétablir » des courbes, quand la liste des nuances vient d'un import.
+  courbesSansDefaut: 'Cette liste de nuances vient d’un import : aucune courbe par défaut ne s’y applique.',
+  // N091 : le titre de chaque ligne de la table des courbes, et le nom de la table (W4.3).
   courbeDuMode: { light: 'Light', dark: 'Dark' },
+  tableDesCourbes: 'Luminosité de chaque nuance, Light puis Dark',
   // N092 : l'aide de chaque seuil, sous son libellé (W4.4).
   aideSeuilTexte: 'Pour text sur surface, on-solid sur solid et text sur le fond.',
   aideSeuilNonTexte: 'Pour la bordure de champ, l’anneau de focus et le fond plein, état hover.',
@@ -146,6 +149,42 @@ export const TEXTES_DE_CONFIGURATION = {
   uniteDEcart: 'ΔEok',
   uniteDeChroma: 'chroma',
 } as const;
+
+/** Le choix du préréglage, en tête de « Luminosité des nuances », et ce qu'il changerait (W6.4, N104). */
+export const TEXTES_DU_PREREGLAGE = {
+  libelle: 'Nombre de nuances',
+  option: (nombre: number) => `${nombre} nuances`,
+  importee: 'Liste importée : aucun préréglage ne la reconnaît.',
+  appliquer: (nombre: number) => `Passer à ${nombre} nuances`,
+  annuler: 'Annuler',
+  rolesGardes: 'Les rôles gardent leurs numéros.',
+} as const;
+
+/** Une liste de numéros en mots : « 1000 et 1050 », « 400, 950 et 1000 ». */
+function numerosEcrits(numeros: readonly number[]): string {
+  return numeros.length < 2 ? numeros.join('') : `${numeros.slice(0, -1).join(', ')} et ${numeros[numeros.length - 1]}`;
+}
+
+/** Ce que le passage à un préréglage changerait, avant sa confirmation (W6.4, N104). */
+export function effetEcrit(effet: {
+  readonly nombre: number;
+  readonly ajoutes: readonly number[];
+  readonly retires: readonly number[];
+  readonly changees: readonly string[];
+  readonly cadres: number;
+}): string {
+  const gestes = [
+    effet.ajoutes.length > 0 ? `ajoute ${numerosEcrits(effet.ajoutes)}` : '',
+    effet.retires.length > 0 ? `retire ${numerosEcrits(effet.retires)}` : '',
+  ].filter(Boolean).join(' et ');
+  const couleurs = effet.changees.length === 0
+    ? 'Aucune nuance gardée ne change de couleur.'
+    : `${effet.changees.length === 1 ? 'Une palette change' : `${effet.changees.length} palettes changent`} de couleur à une nuance gardée : ${effet.changees.join(', ')}.`;
+  const cadres = effet.cadres === 0
+    ? ''
+    : effet.cadres === 1 ? ' 1 cadre passera « À mettre à jour ».' : ` ${effet.cadres} cadres passeront « À mettre à jour ».`;
+  return `Passer à ${effet.nombre} nuances ${gestes}. ${TEXTES_DU_PREREGLAGE.rolesGardes} ${couleurs}${cadres}`;
+}
 
 /** La tête des Réglages communs : la palette ouverte et le thème de son aperçu (V9.3, N055). */
 export function paletteDeLApercu(nom: string, mode: Mode): string {
@@ -237,6 +276,16 @@ export const TEXTES_DE_LA_BASE = {
   libelle: 'Palette de base',
   auto: 'Auto',
   choixAutomatique: (profil: Profil) => `Auto a choisi ${NOM_DU_PROFIL[profil]}`,
+} as const;
+
+/** Le choix du modèle et les numéros d'une palette libre (W6.5, maquette W3.5, N103). */
+export const TEXTES_DU_MODELE = {
+  libelle: 'Modèle',
+  modele: 'Standard',
+  libre: 'Libre',
+  aideLibre: 'Sans rôles ni garanties',
+  nuances: (nombre: number) => `Nuances · ${nombre} sur 13 au plus`,
+  puce: (numero: number) => `Nuance ${numero}`,
 } as const;
 
 /** Les libellés de l'éditeur de dérive (section 12). */

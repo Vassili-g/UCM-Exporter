@@ -9,7 +9,10 @@ import {
   alertesDesFonds,
   ancrageDe,
   compterManquees,
+  confusionsDe,
   distanceDePalettes,
+  estLibre,
+  grilleDe,
   partDeChroma,
   partsDe,
   rampesDe,
@@ -17,6 +20,8 @@ import {
   verifierPromesses,
   type Alerte,
   type Ancrage,
+  type Confusion,
+  type Grille,
   type Palette,
   type Parts,
   type Promesse,
@@ -25,6 +30,14 @@ import {
 } from 'ucm-couleur';
 
 export interface AnalyseDePalette {
+  /**
+   * La liste de la palette et ses luminosités : la liste commune, ou sa liste
+   * libre (W6). Les vues lisent les colonnes d'une palette ici, jamais dans la
+   * recette : une liste libre de longueur différente y serait mal étiquetée.
+   */
+  readonly grille: Grille;
+  /** Vrai pour une palette libre, sortie du modèle : ni rôles, ni garanties. */
+  readonly libre: boolean;
   readonly rampes: Rampes;
   readonly promesses: readonly Promesse[];
   readonly manquees: number;
@@ -35,6 +48,8 @@ export interface AnalyseDePalette {
   readonly parts: Parts;
   /** Le profil et les nuances qui portent la référence exacte ([MOT-17]). */
   readonly ancrage: Ancrage;
+  /** Les nuances où Soft et Vivid se confondent, sur toute la liste : le repère ≈ ([PLA-15]). */
+  readonly confusions: readonly Confusion[];
 }
 
 /**
@@ -58,6 +73,8 @@ function alertesQuiLaConcernent(recette: Recette, palette: Palette): Alerte[] {
 export function analyserPalette(recette: Recette, palette: Palette): AnalyseDePalette {
   const promesses = verifierPromesses(recette, palette);
   return {
+    grille: grilleDe(recette, palette),
+    libre: estLibre(palette),
     rampes: rampesDe(recette, palette),
     promesses,
     manquees: compterManquees(promesses),
@@ -65,5 +82,6 @@ export function analyserPalette(recette: Recette, palette: Palette): AnalyseDePa
     part: partDeChroma(referenceDe(palette), recette.gamut),
     parts: partsDe(recette, palette),
     ancrage: ancrageDe(recette, palette),
+    confusions: confusionsDe(recette, palette),
   };
 }

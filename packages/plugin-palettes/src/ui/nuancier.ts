@@ -85,7 +85,8 @@ export interface NuancierUi {
 }
 
 type Choix =
-  | { readonly nature: 'nuance'; readonly profil: Profil; readonly rang: number }
+  /** Une nuance, par son rang et par son numéro : quand la liste change, le choix suit le numéro. */
+  | { readonly nature: 'nuance'; readonly profil: Profil; readonly rang: number; readonly numero: number }
   | { readonly nature: 'fond' };
 
 /** L'encre qui se lit sur le fond du thème : la sombre ou la claire des couleurs de la planche. */
@@ -187,7 +188,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       etiquette: TEXTES_DE_CONFIGURATION.fondDuMode[modeDuSelecteur],
       mention: TEXTES_DU_NUANCIER.fondCommun,
       titreDesPastilles: TEXTES_DU_SELECTEUR.fondsProposes,
-      pastilles: fondsProposes(recette, analyse.rampes, modeDuSelecteur),
+      pastilles: fondsProposes(analyse, modeDuSelecteur),
       saisir: (hexa, fin) => gestes.saisirFond(modeDuSelecteur, hexa, fin),
     });
   });
@@ -237,10 +238,13 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     gestes.surMode();
   }
 
+  /** La première colonne atteignable : une palette libre n'a pas de pastille `on-solid` (W6.5). */
+  const premiereColonne = (): number => (donnees?.analyse.libre ? 1 : 0);
+
   function activer(rampe: number, rang: number, focaliser: boolean): void {
     if (cellules.length === 0) return;
     const ligne = Math.max(0, Math.min(cellules.length - 1, rampe));
-    const place = Math.max(0, Math.min(cellules[ligne].length - 1, rang));
+    const place = Math.max(premiereColonne(), Math.min(cellules[ligne].length - 1, rang));
     active = { rampe: ligne, colonne: place };
     cellules.flat().forEach((cellule) => { cellule.tabIndex = -1; });
     const cible = cellules[ligne][place];
@@ -250,7 +254,9 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
 
   /** Le choix qu'une cellule porte : la colonne 0 est la pastille `on-solid`. */
   function choixDe(rampe: number, place: number): Choix {
-    return place === 0 ? { nature: 'fond' } : { nature: 'nuance', profil: PROFILS[rampe], rang: place - 1 };
+    if (place === 0) return { nature: 'fond' };
+    const numero = donnees?.analyse.grille.crans[place - 1] ?? 0;
+    return { nature: 'nuance', profil: PROFILS[rampe], rang: place - 1, numero };
   }
 
   function choisir(suivant: Choix | null): void {
@@ -271,7 +277,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       ArrowLeft: [active.rampe, active.colonne - 1],
       ArrowDown: [active.rampe + 1, active.colonne],
       ArrowUp: [active.rampe - 1, active.colonne],
-      Home: [active.rampe, 0],
+      Home: [active.rampe, premiereColonne()],
       End: [active.rampe, largeur - 1],
     };
     const cible = cibles[evenement.key];
@@ -325,7 +331,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   /** Les mesures repliées : niveaux WCAG, blanc et noir, OKLCH, nuances identiques ou confondues ([VER-13]). */
   function mesuresDetaillees(cran: Cran, profil: Profil, rang: number, entrees: EntreesDuNuancier, fondDuMode: Rgb8): HTMLDetailsElement {
     const { recette, analyse } = entrees;
-    const numero = recette.crans[rang];
+    const numero = analyse.grille.crans[rang];
     const mesure = mesurerCran(cran.couleur, fondDuMode, recette.seuils);
     const repli = document.createElement('details');
     repli.className = 'constat-detail';
@@ -338,7 +344,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       paragraphe(TEXTES_DU_NUANCIER.oklch(cran.L, cran.C, cran.H)),
     );
     for (const autre of [rang - 1, rang + 1].filter((voisin) => analyse.rampes[profil][mode][voisin]?.hexa === cran.hexa)) {
-      repli.append(paragraphe(TEXTES_DU_NUANCIER.memeCouleur(recette.crans[autre])));
+      repli.append(paragraphe(TEXTES_DU_NUANCIER.memeCouleur(analyse.grille.crans[autre])));
     }
     if (entrees.confondues.some((confondue) => confondue.mode === mode && confondue.cran === numero)) {
       repli.append(paragraphe(TEXTES_DU_NUANCIER.tresProche(profil === 'soft' ? 'vivid' : 'soft')));
@@ -372,13 +378,15 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     const { recette, analyse } = entrees;
     const cran = analyse.rampes[profil][mode][rang];
     const fondDuMode = lireHexa(recette.fonds[mode]) ?? [255, 255, 255];
-    const blocs: HTMLElement[] = [enTeteDuDetail(cran.hexa, TEXTES_DU_DETAIL.titre(profil, recette.crans[rang]), cran.hexa)];
+    const { crans } = analyse.grille;
+    const blocs: HTMLElement[] = [enTeteDuDetail(cran.hexa, TEXTES_DU_DETAIL.titre(profil, crans[rang]), cran.hexa)];
     if (analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang) {
       const reference = paragraphe(TEXTES_DU_DETAIL.reference);
       reference.className = 'detail-reference';
       blocs.push(reference);
     }
-    const emplois = emploisDuCran(recette.crans, rang);
+    // Une palette libre n'a pas de rôles : chaque nuance s'y lit comme une nuance libre (W6.5).
+    const emplois = analyse.libre ? [] : emploisDuCran(crans, rang);
     if (emplois.length === 0) {
       blocs.push(
         sousTitre(TEXTES_DU_DETAIL.nuanceLibre),
@@ -426,8 +434,13 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     detail.hidden = false;
   }
 
-  /** Les deux lignes d'accolades ([UI-04]), calculées par `accoladesDe`. */
-  function rendreLesAccolades(recette: Recette): void {
+  /** Les deux lignes d'accolades ([UI-04]), calculées par `accoladesDe` ; une palette libre n'en a pas (W6.5). */
+  function rendreLesAccolades(recette: Recette, analyse: AnalyseDePalette): void {
+    accolades.hidden = analyse.libre;
+    if (analyse.libre) {
+      accolades.replaceChildren();
+      return;
+    }
     const lignes = accoladesDe(recette.crans).map((accoladesDeLaLigne) => {
       const ligne = document.createElement('div');
       ligne.className = 'accolades-ligne';
@@ -464,7 +477,17 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     surface.style.setProperty('--encre-surface', encres.encre);
     surface.style.setProperty('--encre-surface-seconde', encres.seconde);
     surface.style.setProperty('--bordure-surface', encres.bordure);
-    surface.style.setProperty('--colonnes', String(recette.crans.length));
+    const { crans } = analyse.grille;
+    if (analyse.libre && choix?.nature === 'fond') choix = null;
+    // Une liste qui change, celle d'une palette libre, déplace les rangs : le choix suit son numéro, ou se referme.
+    if (choix?.nature === 'nuance') {
+      const rang = crans.indexOf(choix.numero);
+      choix = rang < 0 ? null : { ...choix, rang };
+    }
+    surface.style.setProperty('--colonnes', String(crans.length));
+    // Une palette libre n'a pas de pastille on-solid : sa colonne se referme.
+    if (analyse.libre) surface.style.setProperty('--colonne-on-solid', '0px');
+    else surface.style.removeProperty('--colonne-on-solid');
     teinteDuFond.style.background = recette.fonds[mode];
     hexaDuFond.textContent = recette.fonds[mode];
     pastilleDuFond.setAttribute('aria-label', TEXTES_DU_NUANCIER.modifierLeFond(mode, recette.fonds[mode]));
@@ -477,7 +500,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     coin.className = 'nuancier-profil';
     coin.setAttribute('role', 'columnheader');
     coin.style.gridRow = '1';
-    numeros.append(coin, ...recette.crans.map((numero, rang) => {
+    numeros.append(coin, ...crans.map((numero, rang) => {
       const entete = document.createElement('span');
       entete.style.gridColumn = String(colonne(rang));
       entete.style.gridRow = '1';
@@ -496,6 +519,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     onSolid.style.background = recette.fonds[mode];
     onSolid.setAttribute('aria-label', TEXTES_DU_NUANCIER.etiquetteDuFond(recette.fonds[mode]));
     onSolid.setAttribute('aria-selected', String(choix?.nature === 'fond'));
+    onSolid.hidden = analyse.libre;
     onSolid.addEventListener('click', () => {
       active = { rampe: active.rampe, colonne: 0 };
       choisir({ nature: 'fond' });
@@ -517,7 +541,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       rangee.append(entete);
       if (rangDeRampe === 0) rangee.append(onSolid);
       const pastilles = analyse.rampes[profil][mode].map((cran, rang) => {
-        const numero = recette.crans[rang];
+        const numero = crans[rang];
         const pastille = document.createElement('span');
         pastille.className = 'pastille';
         pastille.setAttribute('role', 'gridcell');
@@ -543,7 +567,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
         pastille.tabIndex = -1;
         pastille.addEventListener('click', () => {
           active = { rampe: rangDeRampe, colonne: rang + 1 };
-          choisir({ nature: 'nuance', profil, rang });
+          choisir({ nature: 'nuance', profil, rang, numero });
           activer(rangDeRampe, rang + 1, true);
         });
         pastille.addEventListener('focus', () => { active = { rampe: rangDeRampe, colonne: rang + 1 }; });
@@ -555,7 +579,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     });
     grille.replaceChildren(numeros, ...rangees);
     activer(active.rampe, active.colonne, false);
-    rendreLesAccolades(recette);
+    rendreLesAccolades(recette, analyse);
     rendreLeDetail(entrees);
   }
 

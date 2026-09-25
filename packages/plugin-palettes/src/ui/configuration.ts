@@ -16,18 +16,21 @@ import {
   MODES,
   PROFILS,
   garantieDesCourbes,
-  rampesDe,
+  nombreDeNuancesDe,
   rgb8VersOklch,
   referenceDe,
   validerRecette,
   type Mode,
+  type NombreDeNuances,
   type Profil,
   type Recette,
 } from 'ucm-couleur';
+import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
 import { analyserPalette } from '../analyse';
 import {
   carteDuGroupe,
+  effetDuPrereglage,
   estParDefaut,
   lireNombre,
   palettesModifiees,
@@ -49,8 +52,10 @@ import {
   NOM_DU_PROFIL,
   TEXTES_DE_CONFIGURATION,
   TEXTES_DES_INTENSITES,
+  TEXTES_DU_PREREGLAGE,
   TEXTES_DU_SELECTEUR,
   constatDeGarantie,
+  effetEcrit,
   hexaInvalide,
   legendeDesCourbes,
   nomDeLaPalette,
@@ -82,6 +87,8 @@ export interface RecetteDeLaConfiguration {
   previsualiser(recette: Recette): void;
   /** La fin d'un geste : la recette se range. */
   appliquer(recette: Recette): void;
+  /** Le nombre de cadres à jour qu'une recette proposée ferait passer « À mettre à jour » (W6.4). */
+  cadresAMettreAJour(proposee: Recette): number;
 }
 
 /** Un groupe de champs : ce qu'un lien vise, et où son compte s'écrit ([ENT-07]). */
@@ -200,7 +207,7 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
       return {
         hexa: lue.fonds[mode],
         titreDesPastilles: TEXTES_DU_SELECTEUR.fondsProposes,
-        pastilles: fondsProposes(lue, palette ? rampesDe(lue, palette) : null, mode),
+        pastilles: fondsProposes(palette ? analyserPalette(lue, palette) : null, mode),
         saisir: (hexa, fin) => saisirFond(mode, hexa, fin),
       };
     });
@@ -250,17 +257,84 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
    * Luminosité des nuances (W3.2, disposition A) : le tracé prend la largeur
    * des colonnes, et chaque nuance a sa colonne sous son point, Light puis Dark.
    */
+  /*
+   * Le préréglage du nombre de nuances, en tête de « Luminosité des nuances »
+   * (W6.4) : il décide des colonnes de la table. Un changement dit d'abord ce
+   * qu'il changerait, et ne se range qu'à sa confirmation.
+   */
+  const choixDuNombre = document.createElement('div');
+  choixDuNombre.className = 'bascule bascule-de-base bascule-du-prereglage';
+  choixDuNombre.setAttribute('role', 'group');
+  choixDuNombre.setAttribute('aria-label', TEXTES_DU_PREREGLAGE.libelle);
+  const boutonsDuNombre = ([9, 11, 13] as const).map((nombre) => {
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.className = 'bascule-option';
+    bouton.textContent = String(nombre);
+    bouton.setAttribute('aria-label', TEXTES_DU_PREREGLAGE.option(nombre));
+    bouton.addEventListener('click', () => proposerLePrereglage(nombre));
+    choixDuNombre.append(bouton);
+    return { nombre, bouton };
+  });
+  const listeImportee = paragraphe(TEXTES_DU_PREREGLAGE.importee, 'ligne-secondaire');
+  const texteDeLEffet = paragraphe('');
+  const appliquerLePrereglage = createButton({ label: '', onClick: () => appliquerLaProposition() });
+  const annulerLePrereglage = createButton({ label: TEXTES_DU_PREREGLAGE.annuler, variant: 'secondary', onClick: () => annulerLaProposition() });
+  const gestesDeLEffet = document.createElement('div');
+  gestesDeLEffet.className = 'confirmation-gestes';
+  gestesDeLEffet.append(appliquerLePrereglage, annulerLePrereglage);
+  const confirmationDuPrereglage = document.createElement('div');
+  confirmationDuPrereglage.className = 'confirmation';
+  confirmationDuPrereglage.hidden = true;
+  confirmationDuPrereglage.append(texteDeLEffet, gestesDeLEffet);
+  let prereglagePropose: Recette | null = null;
+
+  function proposerLePrereglage(nombre: NombreDeNuances): void {
+    const lue = recette.lire();
+    if (!lue || nombreDeNuancesDe(lue.crans) === nombre) return;
+    const effet = effetDuPrereglage(lue, nombre);
+    prereglagePropose = effet.recette;
+    texteDeLEffet.textContent = effetEcrit({
+      nombre,
+      ajoutes: effet.ajoutes,
+      retires: effet.retires,
+      changees: effet.changees.map(nomDeLaPalette),
+      cadres: recette.cadresAMettreAJour(effet.recette),
+    });
+    appliquerLePrereglage.textContent = TEXTES_DU_PREREGLAGE.appliquer(nombre);
+    confirmationDuPrereglage.hidden = false;
+    appliquerLePrereglage.focus();
+  }
+  function fermerLaProposition(): void {
+    prereglagePropose = null;
+    confirmationDuPrereglage.hidden = true;
+  }
+  function appliquerLaProposition(): void {
+    const proposee = prereglagePropose;
+    fermerLaProposition();
+    if (proposee) proposer(proposee, 'courbes', true);
+  }
+  function annulerLaProposition(): void {
+    fermerLaProposition();
+    const lue = recette.lire();
+    const actuel = lue ? nombreDeNuancesDe(lue.crans) : null;
+    boutonsDuNombre.find(({ nombre }) => nombre === actuel)?.bouton.focus();
+  }
+  const blocDuPrereglage = document.createElement('div');
+  blocDuPrereglage.className = 'bloc-du-prereglage';
+  blocDuPrereglage.append(champEnColonne(TEXTES_DU_PREREGLAGE.libelle, choixDuNombre), listeImportee, confirmationDuPrereglage);
+
   const trace = document.createElement('div');
   trace.className = 'trace-des-courbes';
   const legende = paragraphe('', 'ligne-secondaire');
   const table = document.createElement('div');
   table.className = 'table-courbes';
   table.setAttribute('role', 'group');
-  table.setAttribute('aria-label', TEXTES_DE_CONFIGURATION.courbes);
+  table.setAttribute('aria-label', TEXTES_DE_CONFIGURATION.tableDesCourbes);
   const garantie = document.createElement('div');
   garantie.className = 'constats';
   const noteDeGarantie = paragraphe(TEXTES_DE_CONFIGURATION.garantieCommune, 'ligne-secondaire');
-  cartes.courbes.ui.corps.prepend(table, legende, paragraphe(TEXTES_DE_CONFIGURATION.aideCourbes, 'ligne-secondaire'), garantie, noteDeGarantie);
+  cartes.courbes.ui.corps.prepend(blocDuPrereglage, table, legende, paragraphe(TEXTES_DE_CONFIGURATION.aideCourbes, 'ligne-secondaire'), garantie, noteDeGarantie);
   groupeDeCarte('courbes', 'courbes', table);
 
   /** Une ligne de seuil (W3.3, disposition A) : libellé et aide à gauche, champ et unité alignés à droite. */
@@ -323,6 +397,8 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     cransBatis = crans.join(',');
     for (let rang = champs.length - 1; rang >= 0; rang -= 1) if ('courbe' in champs[rang].champ) champs.splice(rang, 1);
     table.style.setProperty('--colonnes', String(crans.length));
+    // Au-delà de onze nuances, les champs se resserrent : « 0,975 » tient encore dans un treizième de carte à 500 px.
+    table.classList.toggle('table-serree', crans.length > 11);
     const titreDeLigne = (texte: string): HTMLSpanElement => {
       const titre = document.createElement('span');
       titre.className = 'titre-de-courbe';
@@ -365,9 +441,11 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     }
     apercu.hidden = !analyse;
 
-    const reference = palette && analyse ? { clarte: rgb8VersOklch(referenceDe(palette)).L, rangs: analyse.ancrage.rangs } : null;
+    // Le tracé montre les courbes communes : le ◆ d'une palette libre, posé sur sa propre liste, n'y a pas de colonne.
+    const commune = palette && analyse && !analyse.libre ? analyse : null;
+    const reference = palette && commune ? { clarte: rgb8VersOklch(referenceDe(palette)).L, rangs: commune.ancrage.rangs } : null;
     trace.replaceChildren(dessinerLesCourbes(geometrieDesCourbes(lue.courbes, reference)));
-    legende.textContent = legendeDesCourbes(palette && analyse ? { nom: nomDeLaPalette(palette), crans: analyse.ancrage.crans } : null);
+    legende.textContent = legendeDesCourbes(palette && commune ? { nom: nomDeLaPalette(palette), crans: commune.ancrage.crans } : null);
 
     const manques = garantieDesCourbes(lue);
     garantie.replaceChildren(...manques.map((manque) => blocDeConstat(constatDeGarantie(manque), 'alerte')));
@@ -447,6 +525,9 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     vue.hidden = lue === null;
     if (!lue) return;
     batirLaTable(lue.crans);
+    const nombre = nombreDeNuancesDe(lue.crans);
+    for (const { nombre: valeur, bouton } of boutonsDuNombre) bouton.setAttribute('aria-pressed', String(valeur === nombre));
+    listeImportee.hidden = nombre !== null;
     for (const { champ, saisie } of champs) {
       if (document.activeElement !== saisie) saisie.value = nombreEcrit(valeurDe(lue, champ));
     }

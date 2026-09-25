@@ -26,7 +26,7 @@ import {
 import { lireNombre } from '../../configuration';
 import { appliquerPrereglage, lierLesProfils, prereglageDe, reglerBout } from '../../edition';
 import type { AnalyseDePalette } from '../../analyse';
-import { TEXTES_DES_GARANTIES, TEXTES_DE_LA_DERIVE, repereTailwind, resultatDuProfil, valeurDePoignee } from '../textes';
+import { TEXTES, TEXTES_DES_GARANTIES, TEXTES_DE_LA_DERIVE, repereTailwind, resultatDuProfil, valeurDePoignee } from '../textes';
 import { CADRE, HAUTEUR_TOTALE, createGraphe } from './graphe';
 import { angleDuGlisser, echelleDe } from './geometrie';
 
@@ -339,11 +339,14 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     const lie = palette.derive.lien;
     // Synchronisés, les deux profils se règlent ensemble : l'éditeur montre le porteur de la référence.
     if (lie) profil = ancrage.profil;
-    graphe.afficher({ recette, palette, profil, rampe: rampes[profil].light, ancrage, echelle: echelleCourante() });
-    if (!glisse && analyse) {
+    if (!analyse) return;
+    graphe.afficher({ recette, palette, profil, rampe: rampes[profil].light, ancrage, grille: analyse.grille, echelle: echelleCourante() });
+    // Une palette libre n'a pas de garantie : son bilan le dit, et le lien vers la carte des garanties se retire.
+    voirLesGaranties.hidden = analyse.libre;
+    if (!glisse) {
       const suivie = analyse;
       const [soft, vivid] = PROFILS.map((duProfil) => resultatDuProfil(duProfil, suivie.promesses.filter((promesse) => promesse.profil === duProfil && promesse.verdict === 'manquee').length));
-      bilan.textContent = TEXTES_DES_GARANTIES.bilan(soft, vivid);
+      bilan.textContent = analyse.libre ? TEXTES.paletteLibre(analyse.grille.crans.length) : TEXTES_DES_GARANTIES.bilan(soft, vivid);
       bilan.dataset.etat = analyse.manquees > 0 ? 'manque' : 'pret';
     }
     // Le graphe s'est redessiné : la poignée qui avait le focus le reprend.
@@ -357,17 +360,17 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     confirmation.hidden = !confirmationOuverte;
 
     const reference = rgb8VersOklch(referenceDe(palette));
-    const courbe = recette.courbes.light;
     const bouts = boutsDe(recette);
     const tailwind = prereglageDe(recette, palette);
-    const sansSegment: Record<Bout, boolean> = { clair: reference.L > courbe[0], sombre: reference.L < courbe[courbe.length - 1] };
+    // Un segment se juge sur les bouts de la dérive, aux numéros 50 et 950, et non sur les extrémités de la liste (W6).
+    const sansSegment: Record<Bout, boolean> = { clair: reference.L > bouts.clair, sombre: reference.L < bouts.sombre };
     for (const bout of BOUTS) {
       const { ligne, champ, curseur, repere } = reglettes[bout];
       // Un bout que la référence dépasse n'a pas de segment à régler ([DER-14]).
       ligne.hidden = sansSegment[bout];
       if (document.activeElement !== champ) champ.value = ecrireArrondi(derive[bout], 1);
       if (document.activeElement !== curseur) curseur.value = String(Math.round(derive[bout]));
-      const teinte = teinteA(courbe[bout === 'clair' ? 0 : courbe.length - 1], reference, derive, bouts);
+      const teinte = teinteA(bouts[bout], reference, derive, bouts);
       curseur.setAttribute('aria-valuetext', valeurDePoignee(derive[bout], teinte));
       // Le repère Tailwind reste visible même quand la dérive est libre ([DER-06]).
       repere.style.left = `${((tailwind[bout] + 90) / 180) * 100}%`;

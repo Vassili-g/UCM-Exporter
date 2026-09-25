@@ -18,7 +18,6 @@ import {
   atteintLeSeuil,
   contraste,
   decalagesDeLEmploi,
-  distanceOk,
   ecrireContraste,
   ecrireHexa,
   empreinte,
@@ -40,6 +39,7 @@ import { analyserPalette, type AnalyseDePalette } from '../analyse';
 import type { ProfilDuDocument } from '../lecture';
 import {
   NOM_DU_PROFIL,
+  TEXTES,
   TEXTES_DE_LA_PLANCHE,
   TEXTES_DU_DETAIL,
   enTeteDeLaReference,
@@ -260,7 +260,7 @@ function encresDuTheme(fond: Rgb8, profil: ProfilDuDocument): Encres {
 
 /** La nuance d'une rampe à son numéro. */
 function nuance(contexte: Contexte, profil: Profil, mode: Mode, numero: number): Cran {
-  const rang = contexte.recette.crans.indexOf(numero);
+  const rang = contexte.analyse.grille.crans.indexOf(numero);
   if (rang < 0) throw new Error(`La nuance ${numero} manque aux crans de la recette.`);
   return contexte.analyse.rampes[profil][mode][rang];
 }
@@ -271,7 +271,7 @@ function nuance(contexte: Contexte, profil: Profil, mode: Mode, numero: number):
 function numeros(contexte: Contexte, encres: Encres): NoeudCadre {
   return cadre('numéros', 'HORIZONTAL', [
     espace(COLONNE.libelle, 1),
-    ...contexte.recette.crans.map((numero) => texte(String(numero), String(numero), 'chiffre', encres.seconde, COLONNE.largeur)),
+    ...contexte.analyse.grille.crans.map((numero) => texte(String(numero), String(numero), 'chiffre', encres.seconde, COLONNE.largeur)),
   ]);
 }
 
@@ -281,17 +281,17 @@ function numeros(contexte: Contexte, encres: Encres): NoeudCadre {
  * s'y confondent ([PLA-15]), et son code dessous.
  */
 function rangeeDeRampe(contexte: Contexte, profil: Profil, mode: Mode, encres: Encres): NoeudCadre {
-  const { recette, analyse } = contexte;
-  const autre: Profil = profil === 'soft' ? 'vivid' : 'soft';
+  const { analyse } = contexte;
+  const { crans } = analyse.grille;
   const colonnes = analyse.rampes[profil][mode].map((cran, rang) => {
-    const nom = nomDePastille(profil, mode, recette.crans[rang]);
+    const nom = nomDePastille(profil, mode, crans[rang]);
     contexte.peints.push({ nom, hexa: cran.hexa });
     const surLaPastille = peinture(noirOuBlanc(cran.couleur), contexte.profil);
     const reperes = [
       ...(analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang ? [texte('référence', TEXTES_DE_LA_PLANCHE.reperage, 'valeur', surLaPastille)] : []),
-      ...(distanceOk(cran.couleur, analyse.rampes[autre][mode][rang].couleur) < recette.seuils.profilsConfondus ? [texte('confondu', TEXTES_DE_LA_PLANCHE.confondu, 'valeur', surLaPastille)] : []),
+      ...(analyse.confusions.some((confusion) => confusion.mode === mode && confusion.cran === crans[rang]) ? [texte('confondu', TEXTES_DE_LA_PLANCHE.confondu, 'valeur', surLaPastille)] : []),
     ];
-    return cadre(`colonne ${recette.crans[rang]}`, 'VERTICAL', [
+    return cadre(`colonne ${crans[rang]}`, 'VERTICAL', [
       cadre(nom, 'HORIZONTAL', reperes, { fond: peinture(cran.couleur, contexte.profil), rayon: 6, largeur: COLONNE.largeur, hauteur: HAUTEUR_DE_PASTILLE, alignement: CENTRE, espacement: 0 }),
       texte('code', cran.hexa.slice(1), 'note', encres.seconde),
     ], { espacement: 0, largeur: COLONNE.largeur });
@@ -300,8 +300,8 @@ function rangeeDeRampe(contexte: Contexte, profil: Profil, mode: Mode, encres: E
 }
 
 function sectionDesRampes(contexte: Contexte, mode: Mode, encres: Encres): NoeudCadre {
-  const { recette, analyse } = contexte;
-  const confondus = analyse.rampes.vivid[mode].some((cran, rang) => distanceOk(cran.couleur, analyse.rampes.soft[mode][rang].couleur) < recette.seuils.profilsConfondus);
+  const { analyse } = contexte;
+  const confondus = analyse.confusions.some((confusion) => confusion.mode === mode);
   return cadre('les deux rampes', 'VERTICAL', [
     texte('titre', TEXTES_DE_LA_PLANCHE.rampes, 'theme', encres.encre),
     numeros(contexte, encres),
@@ -385,9 +385,9 @@ function ligneDUsage(contexte: Contexte, emploi: Emploi, mode: Mode, encres: Enc
   const usage = TEXTES_DE_LA_PLANCHE.usages[emploi as keyof typeof TEXTES_DE_LA_PLANCHE.usages];
   const depart = TABLE_DES_EMPLOIS[emploi];
   if (depart === 'fond') throw new Error(`${emploi} n'a pas de nuance sur la planche.`);
-  const rangDeDepart = contexte.recette.crans.indexOf(depart);
+  const rangDeDepart = contexte.analyse.grille.crans.indexOf(depart);
   const etats = decalagesDeLEmploi(emploi).map((decalage) => {
-    const numero = contexte.recette.crans[rangDeDepart + decalage];
+    const numero = contexte.analyse.grille.crans[rangDeDepart + decalage];
     const couleur = contexte.analyse.rampes[porteur][mode][rangDeDepart + decalage].couleur;
     return cadre(`${emploi} ${ETATS[decalage]}`, 'VERTICAL', [
       specimen(contexte, emploi, couleur, mode, encres),
@@ -488,18 +488,19 @@ function sectionDExemple(contexte: Contexte, mode: Mode, encres: Encres): NoeudC
  */
 function grilleDuProfil(contexte: Contexte, profil: Profil, mode: Mode, encres: Encres): NoeudCadre {
   const { recette, analyse } = contexte;
+  const { crans } = analyse.grille;
   const rampe = analyse.rampes[profil][mode];
   const tete = cadre(`teintes ${profil}`, 'HORIZONTAL', [
     texte('profil', NOM_DU_PROFIL[profil], 'role', encres.encre, COLONNE.libelle),
-    ...rampe.map((cran, rang) => cadre(`teinte ${recette.crans[rang]}`, 'HORIZONTAL', [], { fond: peinture(cran.couleur, contexte.profil), largeur: COLONNE.largeur, hauteur: 24, rayon: 6 })),
+    ...rampe.map((cran, rang) => cadre(`teinte ${crans[rang]}`, 'HORIZONTAL', [], { fond: peinture(cran.couleur, contexte.profil), largeur: COLONNE.largeur, hauteur: 24, rayon: 6 })),
   ]);
-  const lignes = rampe.map((fond, i) => cadre(`fond ${recette.crans[i]}`, 'HORIZONTAL', [
+  const lignes = rampe.map((fond, i) => cadre(`fond ${crans[i]}`, 'HORIZONTAL', [
     cadre('nuance', 'HORIZONTAL', [
       cadre('teinte', 'HORIZONTAL', [], { fond: peinture(fond.couleur, contexte.profil), largeur: 12, hauteur: 12, rayon: 3 }),
-      texte('numéro', String(recette.crans[i]), 'chiffre', encres.seconde),
+      texte('numéro', String(crans[i]), 'chiffre', encres.seconde),
     ], { largeur: COLONNE.libelle, alignement: A_GAUCHE }),
     ...rampe.map((lettre, j) => {
-      const nom = `${recette.crans[i]}/${recette.crans[j]}`;
+      const nom = `${crans[i]}/${crans[j]}`;
       if (i === j) return cadre(nom, 'HORIZONTAL', [], { largeur: COLONNE.largeur, hauteur: 24 });
       const valeur = contraste(fond.couleur, lettre.couleur);
       const lisible = atteintLeSeuil(valeur, recette.seuils.nonTexte);
@@ -523,23 +524,29 @@ function sectionDesContrastes(contexte: Contexte, mode: Mode, encres: Encres, la
 
 /* Le cadre */
 
-/** Un thème : son en-tête et son verdict, puis les rampes, les usages, l'exemple et les grilles. */
+/**
+ * Un thème : son en-tête et son verdict, puis les rampes, les usages,
+ * l'exemple et les grilles. Une palette libre sort du modèle : ni usages, ni
+ * interface d'exemple, et son en-tête dit « Palette libre · N nuances » à la
+ * place du verdict (W6.6).
+ */
 function sectionDuTheme(contexte: Contexte, mode: Mode, grille: boolean): NoeudCadre {
   const { recette, analyse } = contexte;
   const encres = encresDuTheme(hexaLu(recette.fonds[mode]), contexte.profil);
-  const largeur = COLONNE.libelle + recette.crans.length * (COLONNE.largeur + TRAME);
+  const largeur = COLONNE.libelle + analyse.grille.crans.length * (COLONNE.largeur + TRAME);
   const manquees = analyse.promesses.filter((promesse) => promesse.mode === mode && promesse.verdict === 'manquee').length;
-  const verdict = cadre('verdict', 'HORIZONTAL', [texte('résultat', verdictDuTheme(manquees), 'chiffre', manquees > 0 ? encres.danger : encres.encre)], {
+  const resultat = analyse.libre ? TEXTES.paletteLibre(analyse.grille.crans.length) : verdictDuTheme(manquees);
+  const verdict = cadre('verdict', 'HORIZONTAL', [texte('résultat', resultat, 'chiffre', manquees > 0 ? encres.danger : encres.encre)], {
     fond: encres.neutre, hauteur: 24, margeLaterale: TRAME, rayon: 12, alignement: CENTRE,
   });
   const section = (enfant: NoeudCadre): NoeudCadre[] => [filet(encres.filet), enfant];
+  const modele = analyse.libre ? [] : [...section(sectionDesUsages(contexte, mode, encres, largeur)), ...section(sectionDExemple(contexte, mode, encres))];
   return cadre(`thème ${mode}`, 'VERTICAL', [
     cadre('en-tête', 'HORIZONTAL', [texte('titre', enTeteDuTheme(mode, recette.fonds[mode]), 'chiffre', encres.seconde), verdict], {
       largeur, alignement: { principal: 'SPACE_BETWEEN', secondaire: 'CENTER' },
     }),
     sectionDesRampes(contexte, mode, encres),
-    ...section(sectionDesUsages(contexte, mode, encres, largeur)),
-    ...section(sectionDExemple(contexte, mode, encres)),
+    ...modele,
     ...(grille ? section(sectionDesContrastes(contexte, mode, encres, largeur)) : []),
   ], {
     fond: peinture(encres.fond, contexte.profil),

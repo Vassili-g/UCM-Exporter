@@ -224,6 +224,11 @@ const panneauDeConfiguration = createConfiguration({
   ouverte: () => ongletPalettes.ouverte(),
   previsualiser: (recette) => ongletPalettes.previsualiser(recette),
   appliquer: (recette) => ongletPalettes.appliquer(recette),
+  cadresAMettreAJour: (proposee) => {
+    const actuelle = ongletPalettes.recette();
+    if (!actuelle || !dernierEtat) return 0;
+    return consequenceDeLImport(actuelle, proposee, dernierEtat.profil, dernierEtat.planche).aMettreAJour.length;
+  },
 });
 const configuration = panneauDeConfiguration.element;
 configuration.hidden = true;

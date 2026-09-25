@@ -25,6 +25,10 @@ export interface PaletteDuRapport {
   readonly id: string;
   readonly nom: string | null;
   readonly reference: string;
+  /** La référence d'avant le premier ajustement (W7), `null` sans ajustement. */
+  readonly originale: string | null;
+  /** Vrai pour une palette libre (W6) : ses crans sont ceux de sa liste, et elle n'a aucune promesse. */
+  readonly libre: boolean;
   /** Le profil et les crans qui portent la référence exacte ([MOT-17]). */
   readonly ancrage: Ancrage;
   readonly crans: { readonly [M in Mode]: { readonly [P in Profil]: readonly CranDuRapport[] } };
@@ -72,13 +76,15 @@ export function rapportDeLaRecette(
       const cransDu = (mode: Mode, profilDeRampe: Profil): CranDuRapport[] =>
         analyse.rampes[profilDeRampe][mode].map((cran, rang) => {
           const mesure = mesurerCran(cran.couleur, fonds[mode], recette.seuils);
-          return { cran: recette.crans[rang], hexa: cran.hexa, fond: mesure.fond, blanc: mesure.blanc, noir: mesure.noir };
+          return { cran: analyse.grille.crans[rang], hexa: cran.hexa, fond: mesure.fond, blanc: mesure.blanc, noir: mesure.noir };
         });
       const parMode = (mode: Mode) => ({ soft: cransDu(mode, 'soft'), vivid: cransDu(mode, 'vivid') });
       return {
         id: palette.id,
         nom: palette.nom ?? null,
         reference: palette.reference,
+        originale: palette.originale ?? null,
+        libre: analyse.libre,
         ancrage: analyse.ancrage,
         crans: { light: parMode('light'), dark: parMode('dark') },
         promesses: analyse.promesses,

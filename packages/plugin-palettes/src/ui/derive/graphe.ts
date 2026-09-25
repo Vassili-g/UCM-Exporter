@@ -16,6 +16,7 @@ import {
   teinteA,
   type Ancrage,
   type Cran,
+  type Grille,
   type Palette,
   type Profil,
   type Recette,
@@ -52,6 +53,8 @@ export interface EntreesDuGraphe {
   readonly rampe: readonly Cran[];
   /** Où la référence exacte se place ([MOT-17]) : le pivot tombe sur son rang clair. */
   readonly ancrage: Ancrage;
+  /** La liste de la palette, commune ou libre : une colonne par nuance (W6). */
+  readonly grille: Grille;
   /** L'échelle de l'ordonnée, en degrés ([DER-01]) : l'éditeur la fige pendant un glisser. */
   readonly echelle: number;
 }
@@ -126,8 +129,8 @@ export function createGraphe(): GrapheUi {
     element: svg,
     poignees: () => poignees,
     afficher(entrees) {
-      const { recette, palette, profil, rampe, ancrage } = entrees;
-      const courbe = recette.courbes.light;
+      const { recette, palette, profil, rampe, ancrage, grille } = entrees;
+      const courbe = grille.courbes.light;
       const total = courbe.length;
       const bouts = boutsDe(recette);
       const reference = rgb8VersOklch(referenceDe(palette));
@@ -164,14 +167,16 @@ export function createGraphe(): GrapheUi {
       losange.append(titre);
       enfants.push(losange);
 
-      // Un bout que la référence dépasse n'a pas de segment à régler ([DER-14]).
+      // Un bout que la référence dépasse n'a pas de segment à régler ([DER-14]). Une poignée se pose sur la colonne
+      // de son numéro, 50 ou 950 ; une liste qui ne le porte pas la pose au bord, du côté de son bout (W6).
       const derive = palette.derive[profil];
       const initiale = lie ? '' : profil[0];
+      const colonneDe = (numero: number, bord: number): number => (grille.crans.includes(numero) ? grille.crans.indexOf(numero) : bord);
       poignees = {
-        clair: reference.L > courbe[0] ? null
-          : poignee('clair', 0, derive.clair, teinteA(courbe[0], reference, derive, bouts), initiale, total),
-        sombre: reference.L < courbe[total - 1] ? null
-          : poignee('sombre', total - 1, derive.sombre, teinteA(courbe[total - 1], reference, derive, bouts), initiale, total),
+        clair: reference.L > bouts.clair ? null
+          : poignee('clair', colonneDe(50, 0), derive.clair, teinteA(bouts.clair, reference, derive, bouts), initiale, total),
+        sombre: reference.L < bouts.sombre ? null
+          : poignee('sombre', colonneDe(950, total - 1), derive.sombre, teinteA(bouts.sombre, reference, derive, bouts), initiale, total),
       };
       if (poignees.clair) enfants.push(poignees.clair);
       if (poignees.sombre) enfants.push(poignees.sombre);
@@ -181,7 +186,7 @@ export function createGraphe(): GrapheUi {
         const x = abscisse(rang, CADRE, total);
         const numero = element('text', { x, y: Y_CRANS, 'text-anchor': 'middle' });
         numero.setAttribute('class', 'derive-graduation');
-        numero.textContent = String(recette.crans[rang]);
+        numero.textContent = String(grille.crans[rang]);
         const teinte = normaliserTeinte(teinteA(clarte, reference, palette.derive.vivid, bouts));
         const bande = element('rect', { x: x - largeur / 2, y: Y_BANDE, width: largeur, height: HAUTEUR_DE_CASE });
         bande.setAttribute('fill', fabriquerCran(CLARTE_DE_LA_BANDE, teinte, recette.profils.vivid.part, recette.gamut).hexa);

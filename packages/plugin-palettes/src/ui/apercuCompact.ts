@@ -8,7 +8,7 @@ import { PROFILS, lireHexa, type Mode, type Profil, type Recette } from 'ucm-cou
 
 import type { AnalyseDePalette } from '../analyse';
 import { encresSur } from './nuancier';
-import { NOM_DU_PROFIL, resultatDuProfil, resultatDuProfilEnMots } from './textes';
+import { NOM_DU_PROFIL, TEXTES, resultatDuProfil, resultatDuProfilEnMots } from './textes';
 
 /** Les rampes Soft et Vivid, peintes du fond du thème, la référence marquée ◆. */
 export function apercuCompact(recette: Recette, analyse: AnalyseDePalette, mode: Mode): HTMLDivElement {
@@ -18,7 +18,7 @@ export function apercuCompact(recette: Recette, analyse: AnalyseDePalette, mode:
   const encres = encresSur(lireHexa(recette.fonds[mode]) ?? [255, 255, 255]);
   surface.style.setProperty('--encre-surface', encres.encre);
   surface.style.setProperty('--bordure-surface', encres.bordure);
-  surface.style.setProperty('--colonnes', String(recette.crans.length));
+  surface.style.setProperty('--colonnes', String(analyse.grille.crans.length));
   surface.setAttribute('aria-hidden', 'true');
   for (const profil of PROFILS) {
     const rangee = document.createElement('div');
@@ -48,10 +48,18 @@ export function garantiesManquees(analyse: AnalyseDePalette, profil: Profil, mod
   return analyse.promesses.filter((promesse) => promesse.mode === mode && promesse.profil === profil && promesse.verdict === 'manquee').length;
 }
 
-/** « Soft ✓ · Vivid ✗ 2 » dans un thème, chaque résultat dit en mots pour l'assistance technique. */
+/**
+ * « Soft ✓ · Vivid ✗ 2 » dans un thème, chaque résultat dit en mots pour
+ * l'assistance technique. Une palette libre n'a pas de garantie : zéro
+ * manquée s'écrirait « ✓ », et le résultat dit « Palette libre · N nuances ».
+ */
 export function resultatsDesGaranties(analyse: AnalyseDePalette, mode: Mode): HTMLParagraphElement {
   const resultats = document.createElement('p');
   resultats.className = 'fiche-garanties';
+  if (analyse.libre) {
+    resultats.textContent = TEXTES.paletteLibre(analyse.grille.crans.length);
+    return resultats;
+  }
   for (const profil of PROFILS) {
     const manquees = garantiesManquees(analyse, profil, mode);
     const resultat = document.createElement('span');

@@ -789,6 +789,98 @@ test('W4.4 Minimums et détection : une ligne par seuil, l’aide lisible sans s
   }
 });
 
+test('W6.5 passer en Libre retire la palette de base et la carte des garanties ; les puces règlent la liste, bornée de 4 à 13 ; revenir au modèle rend la liste commune', async () => {
+  const page = await ouvrirSur('reference-dans-le-selecteur');
+  try {
+    const configuration = page.locator('[aria-label="Configuration de la palette"]');
+    const avant = await compte(page);
+    await configuration.getByRole('button', { name: 'Libre', exact: true }).click();
+    const libre = await prochaine(page, avant);
+    await envoyer(page, rangee(libre.demande));
+    const palette = libre.recette.palettes[0];
+    assert.deepEqual(palette.crans, [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]);
+    assert.equal('base' in palette, false);
+    assert.equal(await configuration.getByRole('group', { name: 'Palette de base' }).isVisible(), false);
+    assert.equal(await configuration.getByText('Sans rôles ni garanties').isVisible(), true);
+    assert.equal(await page.locator('[aria-label="Garanties de contraste"]').isVisible(), false);
+    assert.equal(await page.locator('.pastille-on-solid').isVisible(), false);
+    assert.equal(await page.locator('.accolades').isVisible(), false);
+
+    // Une puce éteinte s'allume, une allumée s'éteint ; la liste se range triée.
+    await configuration.getByRole('button', { name: 'Nuance 1000' , exact: true }).click();
+    const plus = await prochaine(page, avant + 1);
+    assert.deepEqual(plus.recette.palettes[0].crans.slice(-2), [950, 1000]);
+    await envoyer(page, rangee(plus.demande));
+    assert.equal(await configuration.getByRole('button', { name: 'Nuance 1000' , exact: true }).getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('.nuancier-numero').count(), 12);
+    // Treize au plus : à treize, les puces éteintes se désactivent.
+    await configuration.getByRole('button', { name: 'Nuance 1050' , exact: true }).click();
+    await envoyer(page, rangee((await prochaine(page, avant + 2)).demande));
+    assert.equal(await configuration.getByRole('button', { name: 'Nuance 250' , exact: true }).isDisabled(), true);
+    assert.match(await configuration.locator('.puces-de-nuances').getAttribute('aria-label'), /^Nuances · 13 sur 13 au plus$/);
+
+    await configuration.getByRole('button', { name: 'Standard', exact: true }).click();
+    const modele = await prochaine(page, avant + 3);
+    assert.equal('crans' in modele.recette.palettes[0], false);
+    await envoyer(page, rangee(modele.demande));
+    assert.equal(await page.locator('[aria-label="Garanties de contraste"]').isVisible(), true);
+    assert.equal(await page.locator('.nuancier-numero').count(), 11);
+  } finally {
+    await page.close();
+  }
+});
+
+test('W6.5 une palette libre de six nuances : l’aperçu suit sa liste, le détail n’invente aucun rôle, quatre puces allumées ne s’éteignent plus', async () => {
+  const page = await ouvrirSur('palette-libre');
+  try {
+    assert.deepEqual(await page.locator('.nuancier-numero').allTextContents(), ['100', '200', '400', '600', '800', '900']);
+    await page.locator('.pastille[data-profil="vivid"][data-cran="800"]').click();
+    const detail = page.locator('.nuancier-detail');
+    assert.match(await detail.textContent(), /^Vivid · 800#0846A3/);
+    assert.doesNotMatch(await detail.textContent(), /Sert à/);
+    const configuration = page.locator('[aria-label="Configuration de la palette"]');
+    for (const numero of [100, 200]) {
+      const avant = await compte(page);
+      await configuration.getByRole('button', { name: `Nuance ${numero}` , exact: true }).click();
+      await envoyer(page, rangee((await prochaine(page, avant)).demande));
+    }
+    assert.equal(await configuration.getByRole('button', { name: 'Nuance 400' , exact: true }).isDisabled(), true, 'à quatre nuances, une puce allumée ne s’éteint plus');
+    assert.equal(await configuration.getByRole('button', { name: 'Nuance 50' , exact: true }).isDisabled(), false);
+  } finally {
+    await page.close();
+  }
+});
+
+test('W6.4 le préréglage se choisit dans « Luminosité des nuances » : l’effet se lit avant, se range à la confirmation, et Annuler ne range rien', async () => {
+  const page = await ouvrirSur('configuration-de-la-recette', MINIMALE);
+  try {
+    await page.getByRole('button', { name: 'Ouvrir les réglages communs' }).click();
+    const carte = page.locator('[aria-label="Luminosité des nuances"]');
+    assert.equal(await carte.getByRole('button', { name: '11 nuances' }).getAttribute('aria-pressed'), 'true');
+    const avant = await compte(page);
+    await carte.getByRole('button', { name: '9 nuances' }).click();
+    assert.equal(await carte.locator('.confirmation p').textContent(), 'Passer à 9 nuances retire 400 et 950. Les rôles gardent leurs numéros. Aucune nuance gardée ne change de couleur.');
+    await carte.getByRole('button', { name: 'Annuler' }).click();
+    assert.equal(await carte.locator('.confirmation').isVisible(), false);
+    assert.equal(await compte(page), avant, 'Annuler ne range rien');
+
+    await carte.getByRole('button', { name: '13 nuances' }).click();
+    assert.match(await carte.locator('.confirmation p').textContent(), /^Passer à 13 nuances ajoute 1000 et 1050\. Les rôles gardent leurs numéros\./);
+    await carte.getByRole('button', { name: 'Passer à 13 nuances' }).click();
+    const rangement = await prochaine(page, avant);
+    assert.deepEqual(rangement.recette.crans.slice(-3), [950, 1000, 1050]);
+    assert.deepEqual(rangement.recette.courbes.light.slice(-2), [0.215, 0.165]);
+    await envoyer(page, rangee(rangement.demande));
+    assert.equal(await carte.getByRole('button', { name: '13 nuances' }).getAttribute('aria-pressed'), 'true');
+    assert.equal(await carte.locator('.champ-de-courbe[data-mode="light"]').count(), 13);
+    const rognes = await carte.locator('.champ-de-courbe').evaluateAll((champs) => champs.filter((champ) => champ.scrollWidth > champ.clientWidth).length);
+    assert.equal(rognes, 0, 'treize valeurs tiennent à 500 px');
+    assert.equal(await carte.getByText('Liste importée').isVisible(), false);
+  } finally {
+    await page.close();
+  }
+});
+
 test('[ENT-10] une clarté éditée fait sonner la garantie, se range à la validation, et l’aperçu la suit', async () => {
   const page = await ouvrirSur('alertes-seules');
   try {

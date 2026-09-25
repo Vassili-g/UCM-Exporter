@@ -11,7 +11,6 @@
  * pendant la saisie.
  */
 import {
-  alertesDePalette,
   estPresqueGrise,
   profilAutomatique,
   type Classement,
@@ -27,14 +26,17 @@ import { poserFond } from '../configuration';
 import {
   MOTIF_HEXA,
   ajouter,
+  basculerNuance,
   changerReference,
   choisirLaBase,
   deplacer,
   dupliquer,
   nouvelIdentifiant,
   nouvellePalette,
+  passerEnLibre,
   remplacerPalette,
   renommer,
+  revenirAuModele,
   supprimer,
 } from '../edition';
 import { PLANCHE_SANS_CADRE, type EtatDeLaPlanche, type LectureDeSelection, type ProfilDuDocument } from '../lecture';
@@ -42,7 +44,7 @@ import { fraicheurDUnePalette } from '../planche/fraicheur';
 import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction } from '../presentation';
 import { blocDeConstat, listeDesMessages, type Message } from './constats';
 import { createCarte } from './carte';
-import { champEnColonne, createChoixDeBase, type ChoixDeBase } from './champs';
+import { champEnColonne, createChoixDeBase, createChoixDuModele, createPuces, type ChoixDeBase } from './champs';
 import { nuancesProposees } from './couleur/propositions';
 import { createPipette } from './couleur/selecteur';
 import { createCreation } from './creation';
@@ -212,7 +214,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     return {
       hexa: courante.reference,
       titreDesPastilles: TEXTES_DU_SELECTEUR.nuancesDeLaPalette,
-      pastilles: nuancesProposees(recette, analyserPalette(recette, courante).rampes, nuancier.mode()),
+      pastilles: nuancesProposees(analyserPalette(recette, courante), nuancier.mode()),
       saisir: (saisie, fin) => saisirReference(saisie, fin),
     };
   });
@@ -235,13 +237,30 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     if (recette && courante) valider(remplacerPalette(recette, choisirLaBase(courante, valeur)));
   });
   const choixAutomatique = choixDeBase.aide;
+  /*
+   * Le modèle prend la troisième colonne (W6.5, maquette W3.5) : dans le
+   * modèle, la palette de base se règle dessous ; une palette libre n'en a
+   * pas, et ses numéros se choisissent sous les trois colonnes.
+   */
+  const choixDuModele = createChoixDuModele((valeur) => {
+    const courante = ouverte();
+    if (!recette || !courante) return;
+    valider(remplacerPalette(recette, valeur === 'libre' ? passerEnLibre(recette, courante) : revenirAuModele(courante)));
+  });
+  const puces = createPuces((numero) => {
+    const courante = ouverte();
+    if (recette && courante) valider(remplacerPalette(recette, basculerNuance(courante, numero)));
+  });
+  const colonneDuModele = document.createElement('div');
+  colonneDuModele.className = 'colonne-du-modele';
+  colonneDuModele.append(choixDuModele.element, choixDeBase.element);
 
   const colonnes = document.createElement('div');
   colonnes.className = 'colonnes-de-base';
-  colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference, choixDeBase.element);
+  colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference, colonneDuModele);
   const carteDeBase = createCarte({ titre: TEXTES_DE_L_ONGLET.configuration });
   const messagesDeBase = document.createElement('div');
-  carteDeBase.corps.append(colonnes, messagesDeBase);
+  carteDeBase.corps.append(colonnes, puces.element, messagesDeBase);
 
   // Carte d'aperçu sans titre ([UI-04]) : thèmes et fond dans l'en-tête, la référence sous la surface.
   const nuancier = createNuancier({
@@ -534,19 +553,24 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     nom.placeholder = courante.reference;
     titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre(nomDeLaPalette(courante));
     choixDeBase.poser(courante.base ?? 'auto');
+    choixDuModele.poser(analyse.libre ? 'libre' : 'modele');
+    choixDeBase.element.hidden = analyse.libre;
+    puces.element.hidden = !analyse.libre;
+    puces.poser(analyse.grille.crans);
     choixAutomatique.textContent = courante.base ? '' : TEXTES_DE_LA_BASE.choixAutomatique(profilAutomatique(lue, courante));
     choixAutomatique.hidden = Boolean(courante.base);
     repereDeReference.textContent = `◆ ${ligneDeLaReference(analyse.ancrage, nuancier.mode())}`;
 
-    const confusions = alertesDePalette(lue, courante).flatMap((alerte) => (alerte.code === 'profils-confondus' ? alerte.crans : []));
-    nuancier.afficher({ recette: lue, analyse, confondues: confusions });
+    nuancier.afficher({ recette: lue, analyse, confondues: analyse.confusions });
 
     const nomDe = (id: string) => {
       const trouvee = lue.palettes.find((candidate) => candidate.id === id);
       return trouvee ? nomDeLaPalette(trouvee) : id;
     };
     const messages = messagesDeLaPalette(analyse, courante, { recette: lue, nomDe });
-    garanties.afficher({ recette: lue, palette: courante, analyse, mode: nuancier.mode() });
+    // Une palette libre n'a pas de garantie : sa carte se retire (W6.5).
+    garanties.element.hidden = analyse.libre;
+    if (!analyse.libre) garanties.afficher({ recette: lue, palette: courante, analyse, mode: nuancier.mode() });
     intensites.afficher(lue, courante, analyse.part, messages.intensite);
     const pointsDIntensite = messages.intensite.filter((message) => message.severite !== 'notice').length;
     carteDesIntensites.poserResume(resumeDesIntensites(courante.parts?.origine, courante.base, analyse.parts, pointsDIntensite));

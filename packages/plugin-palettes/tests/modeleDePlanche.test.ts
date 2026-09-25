@@ -192,6 +192,20 @@ test('[PLA-16] W3.6 : une grille par thème et profil, alignée sur les rampes ;
   assert.deepEqual([ligne.espacement, (ligne.enfants[1] as NoeudCadre).largeur], [rampe.espacement, (rampe.enfants[1] as NoeudCadre).largeur]);
 });
 
+test('W5.5 W6.6 : une palette libre n’a ni usages ni interface d’exemple ; ses rampes et ses grilles suivent sa liste, et son en-tête le dit', () => {
+  const libre: Palette = { ...BLEU, crans: [100, 200, 400, 600, 800, 900] };
+  const modele = modeleDeCadre(avec(libre), libre, 'SRGB', { grille: true });
+  for (const mode of ['light', 'dark'] as const) {
+    const theme = trouver(modele.racine, `thème ${mode}`);
+    assert.deepEqual(theme.enfants.map((noeud) => noeud.nom).filter((nom) => nom !== 'filet'), ['en-tête', 'les deux rampes', 'contrastes']);
+    assert.equal(textes(trouver(theme, 'verdict'))[0].contenu, 'Palette libre · 6 nuances');
+    assert.deepEqual(textes(trouver(theme, 'numéros')).map((noeud) => noeud.contenu), ['100', '200', '400', '600', '800', '900']);
+    assert.deepEqual(trouver(theme, `grille ${mode} vivid`).enfants.slice(1).map((noeud) => noeud.nom), ['fond 100', 'fond 200', 'fond 400', 'fond 600', 'fond 800', 'fond 900']);
+  }
+  assert.deepEqual(modele.peints.filter(({ nom }) => nom.startsWith('vivid/light/')).map(({ nom }) => nom), ['vivid/light/100', 'vivid/light/200', 'vivid/light/400', 'vivid/light/600', 'vivid/light/800', 'vivid/light/900']);
+  assert.equal(modele.peints.find(({ nom }) => nom === 'vivid/light/600')?.hexa, '#1E6FD9');
+});
+
 test('[PLA-21] tout est en auto layout, sur une trame de 8 px', () => {
   for (const noeud of cadres(AVEC_GRILLE.racine)) {
     assert.ok(['VERTICAL', 'HORIZONTAL'].includes(noeud.direction), noeud.nom);

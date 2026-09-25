@@ -3,6 +3,7 @@
  * ranger : le rangement suit la fin du geste (D-D).
  */
 import {
+  BORNES_DES_CRANS_LIBRES,
   DERIVE_MAXIMALE,
   PROFILS,
   ajusterPartsGrises,
@@ -203,3 +204,37 @@ export function choisirLaBase(palette: Palette, choix: 'auto' | Profil): Palette
   const { parts: _retirees, ...sansParts } = sansBase;
   return { ...sansParts, base: choix };
 }
+
+/**
+ * Passe une palette en palette libre (W6.5), sur la liste commune bornée à
+ * treize numéros admis : le designer retire ensuite ce qu'il ne veut pas. Une
+ * palette libre n'a pas de base (conception W6) : la retirer rend les parts
+ * communes à une base forcée.
+ */
+export function passerEnLibre(recette: Recette, palette: Palette): Palette {
+  if (palette.crans !== undefined) return palette;
+  const { premier, dernier, pas, nombre } = BORNES_DES_CRANS_LIBRES;
+  const admis = recette.crans.filter((cran) => cran % pas === 0 && cran >= premier && cran <= dernier).slice(0, nombre[1]);
+  const { base: _retiree, ...sansBase } = palette;
+  return { ...sansBase, crans: admis };
+}
+
+/** Rend une palette libre au modèle du design system : elle suit de nouveau la liste commune, en Auto. */
+export function revenirAuModele(palette: Palette): Palette {
+  const { crans: _retiree, ...commune } = palette;
+  return commune;
+}
+
+/**
+ * Ajoute ou retire un numéro d'une palette libre, dans l'ordre croissant. Un
+ * geste qui sortirait des bornes, moins de quatre ou plus de treize numéros,
+ * rend la palette telle quelle : l'interface désactive la puce avant.
+ */
+export function basculerNuance(palette: Palette, numero: number): Palette {
+  if (palette.crans === undefined) return palette;
+  const { nombre } = BORNES_DES_CRANS_LIBRES;
+  const present = palette.crans.includes(numero);
+  const crans = present ? palette.crans.filter((cran) => cran !== numero) : [...palette.crans, numero].sort((a, b) => a - b);
+  return crans.length < nombre[0] || crans.length > nombre[1] ? palette : { ...palette, crans };
+}
+

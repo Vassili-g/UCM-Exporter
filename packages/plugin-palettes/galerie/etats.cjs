@@ -613,9 +613,9 @@ const ETATS = [
     id: 'palette-libre',
     titre: 'Palette libre',
     quand: 'Une palette sort du modèle du design system : six nuances, numérotées par le designer.',
-    regarder: null,
-    existe: false,
-    attendu: 'W6.5',
+    regarder: 'Le modèle Libre pressé et « Sans rôles ni garanties » dans la troisième colonne, les puces 100, 200, 400, 600, 800 et 900 allumées, l’aperçu à six colonnes sans on-solid ni accolades, et aucune carte des garanties.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([{ ...BLEU, crans: [100, 200, 400, 600, 800, 900] }]))],
   },
   {
     id: 'reference-ajustee',

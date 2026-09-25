@@ -1,10 +1,29 @@
 /**
- * Ce que la configuration de la recette modifie (section 8.3) : les deux
- * courbes, les parts des profils, les deux fonds et les cinq seuils, rangés en
- * cinq cartes que « Rétablir » remet une à une aux valeurs par défaut (V9.5).
- * La liste des crans ne s'y modifie pas ([ENT-08]).
+ * Ce que la configuration de la recette modifie (section 8.3) : le préréglage
+ * du nombre de nuances, les deux courbes, les parts des profils, les deux
+ * fonds et les cinq seuils, rangés en cinq cartes que « Rétablir » remet une à
+ * une aux valeurs par défaut (V9.5). Une autre liste que les trois
+ * préréglages ne vient que d'un import ([ENT-08]).
  */
-import { MODES, ajusterPartsGrises, ecrireHexa, lireHexa, recetteParDefaut, type Mode, type Profil, type Recette, type Seuils } from 'ucm-couleur';
+import {
+  MODES,
+  PREREGLAGES,
+  PROFILS,
+  ajusterPartsGrises,
+  ecrireHexa,
+  grilleAuPrereglage,
+  grilleDe,
+  lireHexa,
+  nombreDeNuancesDe,
+  rampesDe,
+  recetteParDefaut,
+  type Mode,
+  type NombreDeNuances,
+  type Palette,
+  type Profil,
+  type Recette,
+  type Seuils,
+} from 'ucm-couleur';
 
 /** Un champ numérique de la configuration. */
 export type ChampDeConfiguration =
@@ -99,9 +118,10 @@ export function carteDuGroupe(groupe: GroupeDeConfiguration): CarteDesReglages {
 
 const SEUILS_DE_LA_CARTE = { minimums: ['texte', 'nonTexte'], proches: ['profilsConfondus', 'palettesProches', 'chromaGrise'] } as const;
 
-/** Vrai quand la liste des crans est celle par défaut : les courbes par défaut n'ont de sens que pour elle. */
-function cransParDefaut(recette: Recette): boolean {
-  return recette.crans.join(',') === recetteParDefaut().crans.join(',');
+/** Les courbes par défaut du préréglage que la liste reconnaît ; `null` pour une liste importée, qui n'en a pas. */
+function courbesParDefaut(recette: Recette): Recette['courbes'] | null {
+  const nombre = nombreDeNuancesDe(recette.crans);
+  return nombre === null ? null : PREREGLAGES[nombre].courbes;
 }
 
 /**
@@ -117,7 +137,10 @@ export function retablir(recette: Recette, carte: CarteDesReglages): Recette | n
   switch (carte) {
     case 'fonds': return { ...recette, fonds: defaut.fonds };
     case 'parts': return { ...recette, profils: defaut.profils };
-    case 'courbes': return cransParDefaut(recette) ? { ...recette, courbes: defaut.courbes } : null;
+    case 'courbes': {
+      const courbes = courbesParDefaut(recette);
+      return courbes ? { ...recette, courbes: { light: [...courbes.light], dark: [...courbes.dark] } } : null;
+    }
     default: return SEUILS_DE_LA_CARTE[carte].reduce((suivante: Recette, seuil) => poserValeur(suivante, { seuil }, defaut.seuils[seuil]), recette);
   }
 }
@@ -128,7 +151,51 @@ export function estParDefaut(recette: Recette, carte: CarteDesReglages): boolean
   switch (carte) {
     case 'fonds': return MODES.every((mode) => recette.fonds[mode] === defaut.fonds[mode]);
     case 'parts': return recette.profils.soft.part === defaut.profils.soft.part && recette.profils.vivid.part === defaut.profils.vivid.part;
-    case 'courbes': return MODES.every((mode) => recette.courbes[mode].join(',') === defaut.courbes[mode].join(','));
+    case 'courbes': {
+      const courbes = courbesParDefaut(recette);
+      return courbes !== null && MODES.every((mode) => recette.courbes[mode].join(',') === courbes[mode].join(','));
+    }
     default: return SEUILS_DE_LA_CARTE[carte].every((seuil) => recette.seuils[seuil] === defaut.seuils[seuil]);
   }
 }
+
+/** Ce que le passage à un préréglage ferait (W6.4), avant que le designer ne le confirme. */
+export interface EffetDuPrereglage {
+  /** La recette au nouveau préréglage, à juger puis à ranger. */
+  readonly recette: Recette;
+  readonly ajoutes: readonly number[];
+  readonly retires: readonly number[];
+  /**
+   * Les palettes dont une nuance gardée change de couleur : une référence qui
+   * s'ancre sur une autre nuance, ou une palette libre dont un numéro
+   * s'interpole autrement.
+   */
+  readonly changees: readonly Palette[];
+}
+
+/** Les couleurs d'une palette, par profil, thème et numéro. */
+function couleursParNumero(recette: Recette, palette: Palette): Map<string, string> {
+  const rampes = rampesDe(recette, palette);
+  const { crans } = grilleDe(recette, palette);
+  const couleurs = new Map<string, string>();
+  for (const profil of PROFILS) {
+    for (const mode of MODES) rampes[profil][mode].forEach((cran, rang) => couleurs.set(`${profil}/${mode}/${crans[rang]}`, cran.hexa));
+  }
+  return couleurs;
+}
+
+export function effetDuPrereglage(recette: Recette, nombre: NombreDeNuances): EffetDuPrereglage {
+  const suivante = { ...recette, ...grilleAuPrereglage(recette, nombre) };
+  const changees = recette.palettes.filter((palette) => {
+    const avant = couleursParNumero(recette, palette);
+    const apres = couleursParNumero(suivante, palette);
+    return [...avant].some(([cle, hexa]) => apres.has(cle) && apres.get(cle) !== hexa);
+  });
+  return {
+    recette: suivante,
+    ajoutes: suivante.crans.filter((cran) => !recette.crans.includes(cran)),
+    retires: recette.crans.filter((cran) => !suivante.crans.includes(cran)),
+    changees,
+  };
+}
+

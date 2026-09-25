@@ -635,6 +635,16 @@
   text-anchor: middle;
 }
 
+/* Le préréglage du nombre de nuances, en tête de « Luminosité des nuances » (W6.4). */
+.bloc-du-prereglage {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+.bascule-du-prereglage {
+  width: 168px;
+}
+
 /*
  * Une colonne par nuance, sous son point du tracé, et une ligne par thème
  * (W3.2, disposition A). Les champs prennent la taille du corps : onze
@@ -656,6 +666,15 @@
   color: var(--texte-second);
   font-size: 10px;
   text-align: center;
+}
+
+.table-serree {
+  column-gap: 1px;
+}
+
+.table-courbes.table-serree .champ-de-courbe {
+  font-size: 10px;
+  letter-spacing: -0.2px;
 }
 
 .table-courbes .champ-de-courbe {
@@ -1078,6 +1097,49 @@
 
 .libelle-de-champ {
   color: var(--texte-second);
+}
+
+/* Le modèle, puis la palette de base dans le modèle, dans la troisième colonne (W6.5). */
+.colonne-du-modele {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--espace-controle);
+}
+
+/* Les numéros d'une palette libre : une puce par multiple de 50, allumée quand la palette le porte (W3.5). */
+.puces-de-nuances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-serre);
+}
+
+.puce-de-nuance {
+  height: var(--hauteur-secondaire);
+  min-width: 40px;
+  padding: 0 var(--espace-serre);
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  background: var(--fond);
+  color: var(--texte-second);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.puce-de-nuance[aria-pressed='true'] {
+  border-color: var(--bordure-marque);
+  background: var(--fond-marque);
+  color: var(--texte-sur-marque);
+}
+
+.puce-de-nuance:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.puce-de-nuance:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
 }
 
 /* La palette de base : trois segments dans un champ, comme la maquette du second tour. */
