@@ -14,6 +14,7 @@ import {
 import { indexContractedNamesInDocument, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
 import { getAllNodes } from './exportableNodes';
+import { etape, fermerLaMesure, ouvrirLaMesure } from './mesure';
 import { pousserLesImbriques, releverLesImbriques } from './imbriques';
 import type { ReleveDesImbriques } from './imbriques';
 import { TAGS_D_INTENTION } from './rulesModel';
@@ -202,6 +203,16 @@ export function componentContractFilename(name: string): string {
  * pas, et une barre de progression inventerait une précision qu'on n'a pas.
  */
 export async function handleExportComponent(annoncer: Annonce = () => {}): Promise<ComponentExport> {
+  ouvrirLaMesure();
+  const resultat = await exporterLaSelection((texte) => {
+    etape(texte);
+    annoncer(texte);
+  });
+  fermerLaMesure(resultat.content);
+  return resultat;
+}
+
+async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> {
   const componentSet = getSelectedComponent();
   annoncer('Lecture des règles d’usage…');
 
@@ -283,9 +294,11 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
   // conditionne tout ce qui suit.
   annoncer('Lecture des composants imbriqués…');
+  etape('index');
   const contientDesInstances = matrix.variants.some(({ component }) =>
     getAllNodes(component).some((node) => node.type === 'INSTANCE'));
   const contractes = contientDesInstances ? await indexContractedNamesInDocument() : new Set<string>();
+  etape('composition');
   const {
     composes: scannedComposes,
     composed,
@@ -310,6 +323,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   addProjectionWarnings(compositionWarnings);
   warningCursor = warnings.length;
 
+  etape('wrapper');
   const wrapper = referenceComponent
     ? await findWrapperReference(referenceComponent, warnings, composed)
     : null;
@@ -373,6 +387,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   const index = indexVariables(variables, new Map(collections.map((c) => [c.id, c])));
   const resolver = new VariableNameResolver({ index, warnings });
 
+  etape('structure');
   const extracted = await extractStructure(
     matrix,
     matrixWarnings,
@@ -472,6 +487,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // L'échantillon se pose ici, une fois l'arbre exact connu et les valeurs
   // appliquées relevées : il ne recalcule ni chemin de slot, ni reconnaissance
   // de dépendance, il assemble ce que les deux extractions savent déjà.
+  etape('echantillons');
   const componentsById = new Map(matrix.variants.map(({ component }) => [component.id, component]));
   for (const variant of extracted.variants) {
     const component = componentsById.get(variant.nodeId);
@@ -488,6 +504,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     if (Object.keys(sample).length > 0) variant.sample = sample;
   }
 
+  etape('compaction');
   const compacted = compactVariants(extracted.variants, propertyBindings);
 
   // Le lien Figma absent ne se signale pas. Distribué par la Community, le
@@ -590,6 +607,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     ...(intent ? { intent } : {}),
   }, CATALOGUES_DE_VUES);
 
+  etape('serialisation');
   return {
     filename: componentContractFilename(contract.name),
     content: serializeJson(contract),

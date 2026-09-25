@@ -27,6 +27,7 @@ import { buildContractPropertySurface } from './propertySurface';
 import type { ContractPropertySurface } from './propertySurface';
 import type { ComposedDependency } from '@ucm-kit/core/format';
 import { pousserLocalise, reporterLocalisations } from './localisation';
+import { compter } from './mesure';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
 export type ContractedNames = ReadonlySet<string>;
@@ -126,6 +127,7 @@ export function indexContractedNames(page: PageNode): Set<string> {
  */
 function calquesDeNomDeComposant(page: PageNode): TextNode[] {
   const parCriteres = (page as Partial<PageNode>).findAllWithCriteria;
+  if (typeof parCriteres === 'function') compter('appelsFindAllWithCriteria');
   const textes = typeof parCriteres === 'function'
     ? (parCriteres.call(page, { types: ['TEXT'] }) as TextNode[])
     : (page.findAll((node) => node.type === 'TEXT') as TextNode[]);
@@ -172,17 +174,24 @@ function proprietaireDuCalque(calque: TextNode): string | null {
  * runtimes fonctionnels sans réduire la portée dans un document moderne.
  */
 export async function indexContractedNamesInDocument(): Promise<Set<string>> {
-  if (indexDuDocument) return indexDuDocument;
-  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync();
+  if (indexDuDocument) {
+    compter('tailleIndex', indexDuDocument.size);
+    return indexDuDocument;
+  }
+  const chargees = typeof figma.loadAllPagesAsync === 'function';
+  if (chargees) await figma.loadAllPagesAsync();
   const pages = (figma.root.children ?? []).filter(
     (node): node is PageNode => node.type === 'PAGE',
   );
   if (pages.length === 0) pages.push(figma.currentPage);
+  if (chargees) compter('pagesChargees', pages.length);
 
   const names = new Set<string>();
   for (const page of pages) {
+    compter('pagesBalayees');
     for (const name of indexContractedNames(page)) names.add(name);
   }
+  compter('tailleIndex', names.size);
   if (ecouterLesChangements()) indexDuDocument = names;
   return names;
 }

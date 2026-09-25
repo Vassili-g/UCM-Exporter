@@ -75,35 +75,53 @@ L4 ne dépend que de L1 et peut passer avant L2.
 
 ## Lot L0 : trace de mesure et sondes
 
-- [ ] **L0.1** Créer `packages/plugin-exporter/src/contract/mesure.ts` :
+- [x] **L0.1** Créer `packages/plugin-exporter/src/contract/mesure.ts` :
   `ouvrirLaMesure()`, `etape(nom)` qui clôt l'étape précédente,
   `compter(nom, n = 1)`, `fermerLaMesure(content)` qui calcule l'empreinte et
   imprime la trace. Champs : conception, section 5.1. Toutes les fonctions
   sont sans effet quand `__UCM_MESURE__` vaut faux ou n'est pas défini.
-- [ ] **L0.2** Déclarer `__UCM_MESURE__` dans un fichier `.d.ts` du plugin.
+  *Fait. La garde est écrite en ligne dans chaque fonction : esbuild ne
+  replie pas l'appel d'une fonction qui rend `false`.*
+- [x] **L0.2** Déclarer `__UCM_MESURE__` dans un fichier `.d.ts` du plugin.
   Ajouter `--define:__UCM_MESURE__=false` à `build:code` dans
   `packages/plugin-exporter/package.json`, et un script `build:code:mesure` qui
   passe `true`. Vérifier que la chaîne `[ucm:mesure]` est absente du bundle de
   `build:code`.
-- [ ] **L0.3** Poser les étapes dans `handleExportComponent`, et les compteurs
+  *Fait, avec un écart : `--define` seul laisse `if (false) { … }` et la chaîne
+  dans le bundle (esbuild 0.28.2, sans minification). Les deux scripts passent
+  donc aussi `--minify-syntax`, qui retire le code mort. La chaîne est absente
+  du bundle de `build:code` et présente dans celui de `build:code:mesure`. La
+  déclaration est dans `src/build.d.ts`.*
+- [x] **L0.3** Poser les étapes dans `handleExportComponent`, et les compteurs
   qui ne demandent aucun point de passage nouveau : `appelsGetAllNodes` et
   `nodesParcourus` dans `getAllNodes`, `pagesChargees` et `pagesBalayees` dans
   l'index actuel, `tailleIndex`.
-- [ ] **L0.4** Tests dans `tests/mesure.test.ts` : sans la constante, aucune
+  *Fait. `handleExportComponent` ouvre et ferme la trace autour de
+  `exporterLaSelection`, et chaque annonce ouvre une étape. Le compteur
+  `appelsFindAllWithCriteria` est posé dans le relevé des calques
+  `component-name`.*
+- [x] **L0.4** Tests dans `tests/mesure.test.ts` : sans la constante, aucune
   sortie console et un contrat inchangé ; avec la constante posée sur
   `globalThis`, une seule sortie `[ucm:mesure]` par analyse ; l'empreinte est
   la même pour deux exports du même composant à deux dates, et change quand le
   composant change.
-- [ ] **L0.5** Écrire un script par sonde S1, S2, S5 et S6 dans
+  *Fait. Vus rouges : garde retirée d'`ouvrirLaMesure` et de
+  `fermerLaMesure`, `console.log` retiré, date non neutralisée dans
+  l'empreinte.*
+- [x] **L0.5** Écrire un script par sonde S1, S2, S5 et S6 dans
   `docs/notes/Recherches/Performance de l'analyse/sondes/`, à coller dans la
   console d'un plugin de développement. Chaque script imprime son constat et
   n'écrit rien dans le document. S2 porte le battement et le seuil de la
   conception, section 6, et rejoue le calcul de L2 sur le composant
   sélectionné ; tant que L2 n'existe pas, il charge les pages des maîtres des
   instances de la sélection.
-- [ ] **L0.6** Documenter dans le
+  *Fait : `sondes/S1-nodechange.js`, `S2-prechauffage.js`,
+  `S5-ordre-findAll.js`, `S6-page-du-maitre.js`. S2 rejoue le calcul en tours
+  de la conception, section 5.4, avec un battement `setTimeout(0)`.*
+- [x] **L0.6** Documenter dans le
   [README du plugin](../../../../packages/plugin-exporter/README.md) comment
   produire le build de mesure et lire la trace.
+  *Fait : section « Mesurer une analyse ».*
 
 ## Lot M0 : mesure de départ et sondes [mainteneur]
 

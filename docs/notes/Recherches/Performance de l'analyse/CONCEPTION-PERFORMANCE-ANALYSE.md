@@ -116,10 +116,12 @@ Nouveau module `src/contract/mesure.ts`. Il tient, pour une analyse :
   `exportedAt` est remplacée par une chaîne fixe.
 
 La trace est activée à la compilation. `build:code` passe
-`--define:__UCM_MESURE__=false` à esbuild, qui retire le code de mesure du
-bundle. Un script `build:code:mesure` passe `true`. Le module lit la constante
-par `typeof __UCM_MESURE__ !== 'undefined' && __UCM_MESURE__`, ce qui garde les
-tests sous Node sans définition. La trace part en un seul
+`--define:__UCM_MESURE__=false` et `--minify-syntax` à esbuild, qui retire alors
+le code de mesure du bundle ; sans `--minify-syntax`, il garde un `if (false)`
+et sa chaîne. Un script `build:code:mesure` passe `true`. Chaque fonction du
+module lit la constante en ligne par
+`typeof __UCM_MESURE__ !== 'undefined' && __UCM_MESURE__ === true`, ce qui garde
+les tests sous Node sans définition. La trace part en un seul
 `console.log('[ucm:mesure]', …)` en fin d'analyse, jamais dans
 `meta.diagnostics` ni vers l'interface.
 

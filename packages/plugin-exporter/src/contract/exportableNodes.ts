@@ -12,6 +12,7 @@
  */
 import { variableAliases } from '../variables';
 import { getBinding } from './nodeBindings';
+import { compter } from './mesure';
 import type { ComposedDependency } from '@ucm-kit/core/format';
 import { noter, phraseDe, pointDe, pousserNote, sujet } from './localisation';
 import type { PointACorriger, Sujet } from './localisation';
@@ -131,9 +132,11 @@ export function getAllNodes(
   // slot qui rend directement sa dépendance. `hasAncestorIn` ne teste que les
   // ancêtres stricts et ne la couvre donc pas ; sans cette ligne, le parent
   // décrirait les calques, les visibilités et les icônes d'un contrat voisin.
+  compter('appelsGetAllNodes');
   if (composed.has(root.id)) return [root];
 
   const descendants = 'findAll' in root ? root.findAll(() => true) : [];
+  compter('nodesParcourus', descendants.length);
   if (composed.size === 0 && !descendants.some(isStaticallyHidden)) return [root, ...descendants];
   const ignoredBindings = new Map<SceneNode, boolean>();
   const exportable: SceneNode[] = [root];
