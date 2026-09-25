@@ -360,7 +360,11 @@ réglage de texte n'en ont pas, une racine n'étant jamais un texte. Dans
 différentes, deux réglages qui se contredisent et des côtés sans variable d'un
 groupe latéral ont aussi le leur. Des côtés sans variable d'un groupe qui ne
 publie rien gardent une ligne par racine : le texte retenu dit que les côtés
-reliés sont transmis. Les
+reliés sont transmis. Dans `flexLayout.ts`, l'alignement d'auto layout
+illisible et la piste de grille illisible d'une racine ont leur texte de
+groupe. L'alignement illisible et le `layout grow` hors menu d'un enfant de
+racine gardent le nom de l'enfant et perdent celui de la racine : les enfants
+de tous les variants partagent une phrase. Les
 représentants de tailles d'un wrapper ne sont pas des racines du set exporté et
 gardent le nom de leur variant.
 

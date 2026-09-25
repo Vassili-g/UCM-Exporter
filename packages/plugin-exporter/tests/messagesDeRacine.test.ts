@@ -544,3 +544,111 @@ test('trois racines à un coin sans variable disent « coins », et une variable
   assert.ok(titres.includes("corner radius : certains coins n'ont pas de variable associée."), titres.join('\n'));
   assert.ok(titres.includes('corner radius : certains coins utilisent une variable introuvable.'), titres.join('\n'));
 });
+
+test('trois racines à l’alignement d’auto layout illisible donnent une ligne', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racine(nom, { primaryAxisAlignItems: 'DIAGONAL' }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  await extraire(racines, canal);
+
+  uneLignePourTrois(canal, racines, {
+    titre: "auto layout : l'alignement ne peut pas être lu.",
+    impact: "Le contrat ne transmettra pas l'alignement des layers dans les variants concernés.",
+    action: "Définissez de nouveau l'alignement sur les deux axes dans chaque variant "
+      + 'concerné, puis réexportez.',
+  });
+});
+
+test('trois racines à une colonne de grille illisible donnent une ligne', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racine(nom, {
+    layoutMode: 'GRID',
+    gridColumnCount: 2,
+    gridRowCount: 1,
+    gridColumnSizes: [{ type: 'FLEX', value: 1 }, { type: 'SPIRAL' }],
+    gridRowSizes: [{ type: 'HUG' }],
+    gridRowGap: 0,
+    gridColumnGap: 0,
+  }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  await extraire(racines, canal);
+
+  uneLignePourTrois(canal, racines, {
+    titre: 'Grille, colonne 2 : la taille ne peut pas être lue.',
+    impact: 'Le contrat indiquera une taille automatique pour cette colonne.',
+    action: 'Définissez de nouveau la taille de la colonne 2 dans chaque variant concerné, '
+      + 'puis réexportez.',
+  });
+});
+
+/** Une racine qui range un libellé, réglé comme on le donne. */
+function racineAuLibelle(nom: string, libelle: Record<string, unknown>): ComponentNode {
+  const enfant = {
+    type: 'TEXT',
+    id: `label-${nom}`,
+    name: 'Label',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+    ...libelle,
+  };
+  return racine(nom, { children: [enfant], findAll: findAllOn([enfant]) });
+}
+
+const ALIGNEMENT_DU_LIBELLE = {
+  titre: "Layer « Label » : son alignement dans l'auto layout ne peut pas être lu.",
+  impact: 'Le contrat ne précisera pas comment aligner ce layer dans les variants concernés.',
+  action: "Définissez de nouveau son alignement dans l'auto layout de chaque variant "
+    + 'concerné, puis réexportez.',
+};
+
+test('un enfant à l’alignement illisible sous trois racines donne une ligne, sans nom de racine', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racineAuLibelle(nom, { layoutAlign: 'DIAGONAL' }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  await extraire(racines, canal);
+
+  assert.deepEqual(partiesDe(canal).get(phrase(ALIGNEMENT_DU_LIBELLE)), ALIGNEMENT_DU_LIBELLE);
+  assert.deepEqual(
+    localisationsDe(canal).get(phrase(ALIGNEMENT_DU_LIBELLE)),
+    racines.map((noeud) => `label-${noeud.name}`),
+  );
+  assert.equal(canal.some((message) => message.includes('« Wide »')), false, canal.join('\n'));
+});
+
+test('un enfant à l’alignement illisible sous un composant seul garde le nom de son parent', async () => {
+  const canal: string[] = [];
+
+  await extraire([racineAuLibelle('Wide', { layoutAlign: 'DIAGONAL' })], canal);
+
+  assert.equal(partiesDe(canal).has(phrase(ALIGNEMENT_DU_LIBELLE)), false);
+  assert.ok(canal.some((message) => message.includes("l'auto layout « Wide »")), canal.join('\n'));
+});
+
+test('un enfant au layout grow hors menu sous trois racines donne une ligne', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racineAuLibelle(nom, {
+    layoutSizingVertical: 'FIXED',
+    layoutGrow: 2,
+    height: 16,
+    boundVariables: { height: alias('haut') },
+  }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  for (const noeud of racines) await extractLayout(noeud, resolverFor({ haut: 'size.h' }), canal);
+
+  const etirement = {
+    titre: "Layer « Label » : son réglage d'étirement n'est pas pris en charge.",
+    impact: "Le contrat ne précisera pas si ce layer doit occuper l'espace disponible.",
+    action: 'Choisissez Fill ou Fixed pour sa largeur dans un auto layout horizontal, ou pour '
+      + 'sa hauteur dans un auto layout vertical, puis réexportez.',
+  };
+  assert.deepEqual(partiesDe(canal).get(phrase(etirement)), etirement, canal.join('\n'));
+  assert.deepEqual(
+    localisationsDe(canal).get(phrase(etirement)),
+    racines.map((noeud) => `label-${noeud.name}`),
+  );
+});

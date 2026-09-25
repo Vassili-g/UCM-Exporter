@@ -242,6 +242,18 @@ stroke weight écrit « le <champ> » dans l'impact et « les côtés » dans l'
 des côtés reliés à des variables différentes. `nodeBindings.ts` emploie
 l'apostrophe droite.
 
+### Disposition illisible (E8)
+
+| Message | Titre | Impact | Action |
+|---|---|---|---|
+| Alignement d'auto layout, les racines | auto layout : l'alignement ne peut pas être lu. | Le contrat ne transmettra pas l'alignement des layers dans les variants concernés. | Définissez de nouveau l'alignement sur les deux axes dans chaque variant concerné, puis réexportez. |
+| Piste de grille, les racines | Grille, colonne 2 : la taille ne peut pas être lue. | Le contrat indiquera une taille automatique pour cette colonne. | Définissez de nouveau la taille de la colonne 2 dans chaque variant concerné, puis réexportez. |
+| Alignement d'un enfant de racine | Layer « Label » : son alignement dans l'auto layout ne peut pas être lu. | Le contrat ne précisera pas comment aligner ce layer dans les variants concernés. | Définissez de nouveau son alignement dans l'auto layout de chaque variant concerné, puis réexportez. |
+| Layout grow d'un enfant de racine | Layer « Label » : son réglage d'étirement n'est pas pris en charge. | Le contrat ne précisera pas si ce layer doit occuper l'espace disponible. | Choisissez Fill ou Fixed pour sa largeur dans un auto layout horizontal, ou pour sa hauteur dans un auto layout vertical, puis réexportez. |
+
+Une ligne de grille s'écrit « ligne 2 » et « cette ligne ». `flexLayout.ts`
+emploie l'apostrophe droite.
+
 ### Ajustements de forme
 
 - Les titres de L6 finissent par un point : la phrase compacte de
@@ -256,5 +268,4 @@ L6 n'écrit un texte de groupe que pour ce que le mainteneur a validé. Sur la
 racine d'un variant, ces messages gardent une ligne par variant jusqu'au lot qui
 écrit leur texte retenu :
 
-- les côtés sans variable d'un groupe qui ne publie aucun côté ;
-- l'alignement d'auto layout illisible.
+- les côtés sans variable d'un groupe qui ne publie aucun côté.

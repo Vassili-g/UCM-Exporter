@@ -17,7 +17,7 @@ import type {
   LayoutInset,
   SizeBounds,
 } from '@ucm-kit/core/format';
-import { pousserLocalise } from './localisation';
+import { estUneRacineDeVariant, pousserLocalise, pousserPourLesVariants } from './localisation';
 import type { Constat } from './localisation';
 
 type FlexContainerProperties = {
@@ -86,6 +86,25 @@ function pisteIllisible(nom: string, index: number): Constat {
   };
 }
 
+/** Signale une piste illisible, une fois pour toutes les racines d'un set. */
+function signalerPisteIllisible(
+  node: SceneNode,
+  nom: string,
+  index: number,
+  warnings: string[],
+): void {
+  if (estUneRacineDeVariant(warnings, node)) {
+    pousserPourLesVariants(warnings, node, {
+      titre: `Grille, ${nom} ${index + 1} : la taille ne peut pas être lue.`,
+      impact: `Le contrat indiquera une taille automatique pour cette ${nom}.`,
+      action: `Définissez de nouveau la taille de la ${nom} ${index + 1} dans chaque variant `
+        + 'concerné, puis réexportez.',
+    });
+    return;
+  }
+  pousserLocalise(warnings, 'Layer', node, pisteIllisible(nom, index));
+}
+
 export function gridTrackSizes(
   node: SceneNode,
   warnings: string[] = [],
@@ -97,7 +116,7 @@ export function gridTrackSizes(
     if (!Array.isArray(tracks)) return undefined;
     const sizes = (tracks as Array<{ type?: unknown; value?: unknown }>).map((track, index): GridTrack => {
       if (!track || typeof track !== 'object') {
-        pousserLocalise(warnings, 'Layer', node, pisteIllisible(nom, index));
+        signalerPisteIllisible(node, nom, index, warnings);
         return 'auto';
       }
       if (track.type === 'FLEX') {
@@ -107,7 +126,7 @@ export function gridTrackSizes(
       if (track.type === 'FIXED' && typeof track.value === 'number' && Number.isFinite(track.value)) {
         return `${track.value}px`;
       }
-      pousserLocalise(warnings, 'Layer', node, pisteIllisible(nom, index));
+      signalerPisteIllisible(node, nom, index, warnings);
       return 'auto';
     });
     return sizes;
@@ -571,6 +590,15 @@ export function flexContainerProperties(
   const align = alignItems(counter);
   if (justify && align) return { ...wrap, justifyContent: justify, alignItems: align };
 
+  if (estUneRacineDeVariant(warnings, node)) {
+    pousserPourLesVariants(warnings, node, {
+      titre: "auto layout : l'alignement ne peut pas être lu.",
+      impact: "Le contrat ne transmettra pas l'alignement des layers dans les variants concernés.",
+      action: "Définissez de nouveau l'alignement sur les deux axes dans chaque variant "
+        + 'concerné, puis réexportez.',
+    });
+    return wrap;
+  }
   pousserLocalise(warnings, 'Layer', node, {
     manque: `son alignement d'auto layout est illisible.`,
     impact: `Le développeur ne saura pas comment aligner ses enfants.`,
@@ -622,7 +650,17 @@ export function flexItemProperties(
     result.alignSelf = 'stretch';
   } else if (rawAlign !== undefined && rawAlign !== 'INHERIT') {
     const mapped = alignSelf(rawAlign);
-    if (!mapped) {
+    if (!mapped && estUneRacineDeVariant(warnings, parent)) {
+      // Le nom de la racine change d'un variant à l'autre : le message ne le
+      // cite pas, pour que les enfants de tous les variants partagent sa phrase.
+      pousserLocalise(warnings, 'Layer', child, {
+        manque: "son alignement dans l'auto layout ne peut pas être lu.",
+        impact: 'Le contrat ne précisera pas comment aligner ce layer dans les variants '
+          + 'concernés.',
+        action: "Définissez de nouveau son alignement dans l'auto layout de chaque variant "
+          + 'concerné, puis réexportez.',
+      });
+    } else if (!mapped) {
       pousserLocalise(warnings, 'Layer', child, {
         manque: `son alignement dans l'auto layout « ${parent.name} » est illisible.`,
         impact: `Le développeur ne saura pas comment l'aligner dans « ${parent.name} ».`,
@@ -643,6 +681,15 @@ export function flexItemProperties(
   if (rawGrow === undefined || rawGrow === 0) return result;
   if (rawGrow === 1) return { ...result, flexGrow: 1 };
 
+  if (estUneRacineDeVariant(warnings, parent)) {
+    pousserLocalise(warnings, 'Layer', child, {
+      manque: "son réglage d'étirement n'est pas pris en charge.",
+      impact: "Le contrat ne précisera pas si ce layer doit occuper l'espace disponible.",
+      action: 'Choisissez Fill ou Fixed pour sa largeur dans un auto layout horizontal, ou pour '
+        + 'sa hauteur dans un auto layout vertical, puis réexportez.',
+    });
+    return result;
+  }
   pousserLocalise(warnings, 'Layer', child, {
     manque: `son layout grow vaut « ${String(rawGrow)} » dans l'auto layout `
       + `« ${parent.name} », une valeur que le menu Fill de Figma ne produit pas.`,

@@ -2,7 +2,7 @@
 
 ## État
 
-- Lot courant : E8
+- Lot courant : E9
 - Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
 - Portes franchies : H0, H1 et H2. Le rang des ombres dans `effects` se
   vérifie à la recette de E10.
@@ -307,6 +307,26 @@ copiés ; le build y tourne étape par étape.
 - Mutations : chaque test de racine rendu `false` à son site (vertical gap,
   côtés différents, réglages contradictoires, côtés sans variable) fait échouer
   son test. Restauré par copie : vert.
+- Documents : `SPEC.md`, racine de variant ; `TEXTES-A-VALIDER.md`.
+- Écart ou réserve : aucun.
+
+### E8 : la disposition illisible se regroupe sur les racines
+
+- Commit : ce commit, précédé de `f4214bc`.
+- Changement : dans `flexLayout.ts`, l'alignement d'auto layout illisible et la
+  piste de grille illisible d'une racine prennent les textes 22 et 23.
+  L'alignement illisible et le `layout grow` hors menu d'un enfant de racine
+  prennent les textes 24 et 25 : ils gardent le nom de l'enfant et perdent
+  celui de la racine, si bien que les enfants de tous les variants partagent
+  une phrase. Une ligne de grille dit « ligne 2 » et « cette ligne ».
+- Tests vus rouges avant le changement : quatre. Un enfant sous un composant
+  seul garde le nom de son parent ; ce test passait déjà.
+- Commandes, worktree à `f4214bc` avec les fichiers du lot : `npm test` : 0,
+  suite du plugin de 980 à 985 tests. `npm run typecheck` : 0. Build étape par
+  étape : 0 à chaque étape.
+- Mutations : chaque test de racine rendu `false` à son site (piste, alignement
+  du conteneur, alignement d'un enfant, `layout grow`) fait échouer son test.
+  Restauré par copie : vert.
 - Documents : `SPEC.md`, racine de variant ; `TEXTES-A-VALIDER.md`.
 - Écart ou réserve : aucun.
 
