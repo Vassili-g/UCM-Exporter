@@ -20,15 +20,17 @@ import {
   ecrireArrondi,
   ecrireContraste,
   emploisDuCran,
+  rgb8VersOklch,
   lireHexa,
   mesurerCran,
   recetteParDefaut,
   verifierPromesses,
 } from '../../../../packages/couleur/src/index.ts';
+import { changementAuPasVoisin, garantiesComparees, manqueesParProfil, propositionAuPas } from '../../../../packages/plugin-palettes/src/ajustementDeLaReference.ts';
 import { analyserPalette } from '../../../../packages/plugin-palettes/src/analyse.ts';
-import { ajouter, nouvellePalette, renommer } from '../../../../packages/plugin-palettes/src/edition.ts';
+import { ajouter, appliquerLAjustement, nouvellePalette, renommer } from '../../../../packages/plugin-palettes/src/edition.ts';
 import { couleursDeLInterface } from '../../../../packages/plugin-palettes/src/ui/interfaceDeTest.ts';
-import { TEXTES_DE_L_INTERFACE_DE_TEST, gesteDeGeneration, jugementDuSeuil, niveauEcrit } from '../../../../packages/plugin-palettes/src/ui/textes.ts';
+import { TEXTES_DE_L_INTERFACE_DE_TEST, annonceDuPas, gesteDeGeneration, jugementDuSeuil, niveauEcrit } from '../../../../packages/plugin-palettes/src/ui/textes.ts';
 
 const ICI = path.dirname(fileURLToPath(import.meta.url));
 
@@ -336,11 +338,382 @@ function sectionNuance50() {
 </section>`;
 }
 
+/* Second passage, après les retours du mainteneur sur le premier */
+
+/** La pastille pleine B, en teintes adoucies, telle que le socle la peint. */
+function pastille(valeur, jugement) {
+  const niveau = niveauEcrit(valeur, jugement);
+  return `<span class="pst${niveau.atteint ? '' : ' ko'}" title="${esc(niveau.etiquette)}">${esc(niveau.ecrit)}</span>`;
+}
+
+/** La barre et le titre tels que codés après X1.10 : « Nouvelle palette » principal, filet, génération secondaire. */
+function teteCodee(palette, etat = 'jamais-dessinee', { creation = '' } = {}) {
+  const geste = gesteDeGeneration(etat);
+  return `<div class="zone-choix"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:${palette.reference}"></span><b class="coupe">${esc(palette.nom)}</b><span class="fleche">▾</span></div>${bouton('Nouvelle palette', 'principal')}<div class="bouton-icone grand">⋯</div></div>${creation}</div>
+    <div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette ${esc(palette.nom)}</span>${bouton(geste.libelle, 'second', !geste.actif)}</div><div class="t4-dessous"><span class="sec">Enregistré</span>${etat === 'a-jour' || etat === 'perimee' ? '<span class="sec"> · </span><span class="lien">Afficher dans Figma</span>' : ''}</div></div>`;
+}
+
+/* X2.7 : création, configuration et ajustement */
+
+const segment = (options, actif) => `<div class="segment">${options.map((o) => `<span class="${o === actif ? 'on' : ''}">${o}</span>`).join('')}</div>`;
+const PUCES = [50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 950, 1000, 1050];
+
+function colonneModele(modele) {
+  return `<div><span class="libelle">Modèle</span>${segment(['Standard', 'Libre'], modele)}${modele === 'Standard'
+    ? `<span class="libelle">Palette de base</span>${segment(['Auto', 'Soft', 'Vivid'], 'Auto')}`
+    : '<span class="aide">Sans rôles ni garanties</span>'}</div>`;
+}
+
+function carteDeCreation(modele, disposition) {
+  const puces = modele === 'Libre'
+    ? `<div class="nuances-libres"><span class="libelle">Nuances · 6 sur 13 au plus</span><div class="puces">${PUCES.map((n) => `<span class="puce${[100, 200, 400, 600, 800, 900].includes(n) ? ' on' : ''}">${n}</span>`).join('')}</div></div>`
+    : '';
+  const gestes = disposition === 'droite'
+    ? `<div class="gestes-4 a-droite">${bouton('Annuler')}${bouton('Créer la palette', 'principal')}</div>`
+    : `<div class="gestes-4">${bouton('Créer la palette', 'principal')}${bouton('Annuler')}</div>`;
+  return `<div class="carte-f"><div class="carte-titre">Nouvelle palette</div><div class="trois">
+    <div><span class="libelle">Nom de la palette</span><div class="champ">Vert</div></div>
+    <div><span class="libelle">Couleur de référence</span><div class="champ-ligne"><span class="pipette-f" style="background:#16A34A"></span><div class="champ">#16A34A</div></div></div>
+    ${colonneModele(modele)}</div>${puces}${gestes}</div>`;
+}
+
+/** La colonne de la couleur de référence de « Configuration de la palette », avec la trace d'un ajustement. */
+function colonneReference(reference, { ajustee = false, ouverte = false } = {}) {
+  return `<div><span class="libelle">Couleur de référence</span><div class="champ-ligne"><span class="pipette-f${ouverte ? ' ouverte' : ''}" style="background:${reference}"></span><div class="champ">${reference}</div></div>
+    <span class="lien petit">Ajuster la référence</span>${ajustee ? '<span class="aide petit">Ajustée depuis #16A34A · <span class="lien">Revenir à l’originale</span></span>' : ''}</div>`;
+}
+
+/** Vert ajusté d'un pas plus sombre, lu par les fonctions du panneau. */
+function ajustementDonnees() {
+  const proposition = propositionAuPas(RECETTE, VERT, -1);
+  const apres = appliquerLAjustement(RECETTE, VERT, proposition);
+  const avant = manqueesParProfil(RECETTE, VERT);
+  const ensuite = manqueesParProfil(RECETTE, apres);
+  const comparee = garantiesComparees(RECETTE, VERT, apres)[0];
+  return { originale: VERT.reference, proposition, avant, ensuite, comparee };
+}
+/** Le résultat d'un profil, avant puis après la proposition. */
+const resultat = (manquees) => (manquees ? `✗ ${manquees}` : '✓');
+const bilan = (profil, { avant, ensuite }) => (avant[profil] === ensuite[profil]
+  ? `${NOMS_DE_PROFIL[profil]} ${resultat(avant[profil])} inchangé`
+  : `${NOMS_DE_PROFIL[profil]} ${resultat(avant[profil])} → ${resultat(ensuite[profil])}`);
+/** La première garantie qui change : l'association, le thème, les deux contrastes et la pastille d'après. */
+function ligneComparee({ comparee }) {
+  const { avant, apres } = comparee;
+  const second = 'emploi' in avant.paire.second ? avant.paire.second.emploi : 'fond';
+  return `<span class="sec">${avant.paire.premier.emploi} sur ${second}, ${NOMS_DE_MODE[avant.mode]}</span><span class="mono">${ecrireContraste(avant.contraste)} → ${ecrireContraste(apres.contraste)}</span>${pastille(apres.contraste, jugementDuSeuil(apres.paire.seuil))}`;
+}
+
+/** R1 : le panneau en place sous les colonnes, resserré. */
+function ajustementR1() {
+  const donnees = ajustementDonnees();
+  const { originale, proposition } = donnees;
+  return `<div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="trois"><div><span class="libelle">Nom de la palette</span><div class="champ">Vert</div></div>${colonneReference(originale)}${colonneModele('Standard')}</div>
+    <div class="aj-bloc"><div class="aj-ligne"><b>Ajuster la référence</b><span class="sec">Vivid · nuance 600</span></div>
+      <div class="aj-ligne"><span class="aj-duo"><i style="background:${originale}"></i><i style="background:${proposition}"></i></span><span class="mono">${originale} → ${proposition}</span>${bouton('−')}<span class="mono">L ${ecrireArrondi(rgb8VersOklch(rgb(proposition)).L, 3)}</span>${bouton('+')}</div>
+      <div class="aj-ligne"><span class="sec">Nuance visée : 600 dans les deux thèmes</span></div>
+      <div class="aj-ligne"><span>Garanties : ${bilan('vivid', donnees)} · ${bilan('soft', donnees)}</span>${ligneComparee(donnees)}</div>
+      <div class="gestes-4 a-droite">${bouton('Annuler')}${bouton('Appliquer', 'principal')}</div></div></div>`;
+}
+
+/** R2 et R3 : une fenêtre ancrée sous la couleur de référence, par-dessus le contenu. */
+function fenetreDAjustement(avecOnglets) {
+  const donnees = ajustementDonnees();
+  const { originale, proposition } = donnees;
+  const graduation = [0.55, 0.58, 0.61, 0.64, 0.67, 0.7].map((l, i) => `<span class="aj-cran${i === 2 ? ' ici' : ''}" style="left:${i * 20}%"></span>`).join('');
+  return `<div class="aj-fenetre">${avecOnglets ? `<div class="segment petit"><span>Choisir</span><span class="on">Ajuster</span></div>` : '<b>Ajuster la référence</b>'}
+    <div class="aj-grands"><div><i style="background:${originale}"></i><span class="sec">Originale</span><span class="mono">${originale}</span></div><div><i style="background:${proposition}"></i><span class="sec">Proposition</span><span class="mono">${proposition}</span></div></div>
+    <div class="aj-reglette"><span class="sec">Luminosité</span>${bouton('−')}<div class="aj-piste">${graduation}<b style="left:40%"></b></div>${bouton('+')}</div>
+    <p class="sec petit">Un trait marque le passage d’une nuance à la suivante. ${[-1, 1].map((sens) => {
+      const changement = changementAuPasVoisin(RECETTE, VERT, -1, sens);
+      return changement && changement.length ? annonceDuPas(sens, changement) : '';
+    }).join(' ')}</p>
+    <div class="aj-gar"><span>Garanties : ${bilan('vivid', donnees)} · ${bilan('soft', donnees)}</span></div>
+    <div class="aj-gar">${ligneComparee(donnees)}</div>
+    <div class="gestes-4 a-droite">${bouton('Annuler')}${bouton('Appliquer', 'principal')}</div></div>`;
+}
+
+function ajustementFenetre(avecOnglets) {
+  return `<div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="trois"><div><span class="libelle">Nom de la palette</span><div class="champ">Vert</div></div>${colonneReference('#0DA047', { ajustee: true, ouverte: true })}${colonneModele('Standard')}</div>
+    <div class="ancre-aj">${fenetreDAjustement(avecOnglets)}</div><div class="aj-place"></div></div>`;
+}
+
+function sectionCreationBis() {
+  return `<section class="bloc" id="x2-7">
+  <div class="tete"><span class="sur">X2.7 · Création et configuration, second passage</span><h2>Le Modèle dès la création, et « Ajuster la référence » redessiné</h2></div>
+  <p>La sélection Figma est retirée du plugin (X1.8). La carte de création reprend les trois colonnes de « Configuration de la palette » : Nom, Couleur de référence, Modèle, et la palette de base sous le Modèle. En Libre, les puces des numéros viennent sous les colonnes, comme dans la configuration.</p>
+  <div class="scene"><div class="scene-rangee">
+    <div>${panneau(teteCodee(BLEU, 'a-jour', { creation: carteDeCreation('Standard', 'droite') }))}<p class="legende"><b>Création, Standard, gestes à droite.</b> Annuler puis Créer, au bord droit : l’ordre des dialogues de Figma.</p></div>
+    <div>${panneau(teteCodee(BLEU, 'a-jour', { creation: carteDeCreation('Libre', 'droite') }))}<p class="legende"><b>Création, Libre.</b> La palette de base laisse la place à « Sans rôles ni garanties », et les puces choisissent les numéros avant de créer.</p></div>
+    <div>${panneau(teteCodee(BLEU, 'a-jour', { creation: carteDeCreation('Standard', 'gauche') }))}<p class="legende"><b>Variante : gestes à gauche.</b> Créer d’abord, comme aujourd’hui.</p></div>
+  </div></div>
+  <p>« Ajuster la référence » : aujourd’hui un bloc de huit lignes s’ouvre sous les colonnes et pousse l’aperçu. Trois refontes, sur Vert (#16A34A), après un pas plus sombre :</p>
+  <div class="scene"><div class="scene-rangee">
+    <div>${panneau(teteCodee(VERT, 'perimee') + ajustementR1())}<p class="legende"><b>R1 · Bloc resserré en place.</b> Quatre lignes : les deux pastilles et les codes, le pas ; la nuance visée ; le bilan des garanties avec une ligne d’exemple ; les gestes.</p></div>
+    <div>${panneau(teteCodee(VERT, 'perimee') + ajustementFenetre(false))}<p class="legende"><b>R2 · Fenêtre ancrée.</b> Comme le sélecteur de couleur : 260 px sous la couleur de référence, par-dessus l’aperçu, sans le pousser. Grandes pastilles côte à côte ; une piste de luminosité qui marque, d’un trait, le passage d’une nuance à la suivante.</p></div>
+    <div>${panneau(teteCodee(VERT, 'perimee') + ajustementFenetre(true))}<p class="legende"><b>R3 · Onglet du sélecteur de couleur.</b> La même fenêtre, dans le sélecteur de la couleur de référence : « Choisir » pour une autre couleur, « Ajuster » pour la luminosité seule. « Ajuster la référence » ouvre le sélecteur sur cet onglet.</p></div>
+  </div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>Les gestes de la création.</b> <span class="reco">Recommandé : à droite</span>, Annuler puis Créer.</li>
+    <li><b>Le Modèle dès la création.</b> Standard par défaut ; Libre montre les puces avant de créer. <span class="reco">Recommandé.</span></li>
+    <li><b>« Ajuster la référence ».</b> <span class="reco">Recommandé : R3</span>, un seul point d’entrée pour la couleur de référence, qui ne pousse pas le contenu. R2 garde une fenêtre à part ; R1 reste dans le flux, plus court qu’aujourd’hui.</li>
+    <li><b>La piste de luminosité (R2, R3).</b> Elle remplace l’annonce écrite du changement de nuance : un trait par frontière, et la phrase seulement quand le pas suivant la franchit. <span class="reco">Recommandé.</span></li>
+  </ol></div>
+</section>`;
+}
+
+/* X2.8 : détail d'une nuance, hiérarchie */
+
+function detailHierarchise(nuance, variante) {
+  const { cran, mesure, emplois, reference, numero, profil } = nuance;
+  const fond = FONDS[nuance.mode];
+  const encre = encreSur(fond);
+  const lignes = [['Fond du thème', mesure.fond], ['Blanc', mesure.blanc], ['Noir', mesure.noir]];
+  const garantie = (p, emploi, decalage) => {
+    const premier = p.paire.premier;
+    const estPremier = 'emploi' in premier && premier.emploi === emploi && premier.decalage === decalage;
+    const autre = estPremier ? p.paire.second : p.paire.premier;
+    const designe = estPremier ? p.second : p.premier;
+    const nom = 'fond' in autre ? 'fond' : designe.nature === 'cran' ? `${autre.emploi} ${designe.cran}` : autre.emploi;
+    return `<span class="gar">${p.verdict === 'tenue' ? '✓' : '✗'} ${estPremier ? `sur ${nom}` : `${nom} dessus`} ${ecrireContraste(p.contraste)}:1 ${pastille(p.contraste, jugementDuSeuil(p.paire.seuil))}</span>`;
+  };
+  const roles = emplois.length === 0
+    ? '<p class="h-vide">Aucun rôle du modèle ne vise cette nuance.</p>'
+    : emplois.map(({ emploi, decalage }) => `<div class="h-role"><span class="spec" style="background:${emploi === 'surface' || emploi === 'solid' ? cran.hexa : 'transparent'};border-color:${cran.hexa}"></span><div><b><code>${emploi}</code> · ${NOMS_DES_ETATS[decalage]}</b><div class="d-gars">${nuance.promesses(emploi, decalage).map((p) => garantie(p, emploi, decalage)).join('')}</div></div></div>`).join('');
+  const table = `<div class="d-table">${lignes.map(([nom, valeur]) => `<span class="sec">${nom}</span><span>${ecrireContraste(valeur)}:1</span>${pastille(valeur, 'texte')}`).join('')}</div>`;
+  const entete = `<div class="d-tete"><span class="d-pastille grand" style="background:${cran.hexa}"></span><div><b class="h-titre">${NOMS_DE_PROFIL[profil]} · ${numero}</b><div class="mono">${cran.hexa}</div>${reference ? '<div class="h-ref">◆ Votre couleur de référence exacte</div>' : ''}</div><span class="d-copier">Copier le code</span></div>`;
+  const titreRoles = emplois.length === 0 ? 'Sans rôle' : 'Sert à';
+  if (variante === 'H1') {
+    return `<div class="d4 h1" style="background:${fond};color:${encre}">${entete}
+      <div class="h-groupe"><div class="h-titre-groupe">${titreRoles}</div>${roles}</div>
+      <div class="h-groupe"><div class="h-titre-groupe">Contrastes de la nuance</div>${table}</div>
+      <div class="d-repli">▸ OKLCH</div></div>`;
+  }
+  return `<div class="d4 h2" style="background:${fond};color:${encre}">${entete}
+    <div class="h-colonnes"><div class="h-groupe"><div class="h-titre-groupe">${titreRoles}</div>${roles}</div>
+    <div class="h-groupe"><div class="h-titre-groupe">Contrastes</div>${table}<div class="d-repli">▸ OKLCH</div></div></div></div>`;
+}
+
+function sectionDetailBis() {
+  const avecRole = lireLaNuance('Bleu', 'vivid', 600);
+  const sansRole = lireLaNuance('Bleu', 'vivid', 500);
+  const carte = (nuance, variante) => panneau(`<div class="carte-f"><div class="tete-apercu"><div class="onglets-theme"><span class="on">Thème Light</span><span>Thème Dark</span></div></div>${detailHierarchise(nuance, variante)}</div>`);
+  return `<section class="bloc" id="x2-8">
+  <div class="tete"><span class="sur">X2.8 · Détail d’une nuance, second passage</span><h2>Trois rangs lisibles, et les contrastes à part des rôles</h2></div>
+  <p>La disposition A reste. Trois rangs : l’en-tête (grande pastille, numéro en titre, code), puis chaque groupe dans son propre encadré, titre de groupe en capitales discrètes, puis OKLCH replié. « Contrastes de la nuance » ne suit plus la dernière ligne de rôle : son encadré commence après un espace de 12 px.</p>
+  <div class="scene"><div class="scene-rangee">
+    <div>${carte(avecRole, 'H1')}<p class="legende"><b>H1 · Groupes encadrés, l’un sous l’autre.</b></p></div>
+    <div>${carte(avecRole, 'H2')}<p class="legende"><b>H2 · Deux colonnes.</b> Les rôles à gauche, les contrastes à droite : le détail gagne en largeur ce qu’il perd en hauteur.</p></div>
+  </div><div class="scene-rangee">
+    <div>${carte(sansRole, 'H1')}<p class="legende"><b>H1 · Sans rôle.</b> Le groupe dit qu’aucun rôle ne vise la nuance.</p></div>
+    <div>${carte(sansRole, 'H2')}<p class="legende"><b>H2 · Sans rôle.</b></p></div>
+  </div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>La hiérarchie.</b> <span class="reco">Recommandé : H1</span>, qui garde la lecture de haut en bas et sépare nettement les deux groupes. H2 met les contrastes à côté des rôles, mais une garantie longue passe à la ligne dans une colonne de 200 px.</li>
+    <li><b>Le titre du groupe des contrastes.</b> « Contrastes de la nuance », pour le distinguer des garanties des rôles. <span class="reco">Recommandé.</span></li>
+  </ol></div>
+</section>`;
+}
+
+/* X2.9 : badges */
+
+function sectionBadgesBis() {
+  const valeurs = [7.12, 5.34, 4.19, 2.07];
+  const surFond = (mode) => `<div class="d4" style="background:${FONDS[mode]};color:${encreSur(FONDS[mode])}"><div class="d-table">${valeurs.map((v) => `<span class="sec">Texte courant</span><span>${ecrireContraste(v)}:1</span>${pastille(v, 'texte')}`).join('')}</div></div>`;
+  return `<section class="bloc" id="x2-9">
+  <div class="tete"><span class="sur">X2.9 · Badges, second passage</span><h2>La pastille pleine, en teintes adoucies</h2></div>
+  <p>Codée : vert pâle et texte vert sombre quand le niveau est atteint, rose pâle et texte rouge sombre sinon, 7,7:1 et 6,9:1 entre le texte et la pastille. La pastille porte son propre fond : elle se lit pareil sur le fond Light, le fond Dark et le panneau de Figma. Le « ✗ » d’un niveau manqué reste, pour qui ne distingue pas le vert du rouge.</p>
+  <div class="scene"><div class="scene-rangee"><div>${panneau(surFond('light'))}<p class="legende">Sur le fond Light de l’aperçu.</p></div><div>${panneau(surFond('dark'))}<p class="legende">Sur le fond Dark.</p></div></div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>Les teintes.</b> <span class="reco">Recommandé : celles-ci.</span> Plus pâles encore, la pastille se détacherait mal du fond Light.</li>
+    <li><b>Le « ✗ ».</b> <span class="reco">Recommandé : le garder</span> (critère WCAG 1.4.1, l’information ne passe pas par la couleur seule).</li>
+  </ol></div>
+</section>`;
+}
+
+/* X2.10 : ligne du titre */
+
+function sectionTitreBis() {
+  const vignette = (etat, legende, creation = '') => `<div>${panneau(`${teteCodee(BLEU, etat, { creation })}<div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="aide">…</div></div>`)}<p class="legende">${legende}</p></div>`;
+  return `<section class="bloc" id="x2-10">
+  <div class="tete"><span class="sur">X2.10 · Ligne du titre, second passage</span><h2>« Nouvelle palette » en action principale, un filet sous la zone de choix</h2></div>
+  <p>Codé : « Nouvelle palette » prend le bleu de l’action principale, le bouton de génération passe en secondaire, et un filet sépare la barre du sélecteur, et la carte de création quand elle est ouverte, de la palette ouverte.</p>
+  <div class="scene"><div class="scene-rangee">
+    ${vignette('jamais-dessinee', '<b>Jamais générée.</b>')}
+    ${vignette('perimee', '<b>Cadre changé.</b>')}
+    ${vignette('a-jour', '<b>Création ouverte.</b> La carte de création reste au-dessus du filet.', carteDeCreation('Standard', 'droite'))}
+  </div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>Le filet.</b> Un trait de la bordure du socle, 12 px sous la barre. <span class="reco">Recommandé.</span> Autre choix : un fond différent pour la zone de choix.</li>
+  </ol></div>
+</section>`;
+}
+
+/* X2.11 : interface de test, refonte */
+
+function ecranRadix(mode) {
+  const c = couleursDeLInterface(RECETTE, ANALYSES.Bleu, mode);
+  const e = (emploi, etat = 0) => c.emploi(emploi, etat);
+  const bord = e('border-decorative');
+  return `<div class="rx" style="background:${c.fond};color:${c.encre};border-color:${bord}">
+    <aside class="rx-nav" style="border-color:${bord}"><b>Studio Nord</b><span style="background:${e('surface')};color:${e('text')}">Paramètres</span><span>Membres</span><span>Facturation</span><span>Intégrations</span></aside>
+    <div class="rx-corps">
+      <div class="rx-tete"><div><b class="rx-titre">Membres de l’équipe</b><span class="rx-sous" style="color:${c.encreSeconde}">4 membres · 1 invitation en attente</span></div><span class="rx-btn" style="background:${e('solid')};color:${c.fond}">Inviter</span></div>
+      <div class="rx-callout" style="background:${e('surface')};color:${e('text')}">ⓘ L’invitation de camille@nord.studio expire dans 2 jours. <u>Renvoyer</u></div>
+      <div class="rx-table" style="border-color:${bord}">
+        ${[['Alex Martin', 'Administrateur', true], ['Camille Roy', 'Invitée', false], ['Inès Diallo', 'Membre', false]].map(([nom, role, admin], i) => `<div class="rx-ligne" style="border-color:${bord};${i === 1 ? `background:${e('surface')}` : ''}"><span class="rx-avatar" style="background:${e('surface', 1)};color:${e('text')}">${nom[0]}</span><span>${nom}</span><span class="rx-badge" style="${admin ? `background:${e('solid')};color:${c.fond}` : `background:${e('surface')};color:${e('text')}`}">${role}</span></div>`).join('')}
+      </div>
+      <div class="rx-form"><span>Rôle par défaut</span><span class="rx-champ" style="border-color:${e('border-control')};box-shadow:0 0 0 2px ${c.fond},0 0 0 4px ${e('focus')}">Membre ▾</span></div>
+      <div class="rx-options"><span><i class="rx-case" style="background:${e('solid')};color:${c.fond}">✓</i>Notifier par e-mail</span><span><i class="rx-inter" style="background:${e('solid')}"><b style="background:${c.fond}"></b></i>Accès invité</span></div>
+      <div class="rx-actions"><span style="color:${e('text')}">Annuler</span><span style="background:${e('surface')};color:${e('text')}">Brouillon</span><span style="background:${e('solid')};color:${c.fond}">Enregistrer</span></div>
+    </div></div>`;
+}
+
+function etatsParComposant(mode) {
+  const c = couleursDeLInterface(RECETTE, ANALYSES.Bleu, mode);
+  const e = (emploi, etat = 0) => c.emploi(emploi, etat);
+  const colonnes = ['default', 'hover', 'active'];
+  const rangees = [
+    ['Bouton plein', (i) => `<span class="rx-btn" style="background:${e('solid', i)};color:${c.fond}">Action</span>`],
+    ['Bouton soft', (i) => `<span class="rx-btn" style="background:${e('surface', i)};color:${e('text', i)}">Action</span>`],
+    ['Bouton contour', (i) => `<span class="rx-btn" style="border:1px solid ${e('border-control', i)};color:${e('text', i)}">Action</span>`],
+    ['Bouton sans fond', (i) => `<span class="rx-btn" style="${i ? `background:${e('surface', i - 1)};` : ''}color:${e('text', i)}">Action</span>`],
+    ['Champ', (i) => `<span class="rx-champ petit" style="border-color:${e('border-control', i)}">Texte</span>`],
+    ['Lien', (i) => `<span style="color:${e('text', i)};text-decoration:underline">Lien coloré</span>`],
+    ['Badge', (i) => (i === 0 ? `<span class="rx-badge" style="background:${e('surface')};color:${e('text')}">Nouveau</span>` : '<span class="sec">—</span>')],
+  ];
+  return `<div class="rx-etats" style="background:${c.fond};color:${c.encre}"><span></span>${colonnes.map((col) => `<span class="rx-col" style="color:${c.encreSeconde}">${col}</span>`).join('')}<span class="rx-col" style="color:${c.encreSeconde}">focus</span>
+    ${rangees.map(([nom, rendu]) => `<span class="rx-nom">${nom}</span>${[0, 1, 2].map((i) => `<span>${rendu(i)}</span>`).join('')}<span>${nom === 'Champ' || nom.startsWith('Bouton') ? `<span class="rx-focus" style="box-shadow:0 0 0 2px ${c.fond},0 0 0 4px ${e('focus')}">${rendu(0)}</span>` : '<span class="sec">—</span>'}</span>`).join('')}
+  </div>`;
+}
+
+function sectionInterfaceBis() {
+  const carte = (contenu, resume, bascule = '') => panneau(`<div class="accordeon"><span class="chevron">⌄</span><b>Interface de test</b><span class="resume">${resume}</span></div><div class="carte-f">${bascule}${contenu}</div>`, { largeur: 500 });
+  const bascule = (actif) => `<div class="segment petit rx-bascule">${['Écran', 'États'].map((o) => `<span class="${o === actif ? 'on' : ''}">${o}</span>`).join('')}</div>`;
+  return `<section class="bloc" id="x2-11">
+  <div class="tete"><span class="sur">X2.11 · Interface de test, refonte</span><h2>Essayer la palette sur un écran de Radix Themes, et voir chaque état</h2></div>
+  <p>Ta demande du troisième tour : d’autres interfaces d’exemple, sur le modèle de Radix. L’écran de réglages actuel montre chaque emploi une fois, et ne montre les états qu’au survol. Trois refontes, peintes de Bleu par la table des emplois :</p>
+  <div class="scene"><div class="scene-rangee">
+    <div>${carte(ecranRadix('light'), 'Thème Light · Vivid')}<p class="legende"><b>A · Écran composé.</b> Une page « Membres de l’équipe » : navigation latérale avec l’entrée active en surface, encart, tableau avec une ligne sélectionnée, badges soft et plein, champ au focus, case, interrupteur, trois boutons.</p></div>
+    <div>${carte(etatsParComposant('light'), 'Thème Light · Vivid')}<p class="legende"><b>B · Composants par état.</b> Le modèle E1 : une rangée par composant, une colonne par état, focus compris. Tous les états se lisent sans survol.</p></div>
+  </div><div class="scene-rangee">
+    <div>${carte(ecranRadix('dark'), 'Thème Dark · Vivid', bascule('Écran'))}<p class="legende"><b>C · Les deux, par une bascule.</b> « Écran » montre A, « États » montre B ; la carte garde le choix pendant la session. Ici en Thème Dark.</p></div>
+    <div>${carte(etatsParComposant('dark'), 'Thème Dark · Vivid', bascule('États'))}<p class="legende"><b>C · États, Thème Dark.</b></p></div>
+  </div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>La refonte.</b> <span class="reco">Recommandé : C</span>, l’écran pour juger l’ensemble, les états pour vérifier chaque token. A seul cache les états, B seul ne montre pas une interface réelle.</li>
+    <li><b>Les composants de B.</b> Boutons plein, soft, contour et sans fond ; champ ; lien ; badge. <span class="reco">Recommandé.</span> Autres possibles : case, interrupteur, onglets.</li>
+    <li><b>L’écran de A.</b> Une page d’équipe, plus riche que l’écran de réglages actuel. <span class="reco">Recommandé.</span> Autre choix : garder l’écran de réglages actuel, enrichi du tableau.</li>
+  </ol></div>
+</section>`;
+}
+
+/* X2.12 : nuance 50, A et D */
+
+function sectionNuance50Bis() {
+  const scene = (nom, mode, option) => {
+    const analyse = ANALYSES[nom];
+    const rampe = analyse.rampes[analyse.ancrage.profil][mode];
+    const n = (numero) => rampe[analyse.grille.crans.indexOf(numero)].hexa;
+    const fond = FONDS[mode];
+    const surface = option === 'A' ? [n(50), n(100), n(200)] : [n(100), n(200), n(300)];
+    const carte = option === 'A' ? surface[0] : n(50);
+    const mesure = (a, b) => `ΔEok ${ecrireArrondi(distanceOk(rgb(a), rgb(b)), 3)}`;
+    return `<div class="n50b" style="background:${fond};color:${encreSur(fond)}">
+      <div class="n50b-ligne"><span class="n50-bouton" style="background:${surface[0]};color:${n(700)}">Bouton soft</span><span class="n50-bouton" style="background:${surface[1]};color:${n(800)}">au survol</span><span class="n50-badge" style="background:${surface[0]};color:${n(700)}">Badge</span></div>
+      <span class="petit">Sur le fond : bouton soft ${mesure(surface[0], fond)}</span>
+      <div class="n50b-carte" style="background:${carte};border-color:${n(300)}"><span class="petit">${option === 'A' ? 'Carte en surface 50' : 'Carte en fond discret 50'}</span><span class="n50-bouton" style="background:${surface[0]};color:${n(700)}">Bouton soft</span><span class="petit">bouton sur la carte : ${mesure(surface[0], carte)}</span></div>
+    </div>`;
+  };
+  const rangee = (nom, mode) => `<div class="n50b-rangee"><div class="n50-tete" style="color:var(--encre)"><b>${nom} · Thème ${NOMS_DE_MODE[mode]}</b></div>${scene(nom, mode, 'A')}${scene(nom, mode, 'D')}</div>`;
+  return `<section class="bloc" id="x2-12">
+  <div class="tete"><span class="sur">X2.12 · Nuance 50, A et D</span><h2>Ce qui change à l’usage entre A et D</h2></div>
+  <p>A et D donnent tous deux à la 50 le rôle de fond de composant. Ils diffèrent sur <code>surface</code>, le token des composants soft : boutons soft, badges, encarts, et leurs états.</p>
+  <ul>
+    <li><b>A</b> : <code>surface</code> descend à 50, son survol à 100, son appui à 200. Tous les composants soft deviennent plus pâles, dans toute la bibliothèque : sur le fond par défaut, un bouton soft se voit à peine. Et un bouton soft posé sur une carte en 50 s’y confond, puisque les deux sont en 50.</li>
+    <li><b>D</b> : <code>surface</code> reste à 100, 200 et 300, et aucun composant existant ne change. Un token nouveau, par exemple <code>surface-subtle</code>, porte la 50 pour les grands aplats : carte, panneau latéral, ligne alternée. Un bouton soft sur cette carte reste visible.</li>
+  </ul>
+  <div class="n50-grille"><div class="n50b-rangee entete"><span></span><b>A · surface à 50</b><b>D · surface à 100, fond discret à 50</b></div>${['light', 'dark'].map((mode) => rangee('Bleu', mode)).join('')}${['light', 'dark'].map((mode) => rangee('Vert', mode)).join('')}</div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>A ou D.</b> <span class="reco">Recommandé : D.</span> A change la valeur de tous les tokens <code>surface</code> existants et rend les composants soft presque invisibles sur le fond par défaut ; D ajoute un token et ne déplace rien.</li>
+    <li><b>Le nom du token, si D.</b> <code>surface-subtle</code>, <code>background-subtle</code> ou <code>surface-muted</code>. <span class="reco">Recommandé : surface-subtle</span>, rangé avec <code>surface</code>.</li>
+  </ol></div>
+</section>`;
+}
+
+const STYLE_SECOND = `
+.pst { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 3px; font: 600 9px/13px Inter, sans-serif; background: #CDEFD9; color: #14532D; vertical-align: 1px; }
+.pst.ko { background: #F9D8D1; color: #8A2A1B; }
+.zone-choix { display: grid; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--f-bord); }
+.aj-bloc { display: grid; gap: 6px; padding: 10px; border: 1px solid var(--f-bord); border-radius: 6px; background: var(--f-fond); }
+.aj-ligne { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.aj-duo { display: flex; }
+.aj-duo i { width: 20px; height: 20px; border-radius: 4px; }
+.ancre-aj { position: absolute; top: 118px; left: 160px; z-index: 2; }
+.aj-place { height: 330px; }
+.aj-fenetre { width: 260px; background: #2C2C2C; border: 1px solid #444; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,.55); padding: 10px; display: grid; gap: 10px; }
+.aj-grands { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.aj-grands > div { display: grid; gap: 2px; }
+.aj-grands i { height: 40px; border-radius: 6px; }
+.aj-reglette { display: grid; grid-template-columns: auto auto 1fr auto; gap: 6px; align-items: center; }
+.aj-piste { position: relative; height: 6px; border-radius: 3px; background: linear-gradient(to right, #0A5C2A, #16A34A, #7EDB9E); }
+.aj-cran { position: absolute; top: -3px; width: 1px; height: 12px; background: #E6E6E6; }
+.aj-piste b { position: absolute; top: -4px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
+.aj-gar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ok-t { color: #85E0A3; }
+.d-pastille.grand { width: 44px; height: 44px; }
+.h-titre { font-size: 13px; }
+.h-ref { font-weight: 600; margin-top: 2px; }
+.h-groupe { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid rgba(128,128,128,.35); border-radius: 6px; margin-top: 6px; }
+.h-titre-groupe { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .72; }
+.h-role { display: grid; grid-template-columns: 56px 1fr; gap: 8px; align-items: center; }
+.h-role + .h-role { border-top: 1px solid rgba(128,128,128,.25); padding-top: 6px; }
+.h-vide { opacity: .72; }
+.h-colonnes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
+.h2 .d-table { grid-template-columns: auto auto auto; }
+.rx { display: grid; grid-template-columns: 104px 1fr; border: 1px solid; border-radius: 10px; overflow: hidden; font-size: 11px; }
+.rx-nav { display: grid; gap: 2px; align-content: start; padding: 12px 8px; border-right: 1px solid; }
+.rx-nav b { padding: 0 6px 8px; }
+.rx-nav span { padding: 4px 6px; border-radius: 4px; }
+.rx-corps { display: grid; gap: 10px; padding: 12px; }
+.rx-tete { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rx-titre { display: block; font-size: 13px; }
+.rx-sous { font-size: 10px; }
+.rx-btn { height: 26px; padding: 0 10px; border-radius: 6px; display: inline-grid; place-items: center; font-weight: 600; }
+.rx-callout { padding: 8px 10px; border-radius: 6px; }
+.rx-table { border: 1px solid; border-radius: 6px; overflow: hidden; }
+.rx-ligne { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border-top: 1px solid; }
+.rx-ligne:first-child { border-top: 0; }
+.rx-avatar { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; }
+.rx-badge { padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+.rx-form { display: grid; gap: 4px; }
+.rx-champ { height: 28px; border: 1px solid; border-radius: 6px; display: flex; align-items: center; padding: 0 8px; }
+.rx-champ.petit { height: 24px; }
+.rx-options { display: flex; gap: 14px; }
+.rx-options > span { display: flex; gap: 6px; align-items: center; }
+.rx-case { width: 14px; height: 14px; border-radius: 3px; display: grid; place-items: center; font-style: normal; font-size: 9px; }
+.rx-inter { width: 28px; height: 16px; border-radius: 8px; display: flex; justify-content: flex-end; padding: 2px; box-sizing: border-box; }
+.rx-inter b { width: 12px; height: 12px; border-radius: 50%; }
+.rx-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.rx-actions span { height: 28px; padding: 0 12px; border-radius: 6px; display: grid; place-items: center; font-weight: 600; }
+.rx-etats { display: grid; grid-template-columns: 96px repeat(4, 1fr); gap: 8px 6px; align-items: center; padding: 12px; border-radius: 8px; font-size: 11px; }
+.rx-col { font-size: 10px; font-weight: 600; }
+.rx-nom { font-weight: 600; }
+.rx-focus { display: inline-block; border-radius: 6px; }
+.rx-bascule { width: 160px; }
+.n50b-rangee { display: grid; grid-template-columns: 140px 1fr 1fr; gap: 8px; align-items: stretch; }
+.n50b-rangee.entete b { font-size: 13px; }
+.n50b { border-radius: 8px; padding: 10px; display: grid; gap: 6px; font: 11px/14px Inter, sans-serif; border: 1px solid var(--filet); }
+.n50b-ligne { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.n50b-carte { display: grid; gap: 6px; justify-items: start; padding: 10px; border: 1px solid; border-radius: 8px; }
+.n50-badge { padding: 1px 8px; border-radius: 10px; font-weight: 600; }
+`;
+
 /* La page */
 
 const V3 = fs.readFileSync(path.join(ICI, 'generer-maquettes-v3.mjs'), 'utf8');
 const STYLE_V3 = /const STYLE = `([\s\S]*?)`;\n/.exec(V3)[1];
-const STYLE = `${STYLE_V3}
+const STYLE = `${STYLE_V3}${STYLE_SECOND}
 .b4 { height: 28px; padding: 0 10px; border-radius: 6px; display: inline-grid; place-items: center; font-weight: 600; white-space: nowrap; border: 1px solid var(--f-bord); }
 .b4.principal { background: var(--f-marque); border-color: var(--f-marque); color: #fff; }
 .b4.inactif { opacity: .5; }
@@ -420,10 +793,19 @@ ${STYLE}</style>
 <section class="intro">
   <span class="sur">UCM Palettes · plan d’ergonomie, quatrième tour · lot X2</span>
   <h1>Maquettes à valider</h1>
+  <p><b>Second passage</b>, après tes retours sur le premier : X2.7 à X2.12, en tête de page. Ce qui était décidé est déjà codé : sélection Figma retirée, cartes repliées à l’ouverture, « Nouvelle palette » en action principale et filet, pastille B adoucie. Le premier passage, répondu, suit.</p>
   <p>Chaque maquette montre le panneau à 500 px, dans le thème sombre de Figma, avec les couleurs et les ratios que le moteur calcule pour #1E6FD9 et #16A34A. Les lots X3, X4 et X5 sont déjà codés : leur disposition en place est la proposition A, face à au moins une autre. X2.1 et X2.6 n’ont rien dans le code. Chaque maquette finit par ses questions et une recommandation ; « recommandé » vaut accord si la question reste sans réponse.</p>
   <p class="note">Page écrite par <code>generer-maquettes-v4.mjs</code>. Pour la régénérer : <code>node --import tsx "docs/notes/Recherches/Plugin Palettes/generer-maquettes-v4.mjs"</code>.</p>
-  <nav class="sommaire"><a href="#x2-1">X2.1 Création</a><a href="#x2-2">X2.2 Détail d’une nuance</a><a href="#x2-3">X2.3 Niveaux AA et AAA</a><a href="#x2-4">X2.4 Ligne du titre</a><a href="#x2-5">X2.5 Interface de test</a><a href="#x2-6">X2.6 Nuance 50</a></nav>
+  <nav class="sommaire"><a href="#x2-7">X2.7 Création et ajustement</a><a href="#x2-8">X2.8 Détail d’une nuance</a><a href="#x2-9">X2.9 Badges</a><a href="#x2-10">X2.10 Ligne du titre</a><a href="#x2-11">X2.11 Interface de test</a><a href="#x2-12">X2.12 Nuance 50</a></nav>
+  <nav class="sommaire"><span>Premier passage :</span><a href="#x2-1">X2.1 Création</a><a href="#x2-2">X2.2 Détail d’une nuance</a><a href="#x2-3">X2.3 Niveaux AA et AAA</a><a href="#x2-4">X2.4 Ligne du titre</a><a href="#x2-5">X2.5 Interface de test</a><a href="#x2-6">X2.6 Nuance 50</a></nav>
 </section>
+${sectionCreationBis()}
+${sectionDetailBis()}
+${sectionBadgesBis()}
+${sectionTitreBis()}
+${sectionInterfaceBis()}
+${sectionNuance50Bis()}
+<section class="intro"><span class="sur">Premier passage · répondu</span><h2>Les maquettes auxquelles tes retours répondent</h2></section>
 ${sectionCreation()}
 ${sectionDetail()}
 ${sectionBadges()}

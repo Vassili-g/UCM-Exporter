@@ -27,7 +27,8 @@ mainteneur. Il fait lui-même les tests d’interface et la recette dans Figma.
 Lire dans cet ordre :
 
 1. les [retours du mainteneur](#retours-du-mainteneur-round-4), conservés
-   sans modification, et ses réponses aux questions, une fois données ;
+   sans modification, ses réponses aux questions et ses
+   [retours sur les maquettes X2](#retours-du-mainteneur-sur-les-maquettes-x2) ;
 2. les décisions ci-dessous ;
 3. les [maquettes du lot X2](./MAQUETTES-RECETTE-V4.html), une fois validées ;
    d’ici là, les [maquettes du troisième tour](./MAQUETTES-RECETTE-V3.html) ;
@@ -186,7 +187,17 @@ Fichiers : `textes.ts`, `ongletPalettes.ts`, `nuancier.ts`, `styles.css`,
   des cartes et le survol du bouton danger restent au mainteneur, dans le plugin
   : pas de test d’interface dans ce tour.
 - [ ] **X1.7** Appliquer à la carte de création la disposition retenue en
-  X2.1, après validation.
+  X2.7, après validation.
+- [x] **X1.8** Retirer « Utiliser la couleur sélectionnée dans Figma » : le
+  bouton, la demande `lire-selection`, la réponse `selection`, la
+  frontière, les textes et la notice d’une couleur ramenée. La lecture de la
+  peinture d’un calque reste : le dessin relit les pastilles qu’il pose.
+- [x] **X1.9** Toutes les cartes repliables de l’onglet sont repliées à
+  l’ouverture, Garanties de contraste comprises ; « Voir les garanties » et
+  un clic sur une garantie du détail la déplient.
+- [x] **X1.10** « Nouvelle palette » devient le bouton principal de l’onglet,
+  le bouton de génération passe en secondaire, et un filet sépare la barre
+  et la création de la palette ouverte.
 
 Critère : aux deux thèmes de Figma, le bouton de suppression se lit comme
 une action destructive et ne vire jamais au bleu ; une nuance se choisit et
@@ -204,7 +215,9 @@ Un fichier `MAQUETTES-RECETTE-V4.html`, au format des précédentes : panneau à
 `#1E6FD9` et `#16A34A`. Chaque maquette se termine par ses questions, avec
 une recommandation.
 
-- [x] **X2.1** Création d’une palette : au moins deux placements des gestes
+- [x] **X2.1** Retour : les propositions oubliaient le Modèle et
+  « Ajuster la référence » ; la sélection Figma est supprimée (X1.8). Repris
+  en X2.7. Première version : création d’une palette : au moins deux placements des gestes
   Créer, Depuis la sélection et Annuler, par exemple le geste principal à
   droite sous les colonnes et les deux autres à gauche, ou Depuis la
   sélection à côté de la couleur de référence qu’il remplit. Produite : A, la
@@ -246,6 +259,22 @@ une recommandation.
   (lecture de la réponse du mainteneur à Q4.1), sur Bleu et Vert, aux deux
   thèmes, sur les fonds par défaut et sur #FFF1C2 et #1B2340.
 
+Second passage, après les [retours du
+mainteneur](#retours-du-mainteneur-sur-les-maquettes-x2), dans le même
+fichier :
+
+- [ ] **X2.7** Création et configuration d’une palette : le choix du Modèle,
+  Standard ou Libre, dans la carte de création, et « Ajuster la référence »
+  redessiné. Créer et Annuler, sans la sélection Figma.
+- [ ] **X2.8** Détail d’une nuance, disposition A retenue : une hiérarchie
+  plus marquée, et « Contrastes » détaché de « Sert à ».
+- [ ] **X2.9** Badges : la pastille pleine B en teintes adoucies, telle que
+  codée, à confirmer.
+- [ ] **X2.10** Ligne du titre, telle que codée : le filet sous la zone de
+  création, « Nouvelle palette » principal, la génération secondaire.
+- [ ] **X2.11** Interface de test : refonte du design de l’écran.
+- [ ] **X2.12** Nuance 50 : ce qui distingue A et D à l’usage.
+
 Critère : le mainteneur valide ou corrige chaque maquette sans avoir à
 imaginer une interaction.
 
@@ -275,6 +304,11 @@ Après validation de X2.2 et X2.3, et la réponse à Q4.2.
   case de grille qui atteint AA, dans le même calque. La légende des grilles
   ajoute « AA dès 4,5:1 · AAA dès 7:1 ». Non fait : la tête des Réglages
   communs, qui ne montre aucun contraste.
+- [x] **X3.5** Forme B retenue en X2.3 : une pastille pleine, verte ou
+  rouge, en teintes adoucies, rôles `--fond-niveau-atteint`,
+  `--texte-niveau-atteint`, `--fond-niveau-manque` et
+  `--texte-niveau-manque` du socle. Le « ✗ » reste : il dit l’échec sans la
+  couleur. La planche garde le texte dans le calque du ratio.
 - [x] **X3.4** Tests : chaque seuil de `niveauxWcag` à la frontière, 4,49 et
   4,5, 6,99 et 7 ; un élément graphique sans AAA ; un minimum réglé à 5:1
   qui échoue la promesse avec un badge AA atteint, selon Q4.2. Fait dans
@@ -517,4 +551,39 @@ Section "Générer sur Figma"
   si la planche est déjà sur figma mais que des éléments on changé, le
   bouton deviens "Actualiser sur Figma"
   suppression du message "pas encore sur la planche"
+```
+
+## Retours du mainteneur sur les maquettes X2
+
+Texte d’origine.
+
+```text
+X2.1 · Création d’une palette
+les propositions oublient le menu switch "modèle" et la fonctionnalité "ajuster la référence (qui doit aussi être redsigné)
+On supprime totalement la fonction "utiliser la couleur sélectionnée dans Figma"
+
+X2.2 · Détail d’une nuance
+1. ok pour A mais ça manque encore un peu de hierarchisation. Et on dirait que la section contrastes fait partie des check "sert à"
+2. ok
+3. ok
+
+X2.3 · Niveaux AA et AAA
+1. B pastille pleine mais utiliser des couleurs un peu moins fortes (toujours teinte vert/rouge)
+2. ok
+3. ok
+X2.4 · Ligne du titre
+1. ok
+2. ok
+3. ok
+il faudrait cependant un séparateur visuel entre la zone de création au dessus et la zone de config palette car sinon le bouton "Générer sur FIgma" est perturbant. D'ailleurs ça ne devrait pas être lui l'action principale de la page, plutôt "nouvelle palette", il faut inverser les rôles visuels.
+
+X2.5 · Interface de test
+1. oui, replié
+-> il faut replier tous les menus dépliés d'ailleurs, notamment les contrastes
+2. la carte est masquée, san message
+
+J'avais demandé un retravail du design de l'interface de test, ça n'a pas été fait.
+
+X2.6 · Nuance 50
+1. A et D semblent tous les deux parfaitement utilisables, d'ailleurs je ne vois pas spécialement la différence d'usage
 ```

@@ -239,7 +239,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/garanties.ts      la carte des garanties : bascule Soft/Vivid, réglette et arcs, une ligne par association
   src/ui/specimens.ts      le spécimen d'un rôle : bouton, texte, champ, anneau, trait ou aplat
   src/ui/selecteur.ts      la palette ouverte, en liste déroulante avec la pastille de chaque référence
-  src/ui/creation.ts       une palette neuve, en carte : nom, référence ou couleur de la sélection, palette de base
+  src/ui/creation.ts       une palette neuve, en carte : nom, référence, palette de base
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
   src/ui/frontiere.ts      la numérotation des demandes, un seul rangement en vol, le dessin après lui
   src/ui/ongletPlanche.ts  une fiche par palette : rampes, garanties, état du cadre, trois gestes ; génération groupée, une carte par palette supprimée, notices, recette repliée

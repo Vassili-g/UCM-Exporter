@@ -720,6 +720,8 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N108 | Carte « Interface de test » | Interface de test · Thème {mode} · {profil} · Écran de réglages peint de la palette | À valider |
 | N109 | Ajuster la référence : lien, panneau, trace dans la configuration | Ajuster la référence · Originale · Proposition · Luminosité · Un pas plus sombre · Un pas plus clair · Code de la proposition · Nuance visée : {n} dans les deux thèmes / {n} en Thème Light, {n} en Thème Dark · Le pas plus sombre / plus clair place la référence au {n} en Thème {mode}. · Aucun pas possible dans ce sens : la luminosité est à sa limite. · Garanties : {profil} ✗ {n} → ✓ · {profil} ✓ inchangé · {association} · Thème {mode} · {profil} : {avant} → {après} · Aucune garantie manquée, avant comme après. · Appliquer · Annuler · Ajustée depuis {hexa} · Revenir à l’originale | À valider |
 | N110 | Notice : un code saisi dans la configuration retire l’originale | Couleur d’origine retirée : {hexa} · La couleur saisie devient la nouvelle référence. La palette ne garde plus la couleur d’origine de l’ajustement. · Pour la retrouver, annulez avec Ctrl+Z, ou saisissez-la de nouveau. | À valider |
+| N111 | Textes retirés avec le geste « Utiliser la couleur sélectionnée dans Figma », supprimé par le mainteneur (retour sur la maquette X2.1) : T023, T031, T032, T113 à T115 | — | Retiré |
+| N112 | Pastille d’un niveau WCAG : forme B des maquettes X2.3, teintes adoucies | AAA · AA · AA ✗ | Mainteneur, retour sur X2.3 |
 
 ## Points à conserver lors de l’application
 

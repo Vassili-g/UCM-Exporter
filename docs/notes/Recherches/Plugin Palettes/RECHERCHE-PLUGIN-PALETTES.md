@@ -152,8 +152,8 @@ dans l'iframe du plugin et dans le sandbox Figma.
   uniquement à peindre dans un document `DISPLAY_P3`
   ([section 6.7](#67-peindre-dans-lespace-du-document)).
 - `[MOT-26]` Display P3 linéaire vers sRGB linéaire : l'inverse de `[MOT-05]`,
-  par les mêmes matrices. Elle sert à lire la couleur d'un calque dans un
-  document `DISPLAY_P3` (`[ENT-04]`). Une composante hors de `[0, 1]` est bornée,
+  par les mêmes matrices. Elle sert à relire la couleur d'une pastille posée
+  dans un document `DISPLAY_P3` (`[ENT-04]`). Une composante hors de `[0, 1]` est bornée,
   et le résultat dit que la couleur a été ramenée dans le gamut sRGB.
 
 ### 6.2 Plafond de chroma
@@ -550,11 +550,11 @@ dix-sept paires.
   supprime dans l'onglet Palettes. Supprimer une palette ne supprime pas son
   cadre de la planche : l'onglet Planches montre le cadre comme celui d'une
   palette supprimée, que « Supprimer définitivement » retire (`[PLA-27]`).
-- `[ENT-04]` Créer une palette depuis la sélection : si un calque sélectionné a
-  un remplissage uni, le plugin propose sa couleur comme référence. Seule une
-  peinture `SOLID` visible et d'opacité 1 se propose. Dans un document
-  `DISPLAY_P3`, la couleur lue est en P3 : le plugin la convertit en sRGB
-  (`[MOT-26]`), et une note dit quand elle a été ramenée dans le gamut.
+- `[ENT-04]` Une palette se crée depuis un code saisi ou choisi au sélecteur
+  de couleur ; le plugin ne lit pas la couleur de la sélection Figma. La
+  lecture de la peinture d'un calque sert au dessin, qui relit les pastilles
+  qu'il a posées : seule une peinture `SOLID` visible et d'opacité 1 se lit,
+  et dans un document `DISPLAY_P3` elle se convertit en sRGB (`[MOT-26]`).
 - `[ENT-09]` Une référence dont la chroma est sous `seuils.chromaGrise` reçoit
   des parts propres égales à sa part de chroma, d'origine `grise`. Ces parts
   disparaissent quand la référence cesse d'être grise. Une palette qui porte
@@ -1010,8 +1010,10 @@ composants : `default`, puis `hover` à une nuance, `active` à deux.
   rester insuffisante pour le texte courant ; les deux résultats s'affichent
   séparément.
 
-  Le plugin et la planche écrivent ce niveau en badge à côté de chaque
-  contraste jugé : « AAA », « AA », ou « AA ✗ » sous le premier niveau.
+  Le plugin et la planche écrivent ce niveau à côté de chaque contraste
+  jugé : « AAA », « AA », ou « AA ✗ » sous le premier niveau. Dans le plugin,
+  c'est une pastille pleine aux teintes adoucies, verte quand le niveau est
+  atteint, rouge sinon ; sur la planche, un texte dans le calque du ratio.
   L'assistance technique lit ce que le badge juge et son résultat : « Texte
   courant : AA atteint, AAA non atteint ». Une paire au minimum des textes se
   juge en texte courant ; une paire au minimum des éléments visibles se juge
@@ -1305,8 +1307,10 @@ palette » gardent leurs libellés au-dessus des champs.
   referme le détail, et le focus reste sur elle ; le survol signale la
   cible sans déplacer la page. Les flèches, Origine et Fin déplacent le focus ;
   une copie de code est un geste distinct de la sélection.
-- `[UI-05]` Le geste de génération se pose à droite du titre « Palette
-  [nom] », sur la même ligne. Il enregistre la palette si un geste est en
+- `[UI-05]` Le geste de génération, un bouton secondaire, se pose à droite du
+  titre « Palette [nom] », sur la même ligne. « Nouvelle palette » est le seul
+  bouton principal de l'onglet, et un filet sépare la barre du sélecteur et la
+  création de la palette ouverte. Il enregistre la palette si un geste est en
   attente, puis génère son cadre, grille des contrastes comprise : la
   génération n'a pas d'option. Son libellé dit l'état du cadre : « Générer
   sur Figma » sans cadre, « Actualiser sur Figma » quand le cadre a changé,
@@ -1317,8 +1321,9 @@ palette » gardent leurs libellés au-dessus des champs.
   « Afficher dans Figma » quand le cadre est localisé. L'erreur ou les écarts
   de peinture viennent dessous : un nouveau résultat remplace le précédent.
 - `[UI-09]` La carte « Garanties de contraste » suit la Dérive de teinte et
-  montre le thème que l'aperçu a choisi, qu'elle nomme dans son en-tête. Dépliée à l'ouverture,
-  elle garde son état replié pendant la session ; repliée, son en-tête garde le
+  montre le thème que l'aperçu a choisi, qu'elle nomme dans son en-tête.
+  Repliée à l'ouverture, comme toutes les cartes repliables de l'onglet, elle
+  garde son état pendant la session ; repliée, son en-tête garde le
   résultat des deux profils sur les deux thèmes. Une bascule Soft/Vivid choisit
   le profil affiché. Chaque segment porte le résultat de son profil dans le
   thème montré : ✓, ou ✗ suivi du nombre de contrôles manqués (`[VER-06]`). À
@@ -1444,7 +1449,7 @@ palette » gardent leurs libellés au-dessus des champs.
   palette » : trois colonnes, libellé au-dessus du champ, pour Nom de la
   palette, Couleur de référence (pastille et code) et Palette de base (Auto,
   Soft ou Vivid, Auto par défaut). Sous les colonnes, sur une ligne : « Créer
-  la palette », la couleur de la sélection Figma et « Annuler ». Entrée crée ;
+  la palette » et « Annuler ». Entrée crée ;
   Échap annule quand « Annuler » est offert. Après création, la palette est
   ouverte ; après annulation, le focus revient à « Nouvelle palette ».
 
@@ -1501,8 +1506,7 @@ qui le créera.
 |---|---|
 | Premier lancement | Aucune recette rangée, recette par défaut proposée, aucune palette |
 | Premier lancement, palette créée | La première palette ouverte, recette rangée |
-| Création ouverte | La carte de création sous le sélecteur : nom, couleur de référence, palette de base en Auto, sélection Figma, « Annuler » |
-| Palette créée depuis la sélection | Couleur Display P3 ramenée dans sRGB, information sous la création |
+| Création ouverte | La carte de création sous le sélecteur : nom, couleur de référence, palette de base en Auto, « Créer la palette » et « Annuler » |
 | Palette en saisie | Aperçu à jour, rien de généré |
 | Référence Soft | Une référence peu intense, portée par Soft, avec son repère et sa nuance |
 | Référence Vivid | Une référence intense, portée par Vivid, nuance différente en Light et en Dark |
@@ -1554,11 +1558,11 @@ qui le créera.
 ### 13.4 Messages
 
 - `[UI-07]` `messages.ts` déclare les deux sens de la frontière. L'interface
-  envoie des demandes : lire l'état, lire la couleur de la sélection, ranger la
+  envoie des demandes : lire l'état, ranger la
   recette, dessiner une palette ou toutes, importer, voir sur la planche,
   retirer le cadre d'une palette supprimée, redimensionner. Le sandbox envoie
   l'état (recette rangée, profil du document, état de chaque cadre), la
-  couleur de la sélection, la progression et les résultats. Un message entre dans `messages.ts` au lot qui le met en scène
+  la progression et les résultats. Un message entre dans `messages.ts` au lot qui le met en scène
   dans la galerie.
 - `[UI-08]` Chaque résultat porte le numéro de la demande qui l'a produit.
   L'interface écarte un résultat plus ancien que la dernière demande du même

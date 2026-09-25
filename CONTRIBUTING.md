@@ -250,7 +250,9 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
   naturelle et la hauteur de la liste. Suit un seul titre de premier rang,
   « Palette [nom] », avec le nom que le sélecteur affiche, et le bouton de
   génération à sa droite, sur la même ligne : un nom long se coupe, le bouton
-  garde son libellé entier. Chaque sous-section
+  garde son libellé entier. « Nouvelle palette » est le bouton principal de
+  l'onglet ; la génération est un bouton secondaire. Un filet sépare la barre
+  et la carte de création de la palette ouverte. Chaque sous-section
   de la configuration est une carte de même facture : fond secondaire de
   Figma, bordure du socle, rayon de 8 px, sans ombre. Trois niveaux de titre,
   pas davantage : le titre de premier rang, le titre de carte et le libellé de
@@ -260,8 +262,9 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
   du champ, puis ses gestes sur une ligne ;
 - les cartes se suivent dans cet ordre : Configuration de la palette, carte
   d’aperçu, Intensités, Dérive de teinte, Garanties de contraste, puis
-  Interface de test. La palette se règle avant de se juger. Les cartes de
-  réglage et l’Interface de test se replient ; leur en-tête est un bouton qui
+  Interface de test. La palette se règle avant de se juger. Toutes les
+  cartes, sauf Configuration et aperçu, se replient et sont repliées à
+  l’ouverture ; leur en-tête est un bouton qui
   porte le chevron, le titre et un résumé aligné à droite ;
 - la carte d’aperçu n’a pas de titre : son en-tête porte à gauche les onglets
   Light et Dark, l’onglet actif sur un fond plus foncé, et à droite la
