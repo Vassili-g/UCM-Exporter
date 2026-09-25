@@ -13,7 +13,6 @@ import {
   FORMAT_RECETTE,
   ecrireArrondi,
   ecrireContraste,
-  niveauxWcag,
   type Alerte,
   type Ancrage,
   type Association,
@@ -139,7 +138,7 @@ export const TEXTES_DE_CONFIGURATION = {
   courbeDuMode: { light: 'Light', dark: 'Dark' },
   // N092 : l'aide de chaque seuil, sous son libellé (W4.4).
   aideSeuilTexte: 'Pour text sur surface, on-solid sur solid et text sur le fond.',
-  aideSeuilNonTexte: 'Pour la bordure de champ, l’anneau de focus et le fond plein au survol.',
+  aideSeuilNonTexte: 'Pour la bordure de champ, l’anneau de focus et le fond plein, état hover.',
   aideProfilsConfondus: 'Mesuré entre les deux profils d’une même nuance.',
   aidePalettesProches: 'Mesuré sur les nuances 500, 600 et 700 de Vivid, en Thème Light.',
   // N061 : les unités des mesures avancées (V9.8).
@@ -376,10 +375,6 @@ export function ligneDeLaReference(ancrage: Ancrage, mode: Mode): string {
 
 const ORIGINES: Record<DeriveRangee['origine'], string> = { tailwind: 'Tailwind', constante: 'Teinte constante', libre: 'Personnalisée' };
 
-function uneDerive(derive: DeriveRangee): string {
-  return `${ORIGINES[derive.origine]} · nuances claires : ${angleEcrit(derive.clair)} · nuances sombres : ${angleEcrit(derive.sombre)}`;
-}
-
 /** Le nombre de points à vérifier qu'une carte repliée annonce ([UI-12]). */
 function pointsAVerifier(nombre: number): string {
   if (nombre === 0) return '';
@@ -426,8 +421,8 @@ export const NOM_DE_L_EMPLOI = Object.fromEntries(
   (Object.keys(NOM_DU_ROLE) as Emploi[]).map((emploi) => [emploi, `${NOM_DU_ROLE[emploi][0].toUpperCase()}${NOM_DU_ROLE[emploi].slice(1)} (${emploi})`]),
 ) as Record<Emploi, string>;
 
-/** L'état d'une paire, sous son spécimen (N033). */
-export const NOM_DE_L_ETAT: Record<EtatDePaire, string> = { 0: 'repos', 1: 'survol', 2: 'appui' };
+/** L'état d'une paire, sous son spécimen, dans le vocabulaire des composants (N033, N100, W5.7). */
+export const NOM_DE_L_ETAT: Record<EtatDePaire, string> = { 0: 'default', 1: 'hover', 2: 'active' };
 
 /** Le résultat d'un profil (N035) : « Vivid ✓ », « Vivid ✗ 2 ». */
 export function resultatDuProfil(profil: Profil, manquees: number): string {
@@ -449,7 +444,7 @@ export const TEXTES_DES_GARANTIES = {
   minimum: (seuil: number) => `minimum ${seuilEcrit(seuil)}:1`,
   sur: 'sur',
   fond: 'fond',
-  legende: 'Trait plein : repos · tireté : survol · pointillé : appui. L’état avance d’une nuance, texte et fond ensemble.',
+  legende: 'Trait plein : default · tireté : hover · pointillé : active. L’état avance d’une nuance, texte et fond ensemble.',
   onSolid: 'on-solid est le fond de page du thème, neutral.50 du design system.',
   decoratif: (numero: number) => `${numero} · séparateur, sans minimum de contraste`,
   specimenBouton: 'Bouton',
@@ -459,7 +454,7 @@ export const TEXTES_DES_GARANTIES = {
     : `Thème ${NOM_DU_MODE[mode]} : ${nombre} garanties manquées`),
   voirLeTheme: (mode: Mode) => `Voir le thème ${NOM_DU_MODE[mode]}`,
   echec: (etat: EtatDePaire, contraste: number, seuil: number) =>
-    `${NOM_DE_L_ETAT[etat][0].toUpperCase()}${NOM_DE_L_ETAT[etat].slice(1)} : ${contrasteEcrit(contraste)} pour un minimum de ${seuilEcrit(seuil)}:1`,
+    `État ${NOM_DE_L_ETAT[etat]} : ${contrasteEcrit(contraste)} pour un minimum de ${seuilEcrit(seuil)}:1`,
   numeros: (premier: string, second: string) => `${premier} / ${second}`,
   resultat: (tenue: boolean, contraste: number) => `${tenue ? '✓' : '✗'} ${ecrireContraste(contraste)}`,
   voirLesGaranties: 'Voir les garanties',
@@ -526,9 +521,9 @@ export const TEXTES_DU_NUANCIER = {
   etiquetteDuFond: (hexa: string) => `on-solid, fond du thème, couleur ${hexa}`,
 } as const;
 
-const ETATS_DU_DECALAGE = ['', ' au survol', ' à l’appui'];
+const ETATS_DU_DECALAGE = ['', ', état hover', ', état active'];
 
-/** Un emploi et son état : « Texte coloré (text) au survol ». */
+/** Un emploi et son état : « Texte coloré (text), état hover ». */
 export function emploiEcrit({ emploi, decalage }: EmploiDUnCran): string {
   return `${NOM_DE_L_EMPLOI[emploi]}${ETATS_DU_DECALAGE[decalage] ?? ` (décalage de ${decalage} nuances)`}`;
 }
@@ -537,7 +532,7 @@ function membre(membrePaire: MembrePaire): string {
   return 'fond' in membrePaire ? 'fond de page' : emploiEcrit(membrePaire);
 }
 
-/** Une association et son état : « Texte coloré (text) sur Fond léger (surface) au survol ». */
+/** Une association et son état : « Texte coloré (text) sur Fond léger (surface), état hover ». */
 export function associationEcrite(association: Association, etat: EtatDePaire): string {
   const second = association.second === 'fond' ? 'fond de page' : NOM_DE_L_EMPLOI[association.second];
   return `${NOM_DE_L_EMPLOI[association.premier]} sur ${second}${ETATS_DU_DECALAGE[etat]}`;
@@ -1074,29 +1069,49 @@ export function ecartDePeinture(nom: string, ecarts: readonly { readonly nom: st
   };
 }
 
-/** Les textes que la planche porte dans le document (section 9, lot V10). */
+/** Les textes que la planche porte dans le document (section 9, récit R1 de W3.6), N093 à N099. */
 export const TEXTES_DE_LA_PLANCHE = {
-  reference: 'Couleur de référence',
-  contrastes: 'Contrastes de la couleur de référence',
-  colonnesDesContrastes: ['Comparée avec', 'Contraste', 'Niveau WCAG'],
-  contre: { blanc: 'Blanc', noir: 'Noir', light: 'Fond du thème Light', dark: 'Fond du thème Dark' },
-  mesures: 'Mesures avancées',
-  garanties: 'Garanties de contraste',
-  garantiesCitees: 'Chaque rôle correspond au même numéro de nuance dans toutes les palettes de marque.',
-  grilles: 'Grilles de contraste',
-  noteDesGrilles: 'Chaque case compare librement deux nuances de la même rampe. Ces cases ne sont pas des garanties : elles répondent à la question « quelle nuance puis-je poser sur quelle nuance ».',
-  alertes: 'Points à vérifier',
-  aucuneAlerte: 'Aucun point signalé ici. Les résultats de contraste se lisent dans les garanties.',
-  legende: 'Lire les valeurs',
-  specimen: 'Aa',
-  reperage: '◆ Référence',
+  // N093 : les titres des sections d'un thème.
+  rampes: 'Les deux rampes',
+  titreDesUsages: (profil: string) => `Quelle nuance pour quel usage · ${profil}`,
+  titreDeLExemple: (profil: string) => `Interface d’exemple · ${profil}`,
+  contrastes: 'Contrastes, nuance par nuance',
+  // N094 : chaque usage, son nom et ce qu'il habille ; l'anneau porte l'état focus.
+  usages: {
+    surface: { titre: 'Fonds légers', exemples: 'fond d’un bloc, d’un bouton soft' },
+    text: { titre: 'Textes colorés', exemples: 'lien, texte d’accent' },
+    solid: { titre: 'Fonds pleins', exemples: 'bouton principal, badge plein' },
+    'border-control': { titre: 'Bordures de champ', exemples: 'champ de saisie, case' },
+    focus: { titre: 'Anneau de focus', exemples: 'focus clavier' },
+    'border-decorative': { titre: 'Séparateurs', exemples: 'filet, bordure de carte' },
+  },
+  etatFocus: 'focus · état focus',
+  // N095 : les libellés des spécimens.
+  specimens: { soft: 'Soft', lien: 'Lien coloré', bouton: 'Bouton', champ: 'Champ' },
+  // N096 : les repères dans une pastille, et la note des profils confondus.
+  reperage: '◆',
+  confondu: '≈',
+  noteDuRepere: '◆ : la couleur de référence exacte.',
+  noteDesConfondus: '≈ : Soft et Vivid presque identiques à cette nuance.',
   fond: 'fond',
-  onSolid: 'on-solid',
-  onSolidEnMots: 'texte sur fond plein : le fond de page du thème, neutral.50 du design system',
+  // N097 : l'interface d'exemple E2, un écran de réglages.
+  exemple: {
+    titre: 'Paramètres de l’équipe',
+    badge: 'Nouveau',
+    onglets: ['Général', 'Membres', 'Facturation'],
+    libelle: 'Nom de l’équipe',
+    valeur: 'Studio Nord',
+    coche: '✓',
+    caseACocher: 'Notifier les membres',
+    interrupteur: 'Accès invité',
+    icone: 'ⓘ',
+    encart: 'Les membres invités reçoivent un e-mail. En savoir plus',
+    boutons: ['Annuler', 'Brouillon', 'Enregistrer'],
+  },
   mode: { light: 'Thème Light', dark: 'Thème Dark' },
 } as const;
 
-/** Le profil et la nuance de la référence, une fois si les deux thèmes s'accordent (V10.1, V10.2). */
+/** Le profil et la nuance de la référence, une fois si les deux thèmes s'accordent (V10.1). */
 function nuancesDeLaReference(ancrage: Ancrage): string {
   const { light, dark } = ancrage.crans;
   return light === dark ? `nuance ${light}` : `nuance ${light} en Thème Light, ${dark} en Thème Dark`;
@@ -1107,109 +1122,18 @@ export function enTeteDeLaReference(hexa: string, ancrage: Ancrage): string {
   return `Couleur de référence ${hexa} · ${NOM_DU_PROFIL[ancrage.profil]} · ${nuancesDeLaReference(ancrage)}`;
 }
 
-/** Le résultat Soft et Vivid des garanties, sur les deux thèmes, comme la bascule le donne (V10.1). */
-export function enTeteDesGaranties(manqueesSoft: number, manqueesVivid: number): string {
-  return TEXTES_DES_GARANTIES.bilan(resultatDuProfil('soft', manqueesSoft), resultatDuProfil('vivid', manqueesVivid));
+/** L'en-tête d'un thème ([PLA-09], N098). */
+export function enTeteDuTheme(mode: Mode, fond: string): string {
+  return `${TEXTES_DE_LA_PLANCHE.mode[mode]} · fond ${fond}`;
 }
 
-/** Le profil porteur, et la palette de base quand le designer l'a choisie (V10.2, N063). */
-export function porteurDeLaReference(ancrage: Ancrage, base: Profil | undefined): string {
-  const porteur = `Profil porteur : ${NOM_DU_PROFIL[ancrage.profil]} · ${nuancesDeLaReference(ancrage)}`;
-  return base ? `${porteur}\nPalette de base : ${NOM_DU_PROFIL[base]}, choisie pour cette palette` : porteur;
+/** Le verdict d'un thème, en tête de sa section : ses garanties manquées, les deux profils comptés (N098). */
+export function verdictDuTheme(manquees: number): string {
+  if (manquees === 0) return '✓ Toutes les garanties tenues';
+  return manquees === 1 ? '1 garantie manquée' : `${manquees} garanties manquées`;
 }
 
-/** Les mesures avancées de la référence, chacune nommée, puis sa forme CSS à points décimaux (V10.2, N064). */
-export function mesuresDeLaReference(L: number, C: number, H: number, part: number): string {
-  const teinte = Math.round(H) % 360;
-  return [
-    `Luminosité L : ${ecrireArrondi(L, 3)} · chroma C : ${ecrireArrondi(C, 3)} · teinte H : ${teinte}° · intensité : ${ecrireArrondi(part, 2)}`,
-    `CSS : oklch(${Number(L.toFixed(3))} ${Number(C.toFixed(3))} ${teinte})`,
-  ].join('\n');
-}
-
-/** Le niveau WCAG le plus haut qu'un contraste atteint pour du texte, en un mot (section 9.3, N065). */
-export function niveauCourt(valeur: number): string {
-  const niveaux = niveauxWcag(valeur);
-  if (niveaux.texte) return niveaux.texte;
-  return niveaux.grandTexte ? 'AA grand texte' : 'Insuffisant';
-}
-
-/** L'en-tête d'une section de thème ([PLA-09]). */
-export function enTeteDeSection(mode: Mode, fond: string): string {
-  return `${TEXTES_DE_LA_PLANCHE.mode[mode]} · fond utilisé pour les contrastes : ${fond}`;
-}
-
-/** Ce qu'une carte de nuance écrit sous sa pastille ([PLA-12], V10.5). */
-export interface TexteDeCarte {
-  readonly hexa: string;
-  readonly fond: number;
-  readonly emplois: readonly EmploiDUnCran[];
-  /** Le profil dont cette nuance se confond, `null` quand les deux s'écartent ([PLA-15]). */
-  readonly confondu: string | null;
-}
-
-/** Un rôle d'une nuance : son nom dans le design system, son nom français, son état (N066). */
-function roleEcrit({ emploi, decalage }: EmploiDUnCran): string {
-  const etat = decalage === 0 ? '' : ` · ${NOM_DE_L_ETAT[Math.min(decalage, 2) as EtatDePaire]}`;
-  return `${emploi} · ${NOM_DU_ROLE[emploi]}${etat}`;
-}
-
-export function texteDeCarte(carte: TexteDeCarte): string {
-  return [
-    carte.hexa,
-    ...carte.emplois.map(roleEcrit),
-    `Fond ${contrasteEcrit(carte.fond)} · ${niveauCourt(carte.fond)}`,
-    carte.confondu ? `Très proche de ${carte.confondu}` : '',
-  ].filter((ligne) => ligne !== '').join('\n');
-}
-
-/** Les dérives d'un cadre ([PLA-08]) : une ligne par profil, ou une seule quand ils sont liés. */
-export function texteDesDerives(palette: Palette): string {
-  const { lien, soft, vivid } = palette.derive;
-  return lien
-    ? `Dérive de teinte commune à soft et vivid : ${uneDerive(vivid)}`
-    : `Dérive de teinte de soft : ${uneDerive(soft)}\nDérive de teinte de vivid : ${uneDerive(vivid)}`;
-}
-
-/** Le titre des garanties d'un thème (V10.6). */
-export function titreDesGaranties(mode: Mode): string {
-  return `${TEXTES_DE_LA_PLANCHE.garanties} · ${TEXTES_DE_LA_PLANCHE.mode[mode]}`;
-}
-
-/** La relation d'une association, en noms du design system, puis en français (N030, N031). */
-export function relationEcrite(association: Association): { readonly code: string; readonly francais: string } {
-  const sur = TEXTES_DES_GARANTIES.sur;
-  const second = association.second === 'fond' ? TEXTES_DES_GARANTIES.fond : association.second;
-  const francais = association.second === 'fond' ? TEXTES_DES_GARANTIES.fond : NOM_DU_ROLE[association.second];
-  return { code: `${association.premier} ${sur} ${second}`, francais: `${NOM_DU_ROLE[association.premier]} ${sur} ${francais}` };
-}
-
-/** Sous un spécimen de la planche : le profil, les deux numéros comparés, le résultat et le ratio (V10.6, N067). */
-export function mesureDuSpecimen(profil: Profil, premier: string, second: string, tenue: boolean, contraste: number): string {
-  return `${NOM_DU_PROFIL[profil]} · ${TEXTES_DES_GARANTIES.numeros(premier, second)} · ${TEXTES_DES_GARANTIES.resultat(tenue, contraste)}:1`;
-}
-
-/** Le titre d'une grille de contraste (V10.7). */
-export function titreDeGrille(mode: Mode, profil: Profil): string {
-  return `${TEXTES_DE_LA_PLANCHE.mode[mode]} · ${NOM_DU_PROFIL[profil]}`;
-}
-
-/** La légende des grilles : chaque couleur de fond en mots (V10.7, N068). */
-export function legendeDesGrilles(seuils: Recette['seuils']): string {
-  return `Vert : au moins ${seuilEcrit(seuils.texte)}:1, pour du texte. Jaune : au moins ${seuilEcrit(seuils.nonTexte)}:1, pour un élément visible ou du grand texte. Gris : en dessous de ${seuilEcrit(seuils.nonTexte)}:1.`;
-}
-
-/** Une ligne de point à vérifier sur la planche : l'élément, l'explication, puis l'action. */
-export function ligneDAlerte(constat: Constat): string {
-  return `${constat.ou} : ${constat.quoi} ${constat.geste}`;
-}
-
-/** La légende d'un cadre ([PLA-11], V10.9, N069), sans nom interne de seuil. */
-export function legende(seuils: Recette['seuils']): string {
-  return [
-    `Lire une garantie : chaque ligne nomme deux rôles, le premier posé sur le second. Sous chaque spécimen, les deux numéros de nuance comparés, puis ✓ quand le contraste atteint le minimum de son groupe, ✗ sinon. Minimums demandés : ${seuilEcrit(seuils.texte)}:1 pour les textes, ${seuilEcrit(seuils.nonTexte)}:1 pour les éléments visibles.`,
-    'Soft et Vivid : chaque état montre deux spécimens aux mêmes numéros de nuance, Soft, plus doux, puis Vivid, plus intense.',
-    '« Fond » donne, sous chaque nuance, son contraste avec le fond du thème et le niveau WCAG le plus haut qu’il atteint pour du texte.',
-    `Couleurs proches : un écart sous ${ecrireArrondi(seuils.profilsConfondus, 2)} entre Soft et Vivid, ou sous ${ecrireArrondi(seuils.palettesProches, 2)} entre deux palettes, est signalé. Ces écarts détectent les ressemblances ; ils ne mesurent pas la lisibilité.`,
-  ].join('\n');
+/** La légende des grilles, en une ligne ([PLA-16], N099). */
+export function legendeDesContrastes(seuils: Recette['seuils']): string {
+  return `Ligne : fond · colonne : texte · gras dès ${seuilEcrit(seuils.texte)}:1 · maigre dès ${seuilEcrit(seuils.nonTexte)}:1 · effacé en dessous`;
 }

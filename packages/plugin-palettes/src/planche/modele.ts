@@ -5,34 +5,29 @@
  * nodes Figma sans rien décider ; tout ce que la section 9 exige se teste ici,
  * hors de Figma.
  *
- * Le cadre reprend les termes et l'organisation de l'onglet Palettes (lot
- * V10) : les rôles du design system et leur nom français, la pastille
- * `on-solid` et les accolades de l'aperçu, puis les garanties de chaque thème
- * groupées par minimum, une ligne par association, chaque état avec son
- * spécimen Soft et Vivid et les deux numéros comparés.
+ * Le cadre répond à une question : quelle nuance pour quel usage (récit R1,
+ * maquette W3.6). Chaque thème, peint de son fond, montre les deux rampes,
+ * puis les usages du profil porteur dans leurs états `default`, `hover` et
+ * `active`, chacun avec les garanties qu'il porte, puis une interface
+ * d'exemple, puis les grilles des contrastes, alignées sur les rampes.
  */
 import {
-  ASSOCIATIONS,
   MODES,
   PROFILS,
   TABLE_DES_EMPLOIS,
-  associationDe,
   atteintLeSeuil,
-  cleDeLAssociation,
   contraste,
+  decalagesDeLEmploi,
   distanceOk,
   ecrireContraste,
   ecrireHexa,
-  emploisDuCran,
   empreinte,
-  etatDeLaPaire,
   lireHexa,
-  mesurerCran,
-  niveauxWcag,
   referenceDe,
-  rgb8VersOklch,
   rgb8VersP3,
-  type Association,
+  type Cran,
+  type Emploi,
+  type MembrePaire,
   type Mode,
   type Palette,
   type Profil,
@@ -43,31 +38,15 @@ import {
 
 import { analyserPalette, type AnalyseDePalette } from '../analyse';
 import type { ProfilDuDocument } from '../lecture';
-import { accoladesDe } from '../presentation';
 import {
-  NOM_DE_L_ETAT,
   NOM_DU_PROFIL,
-  NOM_DU_ROLE,
-  TEXTES_DES_GARANTIES,
   TEXTES_DE_LA_PLANCHE,
-  constatDAlerte,
-  contrasteEcrit,
+  TEXTES_DU_DETAIL,
   enTeteDeLaReference,
-  enTeteDeSection,
-  enTeteDesGaranties,
-  legende,
-  legendeDesGrilles,
-  ligneDAlerte,
-  mesureDuSpecimen,
-  mesuresDeLaReference,
-  niveauxEcrits,
+  enTeteDuTheme,
+  legendeDesContrastes,
   nomDeLaPalette,
-  porteurDeLaReference,
-  relationEcrite,
-  texteDeCarte,
-  texteDesDerives,
-  titreDeGrille,
-  titreDesGaranties,
+  verdictDuTheme,
 } from '../ui/textes';
 
 /** Une couleur peinte : son hexa sRGB, et ses composantes dans l'espace du document (section 6.7). */
@@ -78,15 +57,17 @@ export interface Peinture {
 
 /**
  * Les styles nommés de la planche (V10.8), du plus haut au plus bas : titre de
- * palette, thème, rôle, valeur, note. Ils entrent dans l'empreinte : changer
- * une taille ou une graisse périme les cadres déjà dessinés (V10.10).
+ * palette, titre de section, titre d'usage, valeur, note, et les chiffres
+ * appuyés. Ils entrent dans l'empreinte : changer une taille ou une graisse
+ * périme les cadres déjà dessinés (V10.10).
  */
 export const STYLES_DE_TEXTE = {
-  palette: { family: 'Inter', style: 'Bold', taille: 24 },
+  palette: { family: 'Inter', style: 'Semi Bold', taille: 28 },
   theme: { family: 'Inter', style: 'Semi Bold', taille: 16 },
-  role: { family: 'Inter', style: 'Medium', taille: 13 },
+  role: { family: 'Inter', style: 'Semi Bold', taille: 12 },
   valeur: { family: 'Inter', style: 'Regular', taille: 11 },
   note: { family: 'Inter', style: 'Regular', taille: 10 },
+  chiffre: { family: 'Inter', style: 'Semi Bold', taille: 10 },
 } as const;
 
 export type StyleDeTexte = keyof typeof STYLES_DE_TEXTE;
@@ -101,11 +82,17 @@ export interface NoeudTexte {
   readonly largeur?: number;
 }
 
-/** Un contour : le filet d'une section, la pastille `on-solid`, le spécimen d'une bordure. */
+/** Un contour : le filet d'un thème, la bordure d'un champ, l'anneau de focus. */
 export interface Trait {
   readonly couleur: Peinture;
   readonly epaisseur: number;
   readonly tirets: boolean;
+}
+
+/** L'alignement des enfants d'un cadre, sur son axe puis sur l'axe croisé ; `MIN` par défaut. */
+export interface Alignement {
+  readonly principal?: 'MIN' | 'CENTER' | 'MAX' | 'SPACE_BETWEEN';
+  readonly secondaire?: 'MIN' | 'CENTER' | 'MAX';
 }
 
 export interface NoeudCadre {
@@ -114,13 +101,17 @@ export interface NoeudCadre {
   readonly direction: 'VERTICAL' | 'HORIZONTAL';
   readonly espacement: number;
   readonly marge: number;
+  /** La marge de gauche et de droite, quand elle diffère de `marge`. */
+  readonly margeLaterale?: number;
   readonly fond: Peinture | null;
   readonly rayon: number;
   readonly trait?: Trait;
   /** Une taille fixe ; sans elle, le cadre épouse son contenu (auto layout, [PLA-21]). */
   readonly largeur?: number;
   readonly hauteur?: number;
-  readonly centre?: boolean;
+  /** Le cadre prend la largeur de son parent : un filet, un soulignement. */
+  readonly remplir?: boolean;
+  readonly alignement?: Alignement;
   readonly enfants: readonly Noeud[];
 }
 
@@ -140,27 +131,37 @@ export interface ModeleDeCadre {
 /** La trame de la planche ([PLA-21]). */
 export const TRAME = 8;
 
-/** Les couleurs de légende, de filet et de fond, séparées des couleurs de la palette ([PLA-23]). */
+/** Les couleurs du cadre, séparées des couleurs de la palette ([PLA-23]). */
 export const COULEURS_DE_LA_PLANCHE = {
   fondDuCadre: '#FFFFFF',
   encre: '#1E1E1E',
   encreClaire: '#F5F5F5',
   encreSecondaire: '#6B6B6B',
-  /** Le filet d'une section de thème : 3,4:1 sur le blanc, 5,5:1 sur un fond presque noir (V10.4). */
+  /** Le filet d'un thème : 3,4:1 sur le blanc, 5,5:1 sur un fond presque noir (V10.4). */
   filet: '#8C8C8C',
-  tenu: '#DCF5E3',
-  limite: '#FFF1C2',
-  faible: '#ECECEC',
+  /** Une garantie manquée, sur un fond clair puis sur un fond sombre. */
+  dangerSombre: '#B42318',
+  dangerClair: '#FF9C8A',
 } as const;
 
-/** La taille d'une pastille de carte (section 9.3). */
-export const PASTILLE = { largeur: 96, hauteur: 56 } as const;
+/** Une colonne de rampe, et celle de son libellé à gauche : la grille des contrastes s'aligne dessus. */
+export const COLONNE = { largeur: 56, libelle: 48 } as const;
 
-/** La colonne du nom des profils, à gauche des rangées ([PLA-10]). */
-const COLONNE_DU_PROFIL = 64;
+/** La hauteur d'une pastille de rampe. */
+const HAUTEUR_DE_PASTILLE = 32;
 
-/** Un spécimen de garantie. */
-const SPECIMEN = { largeur: 120, hauteur: 32 } as const;
+/** Les colonnes des usages : libellé, puis une colonne par état. */
+const USAGE = { libelle: 176, etat: 168 } as const;
+
+/** Un spécimen d'usage, et l'interface d'exemple. */
+const SPECIMEN = { largeur: 96, hauteur: 32 } as const;
+const EXEMPLE = { largeur: 420, marge: 3 * TRAME } as const;
+
+/** Les usages, dans l'ordre du récit : du fond léger au séparateur. `on-solid` se lit sur `solid`. */
+const USAGES: readonly Emploi[] = ['surface', 'text', 'solid', 'border-control', 'focus', 'border-decorative'];
+
+/** Les états d'un emploi, dans le vocabulaire des composants (W3.6), rangés par décalage. */
+export const ETATS = ['default', 'hover', 'active'] as const;
 
 /** Peint une couleur à 8 bits dans l'espace du document (section 6.7, [MOT-25]). */
 export function peinture(couleur: Rgb8, profil: ProfilDuDocument): Peinture {
@@ -188,9 +189,24 @@ export function encreSur(fond: Rgb8): Rgb8 {
   return contraste(fond, sombre) >= contraste(fond, claire) ? sombre : claire;
 }
 
+/** `part` de `encre` posée sur `fond`, en octets : une encre atténuée sans transparence. */
+function melanger(encre: Rgb8, fond: Rgb8, part: number): Rgb8 {
+  return [0, 1, 2].map((canal) => Math.round(fond[canal] + (encre[canal] - fond[canal]) * part)) as unknown as Rgb8;
+}
+
 /** Le nom de calque d'une pastille ([PLA-14]) : `vivid/light/700`. */
 export function nomDePastille(profil: Profil, mode: Mode, cran: number): string {
   return `${profil}/${mode}/${cran}`;
+}
+
+/** Les encres d'un thème, toutes lisibles sur son fond : texte, texte second, filet, aplat neutre et danger. */
+interface Encres {
+  readonly fond: Rgb8;
+  readonly encre: Peinture;
+  readonly seconde: Peinture;
+  readonly filet: Peinture;
+  readonly neutre: Peinture;
+  readonly danger: Peinture;
 }
 
 interface Contexte {
@@ -199,8 +215,6 @@ interface Contexte {
   readonly profil: ProfilDuDocument;
   readonly analyse: AnalyseDePalette;
   readonly peints: { nom: string; hexa: string }[];
-  readonly encre: Peinture;
-  readonly secondaire: Peinture;
 }
 
 function texte(nom: string, contenu: string, style: StyleDeTexte, couleur: Peinture, largeur?: number): NoeudTexte {
@@ -216,283 +230,337 @@ function espace(largeur: number, hauteur = TRAME): NoeudCadre {
   return cadre('espace', 'HORIZONTAL', [], { largeur, hauteur });
 }
 
-/** La carte d'une nuance : sa pastille, le repère de la référence, puis son code, ses rôles et son contraste au fond. */
-function carteDeCran(contexte: Contexte, mode: Mode, profil: Profil, rang: number, fond: Rgb8, encre: Peinture, confondu: string | null): NoeudCadre {
-  const { recette, analyse } = contexte;
-  const cran = analyse.rampes[profil][mode][rang];
-  const numero = recette.crans[rang];
-  const nom = nomDePastille(profil, mode, numero);
-  contexte.peints.push({ nom, hexa: cran.hexa });
-  const surLaPastille = peinture(noirOuBlanc(cran.couleur), contexte.profil);
-  // Le repère de la référence se pose dans la pastille, comme le ◆ de l'aperçu (V10.3).
-  const reference = analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang;
-  const pastille = cadre(nom, 'VERTICAL', [
-    texte('numéro', String(numero), 'role', surLaPastille),
-    ...(reference ? [texte('référence', TEXTES_DE_LA_PLANCHE.reperage, 'note', surLaPastille)] : []),
-  ], { fond: peinture(cran.couleur, contexte.profil), rayon: 4, largeur: PASTILLE.largeur, hauteur: PASTILLE.hauteur, centre: true, espacement: 0 });
-  const valeurs = texteDeCarte({
-    hexa: cran.hexa,
-    fond: mesurerCran(cran.couleur, fond, recette.seuils).fond,
-    emplois: emploisDuCran(recette.crans, rang),
-    confondu,
-  });
-  return cadre(`carte ${profil}.${numero}`, 'VERTICAL', [pastille, texte('valeurs', valeurs, 'valeur', encre, PASTILLE.largeur)], { largeur: PASTILLE.largeur });
+/** Un filet d'un pixel, à la largeur de son parent. */
+function filet(couleur: Peinture): NoeudCadre {
+  return cadre('filet', 'HORIZONTAL', [], { fond: couleur, hauteur: 1, remplir: true });
 }
 
-/** La pastille `on-solid` : le fond du thème, détaché de la section par un contour tireté (V10.5). */
-function carteOnSolid(contexte: Contexte, mode: Mode, fond: Rgb8, encre: Peinture): NoeudCadre {
-  const pastille = cadre(`on-solid/${mode}`, 'VERTICAL', [
-    texte('numéro', TEXTES_DE_LA_PLANCHE.fond, 'role', encre),
-  ], {
-    fond: peinture(fond, contexte.profil),
-    trait: { couleur: peinture(hexaLu(COULEURS_DE_LA_PLANCHE.filet), contexte.profil), epaisseur: 1, tirets: true },
-    rayon: 4,
-    largeur: PASTILLE.largeur,
-    hauteur: PASTILLE.hauteur,
-    centre: true,
-  });
-  return cadre('carte on-solid', 'VERTICAL', [
-    pastille,
-    texte('valeurs', `${TEXTES_DE_LA_PLANCHE.onSolid}\n${TEXTES_DE_LA_PLANCHE.onSolidEnMots}`, 'valeur', encre, PASTILLE.largeur),
-  ], { largeur: PASTILLE.largeur });
-}
-
-/** L'abscisse d'une colonne des rangées : `-2` le nom du profil, `-1` la pastille `on-solid`, puis les nuances. */
-const abscisse = (colonne: number): number => (colonne === -2 ? 0 : COLONNE_DU_PROFIL + TRAME + (colonne + 1) * (PASTILLE.largeur + TRAME));
-const finDeColonne = (colonne: number): number => abscisse(colonne) + (colonne === -2 ? COLONNE_DU_PROFIL : PASTILLE.largeur);
+const CENTRE: Alignement = { principal: 'CENTER', secondaire: 'CENTER' };
+const A_GAUCHE: Alignement = { secondaire: 'CENTER' };
 
 /**
- * Les accolades des rôles sous les rangées, comme dans l'aperçu (V10.5) : un
- * trait fin sur les nuances du rôle, son nom dans le design system, puis son
- * nom français. `accoladesDe` place chaque libellé dans une zone libre.
+ * Les encres d'un thème. L'encre seconde atténue l'encre vers le fond, tant
+ * qu'elle y garde 4,5:1 ; le danger est celui des deux qui s'y lit le mieux.
  */
-function accolades(contexte: Contexte, encre: Peinture, secondaire: Peinture): NoeudCadre[] {
-  return accoladesDe(contexte.recette.crans).map((ligne, rang) => {
-    const enfants: Noeud[] = [];
-    let curseur = 0;
-    for (const accolade of ligne) {
-      const debutDeZone = Math.min(accolade.debut, accolade.libelle.debut);
-      const finDeZone = Math.max(accolade.fin, accolade.libelle.fin);
-      if (abscisse(debutDeZone) > curseur) enfants.push(espace(abscisse(debutDeZone) - curseur, 2));
-      const largeur = finDeColonne(finDeZone) - abscisse(debutDeZone);
-      const decalage = abscisse(accolade.debut) - abscisse(debutDeZone);
-      const trait = cadre('trait', 'HORIZONTAL', [], { fond: encre, largeur: finDeColonne(accolade.fin) - abscisse(accolade.debut), hauteur: 2 });
-      enfants.push(cadre(`accolade ${accolade.emplois.join(' · ')}`, 'VERTICAL', [
-        cadre('portée', 'HORIZONTAL', decalage > 0 ? [espace(decalage, 2), trait] : [trait], { espacement: 0 }),
-        texte('rôle', accolade.emplois.join(' · '), 'valeur', encre, largeur),
-        texte('nom', accolade.emplois.map((emploi) => NOM_DU_ROLE[emploi]).join(' · '), 'note', secondaire, largeur),
-      ], { espacement: 0, largeur }));
-      curseur = finDeColonne(finDeZone);
+function encresDuTheme(fond: Rgb8, profil: ProfilDuDocument): Encres {
+  const encre = encreSur(fond);
+  const attenuee = melanger(encre, fond, 0.7);
+  const seconde = contraste(attenuee, fond) >= 4.5 ? attenuee : encre;
+  const [sombre, clair] = [hexaLu(COULEURS_DE_LA_PLANCHE.dangerSombre), hexaLu(COULEURS_DE_LA_PLANCHE.dangerClair)];
+  const danger = contraste(sombre, fond) >= contraste(clair, fond) ? sombre : clair;
+  return {
+    fond,
+    encre: peinture(encre, profil),
+    seconde: peinture(seconde, profil),
+    filet: peinture(melanger(encre, fond, 0.16), profil),
+    neutre: peinture(melanger(encre, fond, 0.06), profil),
+    danger: peinture(danger, profil),
+  };
+}
+
+/** La nuance d'une rampe à son numéro. */
+function nuance(contexte: Contexte, profil: Profil, mode: Mode, numero: number): Cran {
+  const rang = contexte.recette.crans.indexOf(numero);
+  if (rang < 0) throw new Error(`La nuance ${numero} manque aux crans de la recette.`);
+  return contexte.analyse.rampes[profil][mode][rang];
+}
+
+/* Les deux rampes */
+
+/** La ligne des numéros, au-dessus des rampes. */
+function numeros(contexte: Contexte, encres: Encres): NoeudCadre {
+  return cadre('numéros', 'HORIZONTAL', [
+    espace(COLONNE.libelle, 1),
+    ...contexte.recette.crans.map((numero) => texte(String(numero), String(numero), 'chiffre', encres.seconde, COLONNE.largeur)),
+  ]);
+}
+
+/**
+ * Une rampe en rangée de pastilles, chacune nommée `profil/mode/cran`
+ * ([PLA-14]) : ◆ sur la référence exacte ([MOT-17]), ≈ quand les deux profils
+ * s'y confondent ([PLA-15]), et son code dessous.
+ */
+function rangeeDeRampe(contexte: Contexte, profil: Profil, mode: Mode, encres: Encres): NoeudCadre {
+  const { recette, analyse } = contexte;
+  const autre: Profil = profil === 'soft' ? 'vivid' : 'soft';
+  const colonnes = analyse.rampes[profil][mode].map((cran, rang) => {
+    const nom = nomDePastille(profil, mode, recette.crans[rang]);
+    contexte.peints.push({ nom, hexa: cran.hexa });
+    const surLaPastille = peinture(noirOuBlanc(cran.couleur), contexte.profil);
+    const reperes = [
+      ...(analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang ? [texte('référence', TEXTES_DE_LA_PLANCHE.reperage, 'valeur', surLaPastille)] : []),
+      ...(distanceOk(cran.couleur, analyse.rampes[autre][mode][rang].couleur) < recette.seuils.profilsConfondus ? [texte('confondu', TEXTES_DE_LA_PLANCHE.confondu, 'valeur', surLaPastille)] : []),
+    ];
+    return cadre(`colonne ${recette.crans[rang]}`, 'VERTICAL', [
+      cadre(nom, 'HORIZONTAL', reperes, { fond: peinture(cran.couleur, contexte.profil), rayon: 6, largeur: COLONNE.largeur, hauteur: HAUTEUR_DE_PASTILLE, alignement: CENTRE, espacement: 0 }),
+      texte('code', cran.hexa.slice(1), 'note', encres.seconde),
+    ], { espacement: 0, largeur: COLONNE.largeur });
+  });
+  return cadre(`rampe ${profil}`, 'HORIZONTAL', [texte('profil', NOM_DU_PROFIL[profil], 'role', encres.encre, COLONNE.libelle), ...colonnes]);
+}
+
+function sectionDesRampes(contexte: Contexte, mode: Mode, encres: Encres): NoeudCadre {
+  const { recette, analyse } = contexte;
+  const confondus = analyse.rampes.vivid[mode].some((cran, rang) => distanceOk(cran.couleur, analyse.rampes.soft[mode][rang].couleur) < recette.seuils.profilsConfondus);
+  return cadre('les deux rampes', 'VERTICAL', [
+    texte('titre', TEXTES_DE_LA_PLANCHE.rampes, 'theme', encres.encre),
+    numeros(contexte, encres),
+    ...PROFILS.map((profil) => rangeeDeRampe(contexte, profil, mode, encres)),
+    texte('note', confondus ? `${TEXTES_DE_LA_PLANCHE.noteDuRepere} ${TEXTES_DE_LA_PLANCHE.noteDesConfondus}` : TEXTES_DE_LA_PLANCHE.noteDuRepere, 'note', encres.seconde),
+  ]);
+}
+
+/* Quelle nuance pour quel usage */
+
+/**
+ * Le spécimen d'un usage, peint de la nuance de son état : un aplat pour
+ * `surface` et `solid`, un lien pour `text`, un champ pour `border-control`,
+ * un anneau pour `focus`, un filet pour `border-decorative`.
+ */
+function specimen(contexte: Contexte, emploi: Emploi, couleur: Rgb8, mode: Mode, encres: Encres): NoeudCadre {
+  const { analyse } = contexte;
+  const porteur = analyse.ancrage.profil;
+  const peint = peinture(couleur, contexte.profil);
+  const fond = peinture(encres.fond, contexte.profil);
+  const texteColore = peinture(nuance(contexte, porteur, mode, TABLE_DES_EMPLOIS.text).couleur, contexte.profil);
+  const boite = { largeur: SPECIMEN.largeur, hauteur: SPECIMEN.hauteur, rayon: 6 };
+  const a = TEXTES_DE_LA_PLANCHE.specimens;
+  switch (emploi) {
+    case 'surface':
+      return cadre('spécimen', 'HORIZONTAL', [texte('libellé', a.soft, 'role', texteColore)], { ...boite, fond: peint, margeLaterale: TRAME, alignement: A_GAUCHE });
+    case 'text':
+      return cadre('spécimen', 'HORIZONTAL', [texte('libellé', a.lien, 'role', peint)], { ...boite, alignement: A_GAUCHE });
+    case 'solid':
+      return cadre('spécimen', 'HORIZONTAL', [texte('libellé', a.bouton, 'role', fond)], { ...boite, fond: peint, alignement: CENTRE });
+    case 'border-control':
+      return cadre('spécimen', 'HORIZONTAL', [texte('libellé', a.champ, 'valeur', encres.seconde)], {
+        ...boite, fond, trait: { couleur: peint, epaisseur: 1, tirets: false }, margeLaterale: TRAME, alignement: A_GAUCHE,
+      });
+    case 'focus': {
+      const bordure = peinture(nuance(contexte, porteur, mode, TABLE_DES_EMPLOIS['border-control']).couleur, contexte.profil);
+      const champ = cadre('champ', 'HORIZONTAL', [texte('libellé', a.champ, 'valeur', encres.encre)], {
+        ...boite, fond, trait: { couleur: bordure, epaisseur: 1, tirets: false }, margeLaterale: TRAME, alignement: A_GAUCHE,
+      });
+      return cadre('spécimen', 'HORIZONTAL', [champ], {
+        largeur: SPECIMEN.largeur + TRAME, hauteur: SPECIMEN.hauteur + TRAME, rayon: 8, trait: { couleur: peint, epaisseur: 2, tirets: false }, alignement: CENTRE,
+      });
     }
-    return cadre(`accolades ${rang + 1}`, 'HORIZONTAL', enfants, { espacement: 0 });
-  });
+    default:
+      return cadre('spécimen', 'HORIZONTAL', [cadre('trait', 'HORIZONTAL', [], { fond: peint, largeur: SPECIMEN.largeur, hauteur: 1 })], { ...boite, alignement: A_GAUCHE });
+  }
 }
 
-/** Une section de thème, peinte de son fond et bordée d'un filet (V10.3, V10.4, V10.5). */
-function sectionDeMode(contexte: Contexte, mode: Mode): NoeudCadre {
-  const { recette, analyse } = contexte;
-  const fond = hexaLu(recette.fonds[mode]);
-  const encre = peinture(encreSur(fond), contexte.profil);
-  const rangees = PROFILS.map((profil, rangDuProfil) => {
-    const autre: Profil = profil === 'soft' ? 'vivid' : 'soft';
-    const cartes = recette.crans.map((_, rang) => {
-      const ici = analyse.rampes[profil][mode][rang].couleur;
-      const la = analyse.rampes[autre][mode][rang].couleur;
-      // [PLA-15] : la mention « ≈ » vaut sur tous les crans, pas seulement ceux de la table des emplois.
-      const confondu = distanceOk(ici, la) < recette.seuils.profilsConfondus ? NOM_DU_PROFIL[autre] : null;
-      return carteDeCran(contexte, mode, profil, rang, fond, encre, confondu);
-    });
-    // La pastille on-solid ne se montre qu'une fois, dans la première rangée ; la seconde lui garde sa colonne.
-    const onSolid = rangDuProfil === 0 ? carteOnSolid(contexte, mode, fond, encre) : espace(PASTILLE.largeur);
-    return cadre(`rangée ${profil}`, 'HORIZONTAL', [
-      texte('profil', NOM_DU_PROFIL[profil], 'role', encre, COLONNE_DU_PROFIL),
-      onSolid,
-      ...cartes,
-    ]);
-  });
-  return cadre(`section ${mode}`, 'VERTICAL', [
-    texte('titre', enTeteDeSection(mode, recette.fonds[mode]), 'theme', encre),
-    ...rangees,
-    ...accolades(contexte, encre, encre),
-  ], {
-    fond: peinture(fond, contexte.profil),
-    trait: { couleur: peinture(hexaLu(COULEURS_DE_LA_PLANCHE.filet), contexte.profil), epaisseur: 1, tirets: false },
-    marge: 3 * TRAME,
-    espacement: 2 * TRAME,
-    rayon: TRAME,
-  });
-}
+const estLeMembre = (membre: MembrePaire, emploi: Emploi, decalage: number): boolean =>
+  'emploi' in membre && membre.emploi === emploi && membre.decalage === decalage;
 
-/** Le numéro d'un membre d'une promesse, ou « fond ». */
-function numeroDuMembre(promesse: Promesse, rang: 'premier' | 'second'): string {
-  const designe = promesse[rang];
-  return designe.nature === 'cran' ? String(designe.cran) : TEXTES_DES_GARANTIES.fond;
+/** Le nom d'un membre dans une ligne de garantie : « fond », « on-solid » ou « surface 100 ». */
+function partenaire(membre: MembrePaire, designe: Promesse['premier']): string {
+  if ('fond' in membre) return TEXTES_DE_LA_PLANCHE.fond;
+  return designe.nature === 'cran' ? `${membre.emploi} ${designe.cran}` : membre.emploi;
 }
 
 /**
- * Le spécimen d'une promesse, le premier membre posé sur le second : un texte
- * pour `text` et `on-solid`, un aplat pour `solid`, un contour pour une
- * bordure ou un anneau de focus.
+ * Les garanties qu'un état porte, dans le profil porteur : une ligne par
+ * paire dont il est membre, « sur » son second membre quand il est premier,
+ * « dessus » quand il est second. Chaque paire du moteur apparaît ainsi sous
+ * chacun de ses membres qui a un usage sur la planche.
  */
-function specimen(contexte: Contexte, promesse: Promesse): NoeudCadre {
-  const { premier } = associationDe(promesse.paire);
-  const couleur = peinture(promesse.premier.couleur, contexte.profil);
-  const fond = peinture(promesse.second.couleur, contexte.profil);
-  const contenu = premier === 'text' || premier === 'on-solid'
-    ? texte('spécimen', TEXTES_DE_LA_PLANCHE.specimen, 'role', couleur)
-    : premier === 'solid'
-      ? cadre('aplat', 'HORIZONTAL', [], { fond: couleur, largeur: 72, hauteur: 16, rayon: 4 })
-      : cadre('contour', 'HORIZONTAL', [], { trait: { couleur, epaisseur: 2, tirets: false }, largeur: 72, hauteur: 16, rayon: 4 });
-  return cadre('spécimen', 'HORIZONTAL', [contenu], { fond, largeur: SPECIMEN.largeur, hauteur: SPECIMEN.hauteur, centre: true, rayon: 4 });
+function garantiesDeLEtat(contexte: Contexte, emploi: Emploi, decalage: number, mode: Mode, encres: Encres): NoeudTexte[] {
+  const { analyse } = contexte;
+  return analyse.promesses
+    .filter((promesse) => promesse.mode === mode && promesse.profil === analyse.ancrage.profil)
+    .flatMap((promesse) => {
+      const { premier, second } = promesse.paire;
+      const sens = estLeMembre(premier, emploi, decalage)
+        ? TEXTES_DU_DETAIL.sur(partenaire(second, promesse.second))
+        : estLeMembre(second, emploi, decalage) ? TEXTES_DU_DETAIL.dessus(partenaire(premier, promesse.premier)) : null;
+      if (sens === null) return [];
+      const tenue = promesse.verdict === 'tenue';
+      return [texte(`garantie ${promesse.paire.numero}`, TEXTES_DU_DETAIL.garantie(tenue, sens, promesse.contraste), tenue ? 'note' : 'chiffre', tenue ? encres.seconde : encres.danger, USAGE.etat)];
+    });
 }
 
-/** Une ligne d'association : la relation, puis chaque état avec ses spécimens Soft et Vivid (V10.6). */
-function ligneDAssociation(contexte: Contexte, association: Association, mode: Mode): NoeudCadre {
-  const { analyse, encre, secondaire } = contexte;
-  const cle = cleDeLAssociation(association);
-  const promesses = analyse.promesses.filter((promesse) => promesse.mode === mode && cleDeLAssociation(associationDe(promesse.paire)) === cle);
-  const etats = [...new Set(promesses.map((promesse) => etatDeLaPaire(promesse.paire)))].sort();
-  const relation = relationEcrite(association);
-  const qui = cadre('relation', 'VERTICAL', [
-    texte('rôles', relation.code, 'role', encre, 200),
-    texte('noms', relation.francais, 'note', secondaire, 200),
-    ...(association.premier === 'on-solid' ? [texte('on-solid', TEXTES_DES_GARANTIES.onSolid, 'note', secondaire, 200)] : []),
-  ], { espacement: 0, largeur: 200 });
-  const lignesDEtat = etats.map((etat) => cadre(`état ${NOM_DE_L_ETAT[etat]}`, 'HORIZONTAL', [
-    texte('état', NOM_DE_L_ETAT[etat], 'valeur', secondaire, 56),
-    ...PROFILS.map((profil) => {
-      const promesse = promesses.find((candidate) => candidate.profil === profil && etatDeLaPaire(candidate.paire) === etat);
-      if (!promesse) throw new Error(`Promesse ${cle} ${profil} ${etat} absente de l'analyse.`);
-      return cadre(`${profil}`, 'VERTICAL', [
-        specimen(contexte, promesse),
-        texte('mesure', mesureDuSpecimen(profil, numeroDuMembre(promesse, 'premier'), numeroDuMembre(promesse, 'second'), promesse.verdict === 'tenue', promesse.contraste), 'note', encre, 200),
-      ], { largeur: 200 });
-    }),
-  ], { espacement: 2 * TRAME }));
-  return cadre(`garantie ${cle}`, 'HORIZONTAL', [qui, cadre('états', 'VERTICAL', lignesDEtat)], { espacement: 2 * TRAME });
-}
-
-/** Les garanties d'un thème, en deux groupes par minimum, puis `border-decorative` (V10.6, [PLA-17], [PLA-18]). */
-function garantiesDuMode(contexte: Contexte, mode: Mode): NoeudCadre {
-  const { recette, analyse, encre, secondaire } = contexte;
-  const groupes = [
-    { seuil: 'texte' as const, titre: TEXTES_DES_GARANTIES.textes, minimum: recette.seuils.texte },
-    { seuil: 'nonTexte' as const, titre: TEXTES_DES_GARANTIES.visibles, minimum: recette.seuils.nonTexte },
-  ];
-  const seuilDe = (association: Association) => analyse.promesses.find((promesse) => cleDeLAssociation(associationDe(promesse.paire)) === cleDeLAssociation(association))?.paire.seuil;
-  return cadre(`garanties ${mode}`, 'VERTICAL', [
-    texte('titre', titreDesGaranties(mode), 'theme', encre),
-    texte('note', TEXTES_DE_LA_PLANCHE.garantiesCitees, 'note', secondaire),
-    ...groupes.map((groupe) => cadre(`groupe ${groupe.seuil}`, 'VERTICAL', [
-      texte('titre', `${groupe.titre} · ${TEXTES_DES_GARANTIES.minimum(groupe.minimum)}`, 'role', encre),
-      ...ASSOCIATIONS.filter((association) => seuilDe(association) === groupe.seuil).map((association) => ligneDAssociation(contexte, association, mode)),
-    ], { espacement: 2 * TRAME })),
-    texte('border-decorative', `border-decorative ${TEXTES_DES_GARANTIES.decoratif(TABLE_DES_EMPLOIS['border-decorative'])}`, 'valeur', secondaire),
+function ligneDUsage(contexte: Contexte, emploi: Emploi, mode: Mode, encres: Encres): NoeudCadre {
+  const porteur = contexte.analyse.ancrage.profil;
+  const usage = TEXTES_DE_LA_PLANCHE.usages[emploi as keyof typeof TEXTES_DE_LA_PLANCHE.usages];
+  const depart = TABLE_DES_EMPLOIS[emploi];
+  if (depart === 'fond') throw new Error(`${emploi} n'a pas de nuance sur la planche.`);
+  const rangDeDepart = contexte.recette.crans.indexOf(depart);
+  const etats = decalagesDeLEmploi(emploi).map((decalage) => {
+    const numero = contexte.recette.crans[rangDeDepart + decalage];
+    const couleur = contexte.analyse.rampes[porteur][mode][rangDeDepart + decalage].couleur;
+    return cadre(`${emploi} ${ETATS[decalage]}`, 'VERTICAL', [
+      specimen(contexte, emploi, couleur, mode, encres),
+      cadre('mesures', 'VERTICAL', [texte('numéro', String(numero), 'chiffre', encres.encre), ...garantiesDeLEtat(contexte, emploi, decalage, mode, encres)], { espacement: 0 }),
+    ], { largeur: USAGE.etat });
+  });
+  return cadre(`usage ${emploi}`, 'HORIZONTAL', [
+    cadre('libellés', 'VERTICAL', [
+      texte('usage', usage.titre, 'role', encres.encre, USAGE.libelle),
+      texte('rôle', emploi === 'focus' ? TEXTES_DE_LA_PLANCHE.etatFocus : emploi, 'note', encres.seconde, USAGE.libelle),
+      texte('exemples', usage.exemples, 'note', encres.seconde, USAGE.libelle),
+    ], { espacement: 0, largeur: USAGE.libelle }),
+    ...etats,
   ], { espacement: 2 * TRAME });
 }
 
-/** Le bloc « Couleur de référence » : pastille, code, profil porteur, tableau des contrastes, mesures avancées (V10.2). */
-function blocDeReference(contexte: Contexte): NoeudCadre {
-  const { recette, palette, analyse, encre, secondaire } = contexte;
-  const reference = referenceDe(palette);
-  const lue = rgb8VersOklch(reference);
-  const LARGEURS = [160, 80, 360];
-  const ligne = (nom: string, cellules: readonly string[], style: StyleDeTexte, couleur: Peinture) =>
-    cadre(nom, 'HORIZONTAL', cellules.map((contenu, rang) => texte(TEXTES_DE_LA_PLANCHE.colonnesDesContrastes[rang], contenu, style, couleur, LARGEURS[rang])), { espacement: 0 });
-  const comparaisons: readonly [string, Rgb8][] = [
-    [TEXTES_DE_LA_PLANCHE.contre.blanc, [255, 255, 255]],
-    [TEXTES_DE_LA_PLANCHE.contre.noir, [0, 0, 0]],
-    [TEXTES_DE_LA_PLANCHE.contre.light, hexaLu(recette.fonds.light)],
-    [TEXTES_DE_LA_PLANCHE.contre.dark, hexaLu(recette.fonds.dark)],
-  ];
-  const tableau = cadre(TEXTES_DE_LA_PLANCHE.contrastes, 'VERTICAL', [
-    texte('titre', TEXTES_DE_LA_PLANCHE.contrastes, 'role', encre),
-    ligne('titres', TEXTES_DE_LA_PLANCHE.colonnesDesContrastes, 'note', secondaire),
-    ...comparaisons.map(([nom, fond]) => {
-      const valeur = contraste(reference, fond);
-      return ligne(nom, [nom, contrasteEcrit(valeur), niveauxEcrits(niveauxWcag(valeur))], 'valeur', encre);
-    }),
-  ], { espacement: 0 });
-  const mesures = cadre(TEXTES_DE_LA_PLANCHE.mesures, 'VERTICAL', [
-    texte('titre', TEXTES_DE_LA_PLANCHE.mesures, 'role', encre),
-    texte('valeurs', mesuresDeLaReference(lue.L, lue.C, lue.H, analyse.part), 'valeur', encre),
-    texte('dérives', texteDesDerives(palette), 'valeur', encre),
-  ], { espacement: 0 });
-  return cadre(TEXTES_DE_LA_PLANCHE.reference, 'HORIZONTAL', [
-    cadre('référence', 'VERTICAL', [], { fond: peinture(reference, contexte.profil), largeur: 2 * PASTILLE.largeur, hauteur: PASTILLE.hauteur, rayon: 4 }),
-    cadre('valeurs', 'VERTICAL', [
-      texte('code', ecrireHexa(reference), 'role', encre),
-      texte('porteur', porteurDeLaReference(analyse.ancrage, palette.base), 'valeur', encre),
-      tableau,
-      mesures,
-    ], { espacement: 2 * TRAME }),
-  ], { espacement: 3 * TRAME });
+function sectionDesUsages(contexte: Contexte, mode: Mode, encres: Encres, largeur: number): NoeudCadre {
+  const entete = cadre('états', 'HORIZONTAL', [
+    espace(USAGE.libelle, 1),
+    ...ETATS.map((etat) => texte(etat, etat, 'chiffre', encres.seconde, USAGE.etat)),
+  ], { espacement: 2 * TRAME });
+  return cadre('quelle nuance pour quel usage', 'VERTICAL', [
+    texte('titre', TEXTES_DE_LA_PLANCHE.titreDesUsages(NOM_DU_PROFIL[contexte.analyse.ancrage.profil]), 'theme', encres.encre),
+    entete,
+    ...USAGES.flatMap((emploi) => [filet(encres.filet), ligneDUsage(contexte, emploi, mode, encres)]),
+  ], { espacement: 2 * TRAME, largeur });
 }
 
-/** La grille de contraste d'une rampe (section 9.5, V10.7) : numéros sur les deux axes, valeur dans chaque case. */
-function grilleDeContraste(contexte: Contexte, mode: Mode, profil: Profil): NoeudCadre {
-  const { recette, analyse, encre, secondaire } = contexte;
+/* L'interface d'exemple E2 : un écran de réglages où chaque emploi a sa place (W3.6). */
+
+function bouton(nom: string, libelle: string, fond: Peinture | null, encre: Peinture): NoeudCadre {
+  return cadre(nom, 'HORIZONTAL', [texte('libellé', libelle, 'role', encre)], { fond, hauteur: SPECIMEN.hauteur, margeLaterale: 2 * TRAME, rayon: 6, alignement: CENTRE });
+}
+
+function exempleEcran(contexte: Contexte, mode: Mode, encres: Encres): NoeudCadre {
+  const porteur = contexte.analyse.ancrage.profil;
+  const n = (emploi: Exclude<Emploi, 'on-solid'>) => peinture(nuance(contexte, porteur, mode, TABLE_DES_EMPLOIS[emploi]).couleur, contexte.profil);
+  const fond = peinture(encres.fond, contexte.profil);
+  const e = TEXTES_DE_LA_PLANCHE.exemple;
+  const utile = EXEMPLE.largeur - 2 * EXEMPLE.marge;
+  const pastilleDeCase = cadre('case', 'HORIZONTAL', [texte('coche', e.coche, 'chiffre', fond)], { fond: n('solid'), largeur: 16, hauteur: 16, rayon: 4, alignement: CENTRE });
+  // Le curseur de l'interrupteur est un disque du fond cerclé de l'aplat : il paraît posé à l'intérieur.
+  const interrupteur = cadre('interrupteur', 'HORIZONTAL', [
+    cadre('curseur', 'HORIZONTAL', [], { fond, trait: { couleur: n('solid'), epaisseur: 2, tirets: false }, largeur: 18, hauteur: 18, rayon: 9 }),
+  ], { fond: n('solid'), largeur: 32, hauteur: 18, rayon: 9, alignement: { principal: 'MAX', secondaire: 'CENTER' } });
+  return cadre('écran de réglages', 'VERTICAL', [
+    cadre('en-tête', 'HORIZONTAL', [
+      texte('titre', e.titre, 'theme', encres.encre),
+      cadre('badge', 'HORIZONTAL', [texte('libellé', e.badge, 'chiffre', n('text'))], { fond: n('surface'), hauteur: 24, margeLaterale: TRAME, rayon: 12, alignement: CENTRE }),
+    ], { largeur: utile, alignement: { principal: 'SPACE_BETWEEN', secondaire: 'CENTER' } }),
+    cadre('onglets', 'VERTICAL', [
+      cadre('titres', 'HORIZONTAL', [
+        cadre(e.onglets[0], 'VERTICAL', [texte('libellé', e.onglets[0], 'role', encres.encre), cadre('soulignement', 'HORIZONTAL', [], { fond: n('solid'), hauteur: 2, remplir: true })]),
+        ...e.onglets.slice(1).map((onglet) => texte(onglet, onglet, 'valeur', encres.seconde)),
+      ], { espacement: 2 * TRAME }),
+      filet(n('border-decorative')),
+    ], { espacement: 0, largeur: utile }),
+    cadre('champ', 'VERTICAL', [
+      texte('libellé', e.libelle, 'valeur', encres.encre),
+      cadre('anneau', 'HORIZONTAL', [
+        cadre('saisie', 'HORIZONTAL', [texte('valeur', e.valeur, 'valeur', encres.encre)], {
+          fond, trait: { couleur: n('border-control'), epaisseur: 1, tirets: false }, largeur: utile - TRAME, hauteur: SPECIMEN.hauteur, rayon: 6, margeLaterale: TRAME, alignement: A_GAUCHE,
+        }),
+      ], { trait: { couleur: n('focus'), epaisseur: 2, tirets: false }, largeur: utile, hauteur: SPECIMEN.hauteur + TRAME, rayon: 8, alignement: CENTRE }),
+    ]),
+    cadre('options', 'HORIZONTAL', [
+      cadre('case à cocher', 'HORIZONTAL', [pastilleDeCase, texte('libellé', e.caseACocher, 'valeur', encres.encre)], { alignement: A_GAUCHE }),
+      cadre('accès', 'HORIZONTAL', [interrupteur, texte('libellé', e.interrupteur, 'valeur', encres.encre)], { alignement: A_GAUCHE }),
+    ], { espacement: 2 * TRAME, alignement: A_GAUCHE }),
+    cadre('encart', 'HORIZONTAL', [
+      texte('icône', e.icone, 'chiffre', n('text')),
+      texte('message', e.encart, 'valeur', n('text'), utile - 5 * TRAME),
+    ], { fond: n('surface'), trait: { couleur: n('border-decorative'), epaisseur: 1, tirets: false }, marge: TRAME, margeLaterale: 2 * TRAME, rayon: 8, largeur: utile }),
+    cadre('actions', 'HORIZONTAL', [
+      bouton('annuler', e.boutons[0], null, n('text')),
+      bouton('brouillon', e.boutons[1], n('surface'), n('text')),
+      bouton('enregistrer', e.boutons[2], n('solid'), fond),
+    ], { largeur: utile, alignement: { principal: 'MAX', secondaire: 'CENTER' } }),
+  ], {
+    fond, trait: { couleur: n('border-decorative'), epaisseur: 1, tirets: false }, marge: EXEMPLE.marge, espacement: 2 * TRAME, rayon: 12, largeur: EXEMPLE.largeur,
+  });
+}
+
+function sectionDExemple(contexte: Contexte, mode: Mode, encres: Encres): NoeudCadre {
+  return cadre('interface d’exemple', 'VERTICAL', [
+    texte('titre', TEXTES_DE_LA_PLANCHE.titreDeLExemple(NOM_DU_PROFIL[contexte.analyse.ancrage.profil]), 'theme', encres.encre),
+    exempleEcran(contexte, mode, encres),
+  ], { espacement: 2 * TRAME });
+}
+
+/* Les contrastes, nuance par nuance */
+
+/**
+ * La grille d'un profil, sous ses pastilles et dans leurs colonnes : la ligne
+ * donne le fond, la colonne le texte. Une paire à 3:1 ou plus se peint telle
+ * qu'elle se lira, le ratio en gras à partir du minimum des textes ; en
+ * dessous, la case s'efface ([PLA-16], W3.6).
+ */
+function grilleDuProfil(contexte: Contexte, profil: Profil, mode: Mode, encres: Encres): NoeudCadre {
+  const { recette, analyse } = contexte;
   const rampe = analyse.rampes[profil][mode];
-  const fondDe = (valeur: number) => hexaLu(atteintLeSeuil(valeur, recette.seuils.texte)
-    ? COULEURS_DE_LA_PLANCHE.tenu
-    : atteintLeSeuil(valeur, recette.seuils.nonTexte) ? COULEURS_DE_LA_PLANCHE.limite : COULEURS_DE_LA_PLANCHE.faible);
-  const case_ = (nom: string, contenu: string, fond: Peinture | null) =>
-    cadre(nom, 'HORIZONTAL', contenu === '' ? [] : [texte('valeur', contenu, 'note', fond ? encre : secondaire)], { fond, largeur: 40, hauteur: 24, centre: true });
-  const axe = cadre('axe', 'HORIZONTAL', [case_('coin', '', null), ...recette.crans.map((cran) => case_(`colonne ${cran}`, String(cran), null))], { espacement: 0 });
-  const lignes = rampe.map((ligne, i) => cadre(`ligne ${recette.crans[i]}`, 'HORIZONTAL', [
-    case_(`nuance ${recette.crans[i]}`, String(recette.crans[i]), null),
-    ...rampe.map((colonne, j) => {
-      const valeur = contraste(ligne.couleur, colonne.couleur);
-      return case_(`${recette.crans[i]}/${recette.crans[j]}`, ecrireContraste(valeur), peinture(fondDe(valeur), contexte.profil));
-    }),
-  ], { espacement: 0 }));
-  return cadre(`grille ${mode} ${profil}`, 'VERTICAL', [
-    texte('titre', titreDeGrille(mode, profil), 'role', encre),
-    cadre('cases', 'VERTICAL', [axe, ...lignes], { espacement: 0 }),
+  const tete = cadre(`teintes ${profil}`, 'HORIZONTAL', [
+    texte('profil', NOM_DU_PROFIL[profil], 'role', encres.encre, COLONNE.libelle),
+    ...rampe.map((cran, rang) => cadre(`teinte ${recette.crans[rang]}`, 'HORIZONTAL', [], { fond: peinture(cran.couleur, contexte.profil), largeur: COLONNE.largeur, hauteur: 24, rayon: 6 })),
   ]);
+  const lignes = rampe.map((fond, i) => cadre(`fond ${recette.crans[i]}`, 'HORIZONTAL', [
+    cadre('nuance', 'HORIZONTAL', [
+      cadre('teinte', 'HORIZONTAL', [], { fond: peinture(fond.couleur, contexte.profil), largeur: 12, hauteur: 12, rayon: 3 }),
+      texte('numéro', String(recette.crans[i]), 'chiffre', encres.seconde),
+    ], { largeur: COLONNE.libelle, alignement: A_GAUCHE }),
+    ...rampe.map((lettre, j) => {
+      const nom = `${recette.crans[i]}/${recette.crans[j]}`;
+      if (i === j) return cadre(nom, 'HORIZONTAL', [], { largeur: COLONNE.largeur, hauteur: 24 });
+      const valeur = contraste(fond.couleur, lettre.couleur);
+      const lisible = atteintLeSeuil(valeur, recette.seuils.nonTexte);
+      return cadre(nom, 'HORIZONTAL', [
+        texte('contraste', ecrireContraste(valeur), atteintLeSeuil(valeur, recette.seuils.texte) ? 'chiffre' : 'note', lisible ? peinture(lettre.couleur, contexte.profil) : encres.seconde),
+      ], { fond: lisible ? peinture(fond.couleur, contexte.profil) : encres.neutre, largeur: COLONNE.largeur, hauteur: 24, rayon: 4, alignement: CENTRE });
+    }),
+  ]));
+  return cadre(`grille ${mode} ${profil}`, 'VERTICAL', [tete, ...lignes]);
+}
+
+function sectionDesContrastes(contexte: Contexte, mode: Mode, encres: Encres, largeur: number): NoeudCadre {
+  return cadre('contrastes', 'VERTICAL', [
+    cadre('en-tête', 'HORIZONTAL', [
+      texte('titre', TEXTES_DE_LA_PLANCHE.contrastes, 'theme', encres.encre),
+      texte('légende', legendeDesContrastes(contexte.recette.seuils), 'note', encres.seconde),
+    ], { largeur, alignement: { principal: 'SPACE_BETWEEN', secondaire: 'CENTER' } }),
+    ...PROFILS.map((profil) => grilleDuProfil(contexte, profil, mode, encres)),
+  ], { espacement: 2 * TRAME });
+}
+
+/* Le cadre */
+
+/** Un thème : son en-tête et son verdict, puis les rampes, les usages, l'exemple et les grilles. */
+function sectionDuTheme(contexte: Contexte, mode: Mode, grille: boolean): NoeudCadre {
+  const { recette, analyse } = contexte;
+  const encres = encresDuTheme(hexaLu(recette.fonds[mode]), contexte.profil);
+  const largeur = COLONNE.libelle + recette.crans.length * (COLONNE.largeur + TRAME);
+  const manquees = analyse.promesses.filter((promesse) => promesse.mode === mode && promesse.verdict === 'manquee').length;
+  const verdict = cadre('verdict', 'HORIZONTAL', [texte('résultat', verdictDuTheme(manquees), 'chiffre', manquees > 0 ? encres.danger : encres.encre)], {
+    fond: encres.neutre, hauteur: 24, margeLaterale: TRAME, rayon: 12, alignement: CENTRE,
+  });
+  const section = (enfant: NoeudCadre): NoeudCadre[] => [filet(encres.filet), enfant];
+  return cadre(`thème ${mode}`, 'VERTICAL', [
+    cadre('en-tête', 'HORIZONTAL', [texte('titre', enTeteDuTheme(mode, recette.fonds[mode]), 'chiffre', encres.seconde), verdict], {
+      largeur, alignement: { principal: 'SPACE_BETWEEN', secondaire: 'CENTER' },
+    }),
+    sectionDesRampes(contexte, mode, encres),
+    ...section(sectionDesUsages(contexte, mode, encres, largeur)),
+    ...section(sectionDExemple(contexte, mode, encres)),
+    ...(grille ? section(sectionDesContrastes(contexte, mode, encres, largeur)) : []),
+  ], {
+    fond: peinture(encres.fond, contexte.profil),
+    trait: { couleur: peinture(hexaLu(COULEURS_DE_LA_PLANCHE.filet), contexte.profil), epaisseur: 1, tirets: false },
+    marge: 3 * TRAME,
+    espacement: 3 * TRAME,
+    rayon: 12,
+  });
 }
 
 function construire(recette: Recette, palette: Palette, profil: ProfilDuDocument, peints: { nom: string; hexa: string }[], grille: boolean): NoeudCadre {
   const analyse = analyserPalette(recette, palette);
-  const encre = peinture(hexaLu(COULEURS_DE_LA_PLANCHE.encre), profil);
-  const secondaire = peinture(hexaLu(COULEURS_DE_LA_PLANCHE.encreSecondaire), profil);
-  const contexte: Contexte = { recette, palette, profil, analyse, peints, encre, secondaire };
-  const manquees = (duProfil: Profil) => analyse.promesses.filter((promesse) => promesse.profil === duProfil && promesse.verdict === 'manquee').length;
-  const nomDeRecette = (id: string) => {
-    const trouvee = recette.palettes.find((candidate) => candidate.id === id);
-    return trouvee ? nomDeLaPalette(trouvee) : id;
-  };
-  // Les repères d'intensité se lisent dans les réglages de la palette, pas sur la planche.
-  const alertes = analyse.alertes
-    .filter((alerte) => alerte.code !== 'reference-plus-terne' && alerte.code !== 'reference-plus-vive')
-    .map((alerte) => texte('alerte', ligneDAlerte(constatDAlerte(alerte, { recette, nomDe: nomDeRecette })), 'valeur', encre, 800));
-  const grilles = grille
-    ? [cadre(TEXTES_DE_LA_PLANCHE.grilles, 'VERTICAL', [
-      texte('titre', TEXTES_DE_LA_PLANCHE.grilles, 'theme', encre),
-      texte('note', TEXTES_DE_LA_PLANCHE.noteDesGrilles, 'note', secondaire, 800),
-      texte('légende', legendeDesGrilles(recette.seuils), 'note', secondaire, 800),
-      ...MODES.flatMap((mode) => PROFILS.map((duProfil) => grilleDeContraste(contexte, mode, duProfil))),
-    ], { espacement: 3 * TRAME })]
-    : [];
+  const contexte: Contexte = { recette, palette, profil, analyse, peints };
+  const blanc = hexaLu(COULEURS_DE_LA_PLANCHE.fondDuCadre);
   return cadre(nomDeLaPalette(palette), 'VERTICAL', [
     cadre('en-tête', 'VERTICAL', [
-      texte('titre', nomDeLaPalette(palette), 'palette', encre),
-      texte('référence', enTeteDeLaReference(ecrireHexa(referenceDe(palette)), analyse.ancrage), 'valeur', secondaire),
-      texte('garanties', enTeteDesGaranties(manquees('soft'), manquees('vivid')), 'valeur', encre),
+      texte('titre', nomDeLaPalette(palette), 'palette', peinture(hexaLu(COULEURS_DE_LA_PLANCHE.encre), profil)),
+      texte('référence', enTeteDeLaReference(ecrireHexa(referenceDe(palette)), analyse.ancrage), 'valeur', peinture(hexaLu(COULEURS_DE_LA_PLANCHE.encreSecondaire), profil)),
     ]),
-    blocDeReference(contexte),
-    ...MODES.map((mode) => sectionDeMode(contexte, mode)),
-    ...MODES.map((mode) => garantiesDuMode(contexte, mode)),
-    ...grilles,
-    cadre(TEXTES_DE_LA_PLANCHE.alertes, 'VERTICAL', [
-      texte('titre', TEXTES_DE_LA_PLANCHE.alertes, 'theme', encre),
-      ...(alertes.length > 0 ? alertes : [texte('aucune', TEXTES_DE_LA_PLANCHE.aucuneAlerte, 'valeur', secondaire)]),
-    ]),
-    cadre(TEXTES_DE_LA_PLANCHE.legende, 'VERTICAL', [
-      texte('titre', TEXTES_DE_LA_PLANCHE.legende, 'theme', encre),
-      texte('texte', legende(recette.seuils), 'valeur', secondaire, 800),
-    ]),
-  ], { fond: peinture(hexaLu(COULEURS_DE_LA_PLANCHE.fondDuCadre), profil), marge: 4 * TRAME, espacement: 4 * TRAME, rayon: 2 * TRAME });
+    ...MODES.map((mode) => sectionDuTheme(contexte, mode, grille)),
+  ], { fond: peinture(blanc, profil), marge: 3 * TRAME, espacement: 2 * TRAME, rayon: TRAME });
 }
 
 /**

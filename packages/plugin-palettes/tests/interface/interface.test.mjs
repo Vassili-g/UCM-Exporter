@@ -146,7 +146,7 @@ test('[UI-04] un clic sur une nuance donne son hexa, ses usages et ses contraste
     await page.locator('[aria-label^="Profil Vivid, nuance 700,"]').click();
     const detail = page.locator('.nuancier-detail');
     assert.match(await detail.locator('.detail-titre').textContent(), /^Vivid · nuance 700 · #[0-9A-F]{6}$/);
-    assert.match(await detail.textContent(), /Fond plein \(solid\) · Texte coloré \(text\) · Bordure de contrôle \(border-control\) au survol/);
+    assert.match(await detail.textContent(), /Fond plein \(solid\) · Texte coloré \(text\) · Bordure de contrôle \(border-control\), état hover/);
     assert.match(await detail.textContent(), /Contraste avec le fond : \d+,\d\d:1 · Texte courant : (AAA|AA|Insuffisant)/);
     assert.deepEqual(await page.evaluate(() => window.demandes.map((demande) => demande.type)), ['lire-etat']);
   } finally {

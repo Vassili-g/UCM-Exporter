@@ -117,23 +117,29 @@ function construireCadre(figma: FigmaDuDessin, modele: NoeudCadre, crees: Crees)
   cadre.layoutMode = modele.direction;
   cadre.itemSpacing = modele.espacement;
   cadre.paddingTop = modele.marge;
-  cadre.paddingRight = modele.marge;
+  cadre.paddingRight = modele.margeLaterale ?? modele.marge;
   cadre.paddingBottom = modele.marge;
-  cadre.paddingLeft = modele.marge;
+  cadre.paddingLeft = modele.margeLaterale ?? modele.marge;
   cadre.fills = remplissage(modele.fond);
   cadre.cornerRadius = modele.rayon;
-  // Un contour intérieur : le filet d'une section, la pastille on-solid, le spécimen d'une bordure (V10.4, V10.5).
+  // Un contour intérieur : le filet d'un thème, la bordure d'un champ, l'anneau de focus (V10.4).
   if (modele.trait) {
     cadre.strokes = remplissage(modele.trait.couleur);
     cadre.strokeWeight = modele.trait.epaisseur;
     cadre.strokeAlign = 'INSIDE';
     cadre.dashPattern = modele.trait.tirets ? [4, 3] : [];
   }
-  if (modele.centre) {
-    cadre.primaryAxisAlignItems = 'CENTER';
-    cadre.counterAxisAlignItems = 'CENTER';
+  cadre.primaryAxisAlignItems = modele.alignement?.principal ?? 'MIN';
+  cadre.counterAxisAlignItems = modele.alignement?.secondaire ?? 'MIN';
+  for (const enfant of modele.enfants) {
+    const pose = construire(figma, enfant, crees);
+    cadre.appendChild(pose);
+    // Remplir la largeur du parent ne se règle qu'une fois l'enfant posé dans l'auto layout.
+    if (enfant.type === 'cadre' && enfant.remplir) {
+      if (modele.direction === 'VERTICAL') pose.layoutSizingHorizontal = 'FILL';
+      else pose.layoutGrow = 1;
+    }
   }
-  for (const enfant of modele.enfants) cadre.appendChild(construire(figma, enfant, crees));
   if (modele.largeur !== undefined || modele.hauteur !== undefined) {
     cadre.resize(modele.largeur ?? cadre.width, modele.hauteur ?? 1);
   }

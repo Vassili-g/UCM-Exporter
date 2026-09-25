@@ -303,24 +303,42 @@ Réglages communs ont la même échelle typographique que l’onglet Palettes.
 
 Après validation de W3.4.
 
-- [ ] **W5.1** Réécrire le modèle de planche (`src/planche/modele.ts`) selon
-  le récit retenu, avec les styles nommés de V10.8, étendus au besoin.
-- [ ] **W5.2** Garder ce que les lots V10 ont établi et que le récit ne remet
+- [x] **W5.1** Réécrire le modèle de planche (`src/planche/modele.ts`) selon
+  le récit retenu, avec les styles nommés de V10.8, étendus au besoin. Fait
+  sur la maquette W3.6 ; section 9 de la spécification récrite. Six styles :
+  un style « chiffre » s’ajoute, pour les numéros, les verdicts et les
+  garanties manquées. Le nœud de cadre gagne l’alignement, la marge latérale
+  et le remplissage de la largeur du parent, que `ecriture/planche.ts`
+  traduit. Le récit retire de la planche le bloc de la référence, les cartes
+  de nuance, `on-solid` et ses accolades, la section des garanties, les
+  points à vérifier et la légende : les mesures de la référence restent dans
+  le détail d’une nuance et dans le rapport (`[PLA-08]`). Textes N093 à N099.
+- [x] **W5.2** Garder ce que les lots V10 ont établi et que le récit ne remet
   pas en cause : aucun texte de version ni d’empreinte, filets de section
   lisibles aux deux fonds, peinture selon le profil du document, polices
   chargées avant le premier calque, grille des contrastes toujours présente.
-- [ ] **W5.3** Ajouter l’interface d’exemple E2 de W3.6, peinte du profil
-  porteur, dans chaque thème.
-- [ ] **W5.4** Faire entrer le nouveau modèle dans l’empreinte : tous les
-  cadres existants passent « À mettre à jour ».
+  L’option `grille` reste dans le modèle et le message de dessin ;
+  l’interface l’envoie toujours à vrai.
+- [x] **W5.3** Ajouter l’interface d’exemple E2 de W3.6, peinte du profil
+  porteur, dans chaque thème (`[PLA-28]`). Chaque couleur y vient de la
+  table des emplois, jamais d’un numéro écrit à la main.
+- [x] **W5.4** Faire entrer le nouveau modèle dans l’empreinte : tous les
+  cadres existants passent « À mettre à jour ». L’empreinte se calcule sur
+  l’arbre et les styles ; l’arbre et les styles ont changé.
 - [ ] **W5.5** Tests du modèle : chaque paire du moteur reste représentée,
-  une palette libre (W6) n’a pas de section de garanties.
+  une palette libre (W6) n’a pas de section de garanties. Première moitié
+  faite : chaque paire se lit sous chacun de ses membres qui a une ligne
+  d’usage, dans chaque thème, vu rouge sur une mutation. La seconde attend
+  W6.
 - [ ] **W5.6** (ex-V6.4) Mesurer dans Figma le temps et le nombre de calques
   d’une génération de douze palettes ; appliquer `[PLA-24]` au résultat.
+  Hors de Figma, le cadre de Bleu compte 1 712 calques avec les grilles,
+  546 sans, contre 1 898 et 686 avant W5.
 
-- [ ] **W5.7** Passer les états du plugin à `default`, `hover`, `active` :
+- [x] **W5.7** Passer les états du plugin à `default`, `hover`, `active` :
   `NOM_DE_L_ETAT`, la légende des garanties et les phrases « au survol », « à
-  l’appui » (`textes.ts`), avec leurs entrées dans l’inventaire des textes.
+  l’appui » (`textes.ts`), avec leurs entrées dans l’inventaire des textes
+  (N100). Une phrase dit « Texte coloré (text), état hover ».
 
 Critère : sans le plugin, le designer comprend en un regard ce que la planche
 lui dit, dans l’ordre choisi en W3.6.

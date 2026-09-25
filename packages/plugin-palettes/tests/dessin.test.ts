@@ -114,8 +114,8 @@ test('[PLA-25] E15 : la copie d’un cadre n’est ni possédée, ni réécrite,
 
 test('[PLA-22] une police qui ne se charge pas arrête le dessin avant tout calque', async () => {
   const figma = new FauxFigma();
-  figma.policesAbsentes.add('Medium');
-  assert.deepEqual(await dessiner(figma, [BLEU]), { issue: 'police', style: 'Inter Medium' });
+  figma.policesAbsentes.add('Semi Bold');
+  assert.deepEqual(await dessiner(figma, [BLEU]), { issue: 'police', style: 'Inter Semi Bold' });
   assert.deepEqual(figma.journal.filter((entree) => entree.startsWith('créer') || entree === 'commitUndo'), []);
 });
 
@@ -362,20 +362,28 @@ test('[PLA-01] V8.8 : un suivi sans version se lit comme la version 1 ; un suivi
   assert.deepEqual(creations({ journal: figma.journal.slice(avant) } as FauxFigma), []);
 });
 
-test('V10.4 V10.8 : le filet d’une section et le tireté de la pastille on-solid se posent en contour intérieur ; chaque style prend sa police', async () => {
+test('V10.4 V10.8 W5.1 : le filet d’un thème se pose en contour intérieur, un filet remplit la largeur de son parent, les alignements et les marges latérales suivent le modèle, chaque style prend sa police', async () => {
   const figma = new FauxFigma();
   await dessiner(figma, [BLEU]);
   const [cadre] = cadres(figma);
-  const nomme = (nom: string) => figma.sous(cadre).find((noeud) => noeud.name === nom) as unknown as { strokes: unknown[]; strokeAlign: string; strokeWeight: number; dashPattern: number[] };
-  const section = nomme('section light');
-  assert.equal(section.strokes.length, 1);
-  assert.equal(section.strokeAlign, 'INSIDE');
-  assert.deepEqual(section.dashPattern, []);
-  assert.deepEqual(nomme('on-solid/light').dashPattern, [4, 3]);
-  const titre = figma.sous(cadre).find((noeud) => noeud.name === 'titre' && noeud.parent === figma.sous(cadre).find((autre) => autre.name === 'section light')) as unknown as { fontName: { style: string }; fontSize: number };
+  const tous = figma.sous(cadre) as unknown as {
+    name: string; parent: unknown; strokes: unknown[]; strokeAlign: string; dashPattern: number[]; layoutSizingHorizontal: string;
+    primaryAxisAlignItems: string; counterAxisAlignItems: string; paddingLeft: number; paddingTop: number; fontName: { style: string }; fontSize: number;
+  }[];
+  const nomme = (nom: string) => tous.find((noeud) => noeud.name === nom)!;
+  const theme = nomme('thème light');
+  assert.equal(theme.strokes.length, 1);
+  assert.equal(theme.strokeAlign, 'INSIDE');
+  assert.deepEqual(theme.dashPattern, []);
+  assert.equal(nomme('filet').layoutSizingHorizontal, 'FILL');
+  const enTete = tous.find((noeud) => noeud.name === 'en-tête' && noeud.parent === theme)!;
+  assert.deepEqual([enTete.primaryAxisAlignItems, enTete.counterAxisAlignItems], ['SPACE_BETWEEN', 'CENTER']);
+  const verdict = nomme('verdict');
+  assert.deepEqual([verdict.paddingLeft, verdict.paddingTop], [8, 0]);
+  const rampes = nomme('les deux rampes');
+  const titre = tous.find((noeud) => noeud.name === 'titre' && noeud.parent === rampes)!;
   assert.deepEqual([titre.fontName.style, titre.fontSize], ['Semi Bold', 16]);
 });
-
 test('V8.2 : un cadre introuvable garde son entrée quand une autre palette est dessinée ; il n’est pas « jamais dessiné »', async () => {
   const figma = new FauxFigma();
   await dessiner(figma, [BLEU]);

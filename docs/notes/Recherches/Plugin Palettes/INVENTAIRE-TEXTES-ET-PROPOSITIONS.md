@@ -701,7 +701,15 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N089 | Sélecteur de couleur, titre des pastilles proposées | Nuances de la palette ouverte · Fonds par défaut et premières nuances | À valider |
 | N090 | Sélecteur de couleur, nom d'une pastille proposée | Fond {Light ou Dark} par défaut · Blanc · Vivid {numéro} · {nom}, {hexa} | À valider |
 | N091 | Luminosité des nuances, titre de chaque ligne de la table | Light · Dark | À valider |
-| N092 | Minimums et détection, aide sous chaque libellé | Pour text sur surface, on-solid sur solid et text sur le fond. · Pour la bordure de champ, l’anneau de focus et le fond plein au survol. · Mesuré entre les deux profils d’une même nuance. · Mesuré sur les nuances 500, 600 et 700 de Vivid, en Thème Light. | À valider |
+| N092 | Minimums et détection, aide sous chaque libellé | Pour text sur surface, on-solid sur solid et text sur le fond. · Pour la bordure de champ, l’anneau de focus et le fond plein, état hover. · Mesuré entre les deux profils d’une même nuance. · Mesuré sur les nuances 500, 600 et 700 de Vivid, en Thème Light. | À valider |
+| N093 | Planche, titres des sections d’un thème | Les deux rampes · Quelle nuance pour quel usage · {profil} · Interface d’exemple · {profil} · Contrastes, nuance par nuance | Maquette W3.6 |
+| N094 | Planche, chaque usage : nom, rôle et ce qu’il habille | Fonds légers · fond d’un bloc, d’un bouton soft · Textes colorés · lien, texte d’accent · Fonds pleins · bouton principal, badge plein · Bordures de champ · champ de saisie, case · Anneau de focus · focus clavier · focus · état focus · Séparateurs · filet, bordure de carte | Maquette W3.6 |
+| N095 | Planche, libellés des spécimens | Soft · Lien coloré · Bouton · Champ | Maquette W3.6 |
+| N096 | Planche, repères d’une pastille et note sous les rampes | ◆ · ≈ · ◆ : la couleur de référence exacte. · ≈ : Soft et Vivid presque identiques à cette nuance. | À valider |
+| N097 | Planche, interface d’exemple E2 | Paramètres de l’équipe · Nouveau · Général · Membres · Facturation · Nom de l’équipe · Studio Nord · Notifier les membres · Accès invité · Les membres invités reçoivent un e-mail. En savoir plus · Annuler · Brouillon · Enregistrer | Maquette W3.6 |
+| N098 | Planche, en-tête d’un thème et verdict ; remplace N062 pour le résultat, et l’en-tête de section | Thème {Light ou Dark} · fond {hexa} · ✓ Toutes les garanties tenues · 1 garantie manquée · {nombre} garanties manquées | À valider |
+| N099 | Planche, garantie sous un état, et légende des grilles ; remplace N064 à N069 | ✓ sur {partenaire} : {ratio}:1 · ✗ {partenaire} dessus : {ratio}:1 · Ligne : fond · colonne : texte · gras dès {seuil}:1 · maigre dès {seuil}:1 · effacé en dessous | À valider |
+| N100 | États d’une paire, dans le plugin et sur la planche ; remplace T131, T132 et les états de N033 et N034 | default · hover · active · « {emploi}, état hover » · « État {état} : {ratio} pour un minimum de {seuil}:1 » · Trait plein : default · tireté : hover · pointillé : active. | Mainteneur, W3.4 |
 
 ## Points à conserver lors de l’application
 

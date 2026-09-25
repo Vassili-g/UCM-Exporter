@@ -134,7 +134,7 @@ test('[VER-06] un groupe de promesses nomme l’association, l’état, le thèm
     manquees: 1,
   };
   const constat = constatDeGroupe(groupe, 'Bleu');
-  assert.equal(constat.ou, 'Texte coloré (text) sur Fond léger (surface) au survol · Bleu, thème Dark');
+  assert.equal(constat.ou, 'Texte coloré (text) sur Fond léger (surface), état hover · Bleu, thème Dark');
   assert.equal(constat.quoi, 'Cette association n’atteint pas le contraste demandé, pour un minimum de 4,5:1.');
   assert.deepEqual(constat.mesures, ['Soft : 4,62:1 · Respectée', 'Vivid : 4,31:1 · À corriger']);
   assert.ok(constat.geste.includes('réglages communs'));
@@ -177,7 +177,7 @@ test('[UI-09] le résultat d’un profil se lit en signe et en mots', () => {
   assert.equal(resultatDuProfil('vivid', 2), 'Vivid ✗ 2');
   assert.equal(resultatDuProfilEnMots('vivid', 1), 'Vivid : 1 garantie manquée');
   assert.equal(resultatDuProfilEnMots('soft', 0), 'Soft : toutes les garanties sont respectées');
-  assert.equal(TEXTES_DES_GARANTIES.echec(0, 2.924, 3), 'Repos : 2,92:1 pour un minimum de 3:1');
+  assert.equal(TEXTES_DES_GARANTIES.echec(0, 2.924, 3), 'État default : 2,92:1 pour un minimum de 3:1');
 });
 
 test('V12.2 : l’écart d’import nomme les valeurs modifiées, la nature de l’effet et la conséquence sur la planche', () => {

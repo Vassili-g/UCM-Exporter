@@ -622,9 +622,10 @@ composant du socle la porte (`[UI-02]`).
 
 ## 9. Sortie 1 : la planche
 
-La planche dessine chaque palette dans Figma, avec ses valeurs, ses
-contrastes, ses emplois et ses alertes. Elle sert à relire une palette, à la
-présenter et à comparer des palettes côte à côte.
+La planche dessine chaque palette dans Figma : ses rampes, ses usages et
+leurs garanties, une interface d'exemple et ses contrastes. Elle sert à
+choisir une nuance, à présenter une palette et à comparer des palettes côte à
+côte.
 
 ### 9.1 Emplacement et propriété
 
@@ -699,149 +700,125 @@ présenter et à comparer des palettes côte à côte.
 
 ### 9.2 Le cadre d'une palette
 
+Le cadre répond à la question que le designer se pose en posant un
+composant : quelle nuance pour quel usage, et est-elle lisible (récit R1,
+maquette W3.6). Chaque thème se lit de haut en bas : les deux rampes, les
+usages du profil porteur dans leurs états, une interface d'exemple, puis les
+contrastes nuance par nuance.
+
 ```text
 ┌ Bleu ─────────────────────────────────────────────────────────────────────┐
 │ Bleu                                                                       │
 │ Couleur de référence #1E6FD9 · Vivid · nuance 600                          │
-│ Garanties : Soft ✓ · Vivid ✗ 2                                             │
-├ Couleur de référence ─────────────────────────────────────────────────────┤
-│ [■■■■■■]  #1E6FD9                                                          │
-│           Profil porteur : Vivid · nuance 600                              │
-│           Palette de base : Soft, choisie pour cette palette (si choisie)  │
-│           Contrastes : Comparée avec · Contraste · Niveau WCAG             │
-│           Blanc, Noir, Fond du thème Light, Fond du thème Dark             │
-│           Mesures avancées : L, C, H, intensité ; CSS oklch(…) ; dérives   │
-├ Thème Light · fond #F7F7F7 ── filet ──────────────────────────────────────┤
-│ Soft   [fond on-solid, tireté] [50][100]…[950]                             │
-│ Vivid                          [50][100]…[600 ◆ Référence]…[950]           │
-│        └ on-solid ┘ └ surface ┘       └ solid · text ┘   accolades         │
+├ Thème Light · fond #F7F7F7 ── filet ─────── ✓ Toutes les garanties tenues ┤
+│ Les deux rampes                                                            │
+│        50     100    …    600    …    950                                  │
+│ Soft   [≈]    [≈]    …    [  ]   …    [  ]    codes sous chaque pastille   │
+│ Vivid  [≈]    [≈]    …    [◆]    …    [  ]                                 │
+│ ◆ : la couleur de référence exacte. ≈ : Soft et Vivid presque identiques…  │
+│ Quelle nuance pour quel usage · Vivid                                      │
+│                    default           hover             active             │
+│ Fonds légers       [Soft] 100        [Soft] 200        [Soft] 300         │
+│ surface            ✓ text 700 dessus : 5,34:1 …                            │
+│ Textes colorés     Lien coloré 700   …                                     │
+│ Fonds pleins · Bordures de champ · Anneau de focus · Séparateurs           │
+│ Interface d'exemple · Vivid          écran de réglages E2                  │
+│ Contrastes, nuance par nuance        une grille Soft, une grille Vivid     │
 ├ Thème Dark · fond #121212 ── filet ───────────────────────────────────────┤
-├ Garanties de contraste · Thème Light ─────────────────────────────────────┤
-│ Textes lisibles · minimum 4,5:1                                            │
-│ text sur surface       repos   [Aa] Soft · 700 / 100 · ✓ 5,19:1   [Aa] …   │
-│ texte coloré sur …     survol  …                                           │
-│ Éléments visibles · minimum 3:1                                            │
-│ border-decorative 300 · séparateur, sans minimum de contraste              │
-├ Garanties de contraste · Thème Dark ──────────────────────────────────────┤
-├ Grilles de contraste ─────────────────────────────────────────────────────┤
-├ Points à vérifier ────────────────────────────────────────────────────────┤
-├ Lire les valeurs ─────────────────────────────────────────────────────────┤
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- `[PLA-07]` L'en-tête donne le nom de la palette, la couleur de référence avec
-  son profil porteur et son numéro de nuance, et le résultat Soft et Vivid des
-  garanties sur les deux thèmes, comme la bascule de la carte des garanties. La version de la recette, l'empreinte du
-  modèle (`[PLA-19]`) et l'espace de couleur du document restent dans les
-  données de plugin du cadre et dans le rapport ; aucun texte du cadre ne les
-  imprime. Le cadre ne porte pas d'avertissement permanent sur son
-  remplacement : la confirmation des calques ajoutés (`[PLA-03]`) le remplace.
-- `[PLA-08]` Le bloc « Couleur de référence » montre une grande pastille, son
-  hexa, et le profil porteur et le numéro de nuance de chaque thème
-  (`[MOT-17]`), puis la palette de base quand le designer l'a choisie
-  (`[ENT-11]`). Un tableau légendé compare ses contrastes avec le blanc, le
-  noir et les deux fonds, chacun avec son niveau WCAG (`[VER-13]`). Les
-  mesures avancées, luminosité L, chroma C, teinte H et intensité, se lisent
-  dans une zone séparée, chacune avec son nom. Suivent les dérives de chaque
-  profil et leur origine. Une chaîne présentée comme copiable en CSS s'écrit
-  en syntaxe machine, avec des points décimaux ; un nombre à virgule est une
-  mesure à lire.
+- `[PLA-07]` L'en-tête donne le nom de la palette, puis la couleur de
+  référence avec son profil porteur et son numéro de nuance. Chaque thème
+  ouvre sur son fond et son verdict : « ✓ Toutes les garanties tenues », ou le
+  nombre de garanties manquées du thème, les deux profils comptés, dans la
+  couleur de danger. La version de la recette, l'empreinte du modèle
+  (`[PLA-19]`) et l'espace de couleur du document restent dans les données de
+  plugin du cadre et dans le rapport ; aucun texte du cadre ne les imprime. Le
+  cadre ne porte pas d'avertissement permanent sur son remplacement : la
+  confirmation des calques ajoutés (`[PLA-03]`) le remplace.
+- `[PLA-08]` Les mesures de la référence, contrastes avec le blanc, le noir et
+  les fonds, luminosité, chroma, teinte, intensité et dérives, ne sont pas sur
+  la planche : elles se lisent dans le détail d'une nuance de l'interface et
+  dans le rapport (section 10.2).
 - `[PLA-09]` La section `light` est peinte de `fonds.light`, la section `dark`
   de `fonds.dark`. Chaque rampe se lit ainsi sur le fond où elle servira. Un
   filet délimite chaque section, visible sur un fond blanc comme sur un fond
-  sombre. Les légendes de la section sombre sont claires ; celles de la section
-  claire sont sombres.
-- `[PLA-10]` Une rangée porte à gauche le nom de son profil, Soft ou Vivid,
-  sans la part de chroma : l'intensité se lit dans les réglages. La nuance qui
-  porte la référence exacte montre le repère « ◆ Référence » dans sa pastille,
-  comme le ◆ de l'aperçu. Comme dans l'aperçu (`[UI-04]`), la pastille
-  `on-solid`, peinte du fond du thème et détachée par un contour tireté,
-  précède les rampes, et deux lignes d'accolades nomment les rôles sous
-  elles, en nom du design system puis en français.
-- `[PLA-11]` La légende, « Lire les valeurs », explique comment lire une
-  promesse, comment distinguer Soft et Vivid par leurs spécimens, et ce que
-  mesurent les contrastes d'une carte. Elle ne nomme pas les seuils par leur
-  nom interne.
+  sombre. Les légendes d'un thème prennent l'encre sombre ou claire, celle qui
+  s'y lit le mieux ; l'encre seconde s'atténue vers le fond tant qu'elle y
+  garde 4,5:1, et la couleur de danger est celle des deux qui s'y lit le mieux.
+- `[PLA-10]` « Les deux rampes » ouvre chaque thème : les numéros de nuance,
+  puis une rangée Soft et une rangée Vivid, chacune nommée à gauche, sans la
+  part de chroma. Chaque pastille porte son code dessous. La nuance qui porte
+  la référence exacte montre ◆ dans sa pastille, comme l'aperçu.
+- `[PLA-11]` Une note sous les rampes explique ◆, et ≈ quand une pastille le
+  porte. La légende des grilles tient en une ligne à droite de leur titre. Ni
+  l'une ni l'autre ne nomme un seuil par son nom interne.
 
-### 9.3 La carte d'un cran
+### 9.3 Les pastilles des rampes
 
-```text
-┌──────────────┐
-│              │  pastille 96 × 56
-│     700      │  numéro de la nuance, posé sur la pastille, en noir ou en blanc
-├──────────────┤
-│ #0E5DC6      │  hexa
-│ solid ·      │  les rôles que la table confie à cette nuance, en nom du
-│ fond plein   │  design system puis en français, états compris
-│ Fond 5,76:1  │  le contraste avec le fond du thème, et le niveau WCAG le plus
-│ · AA         │  haut qu'il atteint pour du texte
-└──────────────┘
-```
-
-- `[PLA-12]` Le contraste avec le fond du thème porte son unité, `:1`, et son
-  niveau selon `[VER-13]`. Une carte n'empile ni la luminosité, ni la chroma, ni
-  la teinte, ni les contrastes avec le blanc et le noir : ces mesures se lisent
-  dans le rapport et dans le détail d'une nuance de l'interface. Le nom
-  `profil.cran` n'est pas répété, la rangée et le numéro le disent déjà.
-- `[PLA-13]` Le numéro du cran sur la pastille prend le noir ou le blanc,
-  celui des deux qui contraste le plus avec l'hexa.
+- `[PLA-12]` Une pastille donne sa couleur et son code. Les rôles d'une nuance
+  se lisent dans les usages ; ses mesures, dans le détail d'une nuance de
+  l'interface et dans le rapport.
+- `[PLA-13]` Un repère posé sur une pastille, ◆ ou ≈, prend le noir ou le
+  blanc, celui des deux qui contraste le plus avec elle.
 - `[PLA-14]` Le calque de la pastille se nomme `{profil}/{mode}/{cran}`,
   `vivid/light/700` par exemple, sous le cadre de sa palette. Ce nom permet de
   retrouver chaque couleur dans le panneau des calques, et sert de clé à
   l'option de la [section 17](#17-option-ultérieure--créer-les-variables).
-- `[PLA-15]` Une carte où les deux profils se confondent porte la mention
-  « Très proche de soft » ou « Très proche de vivid », sur tous les crans.
-  L'alerte « Profils confondus » ne porte que sur les crans de la table des
-  emplois ([section 11.3](#113-alertes)).
-- `[PLA-16]` Le texte de la carte est sélectionnable et copiable : un hexa se
-  copie depuis la planche sans ouvrir le plugin.
+  Aucun autre calque ne porte ce nom : les pastilles des grilles se nomment
+  `teinte {cran}`.
+- `[PLA-15]` Une pastille où les deux profils se confondent porte ≈, sur tous
+  les crans. L'alerte « Profils confondus » ne porte que sur les crans de la
+  table des emplois ([section 11.3](#113-alertes)).
+- `[PLA-16]` Les textes du cadre sont sélectionnables et copiables : un code
+  se copie depuis la planche sans ouvrir le plugin.
 
-### 9.4 Les emplois
+### 9.4 Quelle nuance pour quel usage
 
-Une section de promesses par mode. Les quatorze paires de la
-[section 11.2](#112-promesses-des-emplois) s'y groupent en huit associations :
-une association réunit les paires de même premier emploi et de même second
-membre. L'état d'une paire est le décalage le plus grand de ses deux membres :
-0 au repos, 1 au survol, 2 à l'appui.
+Une ligne par usage, dans cet ordre : `surface`, `text`, `solid`,
+`border-control`, `focus`, `border-decorative`. `on-solid` n'a pas de ligne :
+il se lit sur `solid`. Chaque ligne donne à gauche le nom de l'usage, son rôle
+en police de code et ce qu'il habille ; puis une colonne par état, `default`,
+`hover` et `active`, dans le vocabulaire des composants. L'état avance d'une
+nuance. `focus` et `border-decorative` n'ont que `default` ; l'anneau se lit
+« focus · état focus ». Une colonne montre un spécimen peint de la nuance de
+l'état, son numéro, puis ses garanties.
 
-| Association | Paires | États |
-|---|---|---|
-| `text` sur fond | 1 | repos |
-| `text` sur `surface` | 2, 3, 4 | repos, survol, appui |
-| `on-solid` sur `solid` | 5, 6, 7 | repos, survol, appui |
-| `border-control` sur fond | 8 | repos |
-| `border-control` sur `surface` | 9, 10, 11 | repos, survol, appui |
-| `focus` sur fond | 12 | repos |
-| `focus` sur `surface` | 13 | repos |
-| `solid` sur fond | 14 | survol |
+| Usage | Spécimen |
+|---|---|
+| `surface` | un aplat, « Soft » écrit en `text` |
+| `text` | « Lien coloré » |
+| `solid` | un bouton plein, son libellé du fond du thème |
+| `border-control` | un champ bordé |
+| `focus` | un champ bordé de `border-control`, cerclé de l'anneau |
+| `border-decorative` | un filet |
 
-Les associations se groupent par minimum, comme dans la carte des garanties
-de l'onglet Palettes : « Textes lisibles » puis « Éléments visibles », chacun
-avec son minimum. Chaque association occupe une ligne : ses deux rôles en nom
-du design system, puis en français. Ses états s'alignent à droite, chacun
-avec un spécimen Soft et un spécimen Vivid ; sous chacun, les deux numéros de
-nuance comparés, le résultat et le contraste mesuré. Le spécimen montre le
-premier membre posé sur le second : un texte pour `text` et `on-solid`, un
-aplat pour `solid`, un contour pour une bordure ou un anneau de focus.
+- `[PLA-17]` Toutes les paires du moteur sont représentées, dans chaque
+  thème. Sous un état, une ligne par paire dont il est membre : « sur » son
+  second membre quand il est premier, « dessus » son premier membre quand il
+  est second, avec ✓ ou ✗ et le contraste mesuré. Une paire se lit donc sous
+  chacun de ses membres qui a une ligne. Une garantie manquée prend la
+  couleur de danger. `border-decorative` n'a aucune promesse, et aucune ligne
+  ne lui en invente une.
+- `[PLA-18]` Les usages montrent le profil porteur, que leur titre nomme ;
+  l'autre profil se lit dans les rampes.
+- `[PLA-28]` L'interface d'exemple suit les usages : un écran de réglages
+  composé, sur le modèle de Radix Themes, peint des nuances du profil porteur
+  à leur numéro de la table des emplois. Onglet actif souligné de `solid`,
+  champ au focus, case, interrupteur, encart en `surface`, et trois boutons :
+  sans fond, `surface`, `solid`.
 
-- `[PLA-17]` Toutes les paires du moteur sont représentées. Une association
-  sans état repos, `solid` sur fond, montre son seul état.
-  `border-decorative` n'a aucune promesse : la carte de sa nuance dit son
-  usage, et aucune section de promesses ne lui en invente une.
-- `[PLA-18]` L'en-tête des promesses rappelle que chaque usage correspond au
-  même numéro de nuance dans toutes les palettes.
+### 9.5 Les contrastes, nuance par nuance
 
-### 9.5 La grille de contraste
-
-Chaque génération la dessine, sans option. Pour chaque rampe et chaque
-mode, une grille de onze sur onze : ligne et colonne sont les crans, la cellule
-donne le contraste entre les deux, sur un fond vert, jaune ou gris selon le
-seuil atteint. Elle répond à la question « quel cran puis-je poser sur quel
-cran ». Chaque grille porte son titre, mode et profil, les numéros de nuance
-sur ses deux axes et la valeur dans chaque cellule. Une légende nomme en mots
-les trois couleurs de fond. La grille compare librement toutes les nuances :
-ses cases ne sont pas des promesses.
-
+Chaque génération les dessine, sans option dans l'interface. Pour chaque
+profil de chaque thème, une grille sous une rangée de pastilles, dans les
+colonnes des rampes : la ligne donne le fond, la colonne le texte. Une paire
+qui atteint le minimum des éléments visibles se peint telle qu'elle se lira :
+le fond de sa ligne, le ratio écrit dans la couleur de sa colonne, en gras à
+partir du minimum des textes. En dessous, la case s'efface sur un aplat
+neutre. Une nuance ne se compare pas à elle-même. La grille compare librement
+toutes les nuances : ses cases ne sont pas des promesses.
 ### 9.6 Fraîcheur
 
 - `[PLA-19]` Chaque cadre porte la donnée de plugin `ucm_palettes/empreinte` :
@@ -856,23 +833,25 @@ ses cases ne sont pas des promesses.
   L'état du cadre se distingue du résultat des garanties : un ratio
   insuffisant n'est pas une panne de génération. L'onglet Planches relit l'état
   à son ouverture, après chaque génération et au geste « Actualiser », pour ce
-  que les événements de Figma ne signalent pas. Renommer une
-  palette peut périmer le cadre d'une autre, dont l'alerte « Palettes proches »
-  cite le nom.
+  que les événements de Figma ne signalent pas. Le cadre ne montre rien des
+  autres palettes : les renommer ne le périme pas.
 
 ### 9.7 Mise en page et typographie
 
 - `[PLA-21]` Tous les cadres sont en auto layout, trame de 8 px, sans position
   absolue.
-- `[PLA-22]` Police Inter, en cinq styles nommés : titre de palette, 24 px
-  gras ; thème, 16 px demi-gras ; rôle, 13 px moyen ; valeur, 11 px normal ;
-  note, 10 px normal. Les styles entrent dans l'empreinte du modèle : en
+- `[PLA-22]` Police Inter, en six styles nommés : titre de palette, 28 px
+  demi-gras ; titre de section, 16 px demi-gras ; titre d'usage, 12 px
+  demi-gras ; valeur, 11 px normal ; note, 10 px normal ; chiffre, 10 px
+  demi-gras, pour les numéros, les verdicts et les garanties manquées. Les styles entrent dans l'empreinte du modèle : en
   changer périme les cadres déjà dessinés. Le plugin charge chaque police par
   `loadFontAsync` avant de créer un seul calque ; un chargement qui échoue
   arrête le dessin, sans cadre à moitié dessiné. Un titre, un code ou un
   résultat n'a pas de largeur fixe : il ne se coupe jamais.
-- `[PLA-23]` Les couleurs de légende et de filet de la planche sont des
-  constantes du plugin, séparées des couleurs de la palette.
+- `[PLA-23]` Les couleurs de l'en-tête, du filet et du danger sont des
+  constantes du plugin ; les encres d'un thème s'en déduisent sur son fond.
+  Aucune légende ne prend une couleur de la palette : seuls les spécimens,
+  l'interface d'exemple et les grilles en portent.
 - `[PLA-24]` Le dessin se fait palette par palette, avec un message de
   progression. Une génération groupée demande une confirmation au-delà de six
   palettes. Interrompue, elle nomme les palettes déjà générées et celles qui
@@ -949,8 +928,8 @@ d'un cran. `on-solid` est le fond de référence du mode.
 |---|---|---|
 | 1 | `text` sur fond | 4,5 |
 | 2 | `text` sur `surface` | 4,5 |
-| 3 | `text+1` sur `surface+1`, survol | 4,5 |
-| 4 | `text+2` sur `surface+2`, appui | 4,5 |
+| 3 | `text+1` sur `surface+1`, état hover | 4,5 |
+| 4 | `text+2` sur `surface+2`, état active | 4,5 |
 | 5 | `on-solid` sur `solid` | 4,5 |
 | 6 | `on-solid` sur `solid+1` | 4,5 |
 | 7 | `on-solid` sur `solid+2` | 4,5 |
@@ -966,10 +945,26 @@ Une palette compte 56 paires : quatorze par mode et par profil. Les deux
 profils partagent leurs clartés, mais pas leur chroma : leurs contrastes
 diffèrent un peu, et les composants citent l'un comme l'autre.
 
+Les quatorze paires se groupent en huit associations : une association réunit
+les paires de même premier emploi et de même second membre. L'état d'une paire
+est le décalage le plus grand de ses deux membres, dans le vocabulaire des
+composants : `default`, puis `hover` à une nuance, `active` à deux.
+
+| Association | Paires | États |
+|---|---|---|
+| `text` sur fond | 1 | default |
+| `text` sur `surface` | 2, 3, 4 | default, hover, active |
+| `on-solid` sur `solid` | 5, 6, 7 | default, hover, active |
+| `border-control` sur fond | 8 | default |
+| `border-control` sur `surface` | 9, 10, 11 | default, hover, active |
+| `focus` sur fond | 12 | default |
+| `focus` sur `surface` | 13 | default |
+| `solid` sur fond | 14 | hover |
+
 - `[VER-05]` Les paires visent les crans 100, 200, 300, 600, 700, 800 et 900.
   `[REC-05]` refuse une recette dont `crans` n'en contient pas un : aucune
   paire ne peut viser un cran absent.
-- `[VER-06]` Une promesse manquée nomme l'association (section 9.4), le mode,
+- `[VER-06]` Une promesse manquée nomme l'association (section 11.2), le mode,
   l'état, le profil, son contraste mesuré et le minimum demandé. L'onglet
   Palettes la porte sur la ligne de son association, dans la carte des
   garanties (`[UI-09]`), et non dans la liste des messages. Le compte reste
@@ -1021,8 +1016,8 @@ diffèrent un peu, et les composants citent l'un comme l'autre.
   garde la mesure. La référence exacte n'est jamais décrite comme plus terne
   qu'elle-même ; les nuances autour d'elle peuvent l'être.
 - `[VER-11]` « Profils confondus » ne porte que sur les crans de la table des
-  emplois ; ailleurs, la carte de la planche porte la mention « Très proche
-  de » (`[PLA-15]`). À dérive nulle, sur 360 teintes, l'alerte portée sur tous
+  emplois ; sur la planche, la pastille de toute nuance où les deux profils
+  se confondent porte ≈ (`[PLA-15]`). À dérive nulle, sur 360 teintes, l'alerte portée sur tous
   les crans sonne pour 320 teintes, aux crans 50, 100 et 950. Bornée aux crans
   de la table, elle sonne encore pour 249 teintes : `surface` vise le cran 100,
   qui confond les deux profils sur 216 teintes en clair et 39 en sombre.
@@ -1297,10 +1292,10 @@ palette » gardent leurs libellés au-dessus des champs.
   thème ; « Revenir au thème » ramène au thème d'avant.
   Une réglette montre la case `on-solid`, puis les nuances du profil choisi,
   numérotées, sur le fond du thème. La garantie choisie s'y trace par un arc
-  par état, de la nuance du premier membre à celle du second : trait plein au
-  repos, tireté au survol, pointillé à l'appui. Un arc en échec prend la
+  par état, de la nuance du premier membre à celle du second : trait plein en
+  `default`, tireté en `hover`, pointillé en `active`. Un arc en échec prend la
   couleur de danger, et une légende d'une ligne nomme les trois traits.
-  La liste donne une ligne par association (section 9.4), en deux groupes :
+  La liste donne une ligne par association (section 11.2), en deux groupes :
   « Textes lisibles » au minimum texte, « Éléments visibles » au minimum non
   textuel, chaque groupe avec son minimum lu dans la recette. Une ligne porte
   la relation (« `text` sur `surface` ») et son nom français, puis un spécimen
@@ -1319,7 +1314,7 @@ palette » gardent leurs libellés au-dessus des champs.
   « Vivid · 700 », son code hexadécimal et « Copier » ; celui de la référence
   ajoute « ◆ Votre couleur de référence exacte ». Sous « Sert à », une ligne
   par usage de la nuance : un spécimen, le rôle et l'état (« `solid` ·
-  repos »), le nom français du rôle, puis la garantie qui le concerne avec le
+  default »), le nom français du rôle, puis la garantie qui le concerne avec le
   numéro du partenaire (« ✓ sur `surface` 100 : 5,78:1 »). Un clic sur la
   garantie la choisit dans la carte des garanties. La pastille `on-solid` a son
   propre détail : le fond de page du thème, `neutral.50` du design system,
@@ -1658,7 +1653,7 @@ Ce qui ne se prouve pas hors de Figma se rejoue à la main.
 6. Modifier la recette : le cadre est signalé périmé, puis redessiné au geste.
 7. Douze palettes dessinées : temps mesuré, et défilement de la page Palettes
    sans saccade visible.
-8. Copier un hexa depuis une carte de la planche.
+8. Copier un code depuis une pastille de la planche.
 
 ## 17. Option ultérieure : créer les variables
 
