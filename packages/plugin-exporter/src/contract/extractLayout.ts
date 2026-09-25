@@ -56,6 +56,7 @@ import {
   isAbsolutePositioned,
   isGridAutoLayout,
   isLinearAutoLayout,
+  placeSesEnfantsParContraintes,
   rotationDegrees,
   SIZE_BOUND_FIELDS,
   sizeBoundFields,
@@ -70,7 +71,13 @@ import type {
   Radius,
 } from '@ucm-kit/core/format';
 import { sousUnImbriqueSansRegles } from './imbriques';
-import { estUneRacineDeVariant, pousserLocalise, pousserNote, sujet } from './localisation';
+import {
+  estUneRacineDeVariant,
+  pousserLocalise,
+  pousserNote,
+  pousserPourLesVariants,
+  sujet,
+} from './localisation';
 
 /**
  * Les dépendances que l'arbre place, indexées par le slot qui les rend.
@@ -275,19 +282,26 @@ async function applyContainerProperties(
     // décrire : le réclamer enverrait le designer régler ce qui ne se voit
     // pas. Un cadre de dépendance fait exception : c'est lui qui place le
     // composant qu'il enveloppe, et sa disposition manque même autour d'un seul.
+    // Sous un cadre, ses enfants sont placés par leurs contraintes et le
+    // contrat publie cette place ; sous un groupe, rien ne les place.
+    const places = placeSesEnfantsParContraintes(node);
     if (childCount > 1) {
       pousserLocalise(warnings, 'Layer', node, {
         manque: `il range ${childCount} layers mais n'utilise pas d'auto layout.`,
-        impact: `Le contrat ne décrit pas leur disposition : le développeur les placera `
-          + `autrement que dans Figma.`,
+        impact: places
+          ? IMPACT_DES_LAYERS_PLACES
+          : `Le contrat ne décrit pas leur disposition : le développeur les placera `
+            + `autrement que dans Figma.`,
         action: `Appliquez un auto layout à ce layer, puis réexportez.`,
       });
     } else if (dependencies.length > 0) {
       pousserLocalise(warnings, 'Layer', node, {
         manque: `il enveloppe ${nommerDependances(dependencies)} mais n'utilise pas d'auto `
           + `layout.`,
-        impact: `Le développeur rendra ${nommerDependances(dependencies)} sans la disposition `
-          + `de ce layer.`,
+        impact: places
+          ? IMPACT_DES_LAYERS_PLACES
+          : `Le développeur rendra ${nommerDependances(dependencies)} sans la disposition `
+            + `de ce layer.`,
         action: `Appliquez un auto layout à ce layer, puis réexportez.`,
       });
     }
@@ -657,12 +671,66 @@ function warnIntermediateBounds(
  */
 function warnMissingDirection(layoutNode: SceneNode, warnings: string[]): void {
   if (autoLayoutDirection(layoutNode)) return;
+  if (estUneRacineDeVariant(warnings, layoutNode)) {
+    pousserPourLesVariants(warnings, layoutNode, {
+      titre: 'Variants sans auto layout.',
+      impact: 'Leurs layers ne se déplaceront pas automatiquement lorsque le contenu '
+        + 'd’un layer voisin grandit.',
+      action: 'Si la disposition doit s’adapter au contenu, configurez un auto layout dans '
+        + 'chaque variant concerné, puis réexportez.',
+    });
+    return;
+  }
   pousserLocalise(warnings, 'Layer', layoutNode, {
     manque: `il n'utilise pas d'auto layout.`,
-    impact: `Le contrat annonce par défaut une disposition horizontale : le développeur `
-      + `placera ses layers autrement que dans Figma.`,
+    impact: placeSesEnfantsParContraintes(layoutNode)
+      ? IMPACT_DES_LAYERS_PLACES
+      : `Le contrat annonce par défaut une disposition horizontale : le développeur `
+        + `placera ses layers autrement que dans Figma.`,
     action: `Appliquez un auto layout à ce layer, puis réexportez.`,
   });
+}
+
+/**
+ * L'impact d'une absence d'auto layout quand les layers sont placés par leurs
+ * contraintes : le contrat publie leur place, mais elle ne suit pas le contenu.
+ */
+const IMPACT_DES_LAYERS_PLACES = 'Les layers ne se déplaceront pas automatiquement pour '
+  + 'laisser de la place à un texte plus long ou à un layer voisin plus grand.';
+
+/** La dimension d'un axe, telle qu'un message la nomme. */
+const DIMENSIONS = { width: 'la largeur', height: 'la hauteur' } as const;
+
+/**
+ * Avertit d'un axe figé sans variable sur un composant sans auto layout.
+ *
+ * Ailleurs, un tel axe se publie en `stretch` sans un mot : une taille de
+ * maquette. Sans auto layout, les layers du composant sont placés par leurs
+ * contraintes et ne lui donnent aucune taille : `stretch` hors d'un parent
+ * dimensionné rendrait une boîte vide.
+ */
+function warnUntokenizedFreeSize(component: SceneNode, warnings: string[]): void {
+  if (!placeSesEnfantsParContraintes(component)) return;
+  const fixed = fixedDimensions(component);
+  for (const axe of ['width', 'height'] as const) {
+    if (!fixed[axe] || firstVariableAlias(getBinding(component, axe))) continue;
+    if (estUneRacineDeVariant(warnings, component)) {
+      pousserPourLesVariants(warnings, component, {
+        titre: `${axe} : aucune variable associée sur des variants sans auto layout.`,
+        impact: `Le contrat ne transmettra pas ${DIMENSIONS[axe]} des variants concernés.`,
+        action: `Reliez ${axe} à une variable dans chaque variant concerné, ou configurez leur `
+          + `taille avec un auto layout, puis réexportez.`,
+      });
+      continue;
+    }
+    pousserLocalise(warnings, 'Layer', component, {
+      champ: axe,
+      manque: 'aucune variable associée.',
+      impact: `Le contrat ne transmettra pas ${DIMENSIONS[axe]} de ce layer sans auto layout.`,
+      action: `Reliez ${axe} à une variable, ou configurez un auto layout adapté au contenu, `
+        + `puis réexportez.`,
+    });
+  }
 }
 
 /**
@@ -697,6 +765,7 @@ export async function extractLayout(
 ): Promise<LayoutStructure> {
   warnIntermediateBounds(component, layoutNode, warnings);
   warnMissingDirection(layoutNode, warnings);
+  warnUntokenizedFreeSize(component, warnings);
   warnUnsupportedProperties(layoutNode, warnings);
   if (effectCarriers && porteDesEffets(layoutNode)) {
     effectCarriers.push({ node: layoutNode, slotPath: [] });

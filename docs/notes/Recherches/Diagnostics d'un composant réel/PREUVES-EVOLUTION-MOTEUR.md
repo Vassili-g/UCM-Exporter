@@ -2,10 +2,10 @@
 
 ## État
 
-- Lot courant : E4
+- Lot courant : E6
 - Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
-- Portes franchies : H0 (reste le rang des ombres dans `effects`), H2 et H1
-  (reste la remarque sur les messages 11 à 13, qui rouvre H2 pour E4)
+- Portes franchies : H0, H1 et H2. Le rang des ombres dans `effects` se
+  vérifie à la recette de E10.
 
 La copie de travail partagée porte le travail non commité d'autres sessions
 (`docs/notes/Recherches/Optimisation Tokens`, `Plugin Palettes`,
@@ -224,6 +224,44 @@ copiés ; le build y tourne étape par étape.
   sémantique » ; `AGENTS.md`, six renvois, `slotPath` d'effet et l'invariant
   des effets ; `SPEC.md`, « Effets » et la racine de variant ;
   `POUR-LES-DESIGNERS.md`, six renvois ; `TEXTES-A-VALIDER.md`, textes 3 à 8.
+- Écart ou réserve : aucun.
+
+### E4 : les enfants d'un cadre libre sont placés
+
+- Commit : ce commit, précédé de `b12a66b`.
+- Changement : `estPlaceParSesContraintes` (`flexLayout.ts`) place par ses
+  contraintes un enfant absolu ou un enfant de cadre, de composant ou
+  d'instance sans auto layout ; `flexItemProperties` l'emploie. Un enfant de
+  groupe n'est pas placé. `menuDeDimensionnement` ne change pas.
+  `warnUntokenizedFreeSize` (`extractLayout.ts`) avertit d'un axe figé sans
+  variable d'un composant sans auto layout (messages 9 et 10). R17, « il range
+  N layers » et « il enveloppe » prennent l'impact 11 quand les layers sont
+  placés ; R17 et R10 ont leurs textes de groupe (messages 12 et 13).
+- Tests vus rouges avant le changement : quatre (le placement sous un cadre
+  libre, la hauteur sans variable, les deux regroupements de racines). Trois
+  tests ajoutés passaient déjà et fixent ce qui ne change pas : un enfant en
+  `STRETCH` réclame sa variable, un groupe ne place rien, deux dimensions
+  liées ne disent rien.
+- Trois attendus existants changent avec le comportement : deux cadres de test
+  sans auto layout placent désormais leurs enfants en `position: "absolute"`
+  (`extractLayout.test.ts`, `composedComponents.test.ts`), et un conteneur de
+  textes n'écrit plus « disposition » dans son impact. Aucune assertion n'est
+  retirée.
+- Scénario : `cadreSansAutoLayout` exige le nouvel impact et compte une ligne ;
+  `dimensionSousContrainte` garde ses quatre lignes ; `Mask` et `Circle` sont
+  placés.
+- Commandes, worktree à `b12a66b` avec les fichiers du lot : `npm test` : 0,
+  suite du plugin de 958 à 966 tests. `npm run typecheck` : 0. Build étape par
+  étape : 0 à chaque étape.
+- Mutations, dans le worktree, chacune restaurée par copie puis revue verte :
+  - cadre libre non reconnu (`placeSesEnfantsParContraintes` rend `false`) :
+    sept tests échouent, dont les enfants qui perdent `position: "absolute"` ;
+  - `warnUntokenizedFreeSize` retiré : les deux tests de la hauteur échouent ;
+  - R17 et R10 sans texte de groupe : le regroupement des racines échoue.
+- Documents : `FORMAT.md`, « Position absolue », le node sans disposition,
+  l'exception de « Dimensions et bornes » et la première puce des propriétés
+  non portables ; `AGENTS.md`, calque hors du flux et taille de maquette ;
+  `SPEC.md`, « 3. Layout » ; `TEXTES-A-VALIDER.md`, messages 9 à 13.
 - Écart ou réserve : aucun.
 
 ### Porte H : réponses reçues

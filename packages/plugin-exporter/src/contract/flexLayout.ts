@@ -274,6 +274,26 @@ export function isAbsolutePositioned(node: SceneNode): boolean {
   return asPropertyBag(node).layoutPositioning === 'ABSOLUTE';
 }
 
+/** Les conteneurs dont les enfants portent des contraintes relatives à eux. */
+const CADRES: ReadonlySet<string> = new Set(['FRAME', 'COMPONENT', 'INSTANCE']);
+
+/**
+ * Vrai si ce conteneur laisse ses enfants à leurs contraintes : un cadre, un
+ * composant ou une instance sans auto layout.
+ *
+ * Un GROUP ou une BOOLEAN_OPERATION n'a pas de contraintes : leurs enfants
+ * suivent celles du cadre englobant, et `relativeTransform` saute ces deux
+ * niveaux. Les placer par rapport à eux donnerait une distance fausse.
+ */
+export function placeSesEnfantsParContraintes(node: SceneNode): boolean {
+  return CADRES.has(node.type) && !isLinearAutoLayout(node) && !isGridAutoLayout(node);
+}
+
+/** Vrai si ce calque est placé par ses contraintes : hors du flux, ou enfant d'un cadre libre. */
+export function estPlaceParSesContraintes(parent: SceneNode, child: SceneNode): boolean {
+  return isAbsolutePositioned(child) || placeSesEnfantsParContraintes(parent);
+}
+
 /**
  * Rotation en deçà de laquelle un layer est considéré comme droit, en degrés.
  *
@@ -562,8 +582,9 @@ export function flexContainerProperties(
 /**
  * Placement d'un enfant dans le flux de son parent. `INHERIT` et `0` sont les
  * valeurs Figma neutres : elles restent absentes, le parent porte déjà la
- * règle commune. Un enfant absolu sort du flux : le contrat le place par ses
- * contraintes et son `inset`, jamais en le forçant dans Flex.
+ * règle commune. Un enfant absolu sort du flux, et un enfant de cadre sans
+ * auto layout n'en a pas : le contrat place l'un et l'autre par ses contraintes
+ * et son `inset`, jamais en le forçant dans Flex.
  */
 export function flexItemProperties(
   parent: SceneNode,
@@ -574,7 +595,7 @@ export function flexItemProperties(
   // position absolue. Un offset Figma ne se relie à aucune variable, et le
   // designer ne peut pas le rendre contractuel : le moteur calcule donc la
   // distance, comme il calcule les pixels d'une piste de grille, et se tait.
-  if (isAbsolutePositioned(child)) {
+  if (estPlaceParSesContraintes(parent, child)) {
     const constraints = layoutConstraints(child);
     const inset = absoluteInset(parent, child);
     return {

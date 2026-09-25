@@ -201,6 +201,21 @@ Une ombre hors du mode « Normal » se nomme « Drop shadow en mode de fusion
 derrière le layer ». Le style introuvable et l’écart au style n’ont pas de texte
 de groupe : ils gardent une ligne par racine.
 
+### Sans auto layout (E4)
+
+| Message | Titre | Impact | Action |
+|---|---|---|---|
+| Dimension sans variable, un layer | Layer « Badge », height : aucune variable associée. | Le contrat ne transmettra pas la hauteur de ce layer sans auto layout. | Reliez height à une variable, ou configurez un auto layout adapté au contenu, puis réexportez. |
+| Dimension sans variable, les racines | height : aucune variable associée sur des variants sans auto layout. | Le contrat ne transmettra pas la hauteur des variants concernés. | Reliez height à une variable dans chaque variant concerné, ou configurez leur taille avec un auto layout, puis réexportez. |
+| Absence d'auto layout, les racines | Variants sans auto layout. | Leurs layers ne se déplaceront pas automatiquement lorsque le contenu d’un layer voisin grandit. | Si la disposition doit s’adapter au contenu, configurez un auto layout dans chaque variant concerné, puis réexportez. |
+| Gap et padding, les racines | gap et padding : aucun auto layout configuré. | Le contrat ne transmettra aucune valeur de gap ou de padding pour ces variants. | Pour transmettre ces espacements, configurez un auto layout et reliez les valeurs de gap et de padding à des variables, puis réexportez. |
+
+Sur un layer, « il n'utilise pas d'auto layout », « il range N layers » et « il
+enveloppe » gardent leur titre et leur action, et prennent un impact nouveau
+quand les layers sont placés par leurs contraintes : « Les layers ne se
+déplaceront pas automatiquement pour laisser de la place à un texte plus long ou
+à un layer voisin plus grand. » La largeur s'écrit « width » et « la largeur ».
+
 ### Ajustements de forme
 
 - Les titres de L6 finissent par un point : la phrase compacte de
@@ -217,5 +232,5 @@ racine d'un variant, ces messages gardent une ligne par variant jusqu'au lot qui
 
 - `blend mode`, `mask`, `dash`, `fill` et `stroke` de la propriété sans champ ;
 - les autres refus d'un champ : côtés reliés à des variables différentes,
-  réglages qui se contredisent, côtés sans variable, absence d'auto layout ;
-- l'alignement d'auto layout illisible et l'auto layout absent de la racine.
+  réglages qui se contredisent, côtés sans variable ;
+- l'alignement d'auto layout illisible.

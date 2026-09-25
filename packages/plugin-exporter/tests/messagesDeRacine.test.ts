@@ -294,3 +294,62 @@ test('un gap relié à une variable ne produit rien sur les racines', async () =
 
   assert.equal(canal.filter((message) => message.includes('gap')).length, 0);
 });
+
+/** Une racine sans auto layout, figée sur ses deux axes ; `lies` dit lesquels ont leur variable. */
+const racineLibre = (nom: string, lies: Array<'width' | 'height'> = ['width', 'height']) => racine(nom, {
+  layoutMode: 'NONE',
+  layoutSizingHorizontal: 'FIXED',
+  layoutSizingVertical: 'FIXED',
+  width: 80,
+  height: 32,
+  boundVariables: Object.fromEntries(lies.map((axe) => [axe, alias(axe)])),
+});
+
+const LIBRE = { width: 'size.w', height: 'size.h' };
+
+test('trois racines sans auto layout donnent une ligne à trois cibles, disposition et espacement', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racineLibre(nom));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  for (const noeud of racines) await extractLayout(noeud, resolverFor(LIBRE), canal);
+
+  const disposition = {
+    titre: 'Variants sans auto layout.',
+    impact: 'Leurs layers ne se déplaceront pas automatiquement lorsque le contenu '
+      + 'd’un layer voisin grandit.',
+    action: 'Si la disposition doit s’adapter au contenu, configurez un auto layout dans '
+      + 'chaque variant concerné, puis réexportez.',
+  };
+  const espacement = {
+    titre: 'gap et padding : aucun auto layout configuré.',
+    impact: 'Le contrat ne transmettra aucune valeur de gap ou de padding pour ces variants.',
+    action: 'Pour transmettre ces espacements, configurez un auto layout et reliez les '
+      + 'valeurs de gap et de padding à des variables, puis réexportez.',
+  };
+  for (const attendu of [disposition, espacement]) {
+    assert.deepEqual(partiesDe(canal).get(phrase(attendu)), attendu);
+    assert.deepEqual(
+      localisationsDe(canal).get(phrase(attendu)),
+      racines.map((noeud) => noeud.id),
+    );
+  }
+  assert.equal(canal.filter((message) => message.startsWith('Layer «')).length, 0);
+});
+
+test('trois racines sans auto layout à la hauteur sans variable donnent une ligne', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racineLibre(nom, ['width']));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  for (const noeud of racines) await extractLayout(noeud, resolverFor(LIBRE), canal);
+
+  const hauteur = {
+    titre: 'height : aucune variable associée sur des variants sans auto layout.',
+    impact: 'Le contrat ne transmettra pas la hauteur des variants concernés.',
+    action: 'Reliez height à une variable dans chaque variant concerné, ou configurez leur '
+      + 'taille avec un auto layout, puis réexportez.',
+  };
+  assert.deepEqual(partiesDe(canal).get(phrase(hauteur)), hauteur);
+  assert.deepEqual(localisationsDe(canal).get(phrase(hauteur)), racines.map((noeud) => noeud.id));
+});

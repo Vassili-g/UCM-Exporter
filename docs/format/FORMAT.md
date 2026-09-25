@@ -485,9 +485,12 @@ conteneur est un auto layout linéaire ; `columns`, `rows`, `columnSizes`,
 `rowSizes`, `columnGap` et `rowGap` dès qu'il est une grille. `gap` n'est relevé
 qu'à partir de deux enfants, un conteneur qui n'en range qu'un n'espace rien.
 `padding` et `radius` sont relevés sur chaque conteneur, à la règle commune.
-Pour un node sans disposition, `layout` reste absent et un warning explique que
-la disposition interne manquera : sauf autour d'un enfant unique, où il n'y a
-rien à décrire.
+Pour un node sans disposition, `layout` reste absent. Sous un cadre, un
+composant ou une instance, ses enfants sont placés par leurs contraintes (voir
+[Position absolue](#position-absolue)), et un warning dit que leur place ne
+suivra pas leur contenu. Sous un groupe, rien ne les place, et le warning dit
+que la disposition interne manquera. Dans les deux cas, un conteneur à un seul
+enfant ne dit rien.
 
 Les parts sont nommées par la règle qui nomme déjà les slots (`label`,
 `label-2`…) : aucune heuristique sur le nom du calque, et `figmaLayer` conserve
@@ -643,6 +646,11 @@ une lecture assumée, et le réclamer avertirait sur presque tous les component
 sets, dont le cadre fixe est la norme. Une variable désignée mais introuvable
 avertit en revanche, comme partout ailleurs.
 
+Un composant sans auto layout fait exception. Ses layers sont placés par leurs
+contraintes et ne lui donnent aucune taille : `stretch` hors d'un parent
+dimensionné rendrait une boîte vide. Un axe figé sans variable y avertit donc,
+et le contrat publie toujours `stretch`.
+
 Le dimensionnement est lu sur le variant, jamais sur le wrapper de layout, et
 comparé sur toute la matrice comme le reste du flux. La comparaison porte sur
 l'identifiant de la variable, sans quoi deux variants de tailles différentes
@@ -672,6 +680,13 @@ vocabulaire CSS (`left`/`center`/`right`/`stretch`/`scale`,
 `top`/`center`/`bottom`/…), et `inset`, sa distance à ces bords. La lecture
 précède celle du flux, car une grille aussi porte des enfants en position
 absolue.
+
+Un enfant d'un cadre, d'un composant ou d'une instance sans auto layout n'a pas
+de flux : il est placé de la même façon. Un enfant de groupe ou d'opération
+booléenne ne l'est pas : ces deux types n'ont pas de contraintes, et la position
+de leurs enfants se rapporte au cadre englobant. Une contrainte `stretch` ou
+`scale` ne dispense pas un axe figé de sa variable : `size` suit la règle
+commune.
 
 Sans contrainte lisible, l'ancrage est celui de Figma, le début de chaque axe.
 
@@ -767,7 +782,8 @@ rien en silence.
 
 - `structure.layout` reste obligatoire, et `flex-row` en est le repli. Un node
   de layout sans auto layout est donc publié comme une rangée, et le warning le
-  dit. La grille n'est pas concernée : elle est décrite ;
+  dit, même quand ses layers sont placés par leurs contraintes. La grille n'est
+  pas concernée : elle est décrite ;
 - les bornes d'un calque intermédiaire, entre le composant et ses slots, n'ont
   aucun propriétaire dans le contrat ;
 - sur **chaque calque publié**, et sur lui seul, les propriétés à effet visuel

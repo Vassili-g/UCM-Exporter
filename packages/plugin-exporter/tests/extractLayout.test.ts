@@ -643,7 +643,9 @@ test('un conteneur de textes sans auto-layout n’invente pas flex-row', async (
 
   assert.equal(layout.children[0].layout, undefined);
   assert.equal(layout.children[0].gap, undefined);
-  assert.ok(warnings.some((warning) => warning.includes('Contenu') && warning.includes('disposition')));
+  // Les textes sont placés par leurs contraintes ; l'absence d'auto layout avertit toujours.
+  assert.ok(warnings.some((warning) => warning.startsWith('Layer « Contenu » : il range 2 layers')));
+  assert.deepEqual(layout.children[0].children?.map((enfant) => enfant.position), ['absolute', 'absolute']);
 });
 
 test('extractLayout relie un label masquable à la prop qui le cache', async () => {
@@ -1491,9 +1493,10 @@ test('un cadre de dépendance sans auto-layout avertit au lieu de deviner sa dis
   const slot = layout.children[0];
   assert.equal(slot.layout, undefined);
   assert.equal(slot.justifyContent, undefined);
-  // La dépendance reste dite : c'est la disposition du cadre qui manque.
+  // La dépendance reste dite, placée par ses contraintes ; sans géométrie
+  // lisible, aucune distance n'est publiée.
   assert.deepEqual(slot.children, [
-    { slot: 'button', figmaLayer: 'Button', composes: 'Button' },
+    { slot: 'button', position: 'absolute', figmaLayer: 'Button', composes: 'Button' },
   ]);
   assert.ok(warnings.some((warning) =>
     warning.includes('« Action »') && warning.includes('auto layout')));
@@ -1778,4 +1781,163 @@ test('une dépendance ramenée à 1 sous un principal atténué réclame sa vari
   );
   assert.equal(layout.children[0].opacity, undefined);
   assert.ok(warnings.some((warning) => warning.startsWith('Layer « Button », opacity :')));
+});
+
+const IMPACT_SANS_AUTO_LAYOUT = 'Les layers ne se déplaceront pas automatiquement pour '
+  + 'laisser de la place à un texte plus long ou à un layer voisin plus grand.';
+
+/** Un rectangle posé dans son cadre, à la place et sous les contraintes données. */
+function pose(nom: string, x: number, y: number, extra: Record<string, unknown> = {}) {
+  return {
+    type: 'RECTANGLE',
+    id: nom,
+    name: nom,
+    width: 20,
+    height: 10,
+    relativeTransform: [[1, 0, x], [0, 1, y]],
+    constraints: { horizontal: 'MIN', vertical: 'MIN' },
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'FIXED',
+    fills: [{ type: 'SOLID', boundVariables: { color: alias('fond') } }],
+    boundVariables: {
+      width: alias('large'),
+      height: alias('haut'),
+      fills: [alias('fond')],
+    },
+    ...extra,
+  };
+}
+
+/** Un composant auto layout qui range un seul cadre, de type et d'enfants donnés. */
+function composantAvecCadre(type: string, enfants: unknown[]): ComponentNode {
+  const cadre = {
+    type,
+    id: 'overlay',
+    name: 'Overlay',
+    width: 100,
+    height: 40,
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'FIXED',
+    boundVariables: { width: alias('large'), height: alias('haut') },
+    children: enfants,
+    findAll: findAllOn(enfants),
+  };
+  for (const enfant of enfants) (enfant as { parent?: unknown }).parent = cadre;
+  return {
+    type: 'COMPONENT',
+    id: 'root',
+    name: 'Root',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'MIN',
+    boundVariables: {},
+    children: [cadre],
+    findAll: findAllOn([cadre]),
+  } as unknown as ComponentNode;
+}
+
+const TOKENS_DU_CADRE = { fond: 'c.fond', large: 'size.w', haut: 'size.h' };
+
+test('les enfants d’un cadre sans auto layout sont placés par leurs contraintes', async () => {
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    composantAvecCadre('FRAME', [
+      pose('Mask', 0, 0),
+      pose('Circle', 70, 25, { constraints: { horizontal: 'MAX', vertical: 'MAX' } }),
+    ]),
+    resolverFor(TOKENS_DU_CADRE),
+    warnings,
+  );
+
+  const [masque, cercle] = layout.children[0].children ?? [];
+  assert.equal(masque.position, 'absolute');
+  assert.deepEqual(masque.constraints, { horizontal: 'left', vertical: 'top' });
+  assert.deepEqual(masque.inset, { top: '0px', left: '0px' });
+  assert.equal(cercle.position, 'absolute');
+  assert.deepEqual(cercle.inset, { bottom: '5px', right: '10px' });
+  // L'avertissement reste, avec l'impact d'une disposition désormais publiée.
+  assert.ok(warnings.includes(
+    'Layer « Overlay » : il range 2 layers mais n\'utilise pas d\'auto layout. '
+      + `${IMPACT_SANS_AUTO_LAYOUT} Appliquez un auto layout à ce layer, puis réexportez.`,
+  ), warnings.join('\n'));
+});
+
+test('un enfant de cadre libre en STRETCH réclame toujours la variable de son axe figé', async () => {
+  const warnings: string[] = [];
+  await extractLayout(
+    composantAvecCadre('FRAME', [
+      pose('Mask', 0, 0, {
+        constraints: { horizontal: 'STRETCH', vertical: 'MIN' },
+        boundVariables: { height: alias('haut'), fills: [alias('fond')] },
+      }),
+      pose('Circle', 70, 25),
+    ]),
+    resolverFor(TOKENS_DU_CADRE),
+    warnings,
+  );
+  assert.ok(warnings.some((warning) => warning.startsWith('Layer « Mask », width')), warnings.join('\n'));
+});
+
+test('sous un GROUP, les enfants ne sont pas placés et l’impact ne change pas', async () => {
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    composantAvecCadre('GROUP', [pose('Mask', 0, 0), pose('Circle', 70, 25)]),
+    resolverFor(TOKENS_DU_CADRE),
+    warnings,
+  );
+
+  for (const enfant of layout.children[0].children ?? []) {
+    assert.equal(enfant.position, undefined);
+    assert.equal(enfant.inset, undefined);
+  }
+  assert.ok(
+    warnings.some((warning) => warning.includes('il range 2 layers')
+      && warning.includes('Le contrat ne décrit pas leur disposition')),
+    warnings.join('\n'),
+  );
+});
+
+/** Un composant sans auto layout, figé sur ses deux axes, lié ou non. */
+function badge(liaisons: Record<string, VariableAlias>): ComponentNode {
+  return {
+    type: 'COMPONENT',
+    id: 'badge',
+    name: 'Badge',
+    layoutMode: 'NONE',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'FIXED',
+    width: 24,
+    height: 24,
+    boundVariables: liaisons,
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+}
+
+test('un composant sans auto layout avertit de sa hauteur sans variable, à côté de son auto layout', async () => {
+  const warnings: string[] = [];
+  await extractLayout(badge({ width: alias('large') }), resolverFor(TOKENS_DU_CADRE), warnings);
+
+  assert.ok(warnings.includes(
+    'Layer « Badge », height : aucune variable associée. '
+      + 'Le contrat ne transmettra pas la hauteur de ce layer sans auto layout. '
+      + 'Reliez height à une variable, ou configurez un auto layout adapté au contenu, puis '
+      + 'réexportez.',
+  ), warnings.join('\n'));
+  assert.equal(warnings.some((warning) => warning.startsWith('Layer « Badge », width')), false);
+  assert.ok(warnings.includes(
+    'Layer « Badge » : il n\'utilise pas d\'auto layout. '
+      + `${IMPACT_SANS_AUTO_LAYOUT} Appliquez un auto layout à ce layer, puis réexportez.`,
+  ), warnings.join('\n'));
+});
+
+test('un composant sans auto layout aux deux dimensions liées ne réclame aucune variable', async () => {
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    badge({ width: alias('large'), height: alias('haut') }),
+    resolverFor(TOKENS_DU_CADRE),
+    warnings,
+  );
+  assert.deepEqual(layout.sizing, { width: '{size.w}', height: '{size.h}' });
+  assert.equal(warnings.some((warning) => warning.includes('aucune variable associée')), false);
 });

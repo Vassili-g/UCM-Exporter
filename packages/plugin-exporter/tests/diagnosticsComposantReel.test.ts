@@ -321,7 +321,7 @@ const FAMILLES = {
   opaciteSansVariable: /^Layer « Overlay », opacity : aucune variable associée\./,
   opaciteDesVariants: /^opacity : aucune variable associée\. Le contrat ne transmettra pas l'opacité des variants/,
   couleurDOmbre: /^Effect style « Shadow\/Focus », color : aucune variable associée\./,
-  cadreSansAutoLayout: /^Layer « Overlay » : il range 2 layers/,
+  cadreSansAutoLayout: /^Layer « Overlay » : il range 2 layers mais n'utilise pas d'auto layout\. Les layers ne se déplaceront pas automatiquement/,
   dimensionSousContrainte: /^Layer « (Mask|Circle) », (width|height) :/,
   resteDuCalqueAbsolu: /^Layer « (Mask », mask|Circle », corner radius|Overlay », width|Overlay », height) :/,
   horsDuNodeElu: /n’est pas à l’intérieur de/,
@@ -417,6 +417,18 @@ test('l’ombre des racines se publie par son effect style, et sa couleur sans v
   });
   const usages = Object.values(contrat.viewEffects as Record<string, unknown[]>);
   assert.deepEqual(usages, [[{ slotPath: [], style: 'shadow.focus' }]]);
+});
+
+test('le cadre sans auto layout place ses layers et avertit toujours, une fois', async () => {
+  const { contrat, comptes } = await exporterLeScenario();
+  const overlay = Object.values(contrat.viewStructures as Record<string, {
+    children?: Array<{ figmaLayer?: string; children?: Array<{ position?: string }> }>;
+  }>).flatMap((vue) => vue.children ?? []).find((enfant) => enfant.figmaLayer === 'Overlay');
+
+  assert.equal(comptes.cadreSansAutoLayout, 1);
+  // Une contrainte ne dispense pas un axe figé de sa variable.
+  assert.equal(comptes.dimensionSousContrainte, 4);
+  assert.deepEqual(overlay?.children?.map((enfant) => enfant.position), ['absolute', 'absolute']);
 });
 
 test('l’opacité sans variable dit une ligne pour le calque et une pour les variants', async () => {

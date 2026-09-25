@@ -601,7 +601,10 @@ La spécification en lien porte le raisonnement.
   contractuel, une variable liée l’est toujours, sauf là où Figma ne permet pas
   de lier. Ces exceptions sont énumérées : les pistes et cellules d’une
   grille, et la place d’un calque hors du flux. Toutes publient en pixels sous
-  une notice, sans devenir des tokens et sans dégrader la couverture.
+  une notice, sans devenir des tokens et sans dégrader la couverture. Un
+  composant sans auto layout fait exception à la taille de maquette : ses
+  layers ne lui donnent aucune taille, et un axe figé sans variable y avertit
+  tout en publiant `stretch` (`warnUntokenizedFreeSize`, `extractLayout.ts`).
   → [spec](./docs/format/FORMAT.md#dimensions-et-bornes)
 - Un tracé n’est pas une boîte : sur un `VECTOR`, `BOOLEAN_OPERATION`, `STAR` ou
   `POLYGON`, la dimension est le dessin, et le contrat ne lui réclame aucune
@@ -612,7 +615,11 @@ La spécification en lien porte le raisonnement.
   s’accroche, `inset` à quelle distance, en pixels et avec une seule
   signification par clé : les côtés publiés sont ceux de l’accroche, les deux
   d’un axe sous `stretch`, `center` et `scale`. Le calcul passe par le centre.
-  Rien n’est publié quand la géométrie manque.
+  Rien n’est publié quand la géométrie manque. Un enfant d’un cadre, d’un
+  composant ou d’une instance sans auto layout est placé de la même façon ;
+  un enfant de groupe ne l’est pas. `estPlaceParSesContraintes`
+  (`flexLayout.ts`) en est l’unique autorité, et une contrainte ne dispense
+  aucun axe figé de sa variable.
   → [spec](./docs/format/FORMAT.md#position-absolue)
 - La `rotation` d’un calque publié est écrite, en convention CSS, absente sous
   le centième de degré. `flexLayout.rotationDegrees` en est l’unique autorité.

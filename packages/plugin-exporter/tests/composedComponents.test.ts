@@ -362,10 +362,11 @@ test('un slot qui enveloppe une dépendance reprend aussi sa visibilité', async
   assert.equal(slot?.visibilityProp, 'action');
   assert.equal(slot?.optional, true);
   // Le cadre est un conteneur de ce contrat : la dépendance est en dessous, et
-  // la visibilité reste sur le slot, seule condition d'affichage.
+  // la visibilité reste sur le slot, seule condition d'affichage. Le cadre n'a
+  // pas d'auto layout : la dépendance y est placée par ses contraintes.
   assert.equal(slot?.composes, undefined);
   assert.deepEqual(slot?.children, [
-    { slot: 'button', figmaLayer: 'Button', composes: 'Button' },
+    { slot: 'button', position: 'absolute', figmaLayer: 'Button', composes: 'Button' },
   ]);
   assert.equal(warnings.some((warning) => warning.includes('action-size')), false);
 });

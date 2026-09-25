@@ -417,6 +417,15 @@ async function resolveGroup<K extends string>(
     // Volontairement sans `label` : les trois appels (gap, padding X, padding Y)
     // produisent le même texte et la déduplication n'en garde qu'un. Le geste à
     // faire est le même pour les trois.
+    if (estUneRacineDeVariant(warnings, node)) {
+      pousserPourLesVariants(warnings, node, {
+        titre: 'gap et padding : aucun auto layout configuré.',
+        impact: 'Le contrat ne transmettra aucune valeur de gap ou de padding pour ces variants.',
+        action: 'Pour transmettre ces espacements, configurez un auto layout et reliez les '
+          + 'valeurs de gap et de padding à des variables, puis réexportez.',
+      });
+      return null;
+    }
     pousserLocalise(warnings, 'Layer', node, {
       manque: `il n'utilise pas d'auto layout, donc Figma ne lui applique ni gap ni padding.`,
       impact: `Le contrat ne publie aucun espacement pour ce layer, ce qui ne veut pas dire zéro.`,

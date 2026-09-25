@@ -1,9 +1,9 @@
 # Plan d'évolution du moteur : propriétés visuelles et messages de racine
 
-> Statut : en cours. E0, E5, E1, E2 et E3 sont faits, H0, H1 et H2
+> Statut : en cours. E0 à E5 sont faits, H0, H1 et H2
 > franchies ; leurs preuves, décisions et textes retenus sont dans
 > [PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md), qui fait foi
-> sur la section 9. Le prochain lot est E4. Ce plan réunit deux sujets qui
+> sur la section 9. Le prochain lot est E6. Ce plan réunit deux sujets qui
 > touchent les mêmes sites du moteur. Le premier exécute les décisions de H3
 > ([DECISION-PROPRIETES-VISUELLES.md](./DECISION-PROPRIETES-VISUELLES.md)) et
 > fait passer le contrat en 14.0. Le second étend le regroupement des messages
@@ -437,7 +437,7 @@ première action sans preuve.
 ## 7. Lots
 
 Ordre : E0 (fait), E5 (fait), H0 et H2 (franchies), E1 (fait), porte H1
-(franchie), E2 (fait), E3 (fait), E4, E6, E7, E8, E9, E10.
+(franchie), E2, E3 et E4 (faits), E6, E7, E8, E9, E10.
 
 E1 n'attend plus rien : il ne dépend d'aucun texte de H1. La porte H1 vient
 après lui ; l'agent y présente la section 9 et s'arrête.
@@ -685,7 +685,7 @@ avertissements d'absence d'auto layout restent tous (R10, R17, « il range N
 layers », « il enveloppe X »), et une contrainte ne dispense aucun axe figé de
 sa variable.
 
-- [ ] Tests : sous un cadre sans auto layout, deux enfants publient
+- [x] Tests : sous un cadre sans auto layout, deux enfants publient
       `position: "absolute"`, `constraints` et `inset`, et le cadre garde
       « il range 2 layers » avec l'impact retenu en 9.1.7 ; un enfant en
       `STRETCH` horizontal et en taille fixe sans variable réclame toujours sa
@@ -694,26 +694,26 @@ sa variable.
       à côté de R17 ; le même composant aux deux dimensions liées ne produit
       pas 9.1.6 ; trois racines sans auto layout donnent une ligne à trois
       cibles pour R17 et pour R10.
-- [ ] `flexLayout.ts` : une fonction qui dit si un enfant est placé par ses
+- [x] `flexLayout.ts` : une fonction qui dit si un enfant est placé par ses
       contraintes, absolu ou enfant d'un cadre, d'un composant ou d'une
       instance sans auto layout ; `flexItemProperties` l'emploie à la place du
       seul test `isAbsolutePositioned`. `menuDeDimensionnement` ne change
       pas.
-- [ ] `extractLayout.ts` : le texte 9.1.6 part de la résolution de
+- [x] `extractLayout.ts` : le texte 9.1.6 part de la résolution de
       `structure.sizing` (F15) : un axe figé sans token d'un composant sans
       auto layout. R17 et « il range N layers » prennent l'impact retenu en
       9.1.7, et R17 son texte de groupe par `estUneRacineDeVariant`.
-- [ ] `nodeBindings.ts` : R10 prend son texte de groupe (9.1.7) par
+- [x] `nodeBindings.ts` : R10 prend son texte de groupe (9.1.7) par
       `estUneRacineDeVariant`, dans la branche `no-auto-layout` de
       `resolveGroup`. Ce site sert `extractLayout` et `extractSizes` (F14).
-- [ ] `FORMAT.md` : « Position absolue », le paragraphe de « 6. Structure »
+- [x] `FORMAT.md` : « Position absolue », le paragraphe de « 6. Structure »
       sur un node sans disposition, la première puce de « Propriétés non
       portables ». `AGENTS.md` : les invariants du calque hors du flux et de la
       taille de maquette ; celui du repli `flex-row` ne change pas. `SPEC.md` :
       « 3. Layout ».
-- [ ] Scénario : `cadreSansAutoLayout` compte toujours une ligne, au texte
+- [x] Scénario : `cadreSansAutoLayout` compte toujours une ligne, au texte
       de 9.1.7 ; `dimensionSousContrainte` garde ses quatre lignes.
-- [ ] Mutation : rendre `false` pour un cadre sans auto layout dans la
+- [x] Mutation : rendre `false` pour un cadre sans auto layout dans la
       nouvelle fonction, constater que les enfants perdent
       `position: "absolute"`.
 

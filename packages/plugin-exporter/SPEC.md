@@ -181,6 +181,16 @@ exclus. Ce sont les formes dont le type ne dit rien de l'usage (une surface, un
 liseré, un séparateur dont la hauteur est une vraie décision) et la règle « le
 type du node ne tranche pas » les vise nommément.
 
+**Cadre sans auto layout.** Ses enfants sont placés par leurs contraintes,
+comme un calque absolu. Le moteur garde pourtant ses trois avertissements :
+« il n'utilise pas d'auto layout » sur le node de layout, « il range N layers »
+ou « il enveloppe » sur un conteneur publié, et « ni gap ni padding ». Leur
+impact dit que la place publiée ne suit pas le contenu ; le designer décide si
+elle doit le suivre. Sur les racines de variants, l'absence d'auto layout et
+« ni gap ni padding » s'écrivent une fois. `menuDeDimensionnement` ne change
+pas : une contrainte `STRETCH` ou `SCALE` ne dispense pas un axe figé de sa
+variable.
+
 **Applicabilité avant liaison.** Un gap et des paddings n'existent que sous un
 auto-layout, et une liaison de variable survit à sa désactivation. L'exporteur
 tranche donc l'applicabilité **avant** de regarder les liaisons, sans quoi un
