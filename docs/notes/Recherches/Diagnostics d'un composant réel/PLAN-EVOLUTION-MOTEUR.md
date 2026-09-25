@@ -7,14 +7,15 @@
 > de racine (L6 du [plan précédent](./PLAN-DIAGNOSTICS-COMPOSANT-REEL.md)) aux
 > messages que le mainteneur n'a pas encore validés. Les faits de la section 2
 > ont été relus dans le code et dans `@figma/plugin-typings` 1.138.0 ; cinq
-> comportements de Figma restent à mesurer (porte H0). Aucune relecture
-> indépendante n'a eu lieu : le mainteneur l'a différée.
+> comportements de Figma restent à mesurer (porte H0). Une relecture critique
+> a remesuré chaque fait et corrigé le plan ; la section 11 dit ce qu'elle a
+> changé.
 
 ## Instruction donnée à l'agent
 
 Exécuter les lots dans l'ordre de la section 7. Après une interruption,
-reprendre depuis le journal de preuves (section 6). Ne rendre la main qu'aux
-portes H0, H1 et H2, sur un contrôle de référence rouge, sur une modification
+reprendre depuis le journal de preuves (section 6). Ne rendre la main qu'à la
+porte H, qui présente H0, H1 et H2 ensemble, sur un contrôle de référence rouge, sur une modification
 étrangère qui recouvre un fichier visé, ou quand le code contredit un fait de la
 section 2. Dans ce dernier cas, le journal consigne le fait, la mesure qui le
 contredit et le lot arrêté.
@@ -143,6 +144,11 @@ numéro de ligne, sans lien : le dossier n'est pas suivi par Git.
   padding » quand `extractLayout` sonde le gap et le padding du node de layout
   sans tester sa disposition (lignes 667 à 681, message en
   [nodeBindings.ts:372](../../../../packages/plugin-exporter/src/contract/nodeBindings.ts)).
+  `extractDimensions` sonde les mêmes champs sur le node de layout de chaque
+  représentant de taille ([extractSizes.ts:63](../../../../packages/plugin-exporter/src/contract/extractSizes.ts)),
+  par `resolveField` et `resolveSidedField` : les deux passent par la branche
+  `no-auto-layout` de `resolveGroup`, et un garde posé dans `extractLayout`
+  seul laisserait sortir ce message.
 - **F15. Un cadre libre qui sert de node de layout n'a pas de taille dans le
   contrat.** Son menu lit `FIXED` (F7), que `containerSizing` publie en
   `stretch` sans avertir ([flexLayout.ts:468](../../../../packages/plugin-exporter/src/contract/flexLayout.ts),
@@ -150,6 +156,14 @@ numéro de ligne, sans lien : le dossier n'est pas suivi par Git.
   Tant que ses enfants restent dans un flux de repli, leur contenu lui donne
   une hauteur. Placés en absolu, ils ne lui en donnent plus : un consommateur
   qui écrit `height: stretch` hors d'un parent dimensionné rend une boîte vide.
+  `structure.sizing` se lit sur le composant, jamais sur le node de layout
+  (`resolveContainerSizing(component)`,
+  [extractLayout.ts:688](../../../../packages/plugin-exporter/src/contract/extractLayout.ts)).
+  Les vues exactes passent le composant comme node de layout
+  ([extractStructure.ts:257](../../../../packages/plugin-exporter/src/contract/extractStructure.ts)) ;
+  seule la projection de référence peut élire un wrapper, dont aucun champ ne
+  porte la taille. Un cadre libre enfant, lui, réclame déjà sa dimension
+  `FIXED` par `resolveSlotSize` : le scénario le montre sur `Overlay`.
 - **F16. `menuDeDimensionnement` est l'unique lecture du menu d'un enfant**
   ([flexLayout.ts:438](../../../../packages/plugin-exporter/src/contract/flexLayout.ts)).
   Un enfant absolu et un enfant de cadre libre y lisent le menu seul : un axe
@@ -273,17 +287,20 @@ Les textes actuels complets figurent en section 9.2, en tête de chaque message.
 |---|---|---|
 | Figma porte quatre types d'effets. | Sept familles, et le flou progressif (F1). | E3 ne publie que l'ombre portée, l'ombre intérieure et les deux flous en `NORMAL`. Les autres gardent un avertissement, porté par le style (texte en 9.1). |
 | Les champs de l'effet sont liés à des variables (`boundVariables.effects`). | La liste du style et du calque n'a pas de champ ; la liaison par champ se lit sur chaque effet (F2, F3). | E3 lit `style.effects[i].boundVariables`, comme la typographie lit le style et jamais le calque. |
-| Un calque cite son style dans sa vue exacte. | `effectStyleId` existe, vide sans style (F4). Le détachement n'est pas documenté. | Mesure M2 à H0. E3 compare en plus les effets du calque à ceux du style et avertit d'un écart, quel que soit le résultat de M2. |
+| Un calque cite son style dans sa vue exacte. | `effectStyleId` existe, vide sans style (F4). Le détachement n'est pas documenté. | Mesure M2 à H0. E3 compare les effets du calque à ceux du style seulement si M2 montre que l'identifiant survit à une modification. |
 | Une ombre portée s'ajoute après le `border`, dans l'ordre des effets Figma. | Les typings ne disent pas quel effet de la liste Figma peint au-dessus. | Mesure M3 à H0 ; l'aide `ombre` écrit l'ordre mesuré. |
 | `tokens.json` ne change pas : une variable `FLOAT` s'y écrit déjà en `number`. | Faux sans scope `OPACITY` ni nom reconnu : la variable sort en `px` (F17). L'échelle de la valeur n'est pas documentée (F5). | Mesure M1 à H0, décision de H2 sur l'échelle publiée. Le type DTCG reste hors de ce plan (section 4). |
 | Cadre libre, forme A : le schéma ne change pas, et le calcul par le centre vaut tel quel. | Vrai pour un cadre, un composant et une instance. Faux sous un GROUP ou une `BOOLEAN_OPERATION` (F6). | E4 ne place que les enfants d'un parent qui a des `constraints` ; un groupe garde son avertissement. |
 | Cadre libre : classe 1. | Les champs sont connus d'un lecteur 13.0. L'absence de `size` sur un axe en `stretch` ou `scale` change de sens : elle valait `Hug`. | L'entrée 14.0 classe ce point en classe 4. |
-| Le repli `flex-row` ne s'avertit plus que si le cadre range des enfants que rien ne place. | Tous les enfants d'un cadre sont placés. Le cadre, lui, perd sa taille (F15). | Les messages R10 et R17 cèdent la place à un seul : une dimension figée sans token sur un node de layout sans auto layout (texte en 9.1). |
+| Le repli `flex-row` ne s'avertit plus que si le cadre range des enfants que rien ne place. | Tous les enfants d'un cadre sont placés. Le cadre, lui, perd sa taille (F15). | R10 disparaît. Sur le composant, R17 cède la place à une dimension figée sans token (texte en 9.1.6). Un wrapper élu sans auto layout garde R17 : aucun champ ne porte sa taille (F15). |
 
 ## 4. Décisions prises et hors périmètre
 
 - Aucune loi existante ne se relâche pour faire passer un lot. Un conflit avec
-  un invariant d'`AGENTS.md` arrête le lot.
+  un invariant d'`AGENTS.md` arrête le lot. E4 réécrit deux invariants, et
+  n'avance qu'avec l'accord de H2 sur chacun : la taille de maquette, qui cesse
+  de valoir sur un axe figé d'un composant sans auto layout, et le repli
+  `flex-row`, qui ne se signale plus quand tous les enfants sont placés.
 - Les tests construisent des arbres synthétiques à noms neutres (`Root`,
   `Card`, `Overlay`, `Badge`). Aucun test ne cite un nom du composant réel.
 - Un comportement mesuré à H0 s'encode dans le faux node du test et dans un
@@ -294,9 +311,14 @@ Les textes actuels complets figurent en section 9.2, en tête de chaque message.
 - La règle de E4 vaut pour tout calque placé par ses contraintes, enfant absolu
   d'un auto layout compris : les deux passent par la même lecture (F16), et le
   mainteneur la confirme à H2.
-- Un effet ou une opacité posés sur une dépendance appartiennent au calque de
-  l'instance ; le moteur ne les publie pas plus qu'aujourd'hui, et ne s'en
-  plaint pas plus.
+- Un effet posé sur une dépendance n'est ni publié ni averti, comme
+  aujourd'hui. L'opacité d'une dépendance attend H2 : H3 a décidé un champ « sur
+  le composant et sur chaque slot », et une dépendance est un slot. Un variant
+  `Disabled` qui atténue l'instance d'une icône perd aujourd'hui cette opacité
+  sans message. La règle proposée publie `opacity` sur l'entrée de la
+  dépendance quand l'opacité de l'instance diffère de celle de son composant
+  principal ; l'égalité ne publie rien, pour ne pas appliquer deux fois
+  l'opacité propre à la dépendance.
 - Hors périmètre : la publication npm, le masque, le token DTCG `shadow` et le
   type d'un token d'opacité dans `tokens.json` (classe 10), les enfants d'un
   groupe, le flou progressif, les captures de galerie, la cible de R26.
@@ -409,7 +431,11 @@ première action sans preuve.
 
 ## 7. Lots
 
-Ordre : E0, H0, H1, H2, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10.
+Ordre : E0, E5, porte H (H0, H1 et H2), E1, E2, E3, E4, E6, E7, E8, E9, E10.
+
+E5 n'attend aucune porte et ne touche pas au kit : il passe avant la porte H.
+Les trois portes se présentent ensemble, en un seul arrêt. Les choix de H2 qui
+dépendent d'une mesure s'écrivent sous condition (« si M1 lit 0 à 100 »).
 
 ### E0 : référence
 
@@ -418,9 +444,18 @@ Fichiers autorisés : le journal ;
 
 - [ ] Relever la branche, `HEAD` et l'état ; passer `npm test`,
       `npm run typecheck`, `npm run build`.
-- [ ] Ajouter au scénario une racine en `Disabled` d'opacité 0,5 sans variable,
-      et un cadre sans auto layout de deux enfants, l'un en `STRETCH`, l'autre
-      en `MIN`, sous le wrapper.
+- [ ] Ajouter au scénario une racine `State=Disabled` d'opacité 0,5 sans
+      variable. Deux attendus existants changent avec elle : la borne sans
+      variable vise quatre racines au lieu de trois, et le point de l'imbriqué
+      sans règles huit instances au lieu de six.
+- [ ] Scinder la famille `calqueAbsolu`, qui réunit des messages de trois
+      lots : l'opacité de `Overlay` (E2), « il range 2 layers » sur `Overlay`
+      (E4), les dimensions de `Mask` et `Circle` sous contrainte `SCALE` (E4),
+      et ce qui reste après ces lots (le mask, le rayon de `Circle`, les
+      dimensions de `Overlay` en `MIN`). Ajouter la famille de l'opacité d'une
+      racine (E2). Aucun cadre n'est ajouté pour E4 : `Overlay` est déjà une
+      instance sans auto layout dont les deux enfants sont en `SCALE`. Le cas
+      `STRETCH` contre `MIN` relève des tests unitaires de E4.
 - [ ] Consigner les lignes par famille. Ces nombres sont les attendus rouges
       des lots suivants.
 
@@ -461,7 +496,9 @@ puis s'arrête. Le mainteneur valide en particulier :
 - l'échelle de `opacity`, d'après M1 : la valeur du token s'écrit telle
   quelle en CSS, ou l'aide `opacite` dit de la diviser par 100 ;
 - l'extension de la règle de E4 aux enfants absolus d'un auto layout ;
-- le nom du sixième renvoi, `effects`.
+- le nom du sixième renvoi, `effects` ;
+- les deux invariants que E4 réécrit (section 4) ;
+- l'opacité d'une dépendance, et la règle proposée en section 4.
 
 ### E1 : le kit connaît la 14.0
 
@@ -527,21 +564,28 @@ Faits : F5, F9, F17. Attend E1 et H1 (texte 9.1.1). Tests :
 
 - [ ] Tests : un calque d'opacité 0,3 liée publie `opacity` avec sa référence ;
       d'opacité 1 sans liaison ne publie rien et ne dit rien ; d'opacité 0,3
-      sans liaison publie rien et produit le texte retenu à H1 ; trois racines
-      d'opacité 0,5 sans liaison donnent une ligne à trois cibles. Le test de
-      `messagesDeRacine.test.ts` qui exige une ligne par racine pour
-      l'opacité change d'attendu dans ce commit.
+      sans liaison ne publie rien et produit le texte retenu à H1 ; trois
+      racines d'opacité 0,5 sans liaison donnent une ligne à trois cibles ; un
+      composant doté d'un axe de tailles publie son opacité.
+- [ ] `messagesDeRacine.test.ts` : le test « une propriété dont le texte n'est
+      pas validé garde une ligne par racine » prend l'opacité comme exemple.
+      Il passe au blend mode dans ce commit, pour garder ce qu'il prouve ; E6
+      le supprime.
 - [ ] `nodeBindings.ts` : `BINDING_PATTERNS.opacity`, `FIELD_LABELS.opacity`,
       `IMPLICIT_DEFAULTS.opacity = 1`. La résolution passe par `resolveField`,
       donc par le texte de groupe du champ sans variable, sauf si H1 retient un
       texte propre.
 - [ ] `extractLayout.ts` : `opacity` sur le node de layout et dans
-      `describeNode`, après la sortie des dépendances.
+      `describeNode`, après la sortie des dépendances. L'opacité se résout hors
+      de `publishDimensions`, qui vaut `false` sous un axe de tailles : sinon
+      elle disparaît de ces composants. L'entrée d'une dépendance suit la
+      décision de H2.
 - [ ] `unsupportedProperties.ts` : retirer l'opacité du relevé.
 - [ ] `FORMAT.md` : `opacity` dans « 6. Structure » et hors de « Propriétés non
       portables » ; `AGENTS.md`, invariant des propriétés à effet visuel ;
-      `SPEC.md`, section du relevé. Scénario : la famille `opacity` passe dans
-      les familles corrigées.
+      `SPEC.md`, section du relevé. Scénario : les deux familles d'opacité
+      posées en E0 passent dans les familles corrigées ; les textes retenus à
+      H1, sur un calque et sur les racines, forment deux familles nouvelles.
 - [ ] Mutation : retirer `opacity` de `IMPLICIT_DEFAULTS`, constater
       l'avertissement sur un calque opaque.
 
@@ -561,11 +605,21 @@ Faits : F1 à F4, F10 à F12. Attend E1, H0 (M2, M3) et H1 (textes 9.1.2 à
       `extractVariantTypography.ts` : chargeur injectable et mis en cache par
       identifiant, liaisons lues sur `style.effects[i]`, traduction en
       vocabulaire CSS dans l'ordre mesuré à M3, texte de H1 pour un calque sans
-      style, un style introuvable, un champ sans variable, un effet que le
-      moteur n'écrit pas, et un calque dont les effets diffèrent de son style.
+      style, un style introuvable, un champ sans variable et un effet que le
+      moteur n'écrit pas. Un style chargé dont `type` n'est pas `EFFECT` compte
+      comme introuvable.
+- [ ] L'écart entre les effets d'un calque et ceux de son style (9.1.3) ne
+      s'écrit que si M2 montre que `effectStyleId` survit à la modification
+      d'un effet. Si Figma détache le style, aucun calque ne porte d'écart, et
+      le comparateur serait du code qu'aucun cas réel n'atteint.
+- [ ] Scénario : le faux `getStyleByIdAsync` rend aujourd'hui le même text
+      style pour tout identifiant, `S:ombre` compris. Il répond désormais par
+      identifiant, avec un effect style pour `S:ombre`.
 - [ ] `extractLayout.ts` : un collecteur de calques à effets, rempli là où
       `warnUnsupportedProperties` est appelé, donc sur les seuls calques
-      publiés (F12). `extractStructure.ts` en tire les usages de chaque vue
+      publiés (F12). `extractLayout` sert aussi la projection de référence :
+      seuls les appels des vues exactes reçoivent le collecteur, comme
+      `exactPaths`. `extractStructure.ts` en tire les usages de chaque vue
       exacte.
 - [ ] `compactVariants.ts` : la partie `effects`, cataloguée en `viewEffects`.
       `packages/plugin-exporter/tests/lois.ts` : chaque usage désigne un calque
@@ -584,29 +638,37 @@ Faits : F1 à F4, F10 à F12. Attend E1, H0 (M2, M3) et H1 (textes 9.1.2 à
 
 ### E4 : les enfants d'un cadre libre sont placés
 
-Faits : F6, F7, F13 à F16. Attend E1 et H1 (texte 9.1.6). Tests :
-`extractLayout.test.ts`, `layoutSilences.test.ts`, `nodeBindings.test.ts`,
+Faits : F6, F7, F13 à F16. Attend E1, H1 (texte 9.1.6) et H2 (les deux
+invariants de la section 4). Tests : `extractLayout.test.ts`,
+`layoutSilences.test.ts`, `nodeBindings.test.ts`, `extractSizes.test.ts`,
 `messagesDeRacine.test.ts`, le scénario.
 
 - [ ] Tests : sous un cadre sans auto layout, deux enfants publient
       `position: "absolute"`, `constraints` et `inset`, et aucun message
       « il range N layers » ; un enfant en `STRETCH` horizontal et en taille
       fixe sans variable ne réclame rien sur cet axe, et sa largeur fixe en `MIN`
-      réclame toujours sa variable ; sous un GROUP, rien ne change ; un node de
-      layout sans auto layout dont la hauteur n'a pas de variable produit le
-      texte de H1, et plus R10 ni R17 ; le même node aux deux dimensions liées
-      ne dit rien.
+      réclame toujours sa variable ; sous un GROUP, rien ne change ; un
+      composant sans auto layout dont la hauteur n'a pas de variable produit le
+      texte de H1, et plus R10 ni R17 ; le même composant aux deux dimensions
+      liées ne dit rien ; un composant sans auto layout doté d'un axe de
+      tailles ne produit plus R10 ; un wrapper élu sans auto layout garde R17.
 - [ ] `flexLayout.ts` : une fonction qui dit si un enfant est placé par ses
       contraintes, absolu ou enfant d'un cadre, d'un composant ou d'une
       instance sans auto layout ; `flexItemProperties` l'emploie à la place du
       seul test `isAbsolutePositioned`. `menuDeDimensionnement` lit `FILL`
-      sur un axe en `STRETCH` ou `SCALE` d'un tel enfant, avec la raison en
-      commentaire.
+      sur un axe `FIXED` en `STRETCH` ou `SCALE` d'un tel enfant, avec la
+      raison en commentaire ; un axe `HUG` reste `HUG`. La lecture sert aussi
+      `extractIconLayers` et `gridStructuralSize` : leurs tests passent sans
+      attendu changé.
+- [ ] `nodeBindings.ts` : la branche `no-auto-layout` de `resolveGroup` rend
+      `null` sans message, comme `no-grid` et `no-wrap` pour une liaison que
+      Figma n'applique pas. Ce seul site couvre `extractLayout` et
+      `extractSizes` (F14) ; le texte R10 disparaît.
 - [ ] `extractLayout.ts` : les deux messages de F14 sur un conteneur ne
-      restent que pour un parent sans contraintes ; `extractLayout` ne sonde
-      gap et padding que sous un auto layout ; `warnMissingDirection` cède la
-      place au texte de H1. Chercher par `grep` les appelants restants de la
-      branche `no-auto-layout` de `resolveGroup` avant d'y toucher.
+      restent que pour un parent sans contraintes. Le texte de H1 part de la
+      résolution de `structure.sizing` (F15) : un axe figé sans token d'un
+      composant sans auto layout. `warnMissingDirection` se tait quand le node
+      de layout est le composant, et garde R17 sur un wrapper élu.
 - [ ] `FORMAT.md` : « Position absolue », « Flux et alignement », « Dimensions
       et bornes », le paragraphe de « 6. Structure » sur un node sans
       disposition, la première puce de « Propriétés non portables ».
@@ -619,12 +681,14 @@ Faits : F6, F7, F13 à F16. Attend E1 et H1 (texte 9.1.6). Tests :
 ### E5 : les peintures d'une racine se regroupent
 
 Faits : F25, F26. Aucune porte : le texte du champ sans variable est déjà
-retenu. Tests : `messagesDeRacine.test.ts`.
+retenu. Passe juste après E0. Tests : `messagesDeRacine.test.ts`.
 
 - [ ] Test : trois racines au stroke weight fixe sans variable donnent une
-      ligne à trois cibles. Le voir rouge : trois lignes aujourd'hui.
+      ligne à trois cibles. Le voir rouge : trois lignes aujourd'hui. Un
+      composant seul garde son nom de calque.
 - [ ] Déclarer les racines sur chaque `variantWarnings` avant `getSlotTokens`,
-      par `declarerLesRacinesDeVariants`, sans nouvelle API.
+      par `declarerLesRacinesDeVariants`, sans nouvelle API, à la condition
+      d'`extractStructure` : un set de plus d'un variant.
 - [ ] Mutation : retirer la déclaration, constater trois lignes.
 
 ### E6 à E9 : les textes de groupe validés
@@ -657,6 +721,11 @@ Pour chaque lot :
 - [ ] `TEXTES-A-VALIDER.md` : textes retenus ajoutés, « Reste à valider »
       réduit.
 
+E6 supprime aussi le test de `messagesDeRacine.test.ts` qui garde une ligne
+par racine pour une propriété non validée : après E6, le relevé n'en compte
+plus. Le test « sans déclaration, chaque racine garde son message et son nom »
+couvre toujours le mécanisme.
+
 E9 met aussi à jour l'état `resultat-avertissement-regroupe` de
 `packages/plugin-exporter/galerie/etats.cjs` : une carte de fill sans token
 s'ajoute aux trois, et `regarder` le dit.
@@ -672,7 +741,8 @@ s'ajoute aux trois, et `regarder` le dit.
 - [ ] Écrire dans le journal la liste attendue sur le composant réel : l'ombre
       publiée, l'opacité du calque d'onde avertie une fois si elle reste sans
       variable, le masque averti, ses rectangles placés sans réclamer de
-      dimension.
+      dimension. Un rayon sans variable sur ces rectangles avertit toujours :
+      aucun lot ne touche au rayon.
 - [ ] Demander au mainteneur de relancer l'analyse du composant réel et de
       comparer. Consigner son retour.
 - [ ] Rappeler que les trois paquets attendent leur publication, noyau en
@@ -683,9 +753,11 @@ s'ajoute aux trois, et `regarder` le dit.
 
 | Porte | Avant | Ce que le mainteneur décide |
 |---|---|---|
-| H0 | E2, E3 | rien : il mesure M1 à M5, ou désigne le fichier que l'agent lit |
+| H0 | E1, E2, E3 | rien : il mesure M1 à M5, ou désigne le fichier que l'agent lit. H2 lit M1, et l'aide `ombre` de E1 écrit M3 à M5 |
 | H1 | E2, E3, E4, E6 à E9 | un texte par message de la section 9 |
-| H2 | E1 | la forme de la section 4, l'échelle de `opacity`, l'extension de E4 aux enfants absolus |
+| H2 | E1, E4 | la forme de la section 4, l'échelle de `opacity`, l'extension de E4 aux enfants absolus, les deux invariants que E4 réécrit, l'opacité d'une dépendance |
+
+Les trois portes forment un seul arrêt, après E5.
 
 ## 9. Textes à valider
 
@@ -806,8 +878,8 @@ sous 9.1.2.
 
 #### 9.1.6 Cadre sans auto layout sans dimension tokenisée (E4)
 
-Remplace R10 et R17 sur un node de layout sans auto layout. Exemple : un
-calque « Badge » dont la hauteur fixe n'a pas de variable. Deux dimensions
+Remplace R10 et R17 sur un composant sans auto layout. Exemple : un composant
+« Badge » dont la hauteur fixe n'a pas de variable. Deux dimensions
 s'écrivent « **width** et **height** », comme deux bornes.
 
 Sur un calque :
@@ -1113,7 +1185,8 @@ tokens, soit une par couleur du set dans l'exemple.
 
 ## 10. Conditions de fin
 
-- [ ] H0, H1 et H2 portent chacune leur décision dans le journal.
+- [ ] H0, H1 et H2 portent chacune leur décision dans le journal, H2 compris
+      sur les deux invariants de E4 et l'opacité d'une dépendance.
 - [ ] Chaque lot E1 à E9 a son test vu rouge, sa mutation consignée et son
       commit poussé sur `main`.
 - [ ] Aucune loi existante n'a été relâchée ; chaque texte normatif modifié
@@ -1125,3 +1198,23 @@ tokens, soit une par couleur du set dans l'exemple.
 - [ ] « Reste à valider » de `TEXTES-A-VALIDER.md` ne cite plus que R25 à R27,
       avec leur raison.
 - [ ] `dist/code.js` de la copie partagée contient les corrections.
+
+## 11. Ce que la relecture a changé
+
+Chaque fait de la section 2 a été relu à son site ; les numéros de ligne cités
+tiennent. Le scénario sortait 15 lignes avant E0. Les corrections :
+
+| Lot | Constat | Correction |
+|---|---|---|
+| E4 | `extractSizes` sonde gap et padding par `resolveGroup` : un garde dans `extractLayout` seul laissait sortir R10 sous un axe de tailles. | La branche `no-auto-layout` de `resolveGroup` se tait (F14). |
+| E4 | `structure.sizing` se lit sur le composant. Un message posé sur « le node de layout » visait un wrapper dont aucun champ ne porte la taille. | Le texte 9.1.6 vise le composant ; un wrapper élu garde R17 (F15). |
+| E4 | Deux invariants d'`AGENTS.md` changent, alors que la section 4 arrête tout lot en conflit avec un invariant. | H2 tranche les deux réécritures. |
+| E0 | La famille `calqueAbsolu` mêlait des messages de E2, de E4 et des messages qui restent : « la famille `opacity` » de E2 n'existait pas. Le cadre ajouté sous le wrapper doublait `Overlay`. La racine `Disabled` change deux attendus que le plan taisait. | Familles scindées, cadre retiré, attendus nommés. |
+| E2 | L'opacité dépendait de `publishDimensions`, faux sous un axe de tailles. | Résolue hors de ce drapeau, avec un test. |
+| E2 | Le test qui prouve qu'un texte non validé garde une ligne par racine prend l'opacité : changer son attendu effaçait sa preuve. | Il passe au blend mode ; E6 le supprime. |
+| E3 | Le faux `getStyleByIdAsync` du scénario rend un text style pour `S:ombre`. | Chargeur qui refuse un `type` autre qu'`EFFECT` ; scénario qui répond par identifiant. |
+| E3 | `extractLayout` sert aussi la projection de référence. | Le collecteur d'effets ne sert que les vues exactes. |
+| E3 | La comparaison du calque à son style tournait quel que soit M2. | Elle attend que M2 montre un identifiant qui survit. |
+| E5 | Sans condition, un composant seul perdait son nom de calque. | Même condition qu'`extractStructure` : plus d'un variant. |
+| Section 4 | La règle des dépendances venait du plan et contredisait H3, qui pose `opacity` « sur chaque slot ». | Question ouverte à H2, avec une règle proposée. |
+| Ordre | E5 n'attendait aucune porte, et trois arrêts se succédaient sans travail entre eux. | E5 passe avant la porte H, qui réunit H0, H1 et H2. |
