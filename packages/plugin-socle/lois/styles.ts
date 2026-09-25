@@ -37,11 +37,17 @@ export interface EntreesLoiDesStyles {
   readonly poseesParLHote: ReadonlySet<string>;
 }
 
-/** Les variantes de bouton : leur défaut, et chaque valeur passée à `createButton`. */
+/**
+ * Les variantes de bouton : celles que `VarianteBouton` déclare, puis chaque
+ * valeur passée à `createButton`. Une variante déclarée compte comme posée : le
+ * socle la stylise pour tous les plugins, même ceux qui ne l'emploient pas.
+ */
 export function variantesDeBouton(source: string): string[] {
+  const declaration = /export type VarianteBouton =([^;]+);/.exec(source);
+  const declarees = declaration ? [...declaration[1].matchAll(/'([^']+)'/g)].map((trouve) => trouve[1]) : [];
   const defaut = /variant = '([^']+)'/.exec(source);
   const passees = [...source.matchAll(/variant: '([^']+)'/g)].map((trouve) => trouve[1]);
-  return [...new Set([...(defaut ? [defaut[1]] : []), ...passees])];
+  return [...new Set([...declarees, ...(defaut ? [defaut[1]] : []), ...passees])];
 }
 
 /**

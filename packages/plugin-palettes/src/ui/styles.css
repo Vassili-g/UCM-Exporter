@@ -981,19 +981,39 @@
   gap: var(--espace-controle);
 }
 
+/*
+ * La tête de la palette : « Palette [nom] » et le bouton de génération sur une
+ * ligne ([UI-05]), puis la ligne secondaire et le résultat. Un nom long se
+ * coupe par des points de suspension ; le bouton garde son libellé entier.
+ */
+.tete-de-la-palette {
+  display: grid;
+  min-width: 0;
+  gap: var(--espace-serre);
+}
+
 .tete-de-configuration {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  min-width: 0;
+  align-items: center;
   gap: var(--espace-controle);
 }
 
 .titre-de-premier-rang {
+  min-width: 0;
   flex: 1 1 auto;
   margin: 0;
+  overflow: hidden;
   font-size: 16px;
   font-weight: 600;
   line-height: 24px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tete-de-configuration .bouton-du-titre {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .carte {
@@ -1005,11 +1025,6 @@
   border-radius: 8px;
   background: var(--fond-bloc);
   grid-template-columns: minmax(0, 1fr);
-}
-
-/* La carte de génération porte le fond du panneau. */
-.carte-plate {
-  background: var(--fond);
 }
 
 .carte-tete {
@@ -1162,13 +1177,6 @@
   font-weight: 600;
 }
 
-/* Une suppression est un geste destructif : le bouton porte la couleur du danger. */
-.btn.bouton-destructif {
-  border-color: var(--texte-danger);
-  background: var(--texte-danger);
-  color: var(--texte-sur-marque);
-}
-
 /*
  * Le nuancier : l'en-tête garde le thème de Figma, la surface prend le fond du
  * thème choisi. Ses encres viennent du script, calculées sur ce fond : elles
@@ -1296,16 +1304,18 @@
 
 /*
  * Trois signes distincts ([UI-04]) : la référence porte ◆ dans sa pastille,
- * le focus un contour tireté, la nuance choisie un double anneau. Un indice ≈
- * marque une nuance où soft et vivid se confondent.
+ * le focus un contour tireté, la nuance choisie un anneau plein de 2 px. Un
+ * liseré du fond sépare l'anneau de la pastille : l'anneau se lit sur une
+ * nuance proche de l'encre comme sur le fond. Un indice ≈ marque une nuance où
+ * soft et vivid se confondent.
  */
 .pastille:focus-visible {
   outline: 2px dashed var(--encre-surface);
-  outline-offset: 3px;
+  outline-offset: 4px;
 }
 
 .pastille[aria-selected='true'] {
-  box-shadow: 0 0 0 2px var(--bordure-surface), 0 0 0 4px var(--encre-surface);
+  box-shadow: 0 0 0 1px var(--fond-surface), 0 0 0 3px var(--encre-surface);
 }
 
 .pastille[data-confondue='true']::after {
@@ -1435,6 +1445,50 @@
 
 .garantie-du-detail[data-verdict='manquee'] {
   text-decoration: underline;
+}
+
+/*
+ * Le badge d'un niveau WCAG ([VER-13]) : un cartouche de la couleur du texte
+ * qui l'entoure, peint ou non. Sous AA, son trait se tirette.
+ */
+.badge-de-niveau {
+  display: inline-block;
+  margin-left: var(--espace-serre);
+  padding: 0 3px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 12px;
+  text-decoration: none;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.badge-de-niveau[data-atteint='false'] {
+  border-style: dashed;
+}
+
+/* Les contrastes d'une nuance, en table : le partenaire, le ratio, le badge. */
+.detail-contrastes {
+  display: grid;
+  gap: 2px;
+}
+
+.detail-contraste {
+  display: grid;
+  align-items: center;
+  column-gap: var(--espace-controle);
+  grid-template-columns: 96px 56px auto;
+  justify-items: start;
+}
+
+.detail-contraste .badge-de-niveau {
+  margin-left: 0;
+}
+
+.detail-ratio {
+  font-variant-numeric: tabular-nums;
 }
 
 /*
@@ -1677,11 +1731,6 @@
 }
 
 /* « Générer sur Figma » ferme la configuration ; son résultat reste sur la même ligne. */
-.generation {
-  display: grid;
-  gap: var(--espace-controle);
-}
-
 .generation-ligne {
   display: flex;
   flex-wrap: wrap;
@@ -1698,4 +1747,290 @@
 .etat-du-cadre[data-etat='introuvable'],
 .etat-du-cadre[data-etat='illisible'] {
   color: var(--texte-danger);
+}
+
+/*
+ * Le panneau « Ajuster la référence » (W7) : un bloc de la carte de
+ * configuration, au fond du panneau, qui porte un geste en cours.
+ */
+.ajustement {
+  display: grid;
+  gap: var(--espace-controle);
+  padding: var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+}
+
+.ajustement-titre,
+.ajustement-bilan {
+  font-weight: 600;
+}
+
+.ajustement-temoins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-bloc);
+}
+
+.ajustement-temoin {
+  display: grid;
+  align-items: center;
+  column-gap: var(--espace-controle);
+  grid-template-columns: 24px auto;
+}
+
+.ajustement-temoin .libelle-de-champ {
+  grid-column: 1 / -1;
+}
+
+.ajustement-pastille {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+}
+
+.ajustement-reglette {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.ajustement-luminosite {
+  min-width: 40px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.ajustement .champ-hexa {
+  width: 96px;
+}
+
+.ajustement-annonces,
+.ajustement-garanties {
+  display: grid;
+  gap: 2px;
+}
+
+.ajustement-garantie[data-verdict='manquee'] {
+  color: var(--texte-danger);
+}
+
+.trace-de-l-ajustement {
+  margin: 0;
+}
+
+/*
+ * L'interface de test ([UI-14]) : l'écran E2, peint de la palette. Ses couleurs
+ * viennent du script, par propriété et par état : repos, survol, appui. Le
+ * reste de la carte garde le thème de Figma.
+ */
+.essai-surface {
+  min-width: 0;
+}
+
+.essai-ecran {
+  display: grid;
+  max-width: 420px;
+  gap: var(--espace-bloc);
+  padding: 20px;
+  border: 1px solid var(--essai-separateur);
+  border-radius: 12px;
+  background: var(--essai-fond);
+  color: var(--essai-encre);
+}
+
+.essai-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+.essai-titre {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.essai-badge {
+  padding: 2px var(--espace-controle);
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.essai-onglets {
+  display: flex;
+  gap: var(--espace-bloc);
+  border-bottom: 1px solid var(--essai-separateur);
+}
+
+.essai-onglet {
+  padding: var(--espace-serre) 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--essai-encre-seconde);
+  cursor: pointer;
+}
+
+.essai-onglet[aria-selected='true'] {
+  border-bottom-color: var(--essai-soulignement);
+  color: var(--essai-encre);
+  font-weight: 600;
+}
+
+.essai-champ {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.essai-saisie {
+  height: 32px;
+  padding: 0 var(--espace-controle);
+  border: 1px solid var(--essai-bord-repos);
+  border-radius: 6px;
+  background: var(--essai-fond);
+  color: var(--essai-encre);
+}
+
+.essai-saisie:hover {
+  border-color: var(--essai-bord-survol);
+}
+
+.essai-saisie:focus {
+  border-color: var(--essai-bord-appui);
+  box-shadow: 0 0 0 2px var(--essai-fond), 0 0 0 4px var(--essai-focus);
+  outline: none;
+}
+
+.essai-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-bloc);
+}
+
+.essai-option {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.essai-case {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--essai-fond-repos);
+  border-radius: 4px;
+  background: var(--essai-fond-repos);
+  color: var(--essai-fond);
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.essai-case:hover {
+  border-color: var(--essai-fond-survol);
+  background: var(--essai-fond-survol);
+}
+
+.essai-case:active {
+  border-color: var(--essai-fond-appui);
+  background: var(--essai-fond-appui);
+}
+
+.essai-case[aria-checked='false'] {
+  border-color: var(--essai-bord-repos);
+  background: transparent;
+}
+
+.essai-case[aria-checked='false'] .essai-coche {
+  visibility: hidden;
+}
+
+.essai-interrupteur {
+  display: flex;
+  width: 32px;
+  height: 18px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 2px;
+  border: 1px solid var(--essai-fond-repos);
+  border-radius: 9px;
+  background: var(--essai-fond-repos);
+  cursor: pointer;
+}
+
+.essai-interrupteur:hover {
+  background: var(--essai-fond-survol);
+}
+
+.essai-interrupteur:active {
+  background: var(--essai-fond-appui);
+}
+
+.essai-interrupteur[aria-checked='false'] {
+  justify-content: flex-start;
+  border-color: var(--essai-bord-repos);
+  background: transparent;
+}
+
+.essai-curseur {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--essai-fond);
+}
+
+.essai-interrupteur[aria-checked='false'] .essai-curseur {
+  background: var(--essai-bord-repos);
+}
+
+.essai-encart {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espace-controle);
+  padding: var(--espace-controle) var(--espace-bloc);
+  border: 1px solid var(--essai-separateur);
+  border-radius: 8px;
+}
+
+.essai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--espace-controle);
+}
+
+.essai-bouton {
+  height: 32px;
+  padding: 0 var(--espace-bloc);
+  border: 0;
+  border-radius: 6px;
+  background: var(--essai-fond-repos);
+  color: var(--essai-texte-repos);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.essai-bouton:hover {
+  background: var(--essai-fond-survol);
+  color: var(--essai-texte-survol);
+}
+
+.essai-bouton:active {
+  background: var(--essai-fond-appui);
+  color: var(--essai-texte-appui);
+}
+
+.essai-onglet:focus-visible,
+.essai-case:focus-visible,
+.essai-interrupteur:focus-visible,
+.essai-bouton:focus-visible {
+  box-shadow: 0 0 0 2px var(--essai-fond), 0 0 0 4px var(--essai-focus);
+  outline: none;
 }

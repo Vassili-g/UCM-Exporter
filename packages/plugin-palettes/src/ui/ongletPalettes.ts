@@ -1,9 +1,9 @@
 /**
  * L'onglet Palettes (section 13.2) : le choix ou la création d'une palette,
- * le titre « Palette [nom] », puis les cartes : Configuration de la palette,
- * aperçu, Garanties de contraste, Intensités et Dérive de teinte repliables,
- * et la génération en dernière carte. Un message se lit sous la carte qu'il
- * concerne.
+ * le titre « Palette [nom] » et le bouton de génération sur la même ligne,
+ * puis les cartes : Configuration de la palette, aperçu, Intensités et Dérive
+ * de teinte repliables, Garanties de contraste, et l'Interface de test en
+ * dernier ([UI-12]). Un message se lit sous la carte qu'il concerne.
  *
  * Une saisie recalcule l'aperçu dans l'interface ([ENT-02]). La recette
  * s'enregistre à la fin de chaque geste : valider un champ, relâcher un
@@ -26,6 +26,7 @@ import { poserFond } from '../configuration';
 import {
   MOTIF_HEXA,
   ajouter,
+  appliquerLAjustement,
   basculerNuance,
   changerReference,
   choisirLaBase,
@@ -36,6 +37,7 @@ import {
   passerEnLibre,
   remplacerPalette,
   renommer,
+  revenirALOriginale,
   revenirAuModele,
   supprimer,
 } from '../edition';
@@ -43,6 +45,7 @@ import { PLANCHE_SANS_CADRE, type EtatDeLaPlanche, type LectureDeSelection, type
 import { fraicheurDUnePalette } from '../planche/fraicheur';
 import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction } from '../presentation';
 import { blocDeConstat, listeDesMessages, type Message } from './constats';
+import { createAjustement } from './ajustement';
 import { createCarte } from './carte';
 import { champEnColonne, createChoixDeBase, createChoixDuModele, createPuces, type ChoixDeBase } from './champs';
 import { nuancesProposees } from './couleur/propositions';
@@ -55,6 +58,7 @@ import { createGaranties } from './garanties';
 import { createGeneration, type CadreDeLaPalette } from './generation';
 import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
 import { createIntensites } from './intensites';
+import { createInterfaceDeTest } from './interfaceDeTest';
 import { createMenuPalette, type GesteDePalette } from './menuPalette';
 import { messagesDeLaPalette } from './messagesDePalette';
 import { createNuancier } from './nuancier';
@@ -62,6 +66,7 @@ import { createSelecteur } from './selecteur';
 import {
   STATUTS_DU_RANGEMENT,
   TEXTES,
+  TEXTES_DE_L_AJUSTEMENT,
   TEXTES_DE_LA_BASE,
   TEXTES_DE_LA_DERIVE,
   TEXTES_DE_L_ONGLET,
@@ -72,6 +77,7 @@ import {
   ligneDeLaReference,
   nomDeLaCopie,
   nomDeLaPalette,
+  originaleRetiree,
   palettesDuFichier,
   rangementInvalide,
   recetteFuture,
@@ -175,8 +181,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const texteDeConfirmation = document.createElement('p');
   const gestesDeConfirmation = document.createElement('div');
   gestesDeConfirmation.className = 'confirmation-gestes';
-  const supprimerVraiment = createButton({ label: TEXTES.supprimer, onClick: () => confirmerLaSuppression() });
-  supprimerVraiment.classList.add('bouton-destructif');
+  const supprimerVraiment = createButton({ label: TEXTES.supprimer, variant: 'danger', onClick: () => confirmerLaSuppression() });
   gestesDeConfirmation.append(
     supprimerVraiment,
     createButton({
@@ -196,21 +201,38 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   choix.className = 'choix-de-palette';
   choix.append(barre, confirmation, zoneDeLaNote);
 
-  // Le titre de premier rang, « Palette [nom] » ([UI-11]), et l'état de l'enregistrement au rang 3.
+  /*
+   * Le titre de premier rang, « Palette [nom] » ([UI-11]), et le geste de
+   * génération à sa droite ([UI-05]) : un nom long se coupe, le bouton garde
+   * son libellé. Dessous, au rang 3, l'état de l'enregistrement, l'état d'un
+   * cadre introuvable, la progression et « Afficher dans Figma ».
+   */
   const titreDeConfiguration = document.createElement('h2');
   titreDeConfiguration.className = 'titre-de-premier-rang';
   const indication = document.createElement('span');
   indication.className = 'etat-rangement ligne-secondaire';
   indication.setAttribute('aria-live', 'polite');
+  const generation = createGeneration({
+    ...demandes.resultat,
+    generer: () => {
+      const courante = ouverte();
+      if (courante) demandes.dessiner([courante.id], { [courante.id]: nomDeLaPalette(courante) });
+    },
+  });
   const teteDeConfiguration = document.createElement('div');
   teteDeConfiguration.className = 'tete-de-configuration';
-  teteDeConfiguration.append(titreDeConfiguration, indication);
+  teteDeConfiguration.append(titreDeConfiguration, generation.bouton);
+  generation.ligne.prepend(indication);
+  const teteDeLaPalette = document.createElement('div');
+  teteDeLaPalette.className = 'tete-de-la-palette';
+  teteDeLaPalette.append(teteDeConfiguration, generation.ligne, generation.zone);
 
   // Carte Configuration de la palette ([UI-11]).
   // La pastille ouvre le sélecteur de couleur, qui propose les nuances Vivid du thème montré (W4.1).
   const pipette = createPipette(TEXTES.reference, () => {
     const courante = ouverte();
     if (!recette || !courante) return null;
+    originaleAvantSaisie = courante.originale ?? null;
     return {
       hexa: courante.reference,
       titreDesPastilles: TEXTES_DU_SELECTEUR.nuancesDeLaPalette,
@@ -230,7 +252,44 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   nom.type = 'text';
   nom.className = 'input';
   const colonneDeLaReference = champEnColonne(TEXTES.reference, pipette.bouton, hexa);
-  colonneDeLaReference.append(erreurHexa);
+  /*
+   * Sous le code : « Ajuster la référence » ouvre le panneau (W7.1) ; une
+   * référence ajustée dit son originale, que « Revenir à l'originale » rend.
+   */
+  const lienDAjustement = document.createElement('button');
+  lienDAjustement.type = 'button';
+  lienDAjustement.className = 'lien-de-constat';
+  lienDAjustement.textContent = TEXTES_DE_L_AJUSTEMENT.lien;
+  lienDAjustement.addEventListener('click', () => ouvrirLAjustement(lienDAjustement));
+  const traceDeLAjustement = document.createElement('p');
+  traceDeLAjustement.className = 'ligne-secondaire trace-de-l-ajustement';
+  const ajusteeDepuis = document.createElement('span');
+  const revenir = document.createElement('button');
+  revenir.type = 'button';
+  revenir.className = 'lien-de-constat';
+  revenir.textContent = TEXTES_DE_L_AJUSTEMENT.revenir;
+  revenir.addEventListener('click', () => {
+    const courante = ouverte();
+    if (!recette || !courante) return;
+    note = null;
+    valider(remplacerPalette(recette, revenirALOriginale(recette, courante)));
+    lienDAjustement.focus();
+  });
+  traceDeLAjustement.append(ajusteeDepuis, ' · ', revenir);
+  colonneDeLaReference.append(erreurHexa, lienDAjustement, traceDeLAjustement);
+  /** L'originale de la palette au début d'une saisie du code : la retirer se signale (section 3 de la conception). */
+  let originaleAvantSaisie: string | null = null;
+  hexa.addEventListener('focus', () => {
+    originaleAvantSaisie = ouverte()?.originale ?? null;
+  });
+  // Appliquer porte sur la palette courante : un nom ou une intensité changés pendant l'ajustement se gardent.
+  const ajustement = createAjustement((proposition) => {
+    const courante = ouverte();
+    const ajustee = recette && courante ? appliquerLAjustement(recette, courante, proposition) : null;
+    if (!recette || !ajustee) return;
+    note = null;
+    valider(remplacerPalette(recette, ajustee));
+  });
   // La palette de base : Auto, Soft ou Vivid ([UI-11], [ENT-11]).
   const choixDeBase = createChoixDeBase((valeur) => {
     const courante = ouverte();
@@ -260,7 +319,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference, colonneDuModele);
   const carteDeBase = createCarte({ titre: TEXTES_DE_L_ONGLET.configuration });
   const messagesDeBase = document.createElement('div');
-  carteDeBase.corps.append(colonnes, puces.element, messagesDeBase);
+  carteDeBase.corps.append(colonnes, puces.element, ajustement.element, messagesDeBase);
 
   // Carte d'aperçu sans titre ([UI-04]) : thèmes et fond dans l'en-tête, la référence sous la surface.
   const nuancier = createNuancier({
@@ -308,29 +367,23 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   carteDeLaDerive.surBascule(() => rendre());
   const messagesDeLaDerive = document.createElement('div');
 
-  // La génération ferme la configuration, dans une carte au fond du panneau ([UI-05]).
-  const generation = createGeneration({
-    ...demandes.resultat,
-    generer: () => {
-      const courante = ouverte();
-      if (courante) demandes.dessiner([courante.id], { [courante.id]: nomDeLaPalette(courante) });
-    },
-  });
-  const carteDeGeneration = createCarte({ titre: TEXTES_DE_L_ONGLET.generation, plate: true });
-  carteDeGeneration.corps.append(generation.element);
+  // L'interface de test ferme l'onglet ([UI-14]) : repliée, elle ne se dessine qu'ouverte.
+  const interfaceDeTest = createInterfaceDeTest();
+  interfaceDeTest.surBascule(() => rendre());
 
+  // La palette se règle, puis se juge : Intensités et Dérive sous l'aperçu, les Garanties ensuite ([UI-12]).
   const configuration = document.createElement('div');
   configuration.className = 'configuration-de-la-palette';
   configuration.append(
-    teteDeConfiguration,
+    teteDeLaPalette,
     carteDeBase.element,
     carteDApercu.element,
     messagesDApercu,
-    garanties.element,
     carteDesIntensites.element,
     carteDeLaDerive.element,
     messagesDeLaDerive,
-    carteDeGeneration.element,
+    garanties.element,
+    interfaceDeTest.element,
   );
 
   /** Les messages de la palette, chacun sous la carte qu'il concerne. */
@@ -357,6 +410,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     if (cible === 'reference') {
       hexa.focus();
       hexa.select();
+    } else if (cible === 'ajuster-reference') {
+      ouvrirLAjustement(lienDAjustement);
     } else if (cible === 'intensites-palette') {
       carteDesIntensites.ouvrir();
       intensites.ouvrir();
@@ -364,6 +419,14 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       carteDeLaDerive.ouvrir();
       if (carteDeLaDerive.estOuverte()) editeur.focaliser();
     }
+  }
+
+  /** Ouvre le panneau d'ajustement sur la palette ouverte, sous le code de la référence (W7.2). */
+  function ouvrirLAjustement(retour: HTMLElement): void {
+    const courante = ouverte();
+    if (!recette || !courante) return;
+    ajustement.ouvrir(recette, courante, retour);
+    ajustement.element.scrollIntoView({ block: 'nearest' });
   }
 
   function ouverte(): Palette | null {
@@ -476,8 +539,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     hexa.setAttribute('aria-invalid', String(impossible));
     if (!suivante) return;
     note = null;
-    if (fin) valider(remplacerPalette(recette, suivante));
-    else modifier(suivante);
+    if (fin) {
+      // Un code saisi est une nouvelle référence : il retire l'originale, sauf s'il la rend.
+      if (originaleAvantSaisie && suivante.reference !== originaleAvantSaisie.toUpperCase()) note = originaleRetiree(originaleAvantSaisie);
+      originaleAvantSaisie = null;
+      valider(remplacerPalette(recette, suivante));
+    } else modifier(suivante);
   }
 
   hexa.addEventListener('input', () => saisirReference(hexa.value, false));
@@ -549,6 +616,11 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
 
     poser(hexa, courante.reference);
     pipette.poser(courante.reference);
+    // Une autre palette, ou une référence changée ailleurs, rend la proposition caduque : le panneau se referme.
+    const ajustee = ajustement.palette();
+    if (ajustee && (ajustee.id !== courante.id || ajustee.reference !== courante.reference)) ajustement.fermer(false);
+    ajusteeDepuis.textContent = courante.originale ? TEXTES_DE_L_AJUSTEMENT.ajusteeDepuis(courante.originale) : '';
+    traceDeLAjustement.hidden = !courante.originale;
     poser(nom, courante.nom ?? '');
     nom.placeholder = courante.reference;
     titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre(nomDeLaPalette(courante));
@@ -582,6 +654,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     carteDeLaDerive.poserResume(resumeDeLaDerive(courante, grise, pointsDeDerive));
     carteDeLaDerive.desactiver(grise ? TEXTES_DE_LA_DERIVE.grisDesactive : null);
     if (carteDeLaDerive.estOuverte()) editeur.afficher(lue, courante, analyse.rampes, analyse.ancrage, analyse);
+    interfaceDeTest.afficher(lue, analyse, nuancier.mode());
 
     generation.afficherLeCadre(cadreOuvert);
     generation.afficherDessin(dernierDessin.etat, dernierDessin.noms, courante.id);

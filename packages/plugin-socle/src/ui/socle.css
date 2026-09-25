@@ -75,6 +75,8 @@
   --fond-marque-survol: var(--figma-color-bg-brand-hover, #007be5);
   --fond-avertissement: var(--figma-color-bg-warning-tertiary, #fff1d6);
   --fond-danger: var(--figma-color-bg-danger-tertiary, #ffe0db);
+  --fond-danger-plein: var(--figma-color-bg-danger, #f24822);
+  --fond-danger-plein-survol: var(--figma-color-bg-danger-hover, #dc3412);
   /*
    * La bordure ne suit pas `--figma-color-border` : sur le fond sombre, #444444
    * ne détache pas une carte de son voisin. Même valeur dans et hors de Figma.
@@ -96,6 +98,7 @@
   --texte-succes: var(--figma-color-text-success, #168b52);
   --texte-avertissement: var(--figma-color-text-warning, #a55b00);
   --texte-sur-marque: var(--figma-color-text-onbrand, #ffffff);
+  --texte-sur-danger: var(--figma-color-text-ondanger, #ffffff);
 }
 
 .figma-dark {
@@ -107,6 +110,8 @@
   --fond-marque-survol: var(--figma-color-bg-brand-hover, #3ab0ff);
   --fond-avertissement: var(--figma-color-bg-warning-tertiary, #4a3a10);
   --fond-danger: var(--figma-color-bg-danger-tertiary, #4d1f17);
+  --fond-danger-plein: var(--figma-color-bg-danger, #e03e1a);
+  --fond-danger-plein-survol: var(--figma-color-bg-danger-hover, #c4381c);
   --bordure: #5e5e5e;
   --bordure-marque: var(--figma-color-border-brand-strong, #0d99ff);
   /* Redéclaré à l'identique : le rôle existe dans les deux thèmes, ou l'un des
@@ -119,6 +124,7 @@
   --texte-succes: var(--figma-color-text-success, #85e0a3);
   --texte-avertissement: var(--figma-color-text-warning, #ffc470);
   --texte-sur-marque: var(--figma-color-text-onbrand, #ffffff);
+  --texte-sur-danger: var(--figma-color-text-ondanger, #ffffff);
 }
 
 * {
@@ -284,6 +290,16 @@ p {
  * d'attente ne vaut que pendant un export, et `aria-busy` dit lequel des deux
  * cas on est.
  */
+/* Un geste destructif : le fond plein du danger, son survol, et un focus du même rouge. */
+.btn-danger {
+  background: var(--fond-danger-plein);
+  color: var(--texte-sur-danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--fond-danger-plein-survol);
+}
+
 .btn:disabled {
   cursor: not-allowed;
   opacity: 0.5;
@@ -302,6 +318,10 @@ p {
 .header-back-button:focus-visible {
   outline: 2px solid var(--bordure-marque);
   outline-offset: 2px;
+}
+
+.btn-danger:focus-visible {
+  outline-color: var(--fond-danger-plein);
 }
 
 .field {

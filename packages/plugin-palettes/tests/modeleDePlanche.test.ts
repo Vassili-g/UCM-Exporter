@@ -38,9 +38,9 @@ const trouver = (racine: NoeudCadre, nom: string) => {
   return trouve;
 };
 const couleur = (hexa: string): Rgb8 => lireHexa(hexa)!;
-/** Les textes d'un thème que le cadre écrit lui-même : ni spécimen, ni interface d'exemple, ni grille, ni repère de pastille. */
+/** Les textes d'un thème que le cadre écrit lui-même : ni spécimen, ni grille, ni repère de pastille. */
 function legendesDuTheme(theme: NoeudCadre): NoeudTexte[] {
-  const exclus = new Set(cadres(theme).filter((noeud) => ['spécimen', 'écran de réglages', 'contrastes'].includes(noeud.nom) || /^(soft|vivid)\//.test(noeud.nom) || noeud.nom === 'verdict').flatMap((noeud) => textes(noeud)));
+  const exclus = new Set(cadres(theme).filter((noeud) => ['spécimen', 'contrastes'].includes(noeud.nom) || /^(soft|vivid)\//.test(noeud.nom) || noeud.nom === 'verdict').flatMap((noeud) => textes(noeud)));
   return textes(theme).filter((noeud) => !exclus.has(noeud));
 }
 
@@ -59,11 +59,12 @@ test('[PLA-07] l’en-tête donne le nom et la référence avec son profil, sans
   assert.ok(!textes(MODELE.racine).some((noeud) => /version|SRGB|sRGB|remplac/i.test(noeud.contenu)), 'ni version, ni espace de couleur, ni avertissement');
 });
 
-test('W3.6 : chaque thème dit son fond et son verdict, puis les rampes, les usages, l’interface d’exemple et les contrastes, dans cet ordre', () => {
+test('W3.6 [UI-14] : chaque thème dit son fond et son verdict, puis les rampes, les usages et les contrastes, dans cet ordre, sans interface d’exemple', () => {
   const racine = AVEC_GRILLE.racine;
   assert.deepEqual(racine.enfants.map((noeud) => noeud.nom), ['en-tête', 'thème light', 'thème dark']);
   const sections = trouver(racine, 'thème light').enfants.map((noeud) => noeud.nom).filter((nom) => nom !== 'filet');
-  assert.deepEqual(sections, ['en-tête', 'les deux rampes', 'quelle nuance pour quel usage', 'interface d’exemple', 'contrastes']);
+  assert.deepEqual(sections, ['en-tête', 'les deux rampes', 'quelle nuance pour quel usage', 'contrastes']);
+  assert.equal(cadres(racine).some((noeud) => noeud.nom === 'écran de réglages'), false, 'l’écran de réglages est dans l’onglet Palettes, pas sur la planche');
   const tete = textes(trouver(trouver(racine, 'thème dark'), 'en-tête')).map((noeud) => noeud.contenu);
   assert.deepEqual(tete, ['Thème Dark · fond #121212', '✓ Toutes les garanties tenues']);
   const echec = trouver(modeleDeCadre(RECETTE_EN_ECHEC, BLEU, 'SRGB').racine, 'thème light');
@@ -140,39 +141,27 @@ test('W3.6 : les usages suivent le profil porteur, un état par colonne, default
   assert.equal(trouver(trouver(usages, 'border-control hover'), 'spécimen').trait?.couleur.hexa, MODELE.peints.find(({ nom }) => nom === 'vivid/light/700')?.hexa);
 });
 
-test('W5.5 : chaque paire du moteur se lit dans les usages de chaque thème, avec son sens, son résultat et son ratio', () => {
+test('W5.5 [VER-13] : chaque paire du moteur se lit dans les usages de chaque thème, avec son sens, son résultat, son ratio et son niveau WCAG', () => {
   for (const mode of ['light', 'dark'] as const) {
     const usages = trouver(trouver(MODELE.racine, `thème ${mode}`), 'quelle nuance pour quel usage');
     const lues = new Set(textes(usages).filter((noeud) => noeud.nom.startsWith('garantie ')).map((noeud) => Number(noeud.nom.slice('garantie '.length))));
     assert.deepEqual([...lues].sort((a, b) => a - b), PAIRES.map(({ numero }) => numero), mode);
   }
   const lignes = (nom: string) => textes(trouver(MODELE.racine, nom)).filter((noeud) => noeud.nom.startsWith('garantie ')).map((noeud) => noeud.contenu);
-  assert.deepEqual(lignes('text default'), ['✓ sur fond : 5,76:1', '✓ sur surface 100 : 5,34:1']);
-  assert.deepEqual(lignes('surface default'), ['✓ text 700 dessus : 5,34:1', '✓ border-control 600 dessus : 4,19:1', '✓ focus 600 dessus : 4,19:1']);
-  assert.deepEqual(lignes('solid default'), ['✓ on-solid dessus : 5,76:1']);
+  assert.deepEqual(lignes('text default'), ['✓ sur fond : 5,76:1 · AA', '✓ sur surface 100 : 5,34:1 · AA']);
+  // Un élément graphique n'a que AA : 4,19:1 ne se juge pas en texte courant.
+  assert.deepEqual(lignes('surface default'), ['✓ text 700 dessus : 5,34:1 · AA', '✓ border-control 600 dessus : 4,19:1 · AA', '✓ focus 600 dessus : 4,19:1 · AA']);
+  assert.deepEqual(lignes('solid default'), ['✓ on-solid dessus : 5,76:1 · AA']);
   assert.deepEqual(lignes('border-decorative default'), []);
   const echec = textes(trouver(modeleDeCadre(RECETTE_EN_ECHEC, BLEU, 'SRGB').racine, 'thème light')).find((noeud) => noeud.nom.startsWith('garantie ') && noeud.contenu.startsWith('✗'))!;
   assert.equal(echec.style, 'chiffre');
   assert.equal(echec.couleur.hexa, COULEURS_DE_LA_PLANCHE.dangerSombre);
 });
 
-test('W5.3 : l’interface d’exemple E2 se peint des nuances du profil porteur, dans chaque thème', () => {
-  for (const mode of ['light', 'dark'] as const) {
-    const ecran = trouver(trouver(MODELE.racine, `thème ${mode}`), 'écran de réglages');
-    const nuance = (cran: number) => MODELE.peints.find(({ nom }) => nom === `vivid/${mode}/${cran}`)?.hexa;
-    assert.equal(ecran.fond?.hexa, RECETTE.fonds[mode]);
-    assert.equal(trouver(ecran, 'enregistrer').fond?.hexa, nuance(700));
-    assert.equal(trouver(ecran, 'brouillon').fond?.hexa, nuance(100));
-    assert.equal(trouver(ecran, 'anneau').trait?.couleur.hexa, nuance(600));
-    assert.equal(trouver(ecran, 'soulignement').remplir, true);
-    assert.equal(textes(trouver(ecran, 'enregistrer'))[0].couleur.hexa, RECETTE.fonds[mode], 'on-solid : le fond du thème sur solid');
-  }
-});
-
-test('[PLA-16] W3.6 : une grille par thème et profil, alignée sur les rampes ; une paire lisible se peint de ses vraies couleurs, une paire sous 3:1 s’efface', () => {
+test('[PLA-16] [VER-13] : une grille par thème et profil, alignée sur les rampes ; une paire lisible se peint de ses vraies couleurs avec son niveau de texte, une paire sous 3:1 s’efface', () => {
   assert.equal(cadres(MODELE.racine).some((noeud) => noeud.nom === 'contrastes'), false, 'sans l’option, pas de grille');
   const contrastes = trouver(trouver(AVEC_GRILLE.racine, 'thème light'), 'contrastes');
-  assert.equal(textes(trouver(contrastes, 'en-tête'))[1].contenu, 'Ligne : fond · colonne : texte · gras dès 4,5:1 · maigre dès 3:1 · effacé en dessous');
+  assert.equal(textes(trouver(contrastes, 'en-tête'))[1].contenu, 'Ligne : fond · colonne : texte · gras dès 4,5:1 · maigre dès 3:1 · effacé en dessous · AA dès 4,5:1 · AAA dès 7:1');
   const grille = trouver(contrastes, 'grille light vivid');
   assert.deepEqual(grille.enfants.map((noeud) => noeud.nom), ['teintes vivid', ...RECETTE.crans.map((cran) => `fond ${cran}`)]);
   const hexa = (cran: number) => AVEC_GRILLE.peints.find(({ nom }) => nom === `vivid/light/${cran}`)!.hexa;
@@ -181,7 +170,11 @@ test('[PLA-16] W3.6 : une grille par thème et profil, alignée sur les rampes ;
   const valeur = (lisible.enfants[0] as NoeudTexte);
   assert.equal(valeur.couleur.hexa, hexa(100));
   assert.equal(valeur.style, 'chiffre');
-  assert.equal(valeur.contenu, '10,43');
+  assert.equal(valeur.contenu, '10,43 AAA');
+  const aa = cadres(grille).find((noeud) => /^\d+\/\d+$/.test(noeud.nom) && (noeud.enfants[0] as NoeudTexte | undefined)?.contenu.endsWith(' AA'));
+  assert.ok(aa, 'une paire entre 4,5:1 et 7:1 porte AA');
+  const sansNiveau = cadres(grille).filter((noeud) => /^\d+\/\d+$/.test(noeud.nom) && noeud.enfants.length > 0).map((noeud) => (noeud.enfants[0] as NoeudTexte).contenu).filter((contenu) => !/ AAA?$/.test(contenu));
+  assert.ok(sansNiveau.length > 0 && sansNiveau.every((contenu) => /^\d+,\d\d$/.test(contenu)), 'sous 4,5:1, le ratio seul');
   const efface = trouver(grille, '100/200');
   assert.notEqual(efface.fond?.hexa, hexa(100));
   assert.equal((efface.enfants[0] as NoeudTexte).style, 'note');

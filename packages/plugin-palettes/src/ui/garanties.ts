@@ -2,7 +2,8 @@
  * La carte « Garanties de contraste » ([UI-09]) : pour le thème de l'aperçu,
  * une bascule Soft/Vivid qui porte le résultat de chaque profil, une réglette
  * des nuances où la garantie choisie se trace en arcs, puis une ligne par
- * association (section 9.4), groupées par minimum. Une ligne en échec porte
+ * association (section 9.4), groupées par minimum, chaque ratio avec son
+ * niveau WCAG ([VER-13]). Une ligne en échec porte
  * l'état fautif et les réglages qui peuvent agir ([VER-06], [VER-15]).
  *
  * Le profil affiché et la garantie choisie durent tant que la palette reste
@@ -28,6 +29,7 @@ import {
 
 import type { AnalyseDePalette } from '../analyse';
 import { ciblesDeLaPromesse, type CibleDAction } from '../presentation';
+import { badgeDeNiveau } from './badge';
 import { createCarte } from './carte';
 import { encresSur } from './nuancier';
 import { specimenDuRole } from './specimens';
@@ -39,6 +41,8 @@ import {
   TEXTES_DES_GARANTIES,
   TEXTES_DE_L_ONGLET,
   contrasteEcrit,
+  jugementDuSeuil,
+  niveauEcrit,
   resultatDuProfil,
   resultatDuProfilEnMots,
 } from './textes';
@@ -210,6 +214,7 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
     const resultat = paragraphe(TEXTES_DES_GARANTIES.resultat(promesse.verdict === 'tenue', promesse.contraste));
     resultat.className = 'garantie-resultat';
     resultat.dataset.verdict = promesse.verdict;
+    resultat.append(badgeDeNiveau(promesse.contraste, jugementDuSeuil(promesse.paire.seuil)));
     bloc.append(specimenDeLaPromesse(promesse, fond), numeros, resultat);
     if (nommerLEtat) bloc.append(paragraphe(NOM_DE_L_ETAT[etatDeLaPaire(promesse.paire)], 'ligne-secondaire'));
     return bloc;
@@ -218,7 +223,7 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
   /** L'étiquette accessible d'une ligne : la relation, puis chaque état avec ses numéros, son ratio et son résultat. */
   function etiquette(association: Association, promesses: readonly Promesse[]): string {
     const second = association.second === 'fond' ? TEXTES_DES_GARANTIES.fond : association.second;
-    const etats = promesses.map((promesse) => `${NOM_DE_L_ETAT[etatDeLaPaire(promesse.paire)]}, ${numeroDuMembre(promesse, 'premier')} ${TEXTES_DES_GARANTIES.sur} ${numeroDuMembre(promesse, 'second')}, ${contrasteEcrit(promesse.contraste)}, ${promesse.verdict === 'tenue' ? '✓' : '✗'}`);
+    const etats = promesses.map((promesse) => `${NOM_DE_L_ETAT[etatDeLaPaire(promesse.paire)]}, ${numeroDuMembre(promesse, 'premier')} ${TEXTES_DES_GARANTIES.sur} ${numeroDuMembre(promesse, 'second')}, ${contrasteEcrit(promesse.contraste)}, ${promesse.verdict === 'tenue' ? '✓' : '✗'}, ${niveauEcrit(promesse.contraste, jugementDuSeuil(promesse.paire.seuil)).etiquette}`);
     return `${association.premier} ${TEXTES_DES_GARANTIES.sur} ${second}. ${etats.join(' ; ')}`;
   }
 

@@ -8,8 +8,9 @@
  * Le cadre répond à une question : quelle nuance pour quel usage (récit R1,
  * maquette W3.6). Chaque thème, peint de son fond, montre les deux rampes,
  * puis les usages du profil porteur dans leurs états `default`, `hover` et
- * `active`, chacun avec les garanties qu'il porte, puis une interface
- * d'exemple, puis les grilles des contrastes, alignées sur les rampes.
+ * `active`, chacun avec les garanties qu'il porte et leur niveau WCAG, puis
+ * les grilles des contrastes, alignées sur les rampes. L'interface d'exemple
+ * n'est pas sur la planche : l'onglet Palettes la montre ([UI-14]).
  */
 import {
   MODES,
@@ -44,7 +45,9 @@ import {
   TEXTES_DU_DETAIL,
   enTeteDeLaReference,
   enTeteDuTheme,
+  jugementDuSeuil,
   legendeDesContrastes,
+  niveauEcrit,
   nomDeLaPalette,
   verdictDuTheme,
 } from '../ui/textes';
@@ -153,9 +156,8 @@ const HAUTEUR_DE_PASTILLE = 32;
 /** Les colonnes des usages : libellé, puis une colonne par état. */
 const USAGE = { libelle: 176, etat: 168 } as const;
 
-/** Un spécimen d'usage, et l'interface d'exemple. */
+/** Un spécimen d'usage. */
 const SPECIMEN = { largeur: 96, hauteur: 32 } as const;
-const EXEMPLE = { largeur: 420, marge: 3 * TRAME } as const;
 
 /** Les usages, dans l'ordre du récit : du fond léger au séparateur. `on-solid` se lit sur `solid`. */
 const USAGES: readonly Emploi[] = ['surface', 'text', 'solid', 'border-control', 'focus', 'border-decorative'];
@@ -376,7 +378,8 @@ function garantiesDeLEtat(contexte: Contexte, emploi: Emploi, decalage: number, 
         : estLeMembre(second, emploi, decalage) ? TEXTES_DU_DETAIL.dessus(partenaire(premier, promesse.premier)) : null;
       if (sens === null) return [];
       const tenue = promesse.verdict === 'tenue';
-      return [texte(`garantie ${promesse.paire.numero}`, TEXTES_DU_DETAIL.garantie(tenue, sens, promesse.contraste), tenue ? 'note' : 'chiffre', tenue ? encres.seconde : encres.danger, USAGE.etat)];
+      const niveau = niveauEcrit(promesse.contraste, jugementDuSeuil(promesse.paire.seuil)).ecrit;
+      return [texte(`garantie ${promesse.paire.numero}`, `${TEXTES_DU_DETAIL.garantie(tenue, sens, promesse.contraste)} · ${niveau}`, tenue ? 'note' : 'chiffre', tenue ? encres.seconde : encres.danger, USAGE.etat)];
     });
 }
 
@@ -416,75 +419,14 @@ function sectionDesUsages(contexte: Contexte, mode: Mode, encres: Encres, largeu
   ], { espacement: 2 * TRAME, largeur });
 }
 
-/* L'interface d'exemple E2 : un écran de réglages où chaque emploi a sa place (W3.6). */
-
-function bouton(nom: string, libelle: string, fond: Peinture | null, encre: Peinture): NoeudCadre {
-  return cadre(nom, 'HORIZONTAL', [texte('libellé', libelle, 'role', encre)], { fond, hauteur: SPECIMEN.hauteur, margeLaterale: 2 * TRAME, rayon: 6, alignement: CENTRE });
-}
-
-function exempleEcran(contexte: Contexte, mode: Mode, encres: Encres): NoeudCadre {
-  const porteur = contexte.analyse.ancrage.profil;
-  const n = (emploi: Exclude<Emploi, 'on-solid'>) => peinture(nuance(contexte, porteur, mode, TABLE_DES_EMPLOIS[emploi]).couleur, contexte.profil);
-  const fond = peinture(encres.fond, contexte.profil);
-  const e = TEXTES_DE_LA_PLANCHE.exemple;
-  const utile = EXEMPLE.largeur - 2 * EXEMPLE.marge;
-  const pastilleDeCase = cadre('case', 'HORIZONTAL', [texte('coche', e.coche, 'chiffre', fond)], { fond: n('solid'), largeur: 16, hauteur: 16, rayon: 4, alignement: CENTRE });
-  // Le curseur de l'interrupteur est un disque du fond cerclé de l'aplat : il paraît posé à l'intérieur.
-  const interrupteur = cadre('interrupteur', 'HORIZONTAL', [
-    cadre('curseur', 'HORIZONTAL', [], { fond, trait: { couleur: n('solid'), epaisseur: 2, tirets: false }, largeur: 18, hauteur: 18, rayon: 9 }),
-  ], { fond: n('solid'), largeur: 32, hauteur: 18, rayon: 9, alignement: { principal: 'MAX', secondaire: 'CENTER' } });
-  return cadre('écran de réglages', 'VERTICAL', [
-    cadre('en-tête', 'HORIZONTAL', [
-      texte('titre', e.titre, 'theme', encres.encre),
-      cadre('badge', 'HORIZONTAL', [texte('libellé', e.badge, 'chiffre', n('text'))], { fond: n('surface'), hauteur: 24, margeLaterale: TRAME, rayon: 12, alignement: CENTRE }),
-    ], { largeur: utile, alignement: { principal: 'SPACE_BETWEEN', secondaire: 'CENTER' } }),
-    cadre('onglets', 'VERTICAL', [
-      cadre('titres', 'HORIZONTAL', [
-        cadre(e.onglets[0], 'VERTICAL', [texte('libellé', e.onglets[0], 'role', encres.encre), cadre('soulignement', 'HORIZONTAL', [], { fond: n('solid'), hauteur: 2, remplir: true })]),
-        ...e.onglets.slice(1).map((onglet) => texte(onglet, onglet, 'valeur', encres.seconde)),
-      ], { espacement: 2 * TRAME }),
-      filet(n('border-decorative')),
-    ], { espacement: 0, largeur: utile }),
-    cadre('champ', 'VERTICAL', [
-      texte('libellé', e.libelle, 'valeur', encres.encre),
-      cadre('anneau', 'HORIZONTAL', [
-        cadre('saisie', 'HORIZONTAL', [texte('valeur', e.valeur, 'valeur', encres.encre)], {
-          fond, trait: { couleur: n('border-control'), epaisseur: 1, tirets: false }, largeur: utile - TRAME, hauteur: SPECIMEN.hauteur, rayon: 6, margeLaterale: TRAME, alignement: A_GAUCHE,
-        }),
-      ], { trait: { couleur: n('focus'), epaisseur: 2, tirets: false }, largeur: utile, hauteur: SPECIMEN.hauteur + TRAME, rayon: 8, alignement: CENTRE }),
-    ]),
-    cadre('options', 'HORIZONTAL', [
-      cadre('case à cocher', 'HORIZONTAL', [pastilleDeCase, texte('libellé', e.caseACocher, 'valeur', encres.encre)], { alignement: A_GAUCHE }),
-      cadre('accès', 'HORIZONTAL', [interrupteur, texte('libellé', e.interrupteur, 'valeur', encres.encre)], { alignement: A_GAUCHE }),
-    ], { espacement: 2 * TRAME, alignement: A_GAUCHE }),
-    cadre('encart', 'HORIZONTAL', [
-      texte('icône', e.icone, 'chiffre', n('text')),
-      texte('message', e.encart, 'valeur', n('text'), utile - 5 * TRAME),
-    ], { fond: n('surface'), trait: { couleur: n('border-decorative'), epaisseur: 1, tirets: false }, marge: TRAME, margeLaterale: 2 * TRAME, rayon: 8, largeur: utile }),
-    cadre('actions', 'HORIZONTAL', [
-      bouton('annuler', e.boutons[0], null, n('text')),
-      bouton('brouillon', e.boutons[1], n('surface'), n('text')),
-      bouton('enregistrer', e.boutons[2], n('solid'), fond),
-    ], { largeur: utile, alignement: { principal: 'MAX', secondaire: 'CENTER' } }),
-  ], {
-    fond, trait: { couleur: n('border-decorative'), epaisseur: 1, tirets: false }, marge: EXEMPLE.marge, espacement: 2 * TRAME, rayon: 12, largeur: EXEMPLE.largeur,
-  });
-}
-
-function sectionDExemple(contexte: Contexte, mode: Mode, encres: Encres): NoeudCadre {
-  return cadre('interface d’exemple', 'VERTICAL', [
-    texte('titre', TEXTES_DE_LA_PLANCHE.titreDeLExemple(NOM_DU_PROFIL[contexte.analyse.ancrage.profil]), 'theme', encres.encre),
-    exempleEcran(contexte, mode, encres),
-  ], { espacement: 2 * TRAME });
-}
-
 /* Les contrastes, nuance par nuance */
 
 /**
  * La grille d'un profil, sous ses pastilles et dans leurs colonnes : la ligne
  * donne le fond, la colonne le texte. Une paire à 3:1 ou plus se peint telle
- * qu'elle se lira, le ratio en gras à partir du minimum des textes ; en
- * dessous, la case s'efface ([PLA-16], W3.6).
+ * qu'elle se lira, le ratio en gras à partir du minimum des textes, suivi du
+ * niveau WCAG qu'un texte y atteint ; en dessous de 3:1, la case s'efface
+ * ([PLA-16], [VER-13]).
  */
 function grilleDuProfil(contexte: Contexte, profil: Profil, mode: Mode, encres: Encres): NoeudCadre {
   const { recette, analyse } = contexte;
@@ -504,8 +446,10 @@ function grilleDuProfil(contexte: Contexte, profil: Profil, mode: Mode, encres: 
       if (i === j) return cadre(nom, 'HORIZONTAL', [], { largeur: COLONNE.largeur, hauteur: 24 });
       const valeur = contraste(fond.couleur, lettre.couleur);
       const lisible = atteintLeSeuil(valeur, recette.seuils.nonTexte);
+      const niveau = niveauEcrit(valeur, 'texte');
+      const ecrit = niveau.atteint ? `${ecrireContraste(valeur)} ${niveau.ecrit}` : ecrireContraste(valeur);
       return cadre(nom, 'HORIZONTAL', [
-        texte('contraste', ecrireContraste(valeur), atteintLeSeuil(valeur, recette.seuils.texte) ? 'chiffre' : 'note', lisible ? peinture(lettre.couleur, contexte.profil) : encres.seconde),
+        texte('contraste', ecrit, atteintLeSeuil(valeur, recette.seuils.texte) ? 'chiffre' : 'note', lisible ? peinture(lettre.couleur, contexte.profil) : encres.seconde),
       ], { fond: lisible ? peinture(fond.couleur, contexte.profil) : encres.neutre, largeur: COLONNE.largeur, hauteur: 24, rayon: 4, alignement: CENTRE });
     }),
   ]));
@@ -525,10 +469,9 @@ function sectionDesContrastes(contexte: Contexte, mode: Mode, encres: Encres, la
 /* Le cadre */
 
 /**
- * Un thème : son en-tête et son verdict, puis les rampes, les usages,
- * l'exemple et les grilles. Une palette libre sort du modèle : ni usages, ni
- * interface d'exemple, et son en-tête dit « Palette libre · N nuances » à la
- * place du verdict (W6.6).
+ * Un thème : son en-tête et son verdict, puis les rampes, les usages et les
+ * grilles. Une palette libre sort du modèle : pas d'usages, et son en-tête
+ * dit « Palette libre · N nuances » à la place du verdict (W6.6).
  */
 function sectionDuTheme(contexte: Contexte, mode: Mode, grille: boolean): NoeudCadre {
   const { recette, analyse } = contexte;
@@ -540,7 +483,7 @@ function sectionDuTheme(contexte: Contexte, mode: Mode, grille: boolean): NoeudC
     fond: encres.neutre, hauteur: 24, margeLaterale: TRAME, rayon: 12, alignement: CENTRE,
   });
   const section = (enfant: NoeudCadre): NoeudCadre[] => [filet(encres.filet), enfant];
-  const modele = analyse.libre ? [] : [...section(sectionDesUsages(contexte, mode, encres, largeur)), ...section(sectionDExemple(contexte, mode, encres))];
+  const modele = analyse.libre ? [] : section(sectionDesUsages(contexte, mode, encres, largeur));
   return cadre(`thème ${mode}`, 'VERTICAL', [
     cadre('en-tête', 'HORIZONTAL', [texte('titre', enTeteDuTheme(mode, recette.fonds[mode]), 'chiffre', encres.seconde), verdict], {
       largeur, alignement: { principal: 'SPACE_BETWEEN', secondaire: 'CENTER' },

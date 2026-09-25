@@ -25,6 +25,8 @@
   --figma-color-bg-brand-hover: #007be5;
   --figma-color-bg-warning-tertiary: #fff1d6;
   --figma-color-bg-danger-tertiary: #ffe0db;
+  --figma-color-bg-danger: #f24822;
+  --figma-color-bg-danger-hover: #dc3412;
   --figma-color-border: #e6e6e6;
   --figma-color-border-brand-strong: #0d99ff;
   --figma-color-text: #1e1e1e;
@@ -34,6 +36,7 @@
   --figma-color-text-success: #168b52;
   --figma-color-text-warning: #a55b00;
   --figma-color-text-onbrand: #ffffff;
+  --figma-color-text-ondanger: #ffffff;
 }
 
 .figma-dark {
@@ -45,6 +48,8 @@
   --figma-color-bg-brand-hover: #3ab0ff;
   --figma-color-bg-warning-tertiary: #4a3a10;
   --figma-color-bg-danger-tertiary: #4d1f17;
+  --figma-color-bg-danger: #e03e1a;
+  --figma-color-bg-danger-hover: #c4381c;
   --figma-color-border: #444444;
   --figma-color-border-brand-strong: #0d99ff;
   --figma-color-text: #ffffff;
@@ -54,4 +59,5 @@
   --figma-color-text-success: #85e0a3;
   --figma-color-text-warning: #ffc470;
   --figma-color-text-onbrand: #ffffff;
+  --figma-color-text-ondanger: #ffffff;
 }

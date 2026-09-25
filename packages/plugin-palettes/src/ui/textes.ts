@@ -9,10 +9,12 @@
  * ceux des données ; seul leur affichage se traduit ici.
  */
 import type { ChampDePalette } from '../importation';
+import type { EtatDuCadre } from '../planche/fraicheur';
 import {
   FORMAT_RECETTE,
   ecrireArrondi,
   ecrireContraste,
+  niveauxWcag,
   type Alerte,
   type Ancrage,
   type Association,
@@ -55,7 +57,7 @@ export const TEXTES = {
   titreAlertes: 'Points à vérifier',
   titreNotices: 'À savoir',
   // N075, N086 : le bouton de la barre, puis le titre de la carte qu'il ouvre.
-  nouvellePalette: '+ Nouvelle palette',
+  nouvellePalette: 'Nouvelle palette',
   titreDeLaCreation: 'Nouvelle palette',
   creer: 'Créer la palette',
   depuisLaSelection: 'Utiliser la couleur sélectionnée dans Figma',
@@ -91,7 +93,6 @@ export const TEXTES_DE_L_ONGLET = {
   garanties: 'Garanties de contraste',
   intensites: 'Intensités',
   derive: 'Dérive de teinte',
-  generation: 'Génération',
 } as const;
 
 /** Le titre d'un groupe de messages et son nombre ([VER-14]) : « Promesses à corriger · 2 ». */
@@ -107,6 +108,7 @@ export const LIBELLES_DES_CIBLES: Record<CibleDAction, string> = {
   'luminosite-commune': 'Luminosité des nuances',
   fonds: 'Couleurs de fond',
   'intensites-communes': 'Intensités communes',
+  'ajuster-reference': 'Ajuster la référence',
 };
 
 /** Les libellés des Réglages communs (section 8.3), dans l'ordre du panneau. */
@@ -515,8 +517,13 @@ export const TEXTES_DU_DETAIL = {
   titre: (profil: Profil, numero: number) => `${NOM_DU_PROFIL[profil]} · ${numero}`,
   reference: '◆ Votre couleur de référence exacte',
   sertA: 'Sert à',
-  nuanceLibre: 'Nuance libre : aucun usage prévu',
-  mesures: 'Mesures détaillées',
+  // Une nuance qu'aucun rôle ne vise ; « libre » désigne une palette sortie du modèle (N102).
+  sansRole: 'Sans rôle',
+  contrastes: 'Contrastes',
+  fondDuTheme: 'Fond du thème',
+  blanc: 'Blanc',
+  noir: 'Noir',
+  oklch: 'OKLCH',
   titreDuFond: 'on-solid · fond du thème',
   fondDePage: (debut: number, fin: number) => `Fond de page du thème, neutral.50 du design system. Il se pose en texte sur solid ${debut} à ${fin}.`,
   garantie: (tenue: boolean, sens: string, contraste: number) => `${tenue ? '✓' : '✗'} ${sens} : ${contrasteEcrit(contraste)}`,
@@ -560,11 +567,8 @@ export const TEXTES_DU_NUANCIER = {
   copie: 'Code copié',
   etiquetteDeNuance: (profil: string, numero: number, hexa: string) => `Profil ${profil}, nuance ${numero}, couleur ${hexa}`,
   memeCouleur: (numero: number) => `Même couleur que la nuance ${numero}.`,
-  avecLeFond: (valeur: string) => `Contraste avec le fond : ${valeur}`,
-  avecLeBlanc: (valeur: string) => `Avec le blanc : ${valeur}`,
-  avecLeNoir: (valeur: string) => `Avec le noir : ${valeur}`,
   tresProche: (profil: string) => `Très proche de ${profil}`,
-  oklch: (L: number, C: number, H: number) => `Luminosité L : ${ecrireArrondi(L, 3)} · chroma C : ${ecrireArrondi(C, 3)} · teinte H : ${Math.round(H) % 360}°`,
+  oklch: (L: number, C: number, H: number) => `L ${ecrireArrondi(L, 3)} · C ${ecrireArrondi(C, 3)} · H ${Math.round(H) % 360}°`,
   revenirAuTheme: (mode: Mode) => `Revenir au thème ${NOM_DU_MODE[mode]}`,
   fondCourt: 'fond',
   etiquetteDuFond: (hexa: string) => `on-solid, fond du thème, couleur ${hexa}`,
@@ -587,12 +591,42 @@ export function associationEcrite(association: Association, etat: EtatDePaire): 
   return `${NOM_DE_L_EMPLOI[association.premier]} sur ${second}${ETATS_DU_DECALAGE[etat]}`;
 }
 
-/** Les niveaux WCAG d'un contraste, en mots ([VER-13]). */
-export function niveauxEcrits(niveaux: NiveauxWcag): string {
-  const texte = niveaux.texte ?? 'Insuffisant';
-  const grand = niveaux.grandTexte === 'AA' ? ' · AA grand texte' : '';
-  const graphique = niveaux.graphique ? 'Minimum 3:1 atteint' : 'Minimum 3:1 non atteint';
-  return `Texte courant : ${texte}${grand} · éléments graphiques : ${graphique}`;
+/** Ce qu'un badge de niveau juge ([VER-13]) : un texte courant, un grand texte ou un élément graphique. */
+export type Jugement = 'texte' | 'grandTexte' | 'graphique';
+
+const NOM_DU_JUGEMENT: Record<Jugement, string> = {
+  texte: 'Texte courant',
+  grandTexte: 'Grand texte',
+  graphique: 'Éléments graphiques',
+};
+
+/** Un niveau WCAG écrit : le badge visible, l'étiquette que l'assistance technique lit, et sa réussite. */
+export interface NiveauEcrit {
+  readonly ecrit: string;
+  readonly etiquette: string;
+  readonly atteint: boolean;
+}
+
+/**
+ * Le badge d'un contraste ([VER-13]), lu dans `niveauxWcag` aux seuils fixes
+ * du WCAG, jamais aux minimums réglés : « AAA », « AA », ou « AA ✗ » sous le
+ * premier niveau. Un élément graphique n'a que AA (critère 1.4.11).
+ */
+export function niveauEcrit(valeur: number, jugement: Jugement): NiveauEcrit {
+  const niveaux: NiveauxWcag = niveauxWcag(valeur);
+  const nom = NOM_DU_JUGEMENT[jugement];
+  const niveau = jugement === 'graphique' ? (niveaux.graphique ? 'AA' : null) : niveaux[jugement];
+  if (niveau === 'AAA') return { ecrit: 'AAA', etiquette: `${nom} : AAA atteint`, atteint: true };
+  if (niveau === 'AA') {
+    const suite = jugement === 'graphique' ? '' : ', AAA non atteint';
+    return { ecrit: 'AA', etiquette: `${nom} : AA atteint${suite}`, atteint: true };
+  }
+  return { ecrit: 'AA ✗', etiquette: `${nom} : AA non atteint`, atteint: false };
+}
+
+/** Ce que le badge d'une garantie juge : un texte pour une paire au minimum texte, un élément graphique sinon. */
+export function jugementDuSeuil(seuil: 'texte' | 'nonTexte'): Jugement {
+  return seuil === 'texte' ? 'texte' : 'graphique';
 }
 
 /** Un message qui montre aussi des mesures, une par ligne, ou un détail technique replié. */
@@ -937,10 +971,13 @@ export function importFutur(fichier: string, version: number): Constat {
 /** Les libellés de la génération et de l'onglet Planche (section 13.2). */
 export const TEXTES_DU_DESSIN = {
   dessiner: 'Générer sur Figma',
+  // Le geste de la ligne du titre, selon l'état du cadre ([UI-05]).
+  actualiserSurFigma: 'Actualiser sur Figma',
+  aJourSurFigma: 'À jour sur Figma',
+  generationEnCours: 'Génération…',
   dessinerTout: 'Générer toutes les palettes',
   aJour: 'À jour',
   perimee: 'À mettre à jour',
-  jamaisDessinee: 'Pas encore sur la planche',
   redessinerQuandMeme: 'Remplacer le cadre et son contenu',
   voirSurLaPlanche: 'Afficher dans Figma',
   reessayer: 'Réessayer',
@@ -958,15 +995,31 @@ export const TEXTES_DU_DESSIN = {
   themeDesFiches: 'Thème des fiches',
 } as const;
 
-/** L'état d'un cadre de palette, tel que les deux onglets l'écrivent ([PLA-20], V8.2). */
-export function etatDuCadreEcrit(etat: 'a-jour' | 'perimee' | 'jamais-dessinee' | 'introuvable' | 'illisible'): string {
+/**
+ * L'état d'un cadre de palette, tel que l'onglet Planches l'écrit ([PLA-20],
+ * V8.2). Un cadre jamais dessiné n'a pas d'état écrit : le geste
+ * « Générer sur Figma » le dit.
+ */
+export function etatDuCadreEcrit(etat: EtatDuCadre): string {
   return {
     'a-jour': TEXTES_DU_DESSIN.aJour,
     perimee: TEXTES_DU_DESSIN.perimee,
-    'jamais-dessinee': TEXTES_DU_DESSIN.jamaisDessinee,
+    'jamais-dessinee': '',
     introuvable: TEXTES_DU_DESSIN.introuvable,
     illisible: TEXTES_DU_DESSIN.illisible,
   }[etat];
+}
+
+/**
+ * Le geste de génération de la ligne du titre ([UI-05]) : « Générer sur
+ * Figma » sans cadre, « Actualiser sur Figma » quand le cadre a changé, et
+ * « À jour sur Figma », inactif, quand il est à jour. Un cadre introuvable ou
+ * illisible garde « Générer sur Figma » : son état s'écrit sous le titre.
+ */
+export function gesteDeGeneration(etat: EtatDuCadre): { readonly libelle: string; readonly actif: boolean } {
+  if (etat === 'a-jour') return { libelle: TEXTES_DU_DESSIN.aJourSurFigma, actif: false };
+  if (etat === 'perimee') return { libelle: TEXTES_DU_DESSIN.actualiserSurFigma, actif: true };
+  return { libelle: TEXTES_DU_DESSIN.dessiner, actif: true };
 }
 
 /** La page d'un cadre rangé hors de la page de la planche (V8.6, N048). */
@@ -1135,7 +1188,6 @@ export const TEXTES_DE_LA_PLANCHE = {
   // N093 : les titres des sections d'un thème.
   rampes: 'Les deux rampes',
   titreDesUsages: (profil: string) => `Quelle nuance pour quel usage · ${profil}`,
-  titreDeLExemple: (profil: string) => `Interface d’exemple · ${profil}`,
   contrastes: 'Contrastes, nuance par nuance',
   // N094 : chaque usage, son nom et ce qu'il habille ; l'anneau porte l'état focus.
   usages: {
@@ -1155,7 +1207,14 @@ export const TEXTES_DE_LA_PLANCHE = {
   noteDuRepere: '◆ : la couleur de référence exacte.',
   noteDesConfondus: '≈ : Soft et Vivid presque identiques à cette nuance.',
   fond: 'fond',
-  // N097 : l'interface d'exemple E2, un écran de réglages.
+  mode: { light: 'Thème Light', dark: 'Thème Dark' },
+} as const;
+
+/** La section « Interface de test » de l'onglet Palettes ([UI-14]) : l'écran E2, sur les textes qu'il portait sur la planche (N097). */
+export const TEXTES_DE_L_INTERFACE_DE_TEST = {
+  titre: 'Interface de test',
+  resume: (mode: Mode, profil: string) => `Thème ${NOM_DU_MODE[mode]} · ${profil}`,
+  ecran: 'Écran de réglages peint de la palette',
   exemple: {
     titre: 'Paramètres de l’équipe',
     badge: 'Nouveau',
@@ -1169,8 +1228,62 @@ export const TEXTES_DE_LA_PLANCHE = {
     encart: 'Les membres invités reçoivent un e-mail. En savoir plus',
     boutons: ['Annuler', 'Brouillon', 'Enregistrer'],
   },
-  mode: { light: 'Thème Light', dark: 'Thème Dark' },
 } as const;
+
+/** Le panneau « Ajuster la référence » et sa trace dans la configuration (W7, X7). */
+export const TEXTES_DE_L_AJUSTEMENT = {
+  lien: 'Ajuster la référence',
+  titre: 'Ajuster la référence',
+  originale: 'Originale',
+  proposition: 'Proposition',
+  luminosite: 'Luminosité',
+  plusSombre: 'Un pas plus sombre',
+  plusClair: 'Un pas plus clair',
+  code: 'Code de la proposition',
+  garanties: 'Garanties',
+  aucuneGarantieManquee: 'Aucune garantie manquée, avant comme après.',
+  appliquer: 'Appliquer',
+  annuler: 'Annuler',
+  ajusteeDepuis: (hexa: string) => `Ajustée depuis ${hexa}`,
+  revenir: 'Revenir à l’originale',
+  horsLimite: 'Aucun pas possible dans ce sens : la luminosité est à sa limite.',
+} as const;
+
+/** La nuance qui porterait la référence : une fois quand les deux thèmes s'accordent. */
+export function nuanceVisee(crans: { readonly [M in Mode]: number }): string {
+  return crans.light === crans.dark
+    ? `Nuance visée : ${crans.light} dans les deux thèmes`
+    : `Nuance visée : ${crans.light} en Thème Light, ${crans.dark} en Thème Dark`;
+}
+
+/** L'annonce sous un bouton de pas, quand ce pas changerait le numéro de la référence (section 3 de la conception). */
+export function annonceDuPas(sens: -1 | 1, changements: readonly { readonly mode: Mode; readonly numero: number }[]): string {
+  const pas = sens < 0 ? 'Le pas plus sombre' : 'Le pas plus clair';
+  const ou = changements.map(({ mode, numero }) => `au ${numero} en Thème ${NOM_DU_MODE[mode]}`).join(' et ');
+  return `${pas} place la référence ${ou}.`;
+}
+
+/** Le bilan d'un profil avant et après la proposition : « Vivid ✗ 2 → ✓ », ou « Soft ✓ inchangé ». */
+export function bilanDeLAjustement(profil: Profil, avant: number, apres: number): string {
+  const resultat = (manquees: number) => (manquees === 0 ? '✓' : `✗ ${manquees}`);
+  return avant === apres
+    ? `${NOM_DU_PROFIL[profil]} ${resultat(avant)} inchangé`
+    : `${NOM_DU_PROFIL[profil]} ${resultat(avant)} → ${resultat(apres)}`;
+}
+
+/** Une garantie avant et après la proposition : l'association, le thème, le profil, puis les deux contrastes. */
+export function garantieAvantApres(association: string, mode: Mode, profil: Profil, avant: number, apres: number): string {
+  return `${association} · Thème ${NOM_DU_MODE[mode]} · ${NOM_DU_PROFIL[profil]} : ${contrasteEcrit(avant)} → ${contrasteEcrit(apres)}`;
+}
+
+/** Un code saisi dans la configuration remplace une référence ajustée : l'originale n'est plus gardée (section 3 de la conception). */
+export function originaleRetiree(originale: string): Constat {
+  return {
+    ou: `Couleur d’origine retirée : ${originale}`,
+    quoi: 'La couleur saisie devient la nouvelle référence. La palette ne garde plus la couleur d’origine de l’ajustement.',
+    geste: 'Pour la retrouver, annulez avec Ctrl+Z, ou saisissez-la de nouveau.',
+  };
+}
 
 /** Le profil et la nuance de la référence, une fois si les deux thèmes s'accordent (V10.1). */
 function nuancesDeLaReference(ancrage: Ancrage): string {
@@ -1196,5 +1309,5 @@ export function verdictDuTheme(manquees: number): string {
 
 /** La légende des grilles, en une ligne ([PLA-16], N099). */
 export function legendeDesContrastes(seuils: Recette['seuils']): string {
-  return `Ligne : fond · colonne : texte · gras dès ${seuilEcrit(seuils.texte)}:1 · maigre dès ${seuilEcrit(seuils.nonTexte)}:1 · effacé en dessous`;
+  return `Ligne : fond · colonne : texte · gras dès ${seuilEcrit(seuils.texte)}:1 · maigre dès ${seuilEcrit(seuils.nonTexte)}:1 · effacé en dessous · AA dès 4,5:1 · AAA dès 7:1`;
 }

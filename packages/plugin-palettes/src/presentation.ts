@@ -32,7 +32,8 @@ export type CibleDAction =
   | 'derive'
   | 'luminosite-commune'
   | 'fonds'
-  | 'intensites-communes';
+  | 'intensites-communes'
+  | 'ajuster-reference';
 
 /** Les cibles qui ouvrent les Réglages communs. */
 export const CIBLES_COMMUNES: readonly CibleDAction[] = ['luminosite-commune', 'fonds', 'intensites-communes'];
@@ -102,10 +103,11 @@ export function carteDuMessage(cibles: readonly CibleDAction[]): CarteDuMessage 
 
 /**
  * Les réglages qu'une promesse manquée ouvre : l'intensité et la dérive de la
- * palette, puis la luminosité commune, qui touche toutes les palettes.
+ * palette, puis la luminosité commune, qui touche toutes les palettes, et
+ * enfin l’ajustement de la référence, qui ne touche que sa luminosité (W7.1).
  */
 export function ciblesDeLaPromesse(): CibleDAction[] {
-  return ['intensites-palette', 'derive', 'luminosite-commune'];
+  return ['intensites-palette', 'derive', 'luminosite-commune', 'ajuster-reference'];
 }
 
 /**

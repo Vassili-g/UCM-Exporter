@@ -103,7 +103,12 @@ const ouvrirLaPlanche = { clic: '#onglet-planche' };
 const importer = (contenu) => ({ fichier: { dans: '#panneau-planche input[type="file"]', nom: 'palettes-et-reglages.json', contenu } });
 
 const ouvrirLaConfiguration = { clic: '[aria-label="Ouvrir les réglages communs"]' };
-const dessinerLaPalette = { clic: '.generation-ligne .btn' };
+const dessinerLaPalette = { clic: '.tete-de-configuration .bouton-du-titre' };
+const deplierLInterfaceDeTest = { clic: '[aria-label="Interface de test"] .carte-bascule' };
+const montrerLeThemeDark = { clic: '.nuancier-tete .bascule-option:nth-child(2)' };
+
+/** Vert, ajusté d'un pas plus sombre : #16A34A devient #0DA047, et l'originale se garde (W7). */
+const VERT_AJUSTE = { ...palette('p-2b3c4d5e', 'Vert', '#0DA047'), originale: '#16A34A' };
 const deplierLaDerive = { clic: '[aria-label="Dérive de teinte"] .carte-bascule' };
 
 /** Sept palettes : une de plus que le seuil au-delà duquel tout dessiner se confirme. */
@@ -303,7 +308,7 @@ const ETATS = [
     id: 'dessin-en-cours',
     titre: 'Dessin en cours',
     quand: 'Le designer clique « Générer sur Figma » : le sandbox annonce le premier cadre.',
-    regarder: 'Le bouton qui dit la progression, et les deux onglets inertes : aucun geste possible.',
+    regarder: '« Génération… » inactif à droite du titre, la progression sous le titre, et les deux onglets inertes : aucun geste possible.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU])),
@@ -370,7 +375,7 @@ const ETATS = [
     id: 'planche-perimee',
     titre: 'Planche périmée',
     quand: 'Le cadre de Jaune a été dessiné sur une recette d’avant ; Ardoise n’a jamais été dessinée.',
-    regarder: 'Bleu « À jour », Jaune « À mettre à jour », Ardoise « Pas encore sur la planche » sans « Afficher dans Figma », et « Générer les 2 palettes qui ne sont pas à jour » en pied.',
+    regarder: 'Bleu « À jour », Jaune « À mettre à jour » et son geste « Actualiser sur Figma », Ardoise sans état écrit ni « Afficher dans Figma », et « Générer les 2 palettes qui ne sont pas à jour » en pied.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee(TROIS_PALETTES), 'SRGB', plancheLue([cadreDessine(rangee(TROIS_PALETTES), BLEU, '40:2'), cadreDessine(rangee(TROIS_PALETTES), JAUNE, '40:3', { empreinte: '0badc0de' })])),
@@ -464,7 +469,7 @@ const ETATS = [
   {
     id: 'creation-ouverte',
     titre: 'Création ouverte',
-    quand: 'Le designer clique « + Nouvelle palette » : la création s’ouvre sous le sélecteur.',
+    quand: 'Le designer clique « Nouvelle palette » : la création s’ouvre sous le sélecteur.',
     regarder: 'La carte « Nouvelle palette » : nom, couleur de référence et palette de base en trois colonnes, Auto pressé, puis « Créer la palette », la sélection Figma et « Annuler » sur une ligne, le focus dans le code.',
     existe: true,
     atteinte: [etatDuFichier(rangee([BLEU])), { clic: '.bouton-de-barre' }],
@@ -497,7 +502,7 @@ const ETATS = [
     id: 'generation-reussie',
     titre: 'Génération réussie',
     quand: 'La palette ouverte vient d’être générée sur Figma, et l’état du fichier est relu.',
-    regarder: 'La ligne de l’action : « À jour » et « Afficher dans Figma », sans message de succès empilé.',
+    regarder: '« Palette Bleu » et « À jour sur Figma » inactif sur une ligne, « Afficher dans Figma » dessous, sans message de succès empilé.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU])),
@@ -542,15 +547,15 @@ const ETATS = [
     id: 'detail-de-la-reference',
     titre: 'Détail de la référence',
     quand: 'Le designer choisit la nuance Vivid 600 de Bleu, qui porte la référence.',
-    regarder: 'La grande pastille, « Vivid · 600 », « ◆ Votre couleur de référence exacte », et sous « Sert à » les rôles border-control et focus avec leurs garanties et les numéros du partenaire.',
+    regarder: 'La grande pastille, « Vivid · 600 », « ◆ Votre couleur de référence exacte », sous « Sert à » les rôles border-control et focus avec leurs garanties, les numéros du partenaire et un badge AA ; puis la table des contrastes, fond du thème, blanc et noir, un badge par ligne, et OKLCH replié.',
     existe: true,
     atteinte: [etatDuFichier(rangee([BLEU])), { clic: '[aria-label^="Profil Vivid, nuance 600,"]' }],
   },
   {
     id: 'nuance-libre',
-    titre: 'Nuance libre',
+    titre: 'Nuance sans rôle',
     quand: 'Le designer choisit la nuance Vivid 500, qu’aucun rôle n’emploie.',
-    regarder: '« Nuance libre : aucun usage prévu », son contraste avec le fond, et les mesures détaillées repliées.',
+    regarder: '« Sans rôle », puis la table des contrastes, fond du thème, blanc et noir, chacun avec son badge AA ou AAA, et OKLCH replié : aucun contraste écrit deux fois.',
     existe: true,
     atteinte: [etatDuFichier(rangee([BLEU])), { clic: '[aria-label^="Profil Vivid, nuance 500,"]' }],
   },
@@ -621,9 +626,69 @@ const ETATS = [
     id: 'reference-ajustee',
     titre: 'Référence ajustée',
     quand: 'La référence #16A34A a été ajustée d’un pas plus sombre, en #0DA047, et l’originale est gardée.',
-    regarder: null,
-    existe: false,
-    attendu: 'W7.4',
+    regarder: 'Sous le code #0DA047, « Ajuster la référence », puis « Ajustée depuis #16A34A · Revenir à l’originale » ; le ◆ au 600 dans les deux thèmes.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([VERT_AJUSTE]))],
+  },
+  {
+    id: 'ajustement-ouvert',
+    titre: 'Ajuster la référence',
+    quand: 'Sur Vert, #16A34A, le designer ouvre « Ajuster la référence » et fait un pas plus sombre.',
+    regarder: 'Le panneau sous les colonnes : Originale #16A34A et Proposition #0DA047 côte à côte, la luminosité entre « − » et « + », le code, « Nuance visée : 600 dans les deux thèmes », les garanties Vivid « ✗ 2 → ✓ » et leurs lignes avant et après avec un badge, puis Appliquer et Annuler.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([palette('p-2b3c4d5e', 'Vert', '#16A34A')])),
+      { clic: '[aria-label="Configuration de la palette"] .colonnes-de-base .lien-de-constat' },
+      { clic: '[aria-label="Un pas plus sombre"]' },
+    ],
+  },
+  {
+    id: 'nuance-deselectionnee',
+    titre: 'Nuance désélectionnée',
+    quand: 'Le designer choisit la nuance Vivid 600, puis la reclique.',
+    regarder: 'Le détail refermé, aucune pastille entourée, et le focus resté sur Vivid 600.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '[aria-label^="Profil Vivid, nuance 600,"]' }, { clic: '[aria-label^="Profil Vivid, nuance 600,"]' }],
+  },
+  {
+    id: 'titre-generer',
+    titre: 'Titre et « Générer sur Figma »',
+    quand: 'Bleu n’a jamais été générée.',
+    regarder: '« Palette Bleu » à gauche et « Générer sur Figma » à droite, sur une ligne, sans état écrit dessous.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU]))],
+  },
+  {
+    id: 'titre-actualiser',
+    titre: 'Titre et « Actualiser sur Figma »',
+    quand: 'Le cadre de Bleu a été dessiné sur une recette d’avant : il a changé depuis.',
+    regarder: '« Palette Bleu » et « Actualiser sur Figma » sur une ligne, « Afficher dans Figma » dessous.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2', { empreinte: '0badc0de' })]))],
+  },
+  {
+    id: 'titre-nom-long',
+    titre: 'Titre d’un nom long',
+    quand: 'La palette porte un nom de soixante caractères, à la largeur minimale de la fenêtre.',
+    regarder: 'Le nom coupé par des points de suspension, et « Générer sur Figma » entier, dans le panneau.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([{ ...BLEU, nom: 'Bleu institutionnel des parcours de souscription en ligne' }]))],
+  },
+  {
+    id: 'interface-de-test-light',
+    titre: 'Interface de test, thème Light',
+    quand: 'Le designer déplie « Interface de test », la dernière carte de l’onglet.',
+    regarder: 'L’écran de réglages peint de Bleu sur le fond Light : badge et encart en surface, onglet souligné de solid, champ bordé de border-control, case et interrupteur en solid, trois boutons sans fond, surface et solid.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU])), deplierLInterfaceDeTest],
+  },
+  {
+    id: 'interface-de-test-dark',
+    titre: 'Interface de test, thème Dark',
+    quand: 'L’aperçu passe au thème Dark, « Interface de test » dépliée.',
+    regarder: 'Le même écran sur le fond Dark, peint des nuances Dark, et le résumé de la carte « Thème Dark · Vivid ».',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU])), deplierLInterfaceDeTest, montrerLeThemeDark],
   },
 ];
 

@@ -6,10 +6,10 @@
  *
  * Les pastilles forment une grille au sens WAI-ARIA : une seule est atteinte
  * par la tabulation, les flèches, Origine et Fin déplacent le focus, Entrée et
- * Espace choisissent. La pastille `on-solid` est la première colonne des deux
- * rangées. Le survol signale seulement la cible. La copie d'un code est un
- * bouton du détail, distinct du choix d'une nuance. Les accolades ne se
- * focalisent pas.
+ * Espace choisissent, et relâchent la nuance déjà choisie. La pastille
+ * `on-solid` est la première colonne des deux rangées. Le survol signale
+ * seulement la cible. La copie d'un code est un bouton du détail, distinct du
+ * choix d'une nuance. Les accolades ne se focalisent pas.
  */
 import {
   PROFILS,
@@ -21,7 +21,6 @@ import {
   etatDeLaPaire,
   lireHexa,
   mesurerCran,
-  niveauxWcag,
   type Association,
   type Cran,
   type Emploi,
@@ -36,6 +35,7 @@ import type { AnalyseDePalette } from '../analyse';
 import { accoladesDe } from '../presentation';
 import { fondsProposes } from './couleur/propositions';
 import { ouvrirLeSelecteur, suivreLaCouleur } from './couleur/selecteur';
+import { badgeDeNiveau } from './badge';
 import { specimenDuRole } from './specimens';
 import {
   NOM_DE_L_ETAT,
@@ -47,7 +47,7 @@ import {
   TEXTES_DU_NUANCIER,
   TEXTES_DU_SELECTEUR,
   contrasteEcrit,
-  niveauxEcrits,
+  jugementDuSeuil,
 } from './textes';
 
 /** Ce que le nuancier montre. */
@@ -84,7 +84,7 @@ export interface NuancierUi {
   choisirLeTheme(mode: Mode): void;
 }
 
-type Choix =
+export type Choix =
   /** Une nuance, par son rang et par son numéro : quand la liste change, le choix suit le numéro. */
   | { readonly nature: 'nuance'; readonly profil: Profil; readonly rang: number; readonly numero: number }
   | { readonly nature: 'fond' };
@@ -140,6 +140,12 @@ function copier(texte: string): void {
   zone.select();
   document.execCommand('copy');
   zone.remove();
+}
+
+/** Deux choix désignent la même cellule : même nature, et pour une nuance même profil et même rang. */
+export function memeChoix(a: Choix | null, b: Choix): boolean {
+  if (!a || a.nature !== b.nature) return false;
+  return a.nature === 'fond' || (b.nature === 'nuance' && a.profil === b.profil && a.rang === b.rang);
 }
 
 /** La colonne CSS d'une colonne de l'aperçu : `-2` le nom du profil, `-1` la pastille `on-solid`, `0` la première nuance. */
@@ -264,11 +270,16 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     dessiner();
   }
 
+  /** Un clic, Entrée ou Espace : choisit la cellule, ou la relâche et referme son détail quand elle est déjà choisie ([UI-04]). */
+  function basculer(suivant: Choix): void {
+    choisir(memeChoix(choix, suivant) ? null : suivant);
+  }
+
   grille.addEventListener('keydown', (evenement) => {
     const largeur = cellules[active.rampe]?.length ?? 0;
     if (evenement.key === 'Enter' || evenement.key === ' ') {
       evenement.preventDefault();
-      choisir(choixDe(active.rampe, active.colonne));
+      basculer(choixDe(active.rampe, active.colonne));
       activer(active.rampe, active.colonne, true);
       return;
     }
@@ -308,6 +319,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     const lien = bouton('lien-de-constat', TEXTES_DU_DETAIL.garantie(promesse.verdict === 'tenue', sens, promesse.contraste));
     lien.classList.add('garantie-du-detail');
     lien.dataset.verdict = promesse.verdict;
+    lien.append(badgeDeNiveau(promesse.contraste, jugementDuSeuil(promesse.paire.seuil)));
     lien.addEventListener('click', () => gestes.choisirGarantie(associationDe(promesse.paire)));
     return lien;
   }
@@ -328,27 +340,47 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     return ligne;
   }
 
-  /** Les mesures repliées : niveaux WCAG, blanc et noir, OKLCH, nuances identiques ou confondues ([VER-13]). */
-  function mesuresDetaillees(cran: Cran, profil: Profil, rang: number, entrees: EntreesDuNuancier, fondDuMode: Rgb8): HTMLDetailsElement {
+  /**
+   * Les contrastes d'une nuance, en table : le fond du thème, le blanc et le
+   * noir, un ratio et un badge par ligne, que le badge juge en texte courant
+   * ([VER-13]). Suivent les nuances identiques ou confondues, s'il y en a.
+   */
+  function contrastesDeLaNuance(cran: Cran, profil: Profil, rang: number, entrees: EntreesDuNuancier, fondDuMode: Rgb8): HTMLElement[] {
     const { recette, analyse } = entrees;
     const numero = analyse.grille.crans[rang];
     const mesure = mesurerCran(cran.couleur, fondDuMode, recette.seuils);
+    const table = document.createElement('div');
+    table.className = 'detail-contrastes';
+    table.setAttribute('role', 'table');
+    table.setAttribute('aria-label', TEXTES_DU_DETAIL.contrastes);
+    for (const [nom, valeur] of [[TEXTES_DU_DETAIL.fondDuTheme, mesure.fond], [TEXTES_DU_DETAIL.blanc, mesure.blanc], [TEXTES_DU_DETAIL.noir, mesure.noir]] as const) {
+      const ligne = document.createElement('div');
+      ligne.className = 'detail-contraste';
+      ligne.setAttribute('role', 'row');
+      const ratio = paragraphe(contrasteEcrit(valeur));
+      ratio.className = 'detail-ratio';
+      const cellules = [paragraphe(nom, 'ligne-secondaire'), ratio, badgeDeNiveau(valeur, 'texte')];
+      for (const cellule of cellules) cellule.setAttribute('role', 'cell');
+      ligne.append(...cellules);
+      table.append(ligne);
+    }
+    const blocs: HTMLElement[] = [sousTitre(TEXTES_DU_DETAIL.contrastes), table];
+    for (const autre of [rang - 1, rang + 1].filter((voisin) => analyse.rampes[profil][mode][voisin]?.hexa === cran.hexa)) {
+      blocs.push(paragraphe(TEXTES_DU_NUANCIER.memeCouleur(analyse.grille.crans[autre]), 'ligne-secondaire'));
+    }
+    if (entrees.confondues.some((confondue) => confondue.mode === mode && confondue.cran === numero)) {
+      blocs.push(paragraphe(TEXTES_DU_NUANCIER.tresProche(profil === 'soft' ? 'vivid' : 'soft'), 'ligne-secondaire'));
+    }
+    return blocs;
+  }
+
+  /** Les valeurs OKLCH, repliées : elles servent à qui compare deux nuances, pas à choisir un usage. */
+  function repliOklch(cran: Cran): HTMLDetailsElement {
     const repli = document.createElement('details');
     repli.className = 'constat-detail';
     const resume = document.createElement('summary');
-    resume.textContent = TEXTES_DU_DETAIL.mesures;
-    repli.append(
-      resume,
-      paragraphe(`${TEXTES_DU_NUANCIER.avecLeFond(contrasteEcrit(mesure.fond))} · ${niveauxEcrits(niveauxWcag(mesure.fond))}`),
-      paragraphe(`${TEXTES_DU_NUANCIER.avecLeBlanc(contrasteEcrit(mesure.blanc))} · ${TEXTES_DU_NUANCIER.avecLeNoir(contrasteEcrit(mesure.noir))}`),
-      paragraphe(TEXTES_DU_NUANCIER.oklch(cran.L, cran.C, cran.H)),
-    );
-    for (const autre of [rang - 1, rang + 1].filter((voisin) => analyse.rampes[profil][mode][voisin]?.hexa === cran.hexa)) {
-      repli.append(paragraphe(TEXTES_DU_NUANCIER.memeCouleur(analyse.grille.crans[autre])));
-    }
-    if (entrees.confondues.some((confondue) => confondue.mode === mode && confondue.cran === numero)) {
-      repli.append(paragraphe(TEXTES_DU_NUANCIER.tresProche(profil === 'soft' ? 'vivid' : 'soft')));
-    }
+    resume.textContent = TEXTES_DU_DETAIL.oklch;
+    repli.append(resume, paragraphe(TEXTES_DU_NUANCIER.oklch(cran.L, cran.C, cran.H)));
     return repli;
   }
 
@@ -385,20 +417,17 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       reference.className = 'detail-reference';
       blocs.push(reference);
     }
-    // Une palette libre n'a pas de rôles : chaque nuance s'y lit comme une nuance libre (W6.5).
+    // Une palette libre n'a pas de rôles : aucune de ses nuances n'en reçoit (W6.5).
     const emplois = analyse.libre ? [] : emploisDuCran(crans, rang);
     if (emplois.length === 0) {
-      blocs.push(
-        sousTitre(TEXTES_DU_DETAIL.nuanceLibre),
-        paragraphe(TEXTES_DU_NUANCIER.avecLeFond(contrasteEcrit(contraste(cran.couleur, fondDuMode)))),
-      );
+      blocs.push(sousTitre(TEXTES_DU_DETAIL.sansRole));
     } else {
       blocs.push(sousTitre(TEXTES_DU_DETAIL.sertA));
       for (const { emploi, decalage } of emplois) {
         blocs.push(ligneDUsage(emploi, decalage, specimenDuRole(emploi, cran.couleur, fondDuMode), promessesDuRole(analyse, profil, emploi, decalage)));
       }
     }
-    blocs.push(mesuresDetaillees(cran, profil, rang, entrees, fondDuMode));
+    blocs.push(...contrastesDeLaNuance(cran, profil, rang, entrees, fondDuMode), repliOklch(cran));
     return blocs;
   }
 
@@ -474,6 +503,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     const couleurDuFond = lireHexa(recette.fonds[mode]) ?? [255, 255, 255];
     const encres = encresSur(couleurDuFond);
     surface.style.background = recette.fonds[mode];
+    surface.style.setProperty('--fond-surface', recette.fonds[mode]);
     surface.style.setProperty('--encre-surface', encres.encre);
     surface.style.setProperty('--encre-surface-seconde', encres.seconde);
     surface.style.setProperty('--bordure-surface', encres.bordure);
@@ -522,7 +552,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     onSolid.hidden = analyse.libre;
     onSolid.addEventListener('click', () => {
       active = { rampe: active.rampe, colonne: 0 };
-      choisir({ nature: 'fond' });
+      basculer({ nature: 'fond' });
       activer(active.rampe, 0, true);
     });
     onSolid.addEventListener('focus', () => { active = { rampe: active.rampe, colonne: 0 }; });
@@ -567,7 +597,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
         pastille.tabIndex = -1;
         pastille.addEventListener('click', () => {
           active = { rampe: rangDeRampe, colonne: rang + 1 };
-          choisir({ nature: 'nuance', profil, rang, numero });
+          basculer({ nature: 'nuance', profil, rang, numero });
           activer(rangDeRampe, rang + 1, true);
         });
         pastille.addEventListener('focus', () => { active = { rampe: rangDeRampe, colonne: rang + 1 }; });

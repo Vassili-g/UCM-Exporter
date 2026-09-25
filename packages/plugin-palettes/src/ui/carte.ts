@@ -9,8 +9,6 @@ export interface OptionsDeCarte {
   readonly titre: string;
   /** Une carte repliable, et son état à l'ouverture du plugin. */
   readonly repliable?: { readonly ouverte: boolean };
-  /** La carte de génération porte le fond du panneau, et son titre ne se montre pas. */
-  readonly plate?: boolean;
   /** Le titre ne sert que de nom accessible : l'en-tête ne porte que les contrôles que l'appelant y pose ([UI-04]). */
   readonly sansTitre?: boolean;
 }
@@ -35,7 +33,6 @@ let compteur = 0;
 export function createCarte(options: OptionsDeCarte): CarteUi {
   const element = document.createElement('section');
   element.className = 'carte';
-  if (options.plate) element.classList.add('carte-plate');
   const corps = document.createElement('div');
   corps.className = 'carte-corps';
   compteur += 1;
@@ -74,8 +71,7 @@ export function createCarte(options: OptionsDeCarte): CarteUi {
     if (options.sansTitre) tete.append(resume);
     else tete.append(titre, resume);
   }
-  if (options.plate) element.append(corps);
-  else element.append(tete, corps);
+  element.append(tete, corps);
 
   let desactivee = false;
 

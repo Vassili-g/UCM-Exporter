@@ -401,7 +401,7 @@ test('[ENT-04] une palette se crée depuis la couleur de la sélection', async (
   const page = await ouvrirSur('alertes-seules');
   try {
     let avant = await compte(page);
-    await page.getByRole('button', { name: '+ Nouvelle palette' }).click();
+    await page.getByRole('button', { name: 'Nouvelle palette', exact: true }).click();
     await page.getByRole('button', { name: 'Utiliser la couleur sélectionnée dans Figma' }).click();
     const demande = await prochaine(page, avant);
     assert.equal(demande.type, 'lire-selection');
@@ -468,7 +468,7 @@ test('[UI-06] à 500 px, la liste prend la largeur libre, les deux gestes ont sa
     message.classement.recette.palettes[0].nom = 'Jaune principal de la marque, déclinaison institutionnelle';
     await envoyer(page, message);
     const liste = await page.locator('.selecteur-bouton').boundingBox();
-    const nouvelle = await page.getByRole('button', { name: '+ Nouvelle palette' }).boundingBox();
+    const nouvelle = await page.getByRole('button', { name: 'Nouvelle palette', exact: true }).boundingBox();
     const menu = await page.getByRole('button', { name: 'Actions sur la palette' }).boundingBox();
     const barre = await page.locator('.barre-gestes').boundingBox();
     assert.deepEqual([nouvelle.height, menu.height], [liste.height, liste.height]);
@@ -502,7 +502,7 @@ test('[UI-11] le titre dit « Palette [nom] » et suit la saisie du nom, sans re
 test('[UI-06] la création est une carte en trois colonnes, en Auto ; Entrée crée avec la palette de base choisie, Échap annule', async () => {
   const page = await ouvrirSur('alertes-seules');
   try {
-    const nouvelle = page.getByRole('button', { name: '+ Nouvelle palette' });
+    const nouvelle = page.getByRole('button', { name: 'Nouvelle palette', exact: true });
     await nouvelle.click();
     const carte = page.locator('[aria-label="Nouvelle palette"]');
     assert.deepEqual(await carte.locator('.colonnes-de-base .libelle-de-champ').allTextContents(), ['Nom de la palette', 'Couleur de référence', 'Palette de base']);
@@ -696,7 +696,7 @@ test('W4.2 le sélecteur de la référence : nuances Vivid, formats, code invali
 test('W4.1 la création ouvre le sélecteur sans pastille, et la couleur choisie remplit le code', async () => {
   const page = await ouvrirSur('alertes-seules');
   try {
-    await page.getByRole('button', { name: '+ Nouvelle palette' }).click();
+    await page.getByRole('button', { name: 'Nouvelle palette', exact: true }).click();
     const creation = page.locator('[aria-label="Nouvelle palette"]');
     await creation.getByRole('button', { name: 'Couleur de référence' }).click();
     const selecteur = page.getByRole('dialog', { name: 'Couleur de référence' });
@@ -1266,20 +1266,20 @@ test('[PLA-24] [UI-05] « Générer sur Figma » envoie la palette ouverte, dit 
   const page = await ouvrirSur('dessin-en-cours');
   try {
     const avant = await compte(page);
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     const demande = await prochaine(page, avant);
     assert.deepEqual(demande, { type: 'dessiner', demande: demande.demande, palettes: [ID_DU_BLEU], grille: false, empreinteLue: messageDe('dessin-en-cours').empreinte, etrangersConfirmes: [] });
     assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), true);
     assert.equal(await page.locator('#panneau-planche').evaluate((panneau) => panneau.inert), true);
     assert.equal(await page.getByRole('button', { name: 'Ouvrir les réglages communs' }).isDisabled(), true);
     await envoyer(page, { type: 'progression', demande: demande.demande, fait: 0, total: 1, nom: 'Bleu' });
-    assert.equal(await page.locator('.generation-ligne .btn').textContent(), 'Génération de « Bleu »…');
+    assert.equal(await page.locator('.tete-de-configuration .bouton-du-titre').textContent(), 'Génération de « Bleu »…');
     assert.equal(await page.locator('.etat-du-cadre').isVisible(), false, 'la progression remplace l’état');
 
     const cadres = [{ palette: ID_DU_BLEU, cadre: '12:34' }];
     await envoyer(page, dessinDe(demande.demande, { issue: 'dessinee', page: '5:6', cadres, peints: [] }));
     assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), false);
-    assert.equal(await page.locator('.generation-ligne .btn').textContent(), 'Générer sur Figma');
+    assert.equal(await page.locator('.tete-de-configuration .bouton-du-titre').textContent(), 'Générer sur Figma');
     assert.equal(await page.locator('#panneau-palettes .generation .constat').count(), 0, 'aucun message de succès empilé');
     // Un dessin fini a posé des cadres : l'état se relit, et la ligne de l'action dit l'état du cadre.
     const relecture = await prochaine(page, avant + 1);
@@ -1330,7 +1330,7 @@ test('[UI-05] l’option de grille est un seul état : cochée dans l’onglet P
     await page.getByRole('tab', { name: 'Palettes', exact: true }).click();
     assert.equal(await page.locator('#panneau-palettes .options-de-generation summary').textContent(), 'Options de génération : avec la grille des contrastes');
     const avant = await compte(page);
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     assert.equal((await prochaine(page, avant)).grille, true);
   } finally {
     await page.close();
@@ -1358,7 +1358,7 @@ test('[PLA-22] un dessin interrompu se relance à l’identique par « Réessaye
   const page = await ouvrirSur('dessin-interrompu');
   try {
     const avant = await compte(page);
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     const premiere = await prochaine(page, avant);
     await envoyer(page, dessinDe(premiere.demande, { issue: 'interrompue', palette: ID_DU_BLEU, message: 'refus', dessines: 0 }));
     assert.equal(await page.locator('#panneau-palettes .constat-bloquant .constat-quoi').textContent(), 'La génération s’est arrêtée : aucune nouvelle présentation de palette n’a été créée.');
@@ -1376,7 +1376,7 @@ test('E13 : un dessin refusé sur une autre recette propose de recharger', async
   const page = await ouvrirSur('dessin-interrompu');
   try {
     const avant = await compte(page);
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     const demande = await prochaine(page, avant);
     await envoyer(page, dessinDe(demande.demande, { issue: 'modifiee-ailleurs' }));
     // La fin du dessin relit déjà l'état : le clic doit en demander une seconde lecture, et aucun dessin.
@@ -1409,11 +1409,11 @@ test('E13 : un dessin qui attendait un rangement refusé est abandonné, et l’
     await page.getByRole('button', { name: 'Actions sur la palette' }).click();
     await page.getByRole('menuitem', { name: 'Dupliquer la palette' }).click();
     const rangement = await prochaine(page, avant);
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), true);
     await envoyer(page, { type: 'rangement', demande: rangement.demande, issue: { issue: 'modifiee-ailleurs' } });
     assert.equal(await page.locator('#panneau-palettes').evaluate((panneau) => panneau.inert), false);
-    assert.equal(await page.locator('.generation-ligne .btn').textContent(), 'Générer sur Figma');
+    assert.equal(await page.locator('.tete-de-configuration .bouton-du-titre').textContent(), 'Générer sur Figma');
     assert.deepEqual((await demandes(page)).slice(avant).map((demande) => demande.type), ['ranger-recette']);
   } finally {
     await page.close();
@@ -1582,7 +1582,7 @@ const ETRANGERS = { issue: 'etrangers', cadres: [{ palette: ID_DU_BLEU, calques:
 test('D-H : des calques étrangers se confirment ; « Annuler » ne dessine rien, « Redessiner quand même » les nomme au sandbox', async () => {
   const page = await ouvrirSur('calques-etrangers');
   try {
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     await envoyer(page, dessinDe((await dessinEnvoye(page, 1)).demande, ETRANGERS));
     const confirmation = page.locator('#panneau-palettes .confirmation', { hasText: 'La mise à jour supprimera' });
     assert.equal(await confirmation.locator('.constat-quoi').textContent(), 'La mise à jour supprimera les 2 calques que vous avez ajoutés dans ce cadre : « Note », « Flèche ».');
@@ -1591,7 +1591,7 @@ test('D-H : des calques étrangers se confirment ; « Annuler » ne dessine rien
     assert.equal(await confirmation.count(), 0);
     assert.equal((await dessinsEnvoyes(page)).length, 1, 'annuler ne dessine rien');
 
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     const seconde = await dessinEnvoye(page, 2);
     await envoyer(page, dessinDe(seconde.demande, ETRANGERS));
     await page.getByRole('button', { name: 'Remplacer le cadre et son contenu' }).click();
@@ -1607,11 +1607,11 @@ test('L6.14 : une couleur peinte autrement que l’aperçu est un point à véri
   try {
     const cadres = [{ palette: ID_DU_BLEU, cadre: '12:34' }];
     const zone = page.locator('#panneau-palettes .generation');
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     await envoyer(page, dessinDe((await dessinEnvoye(page, 1)).demande, { issue: 'dessinee', page: '5:6', cadres, peints: [] }));
     assert.equal(await zone.locator('.constat').count(), 0);
 
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     const peints = [{ palette: ID_DU_BLEU, nom: 'vivid/light/700', hexa: '#000000' }];
     await envoyer(page, dessinDe((await dessinEnvoye(page, 2)).demande, { issue: 'dessinee', page: '5:6', cadres, peints }));
     assert.equal(await zone.locator('.constat-alerte .constat-quoi').textContent(), '1 couleur ne correspond pas à l’aperçu.');
@@ -1625,7 +1625,7 @@ test('L6.14 : une couleur peinte autrement que l’aperçu est un point à véri
 test('[UI-05] le résultat d’une génération qui ne porte pas sur la palette ouverte ne s’affiche pas dans sa configuration', async () => {
   const page = await ouvrirSur('alertes-seules');
   try {
-    await page.locator('.generation-ligne .btn').click();
+    await page.locator('.tete-de-configuration .bouton-du-titre').click();
     const demande = await dessinEnvoye(page, 1);
     const autre = { issue: 'etrangers', cadres: [{ palette: 'p-00000000', calques: [{ id: '40:7', nom: 'Note' }] }] };
     await envoyer(page, dessinDe(demande.demande, autre));

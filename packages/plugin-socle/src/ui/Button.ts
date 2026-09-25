@@ -3,8 +3,8 @@
  * Le composant reste volontairement DOM natif pour garder l'UI légère.
  */
 
-/** Les deux poids visuels d'un bouton. */
-export type VarianteBouton = 'primary' | 'secondary';
+/** Les poids visuels d'un bouton ; `danger` porte un geste destructif, jamais la couleur de marque. */
+export type VarianteBouton = 'primary' | 'secondary' | 'danger';
 
 /** Un `<button>` de cette interface, augmenté de `setLabel`. */
 export interface BoutonUi extends HTMLButtonElement {

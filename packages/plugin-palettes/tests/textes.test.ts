@@ -2,7 +2,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { FORMAT_RECETTE, PAIRES, classerRecette, niveauxWcag, recetteParDefaut, type Alerte, type Promesse } from 'ucm-couleur';
+import { FORMAT_RECETTE, PAIRES, classerRecette, recetteParDefaut, verifierPromesses, type Alerte, type Promesse } from 'ucm-couleur';
+
+import { nouvellePalette } from '../src/edition';
 
 import type { GroupeDePromesses } from '../src/presentation';
 import {
@@ -13,8 +15,10 @@ import {
   dessinInterrompu,
   ecartDePeinture,
   ligneDesValeurs,
+  gesteDeGeneration,
+  jugementDuSeuil,
   lignesDeNature,
-  niveauxEcrits,
+  niveauEcrit,
   nommerChamp,
   recetteFuture,
   recetteIllisible,
@@ -157,10 +161,44 @@ test('[VER-07] « Prête » quand tout est respecté, sinon le nombre de promess
   assert.equal(titreDeGroupe('Promesses à corriger', 3), 'Promesses à corriger · 3');
 });
 
-test('[VER-13] un niveau WCAG distingue texte courant, grand texte et éléments graphiques', () => {
-  assert.equal(niveauxEcrits(niveauxWcag(3.4)), 'Texte courant : Insuffisant · AA grand texte · éléments graphiques : Minimum 3:1 atteint');
-  assert.equal(niveauxEcrits(niveauxWcag(7.2)), 'Texte courant : AAA · éléments graphiques : Minimum 3:1 atteint');
-  assert.equal(niveauxEcrits(niveauxWcag(2)), 'Texte courant : Insuffisant · éléments graphiques : Minimum 3:1 non atteint');
+test('[VER-13] le badge d’un texte courant suit les seuils du WCAG à la frontière : 4,49 et 4,5, 6,99 et 7', () => {
+  const lire = (valeur: number) => niveauEcrit(valeur, 'texte').ecrit;
+  assert.deepEqual([4.49, 4.5, 6.99, 7].map(lire), ['AA ✗', 'AA', 'AA', 'AAA']);
+  assert.equal(niveauEcrit(4.49, 'texte').atteint, false);
+  assert.equal(niveauEcrit(6.99, 'texte').etiquette, 'Texte courant : AA atteint, AAA non atteint');
+  assert.equal(niveauEcrit(7, 'texte').etiquette, 'Texte courant : AAA atteint');
+  assert.equal(niveauEcrit(4.49, 'texte').etiquette, 'Texte courant : AA non atteint');
+});
+
+test('[VER-13] un grand texte atteint AA dès 3:1 et AAA dès 4,5:1', () => {
+  assert.deepEqual([2.99, 3, 4.49, 4.5].map((valeur) => niveauEcrit(valeur, 'grandTexte').ecrit), ['AA ✗', 'AA', 'AA', 'AAA']);
+});
+
+test('[VER-13] un élément graphique n’a que AA, à 3:1, même au-delà de 7:1', () => {
+  assert.deepEqual([2.99, 3, 21].map((valeur) => niveauEcrit(valeur, 'graphique').ecrit), ['AA ✗', 'AA', 'AA']);
+  assert.equal(niveauEcrit(21, 'graphique').etiquette, 'Éléments graphiques : AA atteint');
+  assert.equal(jugementDuSeuil('nonTexte'), 'graphique');
+  assert.equal(jugementDuSeuil('texte'), 'texte');
+});
+
+test('[VER-13] Q4.2 : un minimum réglé à 6:1 manque la promesse, et le badge dit toujours AA atteint', () => {
+  const recette = recetteParDefaut();
+  const exigeante = { ...recette, seuils: { ...recette.seuils, texte: 6 } };
+  const bleu = nouvellePalette(exigeante, 'p-0000000a', '#1E6FD9')!;
+  const entre = verifierPromesses(exigeante, bleu).filter((promesse) => promesse.paire.seuil === 'texte' && promesse.contraste >= 4.5 && promesse.contraste < 6);
+  assert.ok(entre.length > 0, 'une garantie de texte entre 4,5:1 et 6:1');
+  for (const promesse of entre) {
+    assert.equal(promesse.verdict, 'manquee');
+    assert.equal(niveauEcrit(promesse.contraste, jugementDuSeuil(promesse.paire.seuil)).ecrit, 'AA');
+  }
+});
+
+test('[UI-05] le geste du titre suit l’état du cadre : Générer, Actualiser, ou À jour inactif', () => {
+  assert.deepEqual(gesteDeGeneration('jamais-dessinee'), { libelle: 'Générer sur Figma', actif: true });
+  assert.deepEqual(gesteDeGeneration('perimee'), { libelle: 'Actualiser sur Figma', actif: true });
+  assert.deepEqual(gesteDeGeneration('a-jour'), { libelle: 'À jour sur Figma', actif: false });
+  assert.deepEqual(gesteDeGeneration('introuvable'), { libelle: 'Générer sur Figma', actif: true });
+  assert.deepEqual(gesteDeGeneration('illisible'), { libelle: 'Générer sur Figma', actif: true });
 });
 
 test('l’exception de Figma et l’exemple d’écart se lisent dans le détail, pas dans le message', () => {

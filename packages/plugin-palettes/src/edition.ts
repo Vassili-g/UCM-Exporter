@@ -28,8 +28,9 @@ export const MOTIF_HEXA = /^#?[0-9a-f]{6}$/i;
  * La palette avec une nouvelle référence ([ENT-01]). Une dérive d'origine
  * `tailwind` suit le préréglage recalculé sur la recette ; une dérive `libre`
  * ou `constante` reste telle quelle. Les parts `grise` se posent ou se
- * retirent selon la nouvelle référence ([ENT-09]). Rend `null` pour un hexa
- * qui ne se lit pas.
+ * retirent selon la nouvelle référence ([ENT-09]). Une nouvelle référence
+ * retire `originale` : seul `appliquerLAjustement` la garde. Rend `null` pour
+ * un hexa qui ne se lit pas.
  */
 export function changerReference(recette: Recette, palette: Palette, saisie: string): Palette | null {
   if (!MOTIF_HEXA.test(saisie.trim())) return null;
@@ -43,11 +44,35 @@ export function changerReference(recette: Recette, palette: Palette, saisie: str
   );
   const suivre = (derive: DeriveRangee): DeriveRangee =>
     derive.origine === 'tailwind' ? { ...prereglage, origine: 'tailwind' } : derive;
+  const { originale: _originale, ...sansOriginale } = palette;
   return ajusterPartsGrises(recette, {
-    ...palette,
+    ...sansOriginale,
     reference: ecrireHexa(couleur),
     derive: { ...palette.derive, soft: suivre(palette.derive.soft), vivid: suivre(palette.derive.vivid) },
   });
+}
+
+/** La couleur de référence d'avant le premier ajustement : `originale`, ou la référence d'une palette jamais ajustée. */
+export function originaleDe(palette: Palette): string {
+  return palette.originale ?? palette.reference;
+}
+
+/**
+ * « Appliquer » du panneau d'ajustement (W7.3) : la proposition devient la
+ * référence, par le même chemin qu'une saisie, et l'originale se garde, celle
+ * du premier ajustement. Une proposition égale à l'originale vaut « Revenir à
+ * l'originale ». Rend `null` pour un hexa qui ne se lit pas.
+ */
+export function appliquerLAjustement(recette: Recette, palette: Palette, proposition: string): Palette | null {
+  const originale = originaleDe(palette);
+  const suivante = changerReference(recette, palette, proposition);
+  if (!suivante || suivante.reference === originale.toUpperCase()) return suivante;
+  return { ...suivante, originale: originale.toUpperCase() };
+}
+
+/** « Revenir à l'originale » : l'originale redevient la référence, et le champ `originale` se retire. */
+export function revenirALOriginale(recette: Recette, palette: Palette): Palette {
+  return palette.originale ? changerReference(recette, palette, palette.originale) ?? palette : palette;
 }
 
 /** La palette avec un nouveau nom ; un nom vide retire la clé, et la palette s'affiche sous son hexa. */

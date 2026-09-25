@@ -220,7 +220,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     gestesDeLaCarte.className = 'fiche-gestes';
     const voir = bouton(TEXTES_DU_DESSIN.voirSurLaPlanche, 'bouton-discret', () => gestes.voirSurLaPlanche(cadre.page, [cadre.cadre]));
     voir.dataset.geste = 'voir';
-    const supprimer = bouton(TEXTES_DE_LA_PALETTE_SUPPRIMEE.supprimer, 'bouton-discret', () => retirer(cadre, rang));
+    const supprimer = createButton({ label: TEXTES_DE_LA_PALETTE_SUPPRIMEE.supprimer, variant: 'danger', onClick: () => retirer(cadre, rang) });
     supprimer.dataset.geste = 'supprimer';
     gestesDeLaCarte.append(voir, supprimer);
     carte.corps.append(texte, gestesDeLaCarte);
@@ -267,6 +267,8 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     etat.dataset.etat = cadre.etat;
     const horsDeLaPlanche = cadre.page !== null && planche !== null && cadre.page !== planche.page && cadre.nomDeLaPage;
     etat.textContent = horsDeLaPlanche ? `${etatDuCadreEcrit(cadre.etat)} · ${pageDuCadre(cadre.nomDeLaPage!)}` : etatDuCadreEcrit(cadre.etat);
+    // Un cadre jamais dessiné n'a pas d'état écrit : « Générer sur Figma » le dit.
+    etat.hidden = etat.textContent === '';
 
     const gestesDeLaFiche = document.createElement('div');
     gestesDeLaFiche.className = 'fiche-gestes';
@@ -279,7 +281,8 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     modifier.dataset.geste = 'modifier';
     gestesDeLaFiche.append(modifier);
     if (!sansGeneration && cadre.etat !== 'illisible') {
-      const generer = bouton(TEXTES_DU_DESSIN.dessiner, 'bouton-discret', () => lancer([id]));
+      const libelle = cadre.etat === 'perimee' ? TEXTES_DU_DESSIN.actualiserSurFigma : TEXTES_DU_DESSIN.dessiner;
+      const generer = bouton(libelle, 'bouton-discret', () => lancer([id]));
       generer.dataset.geste = 'generer';
       generer.disabled = enCours || blocage !== null;
       generer.title = blocage ?? '';
