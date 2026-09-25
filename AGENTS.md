@@ -495,8 +495,13 @@ La spécification en lien porte le raisonnement.
 ### Composition
 
 - Un composant unifié imbriqué est déclaré dans `composes`. Le critère « ce node
-  porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`), indexé sur
-  toutes les pages. Les règles documentent sans autoriser : tout `COMPONENT` ou
+  porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`). Une
+  dépendance est reconnue quand un conteneur posé sur la page de son maître écrit
+  son nom (`indexContractedNames`) : une dépendance de bibliothèque ne l’est
+  jamais, et un calque `component-name` masqué dans une instance ne compte pas.
+  L’analyse ne charge que les pages de ces maîtres, et
+  `loiDuDocumentIntact.test.ts` refuse `loadAllPagesAsync` dans
+  `src/contract/`. Les règles documentent sans autoriser : tout `COMPONENT` ou
   `COMPONENT_SET` sélectionné est exportable, et le parent ne réexporte pas les
   internes d’une dépendance reconnue. Une seule chose en remonte, et elle n’est
   pas normative : ce que ce parent a changé par rapport au maître, soit les
@@ -892,7 +897,9 @@ La spécification en lien porte le raisonnement.
   et s'arrête à la première qui porte une source. `loadAllPagesAsync` et
   `importComponentByKeyAsync` restent refusés dans tout `src/template/`.
 - `figma.skipInvisibleInstanceChildren` ne se pose qu'autour d'un relevé
-  synchrone, et reprend sa valeur d'avant. À `true` pendant un `await`, il ferait
+  synchrone, et reprend sa valeur d'avant. Deux fichiers le posent :
+  `src/template/sources.ts` pour les sources, `src/contract/composedComponents.ts`
+  pour le balayage de page de l'index. À `true` pendant un `await`, il ferait
   lire à une analyse concurrente une politique d'icône fausse, `visibilityOfLayer`
   dépendant d'un calque masqué.
 - Ce que la création écrit se défait d'un geste : supprimer le conteneur. Le

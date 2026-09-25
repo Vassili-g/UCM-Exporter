@@ -11,7 +11,7 @@ import {
   findMissingVariantCombinations,
   findWrapperReference,
 } from './componentTree';
-import { indexContractedNamesInDocument, scanComposedMatrix } from './composedComponents';
+import { indexContractedNames, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
 import { contientUneInstanceRendue } from './exportableNodes';
 import { etape, fermerLaMesure, ouvrirLaMesure } from './mesure';
@@ -298,7 +298,12 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   etape('index');
   const contientDesInstances = matrix.variants.some(({ component }) =>
     contientUneInstanceRendue(component));
-  const contractes = contientDesInstances ? await indexContractedNamesInDocument() : new Set<string>();
+  const contractes = contientDesInstances
+    ? await indexContractedNames(
+      matrix.variants.map((entry) => entry.component),
+      { priorite: 'analyse' },
+    )
+    : new Set<string>();
   etape('composition');
   const {
     composes: scannedComposes,

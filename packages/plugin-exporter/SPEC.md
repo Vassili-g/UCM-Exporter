@@ -400,14 +400,27 @@ La grammaire des règles décrit ce que le moteur lit dans Figma, donc ce
 document. Une instance de `.componentRules` sur la même page, dont le calque
 `component-name` écrit le nom du composant documenté ; une instance de
 `.ruleItem` par règle, dont un calque nomme le tag. Un calque lu qui contient
-le marqueur `[À compléter]` rend sa règle, ou son conteneur, non rédigé. La
-lecture porte sur la
-page courante, alors que le relevé des dépendances couvre tout le document :
-un jeu de règles rangé sur une autre page déclare la dépendance sans documenter
-le composant. Mais chaque règle n'a de sens qu'à côté du champ qu'elle
-remplit : `@icons` et sa politique, son slot, sa prop runtime, ses variants
-forment une seule explication, et la couper en deux la rendrait illisible des
-deux côtés.
+le marqueur `[À compléter]` rend sa règle, ou son conteneur, non rédigé.
+Chaque règle n'a de sens qu'à côté du champ qu'elle remplit : `@icons` et sa
+politique, son slot, sa prop runtime, ses variants forment une seule
+explication, et la couper en deux la rendrait illisible des deux côtés.
+
+La lecture des règles porte sur la page courante. Le relevé des dépendances
+porte sur la page du maître de chaque dépendance : un conteneur ne déclare une
+dépendance que posé sur la page du maître qu'il documente. L'analyse ne charge
+que ces pages, une à une, et en garde le relevé jusqu'au prochain `nodechange`
+de chacune. Deux conséquences en découlent :
+
+- une dépendance venue d'une bibliothèque n'est jamais reconnue. Son maître n'a
+  aucune page dans le fichier, et ses règles vivent dans le fichier de la
+  bibliothèque. Le contrat du parent la décrit par ses calques, et l'analyse la
+  signale comme un composant imbriqué sans règles ;
+- un fichier qui range ses règles sur une page de documentation ne déclare pas
+  les dépendances documentées là. Le geste de création pose le conteneur à côté
+  du composant, donc sur la page de son maître.
+
+Le relevé ne descend pas dans les calques masqués d'une instance : un calque
+`component-name` masqué dans une instance ne déclare aucune dépendance.
 
 La frontière entre les deux documents tranche ce cas : une règle à cheval va du
 côté du consommateur, et le moteur y renvoie, puisque le moteur a le code sous

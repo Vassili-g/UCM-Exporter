@@ -144,6 +144,21 @@ function monterFigma(options: {
   };
 }
 
+/**
+ * Le component set d'une dépendance, rangé sur la page courante du fichier
+ * simulé : l'index ne reconnaît un conteneur de règles que sur la page du
+ * maître qu'il documente (D1).
+ */
+function ensembleSurLaPage(nom: string) {
+  return {
+    type: 'COMPONENT_SET',
+    name: nom,
+    get parent() {
+      return (globalThis as { figma?: { currentPage?: unknown } }).figma?.currentPage ?? null;
+    },
+  };
+}
+
 /** L'arbre de la projection de référence, derrière son renvoi au catalogue. */
 function structureDe(contrat: any): any {
   return contrat.viewStructures[contrat.structure.view];
@@ -345,7 +360,7 @@ test('composes se dérive de l’arbre : deux dépendances d’un même cadre y 
       layoutSizingVertical: 'HUG',
       getMainComponentAsync: async () => ({
         name: 'Link',
-        parent: { type: 'COMPONENT_SET', name: 'Link' },
+        parent: ensembleSurLaPage('Link'),
       }),
     });
   const figmaFaux = monterFigma({
@@ -454,7 +469,7 @@ test('une dépendance absente du variant de référence reste dans la variante e
     layoutSizingVertical: 'HUG',
     getMainComponentAsync: async () => ({
       name: 'Default',
-      parent: { type: 'COMPONENT_SET', name: 'Link' },
+      parent: ensembleSurLaPage('Link'),
     }),
   });
   outlined.children.push(link);
@@ -1278,7 +1293,7 @@ test('la loi de l’union des dépendances refuse un agrégat muté', async () =
       layoutSizingVertical: 'HUG',
       getMainComponentAsync: async () => ({
         name: 'Link',
-        parent: { type: 'COMPONENT_SET', name: 'Link' },
+        parent: ensembleSurLaPage('Link'),
       }),
     });
   const figmaFaux = monterFigma({

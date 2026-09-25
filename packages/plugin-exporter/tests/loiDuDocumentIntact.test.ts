@@ -214,28 +214,49 @@ test('le drapeau des calques invisibles se restaure, et aucun await ne le traver
   // d'autre d'un `await`, il fait publier à une analyse concurrente une
   // politique que le designer n'a pas choisie.
   //
-  // Borne : la loi lit le texte d'un seul fichier, entre la première pose et la
-  // première restauration. Elle ne suit pas le graphe d'appels, et rendre
+  // Deux fichiers le posent : le parcours des sources et le balayage de page de
+  // l'index. Borne : la loi lit le texte de chacun, entre la première pose et
+  // la première restauration. Elle ne suit pas le graphe d'appels, et rendre
   // asynchrone une fonction appelée depuis ce bloc la laisserait verte. Ce que
   // le bloc appelle est donc gardé court, et nommé dans le commentaire de
-  // `sourceDeLaPage`.
+  // `sourceDeLaPage` et de `nomsDeLaPage`.
   const porteurs = tousLesFichiers(SOURCE).filter(
     (fichier) => /skipInvisibleInstanceChildren/.test(fs.readFileSync(fichier, 'utf8')),
   );
   assert.deepEqual(
-    porteurs.map((fichier) => path.relative(SOURCE, fichier)),
-    [path.join('template', 'sources.ts')],
+    porteurs.map((fichier) => path.relative(SOURCE, fichier)).sort(),
+    [path.join('contract', 'composedComponents.ts'), path.join('template', 'sources.ts')],
     'un autre fichier pose skipInvisibleInstanceChildren',
   );
 
-  const source = fs.readFileSync(porteurs[0], 'utf8');
-  const pose = source.indexOf('figma.skipInvisibleInstanceChildren = true');
-  const restauration = source.indexOf('figma.skipInvisibleInstanceChildren = avant');
-  assert.ok(pose !== -1, 'la pose du drapeau ne se lit pas sous sa forme attendue');
-  assert.ok(restauration > pose, 'le drapeau n’est pas restauré après sa pose');
-  assert.equal(
-    /\bawait\b/.test(source.slice(pose, restauration)),
-    false,
-    'un await traverse la pose du drapeau',
-  );
+  for (const porteur of porteurs) {
+    const nom = path.relative(SOURCE, porteur);
+    const source = fs.readFileSync(porteur, 'utf8');
+    const pose = source.indexOf('figma.skipInvisibleInstanceChildren = true');
+    const restauration = source.indexOf('figma.skipInvisibleInstanceChildren = avant');
+    assert.ok(pose !== -1, `${nom} : la pose du drapeau ne se lit pas sous sa forme attendue`);
+    assert.ok(restauration > pose, `${nom} : le drapeau n’est pas restauré après sa pose`);
+    assert.equal(
+      /\bawait\b/.test(source.slice(pose, restauration)),
+      false,
+      `${nom} : un await traverse la pose du drapeau`,
+    );
+  }
+});
+
+test('l’analyse ne charge jamais tout le document', () => {
+  // D1 : l'index ne charge que les pages des maîtres qu'il rencontre, une à
+  // une, par `PageNode.loadAsync`. Un `loadAllPagesAsync` dans le moteur
+  // ferait repayer au designer toutes les pages du fichier à chaque analyse.
+  const fautifs: string[] = [];
+  for (const fichier of tousLesFichiers(path.join(SOURCE, 'contract'))) {
+    fs.readFileSync(fichier, 'utf8').split('\n').forEach((ligne, rang) => {
+      const nu = ligne.trim();
+      if (nu.startsWith('*') || nu.startsWith('//') || nu.startsWith('/*')) return;
+      if (/loadAllPagesAsync/.test(ligne)) {
+        fautifs.push(`${path.relative(racine, fichier)}:${rang + 1}`);
+      }
+    });
+  }
+  assert.deepEqual(fautifs, [], 'le moteur charge toutes les pages du document');
 });

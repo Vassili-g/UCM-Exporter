@@ -189,50 +189,111 @@ L4 ne dépend que de L1 et peut passer avant L2.
 
 ## Lot L2 : index par pages des maîtres (D1, D4)
 
-- [ ] **L2.1** Renommer `indexContractedNames(page)` en `nomsDeLaPage(page)` et
+- [x] **L2.1** Renommer `indexContractedNames(page)` en `nomsDeLaPage(page)` et
   suivre ses appelants, tests compris. Y poser
   `figma.skipInvisibleInstanceChildren = true` autour du relevé synchrone,
   restauré dans un `finally` par `figma.skipInvisibleInstanceChildren = avant`.
-- [ ] **L2.2** Étendre la loi du drapeau dans `loiDuDocumentIntact.test.ts` :
+  *Fait. Les tests qui appellent `nomsDeLaPage` sans document simulé reçoivent
+  un `figma` minimal, et le faux `findAllWithCriteria` de
+  `composedComponents.test.ts` saute les calques masqués d'instance quand le
+  drapeau est posé, comme Figma.*
+- [x] **L2.2** Étendre la loi du drapeau dans `loiDuDocumentIntact.test.ts` :
   deux fichiers autorisés, `src/template/sources.ts` et
   `src/contract/composedComponents.ts` ; dans chacun, pose, restauration après
   la pose, aucun `await` entre les deux. La voir rouge en ajoutant un `await`
   dans le bloc du second fichier, puis restaurer.
-- [ ] **L2.3** Écrire `indexContractedNames(variants, options)` selon la
+  *Fait. Vue rouge : un `await` ajouté dans le bloc de `nomsDeLaPage`.*
+- [x] **L2.3** Écrire `indexContractedNames(variants, options)` selon la
   conception, section 5.4 : calcul en tours, page de chaque propriétaire local
   par la remontée de ses parents, critère D1, propriétaire distant jamais
   contracté, résultat en noms compactés. Supprimer
   `indexContractedNamesInDocument`, `ecouterLesChangements` et l'abonnement à
   `documentchange`.
-- [ ] **L2.4** Mémoire par page : entrée, `loadAsync`, abonnement
+  *Fait. Le premier tour relève les instances rendues des variants, par
+  `getAllNodes`, comme `scanComposedMatrix` et `releverLesImbriques`. Les tours
+  suivants relèvent toutes les instances du maître contracté, masquées
+  comprises, parce que `indexMasterInstances` les parcourt toutes, et les
+  instances rendues de son variant représentatif. Un maître sans page
+  (remontée qui n'atteint pas de `PAGE`) laisse son propriétaire non
+  contracté ; L2.8 dira si ce cas existe dans Figma.*
+- [x] **L2.4** Mémoire par page : entrée, `loadAsync`, abonnement
   `page.on('nodechange')`, entrée propre, balayage. Un seul calcul en vol ;
   un appel qui arrive pendant un calcul l'attend, puis rebalaye les pages
   salies entre-temps, en deux tours au plus. Accepter `avantChaquePage` et
   `priorite`. Ajouter `oublierLaPage(page)`, l'appeler dans `creerRegles` à la
   place de `oublierLIndexDuDocument()`, et garder ce dernier pour les tests.
-- [ ] **L2.5** Brancher l'index dans `handleExportComponent` à la place de
+  *Fait. Les calculs passent en file : chacun attend le précédent, succès ou
+  échec, puis relit la mémoire, où les pages salies entre-temps se
+  rebalayent. `priorite` est accepté ; il prend effet avec L4.2 et L3.2.*
+- [x] **L2.5** Brancher l'index dans `handleExportComponent` à la place de
   l'appel actuel, sous la garde `contientUneInstanceRendue`. Brancher dans la trace
   `pagesReutilisees`.
-- [ ] **L2.6** Tests dans `composedComponents.test.ts`, qui remplacent les trois
+  *Fait, en priorité `analyse`. Trois scénarios d'`exportComponent.test.ts` et
+  un de `diagnosticsComposantReel.test.ts` posaient le set de leur dépendance
+  hors de toute page : il est désormais sur la page du fichier simulé, et
+  leurs contrats sont inchangés.*
+- [x] **L2.6** Tests dans `composedComponents.test.ts`, qui remplacent les trois
   tests sur `documentchange` : les cas « Index » de la conception, section 7 ;
   seules les pages des maîtres sont chargées, jamais les autres ; tours
   successifs pour une dépendance de dépendance ; `loadAsync` qui lève, l'appel
   lève ; appel concurrent. Garder vert « un composant sans instance ne charge
   pas les autres pages du document ». Dans `code.test.ts` : `oublierLaPage`
   après `creerRegles`.
-- [ ] **L2.7** Loi dans `loiDuDocumentIntact.test.ts` : aucun fichier de
+  *Fait : onze tests. Vus rouges, chacun sous sa mutation : critère D1
+  retiré, maître distant jugé, drapeau non posé, document entier chargé,
+  second tour retiré, page gardée jamais reprise, `nodechange` sans effet,
+  abonnement refusé tenu pour posé, `oublierLaPage` sans effet, chargement
+  en échec avalé, file bloquée par un échec, calculs concurrents, remontée
+  vers la page coupée.*
+- [x] **L2.7** Loi dans `loiDuDocumentIntact.test.ts` : aucun fichier de
   `src/contract/` n'appelle `loadAllPagesAsync` hors commentaire. La voir rouge,
   puis restaurer.
+  *Fait. Vue rouge : `await figma.loadAllPagesAsync()` ajouté dans
+  `nomsGardesDeLaPage`.*
 - [ ] **L2.8** Après le constat de S6 : si le maître ne donne pas sa page sans
   chargement, charger les pages une à une, page courante en tête, jusqu'à
   trouver celle qui contient le maître, et documenter ce repli dans le code.
   Sinon, noter sous cette tâche que le repli n'est pas nécessaire, avec la
   version de Figma.
+  *En attente de S6 (M0.3). Sans repli, un maître dont la remontée
+  n'atteint pas de page laisse sa dépendance non contractée : le contrat du
+  parent décrit alors ses calques.*
 - [ ] **L2.9** Relever les messages destinés au designer qui disent où poser
   les règles ou qui parlent d'une dépendance sans règles
   (`extractRules.ts`, `imbriques.ts`, `src/ui/`). Pour chacun que D1 rend
   inexact, proposer au mainteneur deux rédactions sous cette tâche. Ne rien
   modifier avant sa validation.
+  *Relevé fait. Un seul message devient inexact : le point « imbriqué sans
+  règles » de `pointsDesImbriques` (`imbriques.ts`), dans le cas local. Quand
+  les règles de l'imbriqué existent sur une autre page que son maître, il
+  affirme qu'elles manquent et demande de les créer. L'index ne peut pas
+  distinguer ce cas sans charger les autres pages, donc le texte doit couvrir
+  les deux. Le cas distant reste exact, le message de `extractRules.ts` porte
+  déjà sur la page active, et les textes de `src/ui/` parlent de la source
+  `.componentRules`, que D1 ne touche pas.*
+
+  *Rédaction A, titre et action :*
+
+  > Le composant « Parent » intègre « Enfant », dont les règles d’usage ne
+  > sont pas sur sa page.
+  >
+  > Sélectionnez le composant principal « Enfant », puis créez et complétez
+  > ses règles d’usage. Si elles existent sur une autre page, déplacez leur
+  > conteneur à côté de « Enfant ». Relancez ensuite l’analyse de « Parent ».
+
+  *Rédaction B, titre inchangé hors de la page, action en deux cas :*
+
+  > Le composant « Parent » intègre « Enfant », qui n’a pas de règles d’usage
+  > sur sa page.
+  >
+  > Si « Enfant » n’a pas encore de règles, sélectionnez son composant
+  > principal, puis créez-les et complétez-les. Si elles sont rangées sur une
+  > autre page, déplacez leur conteneur sur la page de « Enfant ». Relancez
+  > ensuite l’analyse de « Parent ».
+
+  *La variante du titre qui liste les propriétés (« dont 2 propriétés ne sont
+  pas documentées : ») reste exacte dans les deux rédactions ; seule l’action
+  change. Rien n’est modifié avant le choix du mainteneur.*
 
 ## Lot L4 : rendre la main
 
@@ -301,7 +362,7 @@ Chaque tâche se fait dans le commit du lot qu'elle suit.
   code d'[AGENTS.md](../../../../AGENTS.md). Retirer de
   [ROADMAP.md](../../../../ROADMAP.md) la fragilité « Le relevé de composition
   résout trois fois le même maître ».
-- [ ] **L7.2** Avec L2 : réécrire le premier point du groupe « Composition »
+- [x] **L7.2** Avec L2 : réécrire le premier point du groupe « Composition »
   d'AGENTS.md. Le critère devient : un conteneur sur la page du maître écrit
   son nom ; une dépendance de bibliothèque n'est jamais contractée ; un calque
   `component-name` masqué dans une instance ne compte pas. Mettre à jour le
@@ -311,6 +372,9 @@ Chaque tâche se fait dans le commit du lot qu'elle suit.
   règles rangées sur une autre page. Réécrire dans ROADMAP.md « Le scan des
   dépendances charge toutes les pages ». Faire suivre
   `tests/inventaireInvariants.test.ts` si ses listes l'exigent.
+  *Fait. FORMAT.md, « Composition et dépendances », disait aussi que le
+  moteur charge toutes les pages : la phrase dit désormais le critère D1 et
+  renvoie à SPEC.md. Les listes de l'inventaire n'ont pas eu à changer.*
 - [ ] **L7.3** Avec L4 : mettre à jour le commentaire de l'annulation
   coopérative dans `src/code.ts`, et celui de `handleExportComponent` sur le coût
   des autres pages.

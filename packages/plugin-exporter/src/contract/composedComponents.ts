@@ -101,22 +101,35 @@ export type ComposedMatrixScan = ComposedInstancesScan & {
 };
 
 /**
- * Relève en une fois les composants unifiés déclarés sur la page.
+ * Les noms que les conteneurs de règles d'une page écrivent.
  *
  * `extractRules` balaye la page entière pour un seul nom ; refaire ce balayage
- * à chaque instance imbriquée serait quadratique. L'index est donc construit
- * une fois, et l'appartenance se teste ensuite en temps constant.
+ * à chaque instance imbriquée serait quadratique. La page est donc relevée une
+ * fois, et l'appartenance se teste ensuite en temps constant.
  *
- * @example indexContractedNames(page) // page où un `.componentRules` dit « Button »
+ * Le relevé ne descend pas dans les calques masqués d'une instance (D4) : un
+ * calque `component-name` masqué dans une instance ne déclare rien. Le drapeau
+ * reprend sa valeur d'avant, et le relevé est synchrone de bout en bout :
+ * `calquesDeNomDeComposant` et `proprietaireDuCalque` n'attendent rien.
+ *
+ * La page doit être chargée avant l'appel.
+ *
+ * @example nomsDeLaPage(page) // page où un `.componentRules` dit « Button »
  * // → Set { 'button' }
  */
-export function indexContractedNames(page: PageNode): Set<string> {
-  const names = new Set<string>();
-  for (const calque of calquesDeNomDeComposant(page)) {
-    const owner = proprietaireDuCalque(calque);
-    if (owner) names.add(owner);
+export function nomsDeLaPage(page: PageNode): Set<string> {
+  const avant = figma.skipInvisibleInstanceChildren;
+  figma.skipInvisibleInstanceChildren = true;
+  try {
+    const names = new Set<string>();
+    for (const calque of calquesDeNomDeComposant(page)) {
+      const owner = proprietaireDuCalque(calque);
+      if (owner) names.add(owner);
+    }
+    return names;
+  } finally {
+    figma.skipInvisibleInstanceChildren = avant;
   }
-  return names;
 }
 
 /**
@@ -167,83 +180,202 @@ function proprietaireDuCalque(calque: TextNode): string | null {
   }
 }
 
-/**
- * Indexe les contrats du document entier, pas seulement la page courante.
- *
- * En chargement dynamique Figma, les autres pages doivent être chargées avant
- * leur parcours. Le repli sur `currentPage` garde les tests et les anciens
- * runtimes fonctionnels sans réduire la portée dans un document moderne.
- */
-export async function indexContractedNamesInDocument(): Promise<Set<string>> {
-  if (indexDuDocument) {
-    compter('tailleIndex', indexDuDocument.size);
-    return indexDuDocument;
-  }
-  const chargees = typeof figma.loadAllPagesAsync === 'function';
-  if (chargees) await figma.loadAllPagesAsync();
-  const pages = (figma.root.children ?? []).filter(
-    (node): node is PageNode => node.type === 'PAGE',
-  );
-  if (pages.length === 0) pages.push(figma.currentPage);
-  if (chargees) compter('pagesChargees', pages.length);
+/** Ce que l'index garde d'une page balayée. */
+type EntreeDePage = { noms: ReadonlySet<string>; sale: boolean; ecoutee: boolean };
 
-  const names = new Set<string>();
-  for (const page of pages) {
-    compter('pagesBalayees');
-    for (const name of indexContractedNames(page)) names.add(name);
+/**
+ * Les pages balayées pendant la session, par id de page.
+ *
+ * Une entrée n'est reprise que propre et écoutée. Un `nodechange` de sa page
+ * la salit, et une page dont l'abonnement est refusé se rebalaye à chaque
+ * calcul : mieux vaut rebalayer que servir des noms périmés.
+ */
+let pagesGardees = new Map<unknown, EntreeDePage>();
+
+/** Le dernier calcul lancé : le suivant l'attend, puis relit la mémoire des pages. */
+let calculEnVol: Promise<unknown> = Promise.resolve();
+
+export type OptionsDeLIndex = {
+  /** Attendu avant de charger et de balayer une page. */
+  avantChaquePage?: () => Promise<void>;
+  /** `analyse` quand un designer attend le résultat, `fond` pour un préchauffage. */
+  priorite?: 'fond' | 'analyse';
+};
+
+/**
+ * Les noms compactés des composants contractés que les variants rencontrent.
+ *
+ * Un propriétaire, component set ou composant seul, est contracté s'il est
+ * local et qu'un conteneur de sa propre page écrit son nom (D1). Un
+ * propriétaire distant ne l'est jamais : ses règles vivent dans le fichier de
+ * sa bibliothèque.
+ *
+ * Le calcul part des instances, jamais du document, et procède par tours : les
+ * instances rendues des variants, puis, pour chaque propriétaire contracté,
+ * toutes les instances de son maître et les instances rendues de son variant
+ * représentatif, que `indexMasterInstances` et `indexDependencyPropertySurfaces`
+ * parcourront. Il s'arrête quand un tour n'ajoute aucun propriétaire. Seules
+ * les pages des propriétaires sont chargées.
+ *
+ * Le résultat reste indexé par nom : deux composants homonymes sur deux pages
+ * partagent leur verdict. Un seul calcul court à la fois ; un appel qui arrive
+ * pendant un calcul l'attend, puis rebalaye les pages salies entre-temps.
+ * Un `loadAsync` qui lève fait échouer le calcul : une page ignorée en silence
+ * retirerait des noms de l'index.
+ */
+export function indexContractedNames(
+  variants: readonly SceneNode[],
+  options: OptionsDeLIndex = {},
+): Promise<Set<string>> {
+  const calcul = calculEnVol
+    .catch(() => undefined)
+    .then(() => calculerLIndex(variants, options));
+  calculEnVol = calcul;
+  return calcul;
+}
+
+type Proprietaire = ComponentNode | ComponentSetNode;
+
+async function calculerLIndex(
+  variants: readonly SceneNode[],
+  options: OptionsDeLIndex,
+): Promise<Set<string>> {
+  const contractes = new Set<string>();
+  const juges = new Set<unknown>();
+  const nomsParPage = new Map<unknown, ReadonlySet<string>>();
+  let instances = variants.flatMap(instancesRendues);
+  while (instances.length > 0) {
+    const maitres = await Promise.all(instances.map(maitreDe));
+    const nouveaux: Array<{ proprietaire: Proprietaire; maitre: ComponentNode }> = [];
+    for (const maitre of maitres) {
+      if (!maitre) continue;
+      const proprietaire = componentOwner(maitre);
+      const cle = typeof proprietaire.id === 'string' ? proprietaire.id : proprietaire;
+      if (juges.has(cle)) continue;
+      juges.add(cle);
+      nouveaux.push({ proprietaire, maitre });
+    }
+
+    instances = [];
+    for (const { proprietaire, maitre } of nouveaux) {
+      if (proprietaire.remote === true || maitre.remote === true) continue;
+      const page = pageDe(proprietaire);
+      if (!page) continue;
+      const cleDePage = cleDeLaPage(page);
+      let noms = nomsParPage.get(cleDePage);
+      if (!noms) {
+        noms = await nomsGardesDeLaPage(page, options);
+        nomsParPage.set(cleDePage, noms);
+      }
+      const nom = compactName(proprietaire.name);
+      if (!noms.has(nom)) continue;
+      contractes.add(nom);
+      instances.push(...toutesLesInstances(maitre));
+      const representatif = proprietaire.type === 'COMPONENT_SET'
+        ? proprietaire.defaultVariant ?? maitre
+        : proprietaire;
+      if (representatif !== maitre) instances.push(...instancesRendues(representatif));
+    }
   }
-  compter('tailleIndex', names.size);
-  if (ecouterLesChangements()) indexDuDocument = names;
-  return names;
+  compter('tailleIndex', contractes.size);
+  return contractes;
+}
+
+/** Les instances qu'un parcours du contrat rencontre sous la racine. */
+function instancesRendues(racine: SceneNode): InstanceNode[] {
+  return getAllNodes(racine).filter(
+    (node): node is InstanceNode => node !== racine && node.type === 'INSTANCE',
+  );
+}
+
+/** Toutes les instances sous la racine, masquées comprises. */
+function toutesLesInstances(racine: SceneNode): InstanceNode[] {
+  if (!('findAll' in racine)) return [];
+  const parCriteres = (racine as Partial<ChildrenMixin>).findAllWithCriteria;
+  if (typeof parCriteres === 'function') {
+    compter('appelsFindAllWithCriteria');
+    return parCriteres.call(racine, { types: ['INSTANCE'] }) as InstanceNode[];
+  }
+  return racine.findAll((node) => node.type === 'INSTANCE') as InstanceNode[];
 }
 
 /**
- * L'index du document, gardé tant que rien n'a changé dans le fichier.
+ * La page qui porte ce node, par ses parents, ou null.
  *
- * Chaque analyse le reconstruisait, et le designer paie ce parcours une fois
- * par composant analysé. Il n'est gardé que si `documentchange` a pu être
- * écouté : sans cet abonnement, rien ne dirait que l'index a vieilli.
+ * La remontée ne charge rien. La sonde S6 vérifie qu'elle aboutit quand la page
+ * du maître n'est pas chargée.
  */
-let indexDuDocument: Set<string> | null = null;
-/**
- * L'hôte Figma auquel l'abonnement est posé.
- *
- * Le repère est l'objet lui-même, et non un booléen : un booléen dirait « déjà
- * abonné » d'un hôte qui ne porte plus l'abonnement, et l'index serait gardé
- * sans que rien ne le fasse oublier.
- */
-let figmaEcoute: unknown = null;
-
-/**
- * Abonne l'oubli de l'index aux changements du document, et dit si l'index
- * peut être gardé.
- *
- * L'abonnement exige `loadAllPagesAsync`, que l'indexation vient d'appeler. Un
- * runtime qui refuse l'événement ne garde rien : mieux vaut reparcourir que
- * servir un index périmé.
- */
-function ecouterLesChangements(): boolean {
-  if (figmaEcoute === figma) return true;
+function pageDe(node: BaseNode): PageNode | null {
   try {
-    figma.on('documentchange', () => {
-      indexDuDocument = null;
+    let courant: BaseNode | null = node;
+    while (courant && courant.type !== 'PAGE') courant = courant.parent;
+    return courant?.type === 'PAGE' ? courant : null;
+  } catch {
+    // Figma annonce des nodes qu'il ne sert plus : un maître illisible n'a pas
+    // de page, et son propriétaire n'est pas contracté.
+    return null;
+  }
+}
+
+function cleDeLaPage(page: PageNode): unknown {
+  return typeof page.id === 'string' ? page.id : page;
+}
+
+/** Les noms d'une page, repris de la mémoire quand elle est propre et écoutée. */
+async function nomsGardesDeLaPage(
+  page: PageNode,
+  options: OptionsDeLIndex,
+): Promise<ReadonlySet<string>> {
+  const cle = cleDeLaPage(page);
+  const gardee = pagesGardees.get(cle);
+  if (gardee && gardee.ecoutee && !gardee.sale) {
+    compter('pagesReutilisees');
+    return gardee.noms;
+  }
+  await options.avantChaquePage?.();
+  if (typeof page.loadAsync === 'function') {
+    await page.loadAsync();
+    compter('pagesChargees');
+  }
+  const entree: EntreeDePage = gardee ?? { noms: new Set(), sale: true, ecoutee: false };
+  if (!entree.ecoutee) entree.ecoutee = ecouter(page, entree);
+  // Le balayage est synchrone : un `nodechange` arrive avant lui ou après lui,
+  // jamais pendant, et une entrée marquée propre ici ne manque aucun geste.
+  entree.sale = false;
+  entree.noms = nomsDeLaPage(page);
+  compter('pagesBalayees');
+  pagesGardees.set(cle, entree);
+  return entree.noms;
+}
+
+/** Abonne l'entrée aux changements de sa page, et dit si l'abonnement tient. */
+function ecouter(page: PageNode, entree: EntreeDePage): boolean {
+  if (typeof page.on !== 'function') return false;
+  try {
+    page.on('nodechange', () => {
+      entree.sale = true;
     });
+    return true;
   } catch {
     return false;
   }
-  figmaEcoute = figma;
-  return true;
 }
 
 /**
- * Oublie l'index gardé.
+ * Oublie ce que l'index garde d'une page.
  *
- * `documentchange` est envoyé par lots, et non à chaque geste : une écriture
- * que le plugin vient de faire doit donc l'oublier elle-même, sans attendre
+ * `nodechange` arrive par lots, et non à chaque geste : une écriture que le
+ * plugin vient de faire doit donc salir sa page elle-même, sans attendre
  * l'événement qu'elle déclenchera.
  */
+export function oublierLaPage(page: PageNode): void {
+  const gardee = pagesGardees.get(cleDeLaPage(page));
+  if (gardee) gardee.sale = true;
+}
+
+/** Oublie toutes les pages gardées ; les tests s'en servent entre deux documents simulés. */
 export function oublierLIndexDuDocument(): void {
-  indexDuDocument = null;
+  pagesGardees = new Map();
 }
 
 /**

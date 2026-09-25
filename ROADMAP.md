@@ -67,11 +67,13 @@ Une instance détachée redevient un `FRAME`. Plus rien ne la rattache au
 composant unifié dont elle vient : ses calques entrent dans le contrat du parent
 au lieu d'apparaître dans `composes`, sans diagnostic spécifique.
 
-### Le scan des dépendances charge toutes les pages
+### Le scan des dépendances charge les pages des maîtres
 
-Le moteur appelle `figma.loadAllPagesAsync()` puis indexe les conteneurs de
-règles une seule fois. Cette lecture reconnaît une dépendance placée sur une
-autre page, mais son coût reste à mesurer sur un très gros fichier Figma.
+L'analyse charge, une à une, les pages qui portent les maîtres des dépendances
+du composant, et garde leur relevé jusqu'au prochain `nodechange` de chacune.
+Deux limites restent à mesurer dans Figma : le coût de ces chargements sur un
+fichier de cent pages, et la page d'un maître quand elle n'est pas chargée
+(sonde S6 du [plan d'implémentation](./docs/notes/Recherches/Performance%20de%20l'analyse/PLAN-IMPLEMENTATION-PERFORMANCE-ANALYSE.md)).
 
 ### La preuve du rendu reste ciblée
 

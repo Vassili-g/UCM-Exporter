@@ -33,6 +33,10 @@ function maitreDuGlyphe(glyphe: Glyphe) {
     type: 'COMPONENT_SET',
     id: 'set-Glyph',
     name: 'Glyph',
+    // Le set vit sur la page du composant : l'index n'y lit ses règles que là.
+    get parent() {
+      return (globalThis as { figma?: { currentPage?: unknown } }).figma?.currentPage ?? null;
+    },
     componentPropertyDefinitions: glyphe === 'icone'
       ? {}
       : { Tone: { type: 'VARIANT', variantOptions: ['Neutral'], defaultValue: 'Neutral' } },

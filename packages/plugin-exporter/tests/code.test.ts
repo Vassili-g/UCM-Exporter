@@ -58,7 +58,7 @@ function ouvrir() {
   const evenements = new Map<string, () => void>();
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
-  const appels = { analyses: 0, ecritures: 0, oublisDIndex: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[], relevesDeProps: [] as string[][], modeles: [] as ModeleDeRegles[] };
+  const appels = { analyses: 0, ecritures: 0, pagesOubliees: [] as unknown[], publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[], relevesDeProps: [] as string[][], modeles: [] as ModeleDeRegles[] };
   const exporte = { traiter: async () => resultat('tokens.json') };
   /** Ce que la résolution des maîtres rend au clic ; le test le choisit. */
   const resolution = { traiter: async (): Promise<{ sources: unknown; refus: string | null }> => ({ sources: { maitre: {}, aRemplir: null, sections: new Map(), regles: new Map(), separateur: null }, refus: null }) };
@@ -106,7 +106,7 @@ function ouvrir() {
       MARQUEUR_A_COMPLETER: '[À compléter]',
     },
     './contract/composedComponents': {
-      oublierLIndexDuDocument: () => { appels.oublisDIndex += 1; },
+      oublierLaPage: (page: unknown) => { appels.pagesOubliees.push(page); },
     },
     // Le vrai texte des points : la création le reprend du moteur.
     './contract/imbriques': imbriques,
@@ -1188,10 +1188,14 @@ test('« creer-regles » écrit une fois, et relance le relevé de sélection', 
   assert.equal(h.appels.ecritures, 1);
   assert.match(derniereNote(h) ?? '', /2 règles posées/);
   assert.ok(h.messages.filter((message) => message.type === 'cible').length > relevesAvant);
-  // Le conteneur posé déclare le composant comme dépendance UCM, et l'index
-  // gardé l'ignore encore : `documentchange` arrive par lots, trop tard pour
-  // l'analyse qui suit immédiatement la création.
-  assert.equal(h.appels.oublisDIndex, 1, 'la création ne fait pas oublier l’index du document');
+  // Le conteneur posé déclare le composant comme dépendance UCM, et la page
+  // gardée par l'index l'ignore encore : `nodechange` arrive par lots, trop
+  // tard pour l'analyse qui suit immédiatement la création.
+  assert.deepEqual(
+    h.appels.pagesOubliees,
+    [h.runtime.currentPage],
+    'la création ne fait pas oublier sa page à l’index',
+  );
   // Le contrat porte aussi les propriétés d'un enfant élu wrapper. Le template
   // ne documente que celles que le composant sélectionné déclare, et celles que
   // le relevé du moteur lui attribue : la création ne lit que les premières.

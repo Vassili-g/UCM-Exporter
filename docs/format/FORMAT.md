@@ -1425,8 +1425,9 @@ sélectionné est exportable, même sans règles. Cette capacité ne le transfor
 pas automatiquement en dépendance : une instance de `.componentRules` qui écrit
 ce nom déclare qu'un contrat UCM autonome existe pour lui. Sans ce marqueur, un set imbriqué reste
 parcouru comme wrapper ou détail d'implémentation du parent. Un variant interne
-d'un set reconnu prend le nom du set. Le moteur charge toutes les pages une fois
-avant le scan des marqueurs.
+d'un set reconnu prend le nom du set. Le marqueur ne compte que posé sur la
+page du maître qu'il documente : une dépendance venue d'une bibliothèque n'est
+jamais reconnue ([spec](../../packages/plugin-exporter/SPEC.md#7-intention-et-documentation-des-props)).
 
 ##### Cadre de dépendance
 

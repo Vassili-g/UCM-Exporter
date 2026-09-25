@@ -9,7 +9,7 @@ import {
   ruleTagFromValue,
   rulesContainerOwner,
 } from '../src/contract/extractRules';
-import { indexContractedNames } from '../src/contract/composedComponents';
+import { nomsDeLaPage } from '../src/contract/composedComponents';
 import { localisationsDe } from '../src/contract/localisation';
 
 test('ruleTagFromValue reconnaît @boolean comme les autres variantes de règle', () => {
@@ -230,7 +230,7 @@ test('le conteneur est reconnu par son calque, pas par son nom, à la casse prè
   assert.equal(rules.sectionFound, true);
   assert.equal(rules.intent?.usage, 'Action principale');
   assert.equal(rulesContainerOwner(container), compactName(componentSet.name));
-  assert.deepEqual([...indexContractedNames(page as unknown as PageNode)], ['iconbutton']);
+  assert.deepEqual([...nomsDeLaPage(page as unknown as PageNode)], ['iconbutton']);
 });
 
 test('rulesContainerOwner ignore ce qui n’est pas un conteneur', () => {
@@ -633,7 +633,7 @@ test('un conteneur au nom marqué ne documente personne, et rejoint le constat d
   const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
 
   assert.equal(rulesContainerOwner(vierge), null);
-  assert.deepEqual([...indexContractedNames(page as unknown as PageNode)], []);
+  assert.deepEqual([...nomsDeLaPage(page as unknown as PageNode)], []);
   assert.equal(rules.sectionFound, false);
   assert.deepEqual(rules.warnings, [
     'Layer « .componentRules » : son calque « component-name » contient encore '
