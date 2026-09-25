@@ -46,9 +46,9 @@ appelé dans six fonctions : `contractedOwner`, `indexMasterInstances`,
 `scoreWrapper`, `instanceOwnerId`, `dependencyOpacity` et
 `isRuleInstance`. `scanComposedInstances` tourne une fois par variant, puis une
 fois par dépendance distincte dans `indexDependencyPropertySurfaces`. Aucune
-mémoïsation ne relie ces appels. La
-[roadmap](../../../../ROADMAP.md#le-relevé-de-composition-résout-trois-fois-le-même-maître)
-nomme déjà ce défaut.
+mémoïsation ne relie ces appels. Le lot L1 du
+[plan d'implémentation](./PLAN-IMPLEMENTATION-PERFORMANCE-ANALYSE.md) corrige
+ce défaut, que la roadmap nommait.
 
 **Chaque variant est parcouru plusieurs fois en entier.** `getAllNodes`
 commence par `root.findAll(() => true)`. Vingt et un appels à `getAllNodes` ou

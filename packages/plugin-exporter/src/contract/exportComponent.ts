@@ -13,8 +13,9 @@ import {
 } from './componentTree';
 import { indexContractedNamesInDocument, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
-import { getAllNodes } from './exportableNodes';
+import { contientUneInstanceRendue } from './exportableNodes';
 import { etape, fermerLaMesure, ouvrirLaMesure } from './mesure';
+import { dansUnePorteeDAnalyse } from './porteeDAnalyse';
 import { pousserLesImbriques, releverLesImbriques } from './imbriques';
 import type { ReleveDesImbriques } from './imbriques';
 import { TAGS_D_INTENTION } from './rulesModel';
@@ -204,10 +205,10 @@ export function componentContractFilename(name: string): string {
  */
 export async function handleExportComponent(annoncer: Annonce = () => {}): Promise<ComponentExport> {
   ouvrirLaMesure();
-  const resultat = await exporterLaSelection((texte) => {
+  const resultat = await dansUnePorteeDAnalyse({}, () => exporterLaSelection((texte) => {
     etape(texte);
     annoncer(texte);
-  });
+  }));
   fermerLaMesure(resultat.content);
   return resultat;
 }
@@ -296,7 +297,7 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   annoncer('Lecture des composants imbriqués…');
   etape('index');
   const contientDesInstances = matrix.variants.some(({ component }) =>
-    getAllNodes(component).some((node) => node.type === 'INSTANCE'));
+    contientUneInstanceRendue(component));
   const contractes = contientDesInstances ? await indexContractedNamesInDocument() : new Set<string>();
   etape('composition');
   const {

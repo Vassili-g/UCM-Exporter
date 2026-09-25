@@ -7,6 +7,7 @@
 import { normalizePropKey, normalizePropValue } from './parsers';
 import type { FigmaVariantLabels } from '@ucm-kit/core/format';
 import { getAllNodes } from './exportableNodes';
+import { maitreDe } from './porteeDAnalyse';
 import { pousserSansNode } from './localisation';
 import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, hasCompleteBinding } from './nodeBindings';
@@ -332,7 +333,7 @@ async function scoreWrapper(
   score: number;
   componentSet: ComponentSetNode | null;
 }> {
-  const mainComponent = await instance.getMainComponentAsync().catch(() => null);
+  const mainComponent = await maitreDe(instance);
   const parent = mainComponent?.parent;
   const componentSet = parent?.type === 'COMPONENT_SET' ? parent : null;
   const searchableName = `${instance.name} ${mainComponent?.name ?? ''} ${componentSet?.name ?? ''}`.toLowerCase();

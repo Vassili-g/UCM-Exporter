@@ -17,6 +17,7 @@
 import { findWrapperReference } from './componentTree';
 import type { WrapperReference } from './componentTree';
 import { getAllNodes } from './exportableNodes';
+import { maitreDe } from './porteeDAnalyse';
 import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, hasCompleteBinding } from './nodeBindings';
 import { pousserLocalise } from './localisation';
@@ -84,15 +85,9 @@ export type ReferenceVariant = {
  * variant à l'autre (`Size=Big`, `Size=Small`) ; c'est le SET qui l'identifie.
  */
 async function instanceOwnerId(instance: InstanceNode): Promise<string | null> {
-  // `getMainComponentAsync` lève sur une instance orpheline : un node cassé ne
-  // doit pas faire échouer l'export entier.
-  try {
-    const main = await instance.getMainComponentAsync();
-    if (!main) return null;
-    return main.parent?.type === 'COMPONENT_SET' ? main.parent.id : main.id;
-  } catch {
-    return null;
-  }
+  const main = await maitreDe(instance);
+  if (!main) return null;
+  return main.parent?.type === 'COMPONENT_SET' ? main.parent.id : main.id;
 }
 
 /** L'instance du même composant que le wrapper de référence, dans ce variant. */

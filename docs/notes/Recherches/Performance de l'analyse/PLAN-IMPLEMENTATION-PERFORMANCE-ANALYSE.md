@@ -137,7 +137,7 @@ L4 ne dépend que de L1 et peut passer avant L2.
 
 ## Lot L1 : portée d'analyse, maîtres et banc de parité
 
-- [ ] **L1.1** Créer `packages/plugin-exporter/src/contract/porteeDAnalyse.ts`
+- [x] **L1.1** Créer `packages/plugin-exporter/src/contract/porteeDAnalyse.ts`
   avec `dansUnePorteeDAnalyse`, `maitreDe` et `respirerSiBesoin` (sans effet
   jusqu'à L4). Une seule portée ouverte à la fois ; une seconde ouverture
   exécute son corps sans mémoire et compte `porteeRefusee`. `maitreDe` range une
@@ -145,27 +145,47 @@ L4 ne dépend que de L1 et peut passer avant L2.
   compte `appelsGetMainComponentAsync` et `maitresReutilises`. Exporter un
   interrupteur `desactiverLaPorteePourLeBanc`, réservé au banc de L1.3, et le
   dire dans son commentaire.
-- [ ] **L1.2** Remplacer l'appel direct à `getMainComponentAsync` par
+  *Fait. Le sandbox n'a pas de contexte asynchrone : pendant une ouverture
+  refusée, la mémoire se tait pour les deux corps, et chacun calcule sans
+  elle. Un id d'instance absent n'entre pas en mémoire.*
+- [x] **L1.2** Remplacer l'appel direct à `getMainComponentAsync` par
   `maitreDe` dans `contractedOwner`, `indexMasterInstances`, `scoreWrapper`,
   `instanceOwnerId` et `dependencyOpacity`. Ne toucher ni à `isRuleInstance`
   ni à `src/template/`. Ouvrir la portée dans `handleExportComponent`, autour
   de tout le corps, fermée dans un `finally`.
-- [ ] **L1.3** Créer `tests/paritePerformance.test.ts` : chaque composant
+  *Fait. Seul écart de comportement : une instance sans
+  `getMainComponentAsync` faisait lever `contractedOwner` ; elle y reçoit
+  désormais l'avertissement du maître introuvable. Le cas n'existe que dans un
+  faux `figma`.*
+- [x] **L1.3** Créer `tests/paritePerformance.test.ts` : chaque composant
   simulé de `exportComponent.test.ts` est exporté avec la portée puis sans ;
   les deux `content` sont égaux après remplacement de `exportedAt`. Extraire au
   besoin le montage des mocks dans un module de `tests/` partagé, sans changer
   ce que les tests existants vérifient. Voir le banc rouge en faisant rendre à
   `maitreDe` le maître d'une autre instance, puis restaurer.
-- [ ] **L1.4** Test de compte : un set de huit variants qui embarquent chacun
+  *Fait, sans extraire les mocks : le banc (`tests/aides/parite.ts`) se pose
+  sur le chemin d'appel de `figmaFaux.handleExportComponent`, comme les lois.
+  Chaque scénario d'`exportComponent.test.ts`, d'`imbriques.test.ts` et de
+  `diagnosticsComposantReel.test.ts` y passe, y compris ceux qu'on ajoutera.
+  `paritePerformance.test.ts` y soumet un set à dépendances répétées. Vu
+  rouge : `maitreDe` qui rend le premier maître gardé fait échouer deux
+  scénarios de wrapper et le test de compte.*
+- [x] **L1.4** Test de compte : un set de huit variants qui embarquent chacun
   deux instances d'une même dépendance appelle `getMainComponentAsync` au plus
   une fois par id d'instance.
-- [ ] **L1.5** Ajouter `contientUneInstanceRendue(racine)` à
+  *Fait, dans `paritePerformance.test.ts`. Les instances portent une opacité,
+  qui fait relire le maître par `dependencyOpacity` : sans elle, chaque
+  instance n'était lue qu'une fois, mémoire ou pas, et le test ne voyait pas
+  la mémoire retirée. Vu rouge : trois lectures par instance sans mémoire.*
+- [x] **L1.5** Ajouter `contientUneInstanceRendue(racine)` à
   `exportableNodes.ts` (conception, section 5.3) et l'employer dans
   `handleExportComponent`. Tests : instance visible, instance masquée sans
   liaison, instance sous un cadre masqué, instance masquée dont la visibilité
   est liée à une propriété, racine sans instance, runtime sans
   `findAllWithCriteria`. Chaque cas compare le résultat à celui de
   `getAllNodes(racine).some(…)`.
+  *Fait. Vus rouges : remontée des ancêtres coupée, masque jugé sans ses
+  liaisons, repli sur `findAll` vide.*
 
 ## Lot L2 : index par pages des maîtres (D1, D4)
 
@@ -277,7 +297,7 @@ seuil.
 
 Chaque tâche se fait dans le commit du lot qu'elle suit.
 
-- [ ] **L7.1** Avec L1 : ajouter `mesure.ts` et `porteeDAnalyse.ts` à la carte du
+- [x] **L7.1** Avec L1 : ajouter `mesure.ts` et `porteeDAnalyse.ts` à la carte du
   code d'[AGENTS.md](../../../../AGENTS.md). Retirer de
   [ROADMAP.md](../../../../ROADMAP.md) la fragilité « Le relevé de composition
   résout trois fois le même maître ».

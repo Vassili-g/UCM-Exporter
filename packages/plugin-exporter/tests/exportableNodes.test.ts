@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getAllNodes } from '../src/contract/exportableNodes';
+import { contientUneInstanceRendue, getAllNodes } from '../src/contract/exportableNodes';
 import { localisationsDe } from '../src/contract/localisation';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
@@ -145,4 +145,60 @@ test('un calque masqué sans donnée contractuelle est exclu sans bruit', () => 
 
   assert.deepEqual(getAllNodes(root, warnings).map((node) => node.name), ['Button']);
   assert.deepEqual(warnings, []);
+});
+
+/**
+ * Le test rapide et le parcours complet disent la même chose : c'est la seule
+ * garantie que la garde de l'index ne change aucun contrat.
+ */
+function jugeCommeGetAllNodes(racine: ComponentNode, attendu: boolean): void {
+  const parParcours = getAllNodes(racine).some((node) => node.type === 'INSTANCE');
+  assert.equal(parParcours, attendu, 'le scénario ne dit pas ce que son nom annonce');
+  assert.equal(contientUneInstanceRendue(racine), attendu);
+}
+
+/** Le même arbre, servi par `findAllWithCriteria` comme dans Figma. */
+function avecCriteres(racine: ComponentNode): ComponentNode {
+  const noeud = racine as unknown as TestNode & { findAllWithCriteria?: unknown };
+  noeud.findAllWithCriteria = ({ types }: { types: string[] }) =>
+    noeud.findAll!((node) => types.includes(node.type));
+  return racine;
+}
+
+test('une instance visible est rendue', () => {
+  jugeCommeGetAllNodes(avecCriteres(tree('Root', [
+    { type: 'FRAME', name: 'Branch', children: [{ type: 'INSTANCE', name: 'Leaf' }] },
+  ])), true);
+});
+
+test('une instance masquée sans liaison n’est pas rendue', () => {
+  jugeCommeGetAllNodes(avecCriteres(tree('Root', [
+    { type: 'INSTANCE', name: 'Leaf', visible: false },
+  ])), false);
+});
+
+test('une instance sous un cadre masqué n’est pas rendue', () => {
+  jugeCommeGetAllNodes(avecCriteres(tree('Root', [
+    { type: 'FRAME', name: 'Branch', visible: false, children: [{ type: 'INSTANCE', name: 'Leaf' }] },
+  ])), false);
+});
+
+test('une instance masquée dont une propriété pilote la visibilité est rendue', () => {
+  jugeCommeGetAllNodes(avecCriteres(tree('Root', [
+    { type: 'INSTANCE', name: 'Leaf', visible: false,
+      componentPropertyReferences: { visible: 'Afficher#1:2' } },
+  ])), true);
+});
+
+test('une racine sans instance n’en contient aucune', () => {
+  jugeCommeGetAllNodes(avecCriteres(tree('Root', [
+    { type: 'FRAME', name: 'Branch', children: [{ type: 'TEXT', name: 'Glyph' }] },
+  ])), false);
+});
+
+test('sans findAllWithCriteria, le repli sur findAll juge de même', () => {
+  jugeCommeGetAllNodes(tree('Root', [
+    { type: 'INSTANCE', name: 'Masquée', visible: false },
+    { type: 'FRAME', name: 'Branch', children: [{ type: 'INSTANCE', name: 'Leaf' }] },
+  ]), true);
 });

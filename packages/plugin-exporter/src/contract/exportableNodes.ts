@@ -198,6 +198,32 @@ export function getAllNodes(
 }
 
 /**
+ * Vrai si la racine porte une instance que le contrat peut rendre : aucun
+ * calque statiquement masqué entre elle et la racine, elle comprise.
+ *
+ * C'est `getAllNodes(racine).some(…)` sur le type `INSTANCE`, sans relever
+ * tout l'arbre : le filtre natif ne rend que les instances, et chacune ne
+ * remonte que ses ancêtres. Le repli sur `findAll` garde les runtimes qui ne
+ * servent pas `findAllWithCriteria`.
+ */
+export function contientUneInstanceRendue(racine: SceneNode): boolean {
+  if (!('findAll' in racine)) return false;
+  const parCriteres = (racine as Partial<ChildrenMixin>).findAllWithCriteria;
+  if (typeof parCriteres === 'function') compter('appelsFindAllWithCriteria');
+  const instances = typeof parCriteres === 'function'
+    ? (parCriteres.call(racine, { types: ['INSTANCE'] }) as SceneNode[])
+    : racine.findAll((node) => node.type === 'INSTANCE');
+  return instances.some((instance) => {
+    let courant: BaseNode | null = instance;
+    while (courant && courant !== racine) {
+      if (isStaticallyHidden(courant as SceneNode)) return false;
+      courant = courant.parent;
+    }
+    return true;
+  });
+}
+
+/**
  * Renvoie tous les calques texte d'un sous-arbre, dans l'ordre du document.
  * Le libellé d'un composant embarqué n'en est pas un : sans l'élagage, une
  * Alert emprunterait la typographie du bouton qu'elle contient.

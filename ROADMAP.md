@@ -73,19 +73,6 @@ Le moteur appelle `figma.loadAllPagesAsync()` puis indexe les conteneurs de
 règles une seule fois. Cette lecture reconnaît une dépendance placée sur une
 autre page, mais son coût reste à mesurer sur un très gros fichier Figma.
 
-### Le relevé de composition résout trois fois le même maître
-
-`scanComposedMatrix` parcourt le sous-arbre de chaque dépendance distincte trois
-fois, avec un `getMainComponentAsync` par instance à chaque passe. Le coût est
-linéaire dans les occurrences et se paie une fois par composant propriétaire,
-jamais par variant. Le runtime du plugin étant mono-thread, ces allers-retours
-s'additionnent.
-
-La correction connue est une mémoïsation de `getMainComponentAsync` par
-identifiant de node, partagée entre les trois passes. Elle traverse quatre
-signatures et n'a aucun effet sur le contrat produit. Ce qui manque est la
-mesure de ce coût.
-
 ### La preuve du rendu reste ciblée
 
 Une référence de token littérale est comparable au contrat, et un chemin

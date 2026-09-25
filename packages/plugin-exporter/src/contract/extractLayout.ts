@@ -15,6 +15,7 @@
 import { firstVariableAlias } from '../variables';
 import type { TokenResolver } from '../variables';
 import { getAllNodes, textNodes } from './exportableNodes';
+import { maitreDe } from './porteeDAnalyse';
 import type { ComposedInstances } from './exportableNodes';
 import {
   BINDING_PATTERNS,
@@ -205,9 +206,7 @@ async function dependencyOpacity(
 ): Promise<string | null> {
   const opacite = (instance as unknown as { opacity?: unknown }).opacity;
   if (typeof opacite !== 'number') return null;
-  // `getMainComponentAsync` lève sur une instance orpheline.
-  const principal = await (instance as InstanceNode).getMainComponentAsync?.()
-    .catch(() => null);
+  const principal = await maitreDe(instance as InstanceNode);
   const reference = typeof principal?.opacity === 'number' ? principal.opacity : 1;
   if (opacite === reference) return null;
   return resolveOpacity(instance, resolver, warnings, { ecartAuPrincipal: true });

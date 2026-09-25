@@ -28,6 +28,7 @@ import type { ContractPropertySurface } from './propertySurface';
 import type { ComposedDependency } from '@ucm-kit/core/format';
 import { pousserLocalise, reporterLocalisations } from './localisation';
 import { compter } from './mesure';
+import { maitreDe } from './porteeDAnalyse';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
 export type ContractedNames = ReadonlySet<string>;
@@ -262,7 +263,7 @@ async function contractedOwner(
   // dépendance manque à `composes`. Le relevé ne l'ayant jamais trouvée, même
   // l'avertissement « dépendance non située » ne peut pas partir : c'est ici,
   // ou nulle part.
-  const main = await instance.getMainComponentAsync().catch(() => null);
+  const main = await maitreDe(instance);
   if (!main) {
     pousserLocalise(warnings, 'Layer', instance, {
       manque: `le composant principal de cette instance est introuvable.`,
@@ -388,7 +389,7 @@ export async function indexMasterInstances(
 ): Promise<MasterInstanceDefaults> {
   const releves = masterInstances(master);
   const mains = await Promise.all(
-    releves.map((releve) => releve.instance.getMainComponentAsync().catch(() => null)),
+    releves.map((releve) => maitreDe(releve.instance)),
   );
 
   const defauts = new Map<string, { masterPath: string[]; component: string }>();

@@ -14,6 +14,7 @@ import {
 } from '../lois';
 import { verifierLaLocalisationDesDiagnostics } from '../loiDeLocalisation.test';
 import { verifierLesPartiesDesDiagnostics } from '../loiDesParties.test';
+import { verifierLaParite } from './parite';
 
 /**
  * Les noms de calques du composant que le scénario courant a monté.
@@ -36,7 +37,8 @@ function nomsDeCalquesDuComposant(): Set<string> {
 
 /**
  * Chaque contrat que le moteur fabrique ici passe d'abord par les lois de
- * forme, avant que le test ne regarde ce qui l'intéresse.
+ * forme et par le banc de parité, avant que le test ne regarde ce qui
+ * l'intéresse.
  *
  * C'est le seul endroit du repository où ces lois portent sur du code : le
  * corpus est gelé et ne bouge qu'au réexport, si bien qu'une régression du
@@ -57,6 +59,7 @@ export async function handleExportComponent() {
   verifierLeSchema(contrat, 'sortie du moteur');
   verifierLeLecteur(contrat, 'sortie du moteur');
   verifierLaSerialisation(resultat.content, 'sortie du moteur');
+  await verifierLaParite(resultat.content, 'sortie du moteur');
   return resultat;
 }
 

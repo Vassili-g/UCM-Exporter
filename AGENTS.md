@@ -67,6 +67,8 @@ packages/plugin-exporter/         le moteur : extraction Figma, dépend du kit
       serializeJson.ts         une entrée par ligne, sur deux niveaux
       layoutNodes.ts           élection du node de layout, une fois par variant
       exportableNodes.ts       parcours de l'arbre, hors dépendances composées
+      porteeDAnalyse.ts        ce qu'une analyse garde le temps d'un export : un maître par instance
+      mesure.ts                la trace du build de mesure, absente du build courant
       parsers.ts               propriétés Figma → API publique
       merge*.ts                doc et icônes des règles, rangées sur leur axe
       rulesModel.ts            modèle pur des règles d’usage
