@@ -59,7 +59,10 @@ function ouvrir() {
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
   const appels = { analyses: 0, ecritures: 0, pagesOubliees: [] as unknown[], publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[], relevesDeProps: [] as string[][], modeles: [] as ModeleDeRegles[] };
-  const exporte = { traiter: async () => resultat('tokens.json') };
+  const exporte = {
+    traiter: async (_annoncer?: unknown, _options?: { respirer: () => Promise<void> }) =>
+      resultat('tokens.json'),
+  };
   /** Ce que la résolution des maîtres rend au clic ; le test le choisit. */
   const resolution = { traiter: async (): Promise<{ sources: unknown; refus: string | null }> => ({ sources: { maitre: {}, aRemplir: null, sections: new Map(), regles: new Map(), separateur: null }, refus: null }) };
   /** L'écriture elle-même, jamais jouée : le banc juge ce que le routeur en fait. */
@@ -95,7 +98,10 @@ function ouvrir() {
   };
   // La configuration et la fenêtre emploient le même runtime que le routeur.
   (globalThis as unknown as { figma: unknown }).figma = runtime;
-  const handler = async () => { appels.analyses += 1; return exporte.traiter(); };
+  const handler = async (annoncer: unknown, options: { respirer: () => Promise<void> }) => {
+    appels.analyses += 1;
+    return exporte.traiter(annoncer, options);
+  };
   const modules: Record<string, unknown> = {
     '@ucm-kit/core/format': format, './config': config, './connexion': connexion,
     './cible': cible, './fenetre': fenetre, './prevol': prevol,
@@ -154,7 +160,7 @@ function ouvrir() {
     clearTimeout: (id: number) => temporisations.delete(id),
   });
   return {
-    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, regles, resolution, creation, runtime, stockage,
+    messages, appels, exporte, publication, connexionDe, temporisations, resumeDesTokens, releve, regles, resolution, creation, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string, parent?: { type: string }) {
       runtime.currentPage.selection = [selectionDe(id, parent)];
@@ -193,6 +199,28 @@ test('une annulation après la dernière phase interdit le verdict et le téléc
   h.exporte.traiter = async () => resultat('nouveau.contract.json');
   await h.envoyer({ type: 'analyser-composant', operation: 1 });
   assert.ok(h.messages.some(({ type }) => type === 'verdict'));
+});
+
+test('une respiration qui suit un changement de sélection arrête l’analyse, et rien n’est publié', async () => {
+  const h = ouvrir();
+  let apresLaRespiration = false;
+  h.exporte.traiter = async (_annoncer, options) => {
+    h.selectionner('b');
+    const respiration = options!.respirer();
+    // La respiration est le dernier `setTimeout` posé : le moteur attend qu'il
+    // passe, comme le sandbox le ferait après avoir traité la sélection.
+    const [id, rappel] = [...h.temporisations].at(-1)!;
+    h.temporisations.delete(id);
+    rappel();
+    await respiration;
+    apresLaRespiration = true;
+    return resultat('annule.contract.json');
+  };
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+
+  assert.equal(apresLaRespiration, false, 'l’analyse continue après la respiration');
+  assert.equal(statuts(h).at(-1), 'Export annulé. Rien n’a été écrit.');
+  assert.equal(h.messages.some(({ type }) => type === 'verdict' || type === 'download'), false);
 });
 
 for (const pendant of [true, false]) {

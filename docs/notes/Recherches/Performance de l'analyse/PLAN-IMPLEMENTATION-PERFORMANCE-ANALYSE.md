@@ -297,18 +297,30 @@ L4 ne dépend que de L1 et peut passer avant L2.
 
 ## Lot L4 : rendre la main
 
-- [ ] **L4.1** Donner à `respirerSiBesoin` son budget de 30 ms et le compteur
+- [x] **L4.1** Donner à `respirerSiBesoin` son budget de 30 ms et le compteur
   `respirations`. `handleExportComponent` reçoit `respirer` dans ses options et
   le passe à la portée. `analyser` fournit `setTimeout(0)` suivi de
   `verifierAnnulation()`.
-- [ ] **L4.2** Appeler `respirerSiBesoin` entre deux tranches de 16 variants
+  *Fait. Le budget est `BUDGET_DE_CALCUL_MS` dans `porteeDAnalyse.ts`.
+  `creerRegles` n'annule rien et ne passe pas `respirer`.*
+- [x] **L4.2** Appeler `respirerSiBesoin` entre deux tranches de 16 variants
   dans `scanComposedMatrix`, à chaque tour de la boucle par variant de
   `extractStructure`, et entre deux pages de l'index en priorité `analyse`.
-- [ ] **L4.3** Tests : une annulation posée pendant la boucle de
+  *Fait. Les tranches de `scanComposedMatrix` se relèvent l'une après
+  l'autre, et l'ordre des relevés reste celui des variants. La boucle de
+  `extractStructure` respire en tête de chaque tour, donc avant chaque
+  variant.*
+- [x] **L4.3** Tests : une annulation posée pendant la boucle de
   `extractStructure` arrête l'analyse avant le variant suivant et ne publie
   rien ; un set de 40 variants produit le même contrat et les mêmes
   avertissements, dans le même ordre, avec et sans tranches ; hors portée,
   `respirerSiBesoin` ne rend jamais la main.
+  *Fait, dans `paritePerformance.test.ts`, avec une horloge qui avance de
+  31 ms à chaque lecture. « Ne publie rien » se prouve dans `code.test.ts` :
+  une respiration qui suit un changement de sélection arrête l'analyse, sans
+  verdict ni téléchargement. Vus rouges : respiration retirée de la boucle,
+  `verifierAnnulation` retiré de `respirer`, tranche perdue après une
+  respiration, respiration hors portée.*
 
 ## Lot L3 : préchauffage
 
@@ -375,7 +387,7 @@ Chaque tâche se fait dans le commit du lot qu'elle suit.
   *Fait. FORMAT.md, « Composition et dépendances », disait aussi que le
   moteur charge toutes les pages : la phrase dit désormais le critère D1 et
   renvoie à SPEC.md. Les listes de l'inventaire n'ont pas eu à changer.*
-- [ ] **L7.3** Avec L4 : mettre à jour le commentaire de l'annulation
+- [x] **L7.3** Avec L4 : mettre à jour le commentaire de l'annulation
   coopérative dans `src/code.ts`, et celui de `handleExportComponent` sur le coût
   des autres pages.
 - [ ] **L7.4** En fin de plan : ajouter en tête du [plan de

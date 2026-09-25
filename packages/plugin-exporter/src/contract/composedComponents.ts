@@ -28,7 +28,7 @@ import type { ContractPropertySurface } from './propertySurface';
 import type { ComposedDependency } from '@ucm-kit/core/format';
 import { pousserLocalise, reporterLocalisations } from './localisation';
 import { compter } from './mesure';
-import { maitreDe } from './porteeDAnalyse';
+import { maitreDe, respirerSiBesoin } from './porteeDAnalyse';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
 export type ContractedNames = ReadonlySet<string>;
@@ -332,6 +332,7 @@ async function nomsGardesDeLaPage(
     compter('pagesReutilisees');
     return gardee.noms;
   }
+  if (options.priorite === 'analyse') await respirerSiBesoin();
   await options.avantChaquePage?.();
   if (typeof page.loadAsync === 'function') {
     await page.loadAsync();
@@ -624,6 +625,9 @@ export async function scanComposedInstances(
   return { composes, composed, warnings, mainByInstanceId };
 }
 
+/** Variants relevés ensemble avant que l'analyse puisse rendre la main. */
+const TRANCHE_DE_VARIANTS = 16;
+
 /**
  * Étend le relevé à tous les variants du Component Set.
  *
@@ -644,7 +648,15 @@ export async function scanComposedMatrix(
   const roots = reference
     ? [reference, ...variants.filter((variant) => variant !== reference)]
     : variants;
-  const scans = await Promise.all(roots.map((root) => scanComposedInstances(root, contracted)));
+  // Les variants se relèvent par tranches, et l'analyse rend la main entre deux
+  // tranches si son budget est écoulé. L'ordre des relevés reste celui de
+  // `roots`.
+  const scans: ComposedInstancesScan[] = [];
+  for (let debut = 0; debut < roots.length; debut += TRANCHE_DE_VARIANTS) {
+    if (debut > 0) await respirerSiBesoin();
+    const tranche = roots.slice(debut, debut + TRANCHE_DE_VARIANTS);
+    scans.push(...await Promise.all(tranche.map((root) => scanComposedInstances(root, contracted))));
+  }
 
   const composed = new Map<string, ComposedDependency>();
   const mainByInstanceId = new Map<string, ComponentNode>();

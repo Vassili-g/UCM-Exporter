@@ -196,16 +196,23 @@ export function componentContractFilename(name: string): string {
 /**
  * Point d'entrée de la commande : crée le contrat du composant sélectionné.
  *
- * `annoncer` nomme les étapes traversées, il n'en décide aucune. Cet
- * export charge les autres pages s'il rencontre des instances, puis résout
- * leurs maîtres : un coût réel, non mesuré, pendant lequel un « Analyse du
- * composant… » figé se lit comme un plantage. Les étapes portent le nom de ce
- * que le code fait, jamais une durée ni un pourcentage : la mesure n'existe
- * pas, et une barre de progression inventerait une précision qu'on n'a pas.
+ * `annoncer` nomme les étapes traversées, il n'en décide aucune. Quand le
+ * composant porte des instances, cet export résout leurs maîtres et charge la
+ * page de chacun, une fois par session et par page tant qu'elle ne change pas :
+ * un coût pendant lequel un « Analyse du composant… » figé se lit comme un
+ * plantage. Les étapes portent le nom de ce que le code fait, jamais une durée
+ * ni un pourcentage : le temps d'une étape dépend du fichier, et seule la trace
+ * du build de mesure le relève, après coup.
+ *
+ * `options.respirer` rend la main au sandbox dans les boucles longues, une
+ * fois le budget de calcul écoulé ; `code.ts` y lit l'annulation.
  */
-export async function handleExportComponent(annoncer: Annonce = () => {}): Promise<ComponentExport> {
+export async function handleExportComponent(
+  annoncer: Annonce = () => {},
+  options: { respirer?: () => Promise<void> } = {},
+): Promise<ComponentExport> {
   ouvrirLaMesure();
-  const resultat = await dansUnePorteeDAnalyse({}, () => exporterLaSelection((texte) => {
+  const resultat = await dansUnePorteeDAnalyse(options, () => exporterLaSelection((texte) => {
     etape(texte);
     annoncer(texte);
   }));

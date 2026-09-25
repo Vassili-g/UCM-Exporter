@@ -25,6 +25,7 @@ import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNo
 import { declarerLesImbriquesSansRegles } from './imbriques';
 import type { ReleveDesImbriques } from './imbriques';
 import { declarerLesRacinesDeVariants, pousserSansNode } from './localisation';
+import { respirerSiBesoin } from './porteeDAnalyse';
 import type { DiscoveredRoles } from './semantics';
 import type {
   ComposedDependency,
@@ -259,6 +260,7 @@ export async function extractStructure(
   // référence n'a pas de vue où situer un usage.
   const effectCarriers = new Map<ComponentNode, EffectCarrier[]>();
   for (const entry of matrix.variants) {
+    await respirerSiBesoin();
     const exactPlaced: PlacedDependencies = new Map();
     const exactPaths: PublishedNodePaths = new Map();
     const exactEffects: EffectCarrier[] = [];

@@ -1,6 +1,6 @@
 /**
- * La portée d'analyse ne change aucun contrat, et elle résout chaque maître
- * une fois.
+ * La portée d'analyse ne change aucun contrat, elle résout chaque maître une
+ * fois, et ses respirations ne changent rien au résultat.
  *
  * Le banc lui-même (`aides/parite.ts`) tourne sur chaque export de
  * `figmaFaux.handleExportComponent`. Ce fichier y soumet un set où la mémoire
@@ -9,14 +9,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import exporterLeComposant from '../src/contract/exportComponent';
+import { respirerSiBesoin } from '../src/contract/porteeDAnalyse';
 import { conteneurDeRegles, handleExportComponent, node } from './aides/figmaFaux';
+import { sansDate } from './aides/parite';
 
 /**
- * Un set `Root` de huit variants. Chaque variant embarque deux instances de
+ * Un set `Root` de `nombre` variants. Chaque variant embarque deux instances de
  * `Branch`, contracté par un conteneur de règles posé sur la même page.
  * `appels` compte les `getMainComponentAsync` par id d'instance.
  */
-function monterLeSet() {
+function monterLeSet(nombre = 8) {
   const maitre = node('COMPONENT', 'Taille=Défaut', [node('TEXT', 'Leaf', [], { characters: 'Feuille' })], {
     layoutMode: 'HORIZONTAL',
   });
@@ -41,7 +43,7 @@ function monterLeSet() {
     };
     return cree;
   };
-  const tailles = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8'];
+  const tailles = Array.from({ length: nombre }, (_, rang) => `T${rang + 1}`);
   const variants = tailles.map((taille) => node('COMPONENT', `Taille=${taille}`, [
     node('TEXT', 'Glyph', [], { characters: taille }),
     instance('Branch A'),
@@ -105,5 +107,94 @@ test('dans la portée, chaque instance ne demande son maître qu’une fois', as
     }
   } finally {
     fichier.restaurer();
+  }
+});
+
+/**
+ * Une horloge qui avance de 31 ms à chaque lecture : chaque appel à
+ * `respirerSiBesoin` trouve son budget écoulé.
+ */
+function horlogeRapide(): () => void {
+  const vraie = Date.now;
+  let instant = vraie();
+  Date.now = () => (instant += 31);
+  return () => {
+    Date.now = vraie;
+  };
+}
+
+test('une annulation pendant la boucle des variants arrête l’analyse avant le variant suivant', async () => {
+  const fichier = monterLeSet(8);
+  const remettre = horlogeRapide();
+  try {
+    class Annulee extends Error {}
+    // Après « Écriture du contrat… », seule la boucle par variant de
+    // `extractStructure` respire : le compte dit où l'analyse en est.
+    let ecriture = false;
+    let dansLaBoucle = 0;
+    const annoncer = (etape: string) => {
+      if (etape.startsWith('Écriture')) ecriture = true;
+    };
+    await exporterLeComposant(annoncer, {
+      respirer: async () => {
+        if (ecriture) dansLaBoucle += 1;
+      },
+    });
+    assert.equal(dansLaBoucle, 8, 'la boucle ne respire pas une fois par variant');
+
+    ecriture = false;
+    dansLaBoucle = 0;
+    await assert.rejects(exporterLeComposant(annoncer, {
+      respirer: async () => {
+        if (!ecriture) return;
+        dansLaBoucle += 1;
+        if (dansLaBoucle === 2) throw new Annulee();
+      },
+    }), Annulee);
+    assert.equal(dansLaBoucle, 2, 'l’analyse a continué après l’annulation');
+  } finally {
+    remettre();
+    fichier.restaurer();
+  }
+});
+
+test('quarante variants donnent le même contrat et les mêmes avertissements, avec ou sans respirations', async () => {
+  const fichier = monterLeSet(40);
+  try {
+    const sans = await exporterLeComposant();
+    let respirations = 0;
+    const remettre = horlogeRapide();
+    let avec: Awaited<ReturnType<typeof exporterLeComposant>>;
+    try {
+      avec = await exporterLeComposant(() => {}, {
+        respirer: () => {
+          respirations += 1;
+          return new Promise((resolve) => setTimeout(resolve, 0));
+        },
+      });
+    } finally {
+      remettre();
+    }
+    // Deux entre les trois tranches du relevé de composition, et une par variant.
+    assert.ok(respirations >= 42, `${respirations} respirations`);
+    assert.equal(sansDate(avec.content), sansDate(sans.content));
+    assert.deepEqual(avec.warnings, sans.warnings);
+  } finally {
+    fichier.restaurer();
+  }
+});
+
+test('hors portée, respirerSiBesoin ne rend jamais la main', async () => {
+  const remettre = horlogeRapide();
+  try {
+    let tic = false;
+    setTimeout(() => {
+      tic = true;
+    }, 0);
+    await respirerSiBesoin();
+    await respirerSiBesoin();
+    assert.equal(tic, false);
+  } finally {
+    remettre();
   }
 });

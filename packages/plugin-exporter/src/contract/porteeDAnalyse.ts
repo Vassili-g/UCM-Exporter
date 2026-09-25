@@ -14,7 +14,19 @@ type Portee = {
   maitres: Map<string, Promise<ComponentNode | null>>;
   /** Ouvertures refusées en cours : tant qu'il y en a, la mémoire se tait. */
   refusees: number;
+  /** Rend la main au sandbox, et lève si l'analyse est annulée. */
+  respirer?: () => Promise<void>;
+  derniereRespiration: number;
 };
+
+/**
+ * Le calcul qu'une analyse enchaîne sans rendre la main.
+ *
+ * Le sandbox n'a qu'un fil : tant que l'analyse calcule, un changement de
+ * sélection n'est pas lu, et l'annulation coopérative de `code.ts` attend la
+ * fin de l'étape. Au-delà de ce budget, la boucle en cours rend la main.
+ */
+export const BUDGET_DE_CALCUL_MS = 30;
 
 let portee: Portee | null = null;
 let desactivee = false;
@@ -28,7 +40,7 @@ let desactivee = false;
  * contexte asynchrone qui dirait à `maitreDe` de quel corps vient l'appel.
  */
 export async function dansUnePorteeDAnalyse<T>(
-  _options: { respirer?: () => Promise<void> },
+  options: { respirer?: () => Promise<void> },
   corps: () => Promise<T>,
 ): Promise<T> {
   if (portee) {
@@ -41,7 +53,12 @@ export async function dansUnePorteeDAnalyse<T>(
       ouverte.refusees -= 1;
     }
   }
-  const ouverte: Portee = { maitres: new Map(), refusees: 0 };
+  const ouverte: Portee = {
+    maitres: new Map(),
+    refusees: 0,
+    respirer: options.respirer,
+    derniereRespiration: Date.now(),
+  };
   portee = ouverte;
   try {
     return await corps();
@@ -82,8 +99,21 @@ function lireLeMaitre(instance: InstanceNode): Promise<ComponentNode | null> {
   }
 }
 
-/** Rend la main si le budget de temps est écoulé ; sans effet hors portée. */
-export async function respirerSiBesoin(): Promise<void> {}
+/**
+ * Rend la main si le budget de calcul est écoulé ; sans effet hors portée, ou
+ * dans une portée ouverte sans `respirer`.
+ *
+ * `respirer` lève sur une analyse annulée : l'exception traverse la boucle qui
+ * respire, et la portée se ferme dans son `finally`.
+ */
+export async function respirerSiBesoin(): Promise<void> {
+  const ouverte = portee;
+  if (!ouverte?.respirer) return;
+  if (Date.now() - ouverte.derniereRespiration < BUDGET_DE_CALCUL_MS) return;
+  compter('respirations');
+  await ouverte.respirer();
+  ouverte.derniereRespiration = Date.now();
+}
 
 /**
  * Réservé au banc de parité (`tests/paritePerformance.test.ts`) : vrai, la

@@ -608,16 +608,30 @@ async function avecLaSourceDuDocument(releve: ReleveDeSource): Promise<ReleveDeS
  * L'annulation coopérative.
  *
  * Rien ne peut interrompre un appel Figma déjà parti. La demande est donc lue
- * entre deux étapes, là où le moteur annonce la suivante : l'annulation prend
- * effet à la fin de l'étape en cours, et rien n'est publié après elle. Le
- * designer ne la demande jamais directement : `demandee` vient d'un changement
- * de sélection, `reglages` d'une destination qui a changé pendant l'analyse.
+ * là où le moteur annonce une étape, et à chaque respiration de ses boucles
+ * longues (`respirer`) : l'analyse s'arrête après au plus
+ * `BUDGET_DE_CALCUL_MS` de calcul, plus la durée de l'appel Figma en cours, et
+ * rien n'est publié après elle. Le designer ne la demande jamais directement :
+ * `demandee` vient d'un changement de sélection, `reglages` d'une destination
+ * qui a changé pendant l'analyse.
  */
 class ExportAnnule extends Error {}
 let annulation: 'demandee' | 'reglages' | null = null;
 
 function verifierAnnulation(): void {
   if (annulation !== null) throw new ExportAnnule();
+}
+
+/**
+ * Rend la main au sandbox, puis lit l'annulation.
+ *
+ * Le moteur l'appelle dans ses boucles longues, une fois son budget de calcul
+ * écoulé : le `selectionchange` en attente passe pendant le `setTimeout`, et
+ * l'analyse s'arrête à la respiration qui suit, sans attendre la fin de
+ * l'étape.
+ */
+function respirer(): Promise<void> {
+  return new Promise<void>((resolve) => setTimeout(resolve, 0)).then(verifierAnnulation);
 }
 
 /** L'artefact tel que le repository le reçoit. */
@@ -658,7 +672,7 @@ async function analyser(
   succes: string,
   artifactKind: ArtifactKind,
   operation: number,
-  handler: (annoncer: Annonce) => Promise<{
+  handler: (annoncer: Annonce, options: { respirer: () => Promise<void> }) => Promise<{
     filename: string;
     content: string;
     warningCount: number;
@@ -692,7 +706,7 @@ async function analyser(
     const result = await handler((etape) => {
       verifierAnnulation();
       versUi({ type: 'phase', texte: etape, ...provenance });
-    });
+    }, { respirer });
     verifierAnnulation();
 
     const registre = result as {
