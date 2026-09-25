@@ -360,11 +360,14 @@ function specimen(emploi, hexa, n, fond, encres) {
   }
 }
 
-/** La garantie d'un état dans ce profil et ce thème : celle où il est premier membre, sinon second. */
+/**
+ * La garantie qu'une case montre pour un état : une manquée d'abord, où que l'état soit membre,
+ * sinon celle où il est premier membre, sinon second.
+ */
 function garantieDe(palette, emploi, decalage, profil, mode) {
   const est = (membre) => 'emploi' in membre && membre.emploi === emploi && membre.decalage === decalage;
-  const ici = palette.promesses.filter((p) => p.mode === mode && p.profil === profil);
-  return ici.find((p) => est(p.paire.premier)) ?? ici.find((p) => est(p.paire.second)) ?? null;
+  const ici = palette.promesses.filter((p) => p.mode === mode && p.profil === profil && (est(p.paire.premier) || est(p.paire.second)));
+  return ici.find((p) => p.verdict === 'manquee') ?? ici.find((p) => est(p.paire.premier)) ?? ici[0] ?? null;
 }
 
 function sectionDesUsages(palette, mode, encres) {
@@ -534,7 +537,7 @@ function sectionDExemple(palette, mode, encres, cle) {
     EXEMPLES[cle].faire(palette, mode, encres));
 }
 
-/** Un thème du cadre : en-tête et verdict, usages, rampes, interface d'exemple, contrastes. */
+/** Un thème du cadre : en-tête et verdict, rampes, usages, interface d'exemple, contrastes. */
 function themeDuCadre(palette, mode, { exemple, grilles }) {
   const encres = encresDe(mode);
   const echecs = palette.manquees(mode);
@@ -543,8 +546,8 @@ function themeDuCadre(palette, mode, { exemple, grilles }) {
       T(`font:600 11px/14px ${MONO};color:${encres.seconde};letter-spacing:.06em;text-transform:uppercase`, `Thème ${NOMS_DE_MODE[mode]} · fond ${FONDS[mode]}`),
       F(`padding:3px 10px;border-radius:999px;background:${echecs ? 'rgba(199,50,27,.12)' : encres.neutre}`,
         T(`font-size:11px;font-weight:600;color:${echecs ? '#C7321B' : encres.encre}`, echecs ? `${echecs} garantie${echecs > 1 ? 's' : ''} manquée${echecs > 1 ? 's' : ''}` : '✓ Toutes les garanties tenues'))),
-    sectionDesUsages(palette, mode, encres),
     sectionDesRampes(palette, mode, encres),
+    sectionDesUsages(palette, mode, encres),
     ...(exemple ? [sectionDExemple(palette, mode, encres, exemple)] : []),
     ...(grilles ? [sectionDesContrastes(palette, mode, encres)] : []));
 }
@@ -575,7 +578,7 @@ function sectionPlanche() {
   const coutGrilles = avec.calques - sans.calques;
   return `<section class="bloc" id="w3-4">
   <div class="tete"><span class="sur">W3.4 · Planche générée, second tour</span><h2>Quelle nuance pour quel usage, du spécimen à la grille</h2></div>
-  <p>Récit R1 retenu. Trois changements depuis le premier tour. Les états portent le vocabulaire des composants : <code>default</code>, <code>hover</code>, <code>active</code>, et <code>focus</code> pour l’anneau, qui est son propre emploi. Deux interfaces d’exemple, prises sur Radix Themes, sont proposées. Les grilles des contrastes passent dans chaque thème, alignées colonne par colonne sur les rampes, et peintes de leurs vraies couleurs.</p>
+  <p>Récit R1 retenu, les deux rampes en tête de chaque thème. Trois changements depuis le premier tour. Les états portent le vocabulaire des composants : <code>default</code>, <code>hover</code>, <code>active</code>, et <code>focus</code> pour l’anneau, qui est son propre emploi. Deux interfaces d’exemple, prises sur Radix Themes, sont proposées. Les grilles des contrastes passent dans chaque thème, alignées colonne par colonne sur les rampes, et peintes de leurs vraies couleurs.</p>
   <div class="faits">
     <div><b>Les états</b><span>Une en-tête de colonnes <code>default · hover · active</code> par section d’usages, au lieu d’une étiquette par case. Un emploi à un seul état n’occupe que la première colonne ; l’anneau se lit <code>focus</code>.</span></div>
     <div><b>Les grilles</b><span>Une ligne par nuance de fond, une colonne par nuance de texte, sous les pastilles de la rampe. Une paire à 3:1 ou plus se peint telle qu’elle se lira : le fond de la ligne, le ratio écrit dans la couleur de la colonne. En dessous, la case s’efface. Même nombre de cases qu’aujourd’hui.</span></div>
@@ -595,10 +598,11 @@ function sectionPlanche() {
     <tr><td>R1, avec grilles et E2</td><td>${e2.calques}</td></tr>
   </tbody></table></div>
   <p class="note">Les calques se comptent sur l’arbre de la maquette, un cadre ou un texte pour un calque, comme <code>compterCalques</code>. Les grilles coûtent ${coutGrilles} calques pour les deux thèmes, E1 ${coutExemple('E1')} et E2 ${coutExemple('E2')}.</p>
-  <div class="questions"><h3>Questions</h3><ol>
-    <li><b>L’interface d’exemple.</b> <span class="reco">Recommandé : E2</span>, qui montre les emplois ensemble, là où la section des usages les montre déjà un par un avec leurs états. E1 double cette section, mais se compare directement à Radix.</li>
-    <li><b>Les grilles.</b> Peintes de la paire réelle, effacées sous 3:1. <span class="reco">Recommandé.</span> Autre choix : garder les trois teintes de verdict actuelles dans le même alignement.</li>
-    <li><b>Le vocabulaire dans le plugin.</b> La carte des garanties dit encore « repos · survol · appui ». <span class="reco">Recommandé : passer aussi à default · hover · active</span>, pour que la planche et le plugin disent la même chose.</li>
+  <div class="questions"><h3>Décisions du mainteneur</h3><ol>
+    <li><b>L’ordre.</b> Dans chaque thème : les deux rampes, puis les usages, l’interface d’exemple et les contrastes.</li>
+    <li><b>L’interface d’exemple.</b> E2, l’écran composé.</li>
+    <li><b>Les grilles.</b> Peintes de la paire réelle, effacées sous 3:1.</li>
+    <li><b>Le vocabulaire dans le plugin.</b> La carte des garanties passe aussi à default · hover · active.</li>
   </ol></div>
 </section>`;
 }

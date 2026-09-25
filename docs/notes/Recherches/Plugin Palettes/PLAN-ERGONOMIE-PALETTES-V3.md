@@ -65,11 +65,11 @@ Relevés dans le code.
 | Sélecteur de couleur | Embarqué, dans le style de Figma, hexadécimal par défaut, sans requête externe. Maquette W3.1 validée : 232 px sous le contrôle, Hex à chaque ouverture ; pastilles des onze nuances Vivid sur la référence, fonds par défaut, blanc et deux nuances claires sur un fond |
 | Luminosité des nuances | Disposition A : tracé pleine largeur, table dessous, une colonne par nuance alignée sur son point. Flèches : 0,005, et 0,05 avec Maj |
 | Minimums et détection | Disposition A : une ligne par seuil, libellé et aide à gauche, champ et unité alignés à droite. L’unité ΔEok reste |
-| États d’un emploi | Sur la planche : `default`, `hover`, `active`, et `focus` pour l’anneau. Le plugin suit si W3.6 le confirme |
+| États d’un emploi | `default`, `hover`, `active`, et `focus` pour l’anneau, sur la planche et dans le plugin |
 | Onglet Planches | Renommé « Planches » |
 | Palette supprimée | Une carte par palette, teinte orange discrète, texte court, « Afficher dans Figma » et « Supprimer définitivement ». Ce dernier retire le cadre de Figma et oublie son suivi, sans confirmation : le Ctrl+Z de Figma rend les deux |
 | Réglages communs | « Luminosité des nuances », « Minimums des promesses » et « Détection des couleurs proches » suivent des maquettes validées |
-| Planche générée | Récit R1, « quelle nuance pour quel usage » : usages du profil porteur avec leurs états, puis les deux rampes, l’interface d’exemple et les grilles des contrastes, dans chaque thème. L’autre profil se lit dans les rampes. Interface d’exemple et forme des grilles : second tour de maquette (W3.6) |
+| Planche générée | Récit R1, « quelle nuance pour quel usage », validé en W3.6. Dans chaque thème : les deux rampes, les usages du profil porteur avec leurs états, l’interface d’exemple E2 (écran de réglages composé, sur le modèle de Radix Themes), puis les grilles des contrastes Soft et Vivid, alignées sur les rampes et peintes des paires réelles, effacées sous 3:1. L’autre profil se lit dans les rampes |
 | Nombre de nuances, mode standard | Préréglages de 9, 11 et 13 nuances, communs au fichier. 9 retire 400 et 950. 13 ajoute 1000 et 1050 (W6.1) : 0,215 et 0,165 en Light, 0,96 et 0,98 en Dark. Le préréglage Tailwind de la dérive se calcule sur les bouts 50 et 950, si bien qu’ajouter 1000 et 1050 ne déplace aucune nuance existante. L’architecture multi-marques admet ces trois préréglages |
 | Nombre de nuances, palette libre | Par palette : 4 à 13 nuances, numéros choisis parmi les multiples de 50, de 50 à 1050 quel que soit le préréglage commun ; 1000 et 1050 prennent la luminosité du préréglage de 13. Choix du modèle à la place de la palette de base, numéros en puces. Une palette libre ne montre ni rôles, ni accolades, ni `on-solid`, ni garanties |
 | Ajuster la référence | Pas de 0,01 de luminosité OKLCH, luminosité seule, originale gardée dans la palette |
@@ -106,8 +106,8 @@ contrôles créés une fois et non à chaque rendu.
 | Onglet Palettes, corrections directes | W1 | W0 |
 | Onglet Planches, palettes supprimées | W2 | W0 |
 | Maquettes à valider | W3 | W0 ; se fait en parallèle de W1 et W2 |
-| Sélecteur de couleur et cartes des Réglages communs | W4 | W3.1 à W3.3, validés le 2026-09-25 |
-| Planche générée | W5 | W3.6 validé |
+| Sélecteur de couleur et cartes des Réglages communs | W4 | W3.1 à W3.3, validés |
+| Planche générée | W5 | W3.6, validé |
 | Nombre de nuances | W6 | Choix du 13 sur rampes (W6.1), conception du format 3, revue indépendante |
 | Ajuster la référence | W7 | Conception du format 3 commune avec W6 |
 | Recette et clôture | W8 | Parcours finis |
@@ -257,8 +257,9 @@ se termine par ses questions, avec une recommandation.
   réglages composé) ; grilles des contrastes dans chaque thème, alignées
   colonne par colonne sur les rampes, une paire à 3:1 ou plus peinte de ses
   vraies couleurs, effacée en dessous. Cadre de Bleu : 1 636 calques avec
-  grilles, 1 790 avec E1, 1 710 avec E2, contre 1 898 aujourd’hui. À valider :
-  E1 ou E2, la forme des grilles, le vocabulaire des états dans le plugin.
+  grilles, 1 790 avec E1, 1 710 avec E2, contre 1 898 aujourd’hui. Validé : E2, les grilles
+  peintes, le vocabulaire dans le plugin, et les deux rampes en tête de chaque
+  thème.
 
 Critère : le mainteneur valide ou corrige chaque maquette sans avoir à
 imaginer une interaction.
@@ -292,7 +293,8 @@ Après validation de W3.4.
   pas en cause : aucun texte de version ni d’empreinte, filets de section
   lisibles aux deux fonds, peinture selon le profil du document, polices
   chargées avant le premier calque, grille des contrastes toujours présente.
-- [ ] **W5.3** Ajouter l’interface d’exemple si W3.4 la retient.
+- [ ] **W5.3** Ajouter l’interface d’exemple E2 de W3.6, peinte du profil
+  porteur, dans chaque thème.
 - [ ] **W5.4** Faire entrer le nouveau modèle dans l’empreinte : tous les
   cadres existants passent « À mettre à jour ».
 - [ ] **W5.5** Tests du modèle : chaque paire du moteur reste représentée,
@@ -300,8 +302,12 @@ Après validation de W3.4.
 - [ ] **W5.6** (ex-V6.4) Mesurer dans Figma le temps et le nombre de calques
   d’une génération de douze palettes ; appliquer `[PLA-24]` au résultat.
 
+- [ ] **W5.7** Passer les états du plugin à `default`, `hover`, `active` :
+  `NOM_DE_L_ETAT`, la légende des garanties et les phrases « au survol », « à
+  l’appui » (`textes.ts`), avec leurs entrées dans l’inventaire des textes.
+
 Critère : sans le plugin, le designer comprend en un regard ce que la planche
-lui dit, dans l’ordre choisi en W3.4.
+lui dit, dans l’ordre choisi en W3.6.
 
 ## Lot W6 : nombre de nuances
 
@@ -447,6 +453,8 @@ plusieurs garanties en échec.
 | W3.5.1 et W3.5.2, place du choix et numéros | Les recommandations |
 | W3.5.3, au-delà de 950 | Aller plus loin, comme le neutre de la bibliothèque. Relevé : le 1050 descend plus bas que `titanium.1100`, sans problème pour le moteur |
 | W6.1, préréglage de 13 | 1000 et 1050 : un pas de 50 aux extrémités se comprend mieux |
+| W3.6.1 à W3.6.3 | E2 ; grilles peintes des paires réelles ; vocabulaire des composants dans le plugin aussi |
+| W3.6, ordre des sections | Les deux rampes avant « Quelle nuance pour quel usage » |
 
 Texte d’origine :
 
@@ -478,6 +486,17 @@ W3.5 · Palette libre
 
 W6.1 · Préréglage de treize nuances
 c'est mieux d'avoir 1000 et 1050 car c'est plus compréhensible d'avoir des incréments de 50 sur des extrémités
+```
+
+Second tour de la planche :
+
+```text
+W3.4 · Planche générée, second tour
+1. ok reco
+2. ok reco
+3. ok reco
+
+Juste un truc : il faudrait changer l'ordre des sections, et mettre "les deux rampes" avant "quelle nuance pour quel usage"
 ```
 
 ## Retours du mainteneur, round 3
