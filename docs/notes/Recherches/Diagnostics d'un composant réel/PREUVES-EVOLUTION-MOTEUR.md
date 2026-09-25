@@ -2,9 +2,9 @@
 
 ## État
 
-- Lot courant : porte H (H0, H1 et H2), qui attend le mainteneur
+- Lot courant : E1, puis la porte H1
 - Branche et `HEAD` de départ : `main`, `92e7cff`
-- Dernière porte franchie : aucune
+- Portes franchies : H0 (reste le rang des ombres dans `effects`) et H2
 
 La copie de travail partagée porte le travail non commité d'autres sessions
 (`docs/notes/Recherches/Optimisation Tokens`, `Plugin Palettes`,
@@ -83,7 +83,7 @@ Mesures du mainteneur (H0) :
   la moitié du rayon Figma.
 - M5 : sur un cadre sans fill qui contient un cercle, l'ombre suit le cercle.
   L'aide `ombre` écrit donc `filter: drop-shadow()` pour ce cas, pas
-  `box-shadow`. Le cas du texte reste à mesurer.
+  `box-shadow`. Sur un texte, l'ombre suit les lettres : `text-shadow`.
 - M3 : de deux ombres posées sur un calque, celle ajoutée en dernier peint
   au-dessus. Son rang dans `effects` reste à lire par l'API.
 - M1 : le panneau lit l'opacité de 0 à 100 %, et une variable de valeur 0,5
@@ -106,7 +106,10 @@ Décisions (H2) :
   variable, pour le moment. E4 place les enfants d'un cadre libre sans
   changer `menuDeDimensionnement` ; les dimensions de `Mask` et `Circle`
   avertissent toujours.
-- Reste ouvert : le silence du repli `flex-row` quand tous les enfants sont
-  placés.
+- Les avertissements d'absence d'auto layout restent tous, le repli
+  `flex-row` compris, même quand tous les enfants sont placés. Leur impact
+  change en E4 (texte 9.1.7 du plan, à retenir à H1).
+- Le MCP Figma n'a pas pu se connecter : le rang des ombres dans `effects`
+  attend un agent qui en dispose.
 
 Textes (H1) : non commencés.
