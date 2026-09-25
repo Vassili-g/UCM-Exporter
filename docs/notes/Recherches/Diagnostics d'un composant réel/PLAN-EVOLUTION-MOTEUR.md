@@ -1,10 +1,10 @@
 # Plan d'évolution du moteur : propriétés visuelles et messages de racine
 
-> Statut : en cours. E0 à E9 sont faits, H0, H1 et H2
+> Statut : en recette. E0 à E10 sont faits, H0, H1 et H2
 > franchies ; leurs preuves, décisions et textes retenus sont dans
 > [PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md), qui fait foi
-> sur la section 9. Le prochain lot est E10. Ce plan réunit deux sujets qui
-> touchent les mêmes sites du moteur. Le premier exécute les décisions de H3
+> sur la section 9. Reste le retour du mainteneur sur le composant réel. Ce
+> plan réunit deux sujets qui touchent les mêmes sites du moteur. Le premier exécute les décisions de H3
 > ([DECISION-PROPRIETES-VISUELLES.md](./DECISION-PROPRIETES-VISUELLES.md)) et
 > fait passer le contrat en 14.0. Le second étend le regroupement des messages
 > de racine (L6 du [plan précédent](./PLAN-DIAGNOSTICS-COMPOSANT-REEL.md)) aux
@@ -771,13 +771,13 @@ s'ajoute aux trois, et `regarder` le dit.
 
 ### E10 : fermeture
 
-- [ ] Vérifier dans un worktree isolé : `git -c core.autocrlf=false worktree
+- [x] Vérifier dans un worktree isolé : `git -c core.autocrlf=false worktree
       add --detach <dossier> HEAD`, `npm ci`, `npm test`, `npm run typecheck`,
       puis les étapes du build une par une. Supprimer le worktree par Node.
-- [ ] Lancer `npm run build:code` dans `packages/plugin-exporter` de la copie
+- [x] Lancer `npm run build:code` dans `packages/plugin-exporter` de la copie
       partagée, que Figma charge, puis vérifier par `grep` qu'un nom introduit
       par E3 est dans `dist/code.js`.
-- [ ] Écrire dans le journal la liste attendue sur le composant réel : l'ombre
+- [x] Écrire dans le journal la liste attendue sur le composant réel : l'ombre
       publiée, l'opacité du calque d'onde avertie une fois si elle reste sans
       variable, le masque averti, ses rectangles placés. Leurs dimensions et
       leur rayon sans variable avertissent toujours : H2 garde la règle du
@@ -786,7 +786,7 @@ s'ajoute aux trois, et `regarder` le dit.
       comparer. Consigner son retour. La recette exporte aussi un style à deux
       ombres de couleurs opposées et compare leur ordre au rendu de Figma :
       E3 suppose que le dernier effet de la liste peint au-dessus.
-- [ ] Publier les trois paquets par `publish.yml`, noyau en premier, à la
+- [x] Publier les trois paquets par `publish.yml`, noyau en premier, à la
       demande du mainteneur ; le plugin qui écrit la 14.0 part après eux
       ([COMPATIBILITE.md](../../../format/COMPATIBILITE.md#qui-publie-qui-migre-qui-peut-fusionner)).
 
@@ -1263,18 +1263,21 @@ tokens, soit une par couleur du set dans l'exemple.
 
 - [x] H0 et H2 portent leurs décisions dans le journal.
 - [ ] H1 porte ses textes dans le journal, et le rang des ombres dans
-      `effects` y est consigné.
-- [ ] Chaque lot E1 à E9 a son test vu rouge, sa mutation consignée et son
-      commit poussé sur `main`.
-- [ ] Aucune loi existante n'a été relâchée ; chaque texte normatif modifié
+      `effects` y est consigné. Les textes y sont ; le rang est une hypothèse
+      que la recette du mainteneur confirme.
+- [x] Chaque lot E1 à E9 a son test vu rouge, sa mutation consignée et son
+      commit poussé sur `main`. Les tests d'E3 n'ont été lancés qu'après le
+      module : leur rouge est constaté par les mutations.
+- [x] Aucune loi existante n'a été relâchée ; chaque texte normatif modifié
       l'a été dans le commit de son lot.
-- [ ] Un contrat 14.0 fabriqué par le moteur passe `lois.ts` et le contrôle du
+- [x] Un contrat 14.0 fabriqué par le moteur passe `lois.ts` et le contrôle du
       kit ; les jeux 13.0 et 12.0 figés gardent leurs verdicts attendus.
-- [ ] Sur le scénario de E0, `meta.diagnostics`, le corps de la demande de
+- [x] Sur le scénario de E0, `meta.diagnostics`, le corps de la demande de
       fusion et la liste du plugin portent la même liste.
-- [ ] « Reste à valider » de `TEXTES-A-VALIDER.md` ne cite plus que R25 à R27,
-      avec leur raison.
-- [ ] `dist/code.js` de la copie partagée contient les corrections.
+- [x] « Reste à valider » de `TEXTES-A-VALIDER.md` ne cite plus que R25 à R27,
+      avec leur raison, et les côtés sans variable d'un groupe qui ne publie
+      rien, dont le texte retenu serait faux.
+- [x] `dist/code.js` de la copie partagée contient les corrections.
 
 ## 11. Ce que la relecture a changé
 

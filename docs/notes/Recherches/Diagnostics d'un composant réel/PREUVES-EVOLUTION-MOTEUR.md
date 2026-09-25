@@ -2,7 +2,7 @@
 
 ## État
 
-- Lot courant : E10
+- Lot courant : recette du mainteneur (E10)
 - Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
 - Portes franchies : H0, H1 et H2. Le rang des ombres dans `effects` se
   vérifie à la recette de E10.
@@ -353,6 +353,43 @@ copiés ; le build y tourne étape par étape.
   28, et « Reste à valider » ne cite plus que R25 à R27 et les côtés sans
   variable d'un groupe qui ne publie rien, chacun avec sa raison.
 - Écart ou réserve : aucun.
+
+### E10 : fermeture
+
+- Commit : ce commit, précédé de `fb45cb7`, commit d'une autre session qui ne touche que UCM Palettes.
+- Vérification, worktree neuf à `5dbfa58` : `npm ci` : 0. `npm test` : 0 (kit
+  406 tests, CLI 170, adaptateur 23, plugin 989, Palettes 194, socle 190,
+  racine 25). `npm run typecheck` : 0. Build étape par étape : 0 à chaque
+  étape. Worktree supprimé par Node.
+- Copie partagée : kit reconstruit, puis `npm run build:code` : 0 ;
+  `dist/code.js` porte `CONTRACT_VERSION = "14.0"`, `extractEffectStyles` et
+  `ordreCss`.
+- Contrôle du kit : `verifierLeLecteur` (`lois.ts`) passe déjà chaque contrat
+  fabriqué au lecteur du kit ; la fenêtre et les refus enregistrés gardent les
+  verdicts des jeux 13.0 et 12.0.
+- Publication, à la demande du mainteneur : `@ucm-kit/core` 0.1.41 (run
+  36123750968), `@ucm-kit/cli` 0.1.49 (run 36124031861), puis
+  `@ucm-kit/adapter-typescript` 0.1.42 (run 36124390130). Les deux premiers
+  runs finissent rouges sur l'étape des pins, comme toute exécution
+  intermédiaire ; le troisième est vert. `npm view` sert les trois numéros.
+- Liste attendue sur le composant réel, au réexport :
+  - l'ombre des racines, si elle vient d'un effect style, se publie dans
+    `effectStyles` ; un champ du style sans variable, sa couleur par exemple,
+    avertit une fois au nom du style ; une ombre sans style donne une ligne
+    pour toutes les racines ;
+  - l'opacité du calque d'onde avertit une fois si elle reste sans variable,
+    au texte retenu ; l'opacité de la racine atténuée donne une ligne pour les
+    variants ;
+  - le masque avertit toujours ;
+  - les rectangles du calque sans auto layout sont placés en
+    `position: "absolute"`, et le calque garde « il range 2 layers », avec
+    l'impact nouveau ;
+  - leurs dimensions et leur rayon sans variable avertissent toujours : H2
+    garde la règle du menu, et aucun lot ne touche au rayon.
+- Recette demandée au mainteneur : relancer l'analyse du composant réel et
+  comparer à cette liste ; exporter un style à deux ombres de couleurs
+  opposées, et comparer leur ordre dans le rendu à celui de Figma.
+- Écart ou réserve : la recette du mainteneur reste à consigner.
 
 ### Porte H : réponses reçues
 
