@@ -186,8 +186,11 @@ Fichiers : `textes.ts`, `ongletPalettes.ts`, `nuancier.ts`, `styles.css`,
   unitaire pour la désélection (`memeChoix`), vu rouge sur une mutation. L’ordre
   des cartes et le survol du bouton danger restent au mainteneur, dans le plugin
   : pas de test d’interface dans ce tour.
-- [ ] **X1.7** Appliquer à la carte de création la disposition retenue en
-  X2.7, après validation.
+- [x] **X1.7** Appliquer à la carte de création la disposition retenue en
+  X2.7, après validation. Fait : Modèle Standard ou Libre dans la troisième
+  colonne, palette de base dessous, puces d’une palette libre sous les
+  colonnes ; « Créer la palette » puis « Annuler », à gauche (réponse du
+  mainteneur).
 - [x] **X1.8** Retirer « Utiliser la couleur sélectionnée dans Figma » : le
   bouton, la demande `lire-selection`, la réponse `selection`, la
   frontière, les textes et la notice d’une couleur ramenée. La lecture de la
@@ -263,17 +266,20 @@ Second passage, après les [retours du
 mainteneur](#retours-du-mainteneur-sur-les-maquettes-x2), dans le même
 fichier :
 
-- [ ] **X2.7** Création et configuration d’une palette : le choix du Modèle,
+- [x] **X2.7** Réponses : gestes à gauche, Modèle dès la création, R3,
+  piste de luminosité. Faits en X1.7 et X7.6. Création et configuration d’une palette : le choix du Modèle,
   Standard ou Libre, dans la carte de création, et « Ajuster la référence »
   redessiné. Créer et Annuler, sans la sélection Figma.
-- [ ] **X2.8** Détail d’une nuance, disposition A retenue : une hiérarchie
+- [x] **X2.8** Réponse : H1, « Contrastes de la nuance ». Fait en X3.6. Détail d’une nuance, disposition A retenue : une hiérarchie
   plus marquée, et « Contrastes » détaché de « Sert à ».
-- [ ] **X2.9** Badges : la pastille pleine B en teintes adoucies, telle que
+- [x] **X2.9** Réponse : teintes et « ✗ » gardés. Badges : la pastille pleine B en teintes adoucies, telle que
   codée, à confirmer.
-- [ ] **X2.10** Ligne du titre, telle que codée : le filet sous la zone de
+- [x] **X2.10** Réponse : 5 px au-dessus et au-dessous du filet. Fait. Ligne du titre, telle que codée : le filet sous la zone de
   création, « Nouvelle palette » principal, la génération secondaire.
-- [ ] **X2.11** Interface de test : refonte du design de l’écran.
-- [ ] **X2.12** Nuance 50 : ce qui distingue A et D à l’usage.
+- [x] **X2.11** Réponse : C, avec les composants et l’écran proposés. Fait en
+  X5.5. Interface de test : refonte du design de l’écran.
+- [x] **X2.12** Réponse : la 50 ne sert jamais de fond de bouton, seulement de
+  surface de carte ; nom retenu `surface-card`. Suite en X6. Nuance 50 : ce qui distingue A et D à l’usage.
 
 Critère : le mainteneur valide ou corrige chaque maquette sans avoir à
 imaginer une interaction.
@@ -304,6 +310,9 @@ Après validation de X2.2 et X2.3, et la réponse à Q4.2.
   case de grille qui atteint AA, dans le même calque. La légende des grilles
   ajoute « AA dès 4,5:1 · AAA dès 7:1 ». Non fait : la tête des Réglages
   communs, qui ne montre aucun contraste.
+- [x] **X3.6** Détail d’une nuance, disposition H1 : en-tête à titre de 13 px
+  et grande pastille, puis un encadré par groupe, « Sert à » ou « Sans
+  rôle », puis « Contrastes de la nuance », et OKLCH replié.
 - [x] **X3.5** Forme B retenue en X2.3 : une pastille pleine, verte ou
   rouge, en teintes adoucies, rôles `--fond-niveau-atteint`,
   `--texte-niveau-atteint`, `--fond-niveau-manque` et
@@ -374,25 +383,55 @@ Après validation de X2.5 et la réponse à Q4.4.
   n’a plus d’interface d’exemple. Fait en tests unitaires : couleurs par emploi
   et par état dans les deux thèmes (`couleursDeLInterface`), planche sans écran
   de réglages. Le suivi du thème de l’aperçu reste au mainteneur.
+- [x] **X5.5** Refonte X2.11, option C : une bascule « Écran » et « États ».
+  L’écran « Membres de l’équipe », sur le modèle de Radix Themes, se
+  manipule ; la grille montre sept composants à quatre états. La vue choisie
+  dure la session.
 
 Critère : le designer essaie sa palette dans une interface sans quitter le
 plugin, et la planche ne montre plus que ce qu’elle doit prouver.
 
 ## Lot X6 : nuance 50
 
-Après la réponse à Q4.1.
+Décision du mainteneur (X2.12, puis question du nom) : option D. La 50
+devient la surface d’une carte, sous le token `surface-card` ; elle ne sert
+jamais de fond à un bouton. `surface` garde 100, 200 et 300, et aucun token
+existant ne change de valeur. Conception à faire relire avant le code, comme
+tout changement du moteur.
 
-- [ ] **X6.1** Appliquer l’option retenue au moteur : table des emplois, paires
-  et `CRANS_DES_EMPLOIS` si un emploi change ou naît ; `[VER-05]` et
-  `[REC-05]` si la liste des numéros requis change. Le préréglage de
-  9 nuances garde la 50.
-- [ ] **X6.2** Mettre à jour l’architecture multi-marques, sections 1 et 4,
-  et prévenir l’équipe du design system si des tokens de
-  `intencial-library` changent de valeur.
-- [ ] **X6.3** Suivre dans le plugin et sur la planche : ligne d’usage,
-  accolades, détail, garanties, interface de test.
+Conception :
+
+- l’emploi `surface-card` entre dans `Emploi`, `EMPLOIS` et
+  `TABLE_DES_EMPLOIS` au cran 50, sans état : une carte ne se survole pas,
+  et `decalagesDeLEmploi` ne rend que 0 ;
+- `CRANS_DES_EMPLOIS` gagne 50 : `[REC-05]` refuse une recette standard
+  sans 50. Les trois préréglages portent déjà 50 ; une palette libre n’a pas
+  d’emplois et n’est pas concernée ;
+- trois paires nouvelles jugent ce qu’une carte porte : `text` sur
+  `surface-card` au minimum des textes, `border-control` et `focus` sur
+  `surface-card` au minimum des éléments visibles. Elles prennent les
+  numéros 15 à 17 ; les quatorze premières gardent les leurs. La 50 a la
+  luminosité du fond par défaut, et ces paires comptent pour un fond
+  personnalisé, qui peut s’en écarter ;
+- un bouton soft posé sur une carte n’a pas de paire : `surface` sur
+  `surface-card`, comme `surface` sur le fond, n’a aucun minimum ;
+- dans le plugin et sur la planche, `surface-card` suit les autres emplois :
+  une accolade sur la 50, une ligne d’usage « Fonds de carte » sur la
+  planche, avant « Fonds légers », son rôle dans le détail d’une nuance, ses
+  associations dans la carte des garanties, et la carte de l’écran de
+  l’interface de test.
+
+- [ ] **X6.1** Moteur : l’emploi, sa table, `CRANS_DES_EMPLOIS` et les trois
+  paires, après la revue de la conception ; `[VER-05]` et `[REC-05]`.
+- [ ] **X6.2** Architecture multi-marques, sections 1 et 4 : la ligne
+  `surface-card`. Dire à l’équipe du design system qu’un token s’ajoute à
+  `theme`, sans qu’aucun token existant change de valeur ; sa création dans
+  `intencial-library` reste hors de ce plan.
+- [ ] **X6.3** Plugin et planche : accolades, ligne d’usage, détail,
+  garanties, interface de test.
 - [ ] **X6.4** Tests : les rôles gardent leurs numéros dans chaque
-  préréglage, et les paires nouvelles, s’il y en a, se jugent.
+  préréglage, les dix-sept paires se jugent, et une recette standard sans 50
+  se refuse.
 
 Critère : la 50 a un usage que le designer comprend, sans qu’aucun token
 existant change de couleur à son insu.
@@ -430,6 +469,10 @@ Le champ `originale` et `propositionDAjustement` existent dans le moteur.
   dans la configuration retire l’originale et le dit. Fait en tests unitaires
   (`ajustement.test.ts`), vus rouges sur des mutations ; les tests d’interface
   restent au mainteneur.
+- [x] **X7.6** R3 retenu en X2.7 : l’ajustement est l’onglet « Ajuster » du
+  sélecteur de couleur de la référence, que « Ajuster la référence » ouvre ;
+  la piste de luminosité marque d’un trait chaque changement de nuance, et la
+  phrase ne vient que lorsque le pas voisin en franchit un.
 
 Critère : le designer corrige une référence à la limite sans perdre sa couleur
 d’origine, et le plugin ne change jamais la couleur à sa place.

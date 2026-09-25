@@ -1352,20 +1352,22 @@ palette » gardent leurs libellés au-dessus des champs.
   accessible qui dit la relation, les numéros, les ratios et le résultat. La
   réglette est décorative pour l'assistance technique, et la bascule annonce
   le résultat du profil qu'elle ne montre pas.
-- `[UI-10]` Le détail d'une nuance commence par une grande pastille,
-  « Vivid · 700 », son code hexadécimal et « Copier » ; celui de la référence
-  ajoute « ◆ Votre couleur de référence exacte ». Sous « Sert à », une ligne
+- `[UI-10]` Le détail d'une nuance se lit en trois rangs. L'en-tête : une
+  grande pastille, « Vivid · 700 » en titre, son code hexadécimal et
+  « Copier » ; celui de la référence ajoute « ◆ Votre couleur de référence
+  exacte ». Puis chaque groupe dans son encadré, titré en capitales
+  discrètes, et OKLCH replié. Dans l'encadré « Sert à », une ligne
   par usage de la nuance : un spécimen, le rôle et l'état (« `solid` ·
   default »), le nom français du rôle, puis la garantie qui le concerne avec le
   numéro du partenaire et son badge (« ✓ sur `surface` 100 : 5,78:1 AA »). Un clic sur la
   garantie la choisit dans la carte des garanties. La pastille `on-solid` a son
   propre détail : le fond de page du thème, `neutral.50` du design system,
   posé en texte sur `solid` 700 à 900, avec les garanties de ces trois états.
-  Une nuance sans rôle affiche « Sans rôle » à la place de « Sert à ». Toute
-  nuance porte ensuite une table « Contrastes » de trois lignes : fond du
-  thème, blanc et noir, chacune avec son ratio et son badge de texte courant
-  (`[VER-13]`). La mention d'une nuance identique ou confondue suit la
-  table ; les valeurs OKLCH se replient sous « OKLCH ». Aucun contraste ne
+  Une nuance sans rôle a l'encadré « Sans rôle », qui dit qu'aucun rôle du
+  modèle ne la vise. Toute nuance porte ensuite l'encadré « Contrastes de la
+  nuance » : fond du thème, blanc et noir, chacun avec son ratio et son badge
+  de texte courant (`[VER-13]`), puis la mention d'une nuance identique ou
+  confondue. Les valeurs OKLCH se replient sous « OKLCH ». Aucun contraste ne
   s'écrit deux fois, et aucun ratio ne s'affiche sans le nom de ce qu'il
   compare.
 - `[UI-11]` Le titre de premier rang est « Palette [nom] », avec le nom que le
@@ -1378,8 +1380,9 @@ palette » gardent leurs libellés au-dessus des champs.
   (Auto, Soft ou Vivid) se règle sous le choix du modèle. En Auto, une ligne
   sous le sélecteur dit le profil que le classement a choisi : « Auto a choisi Vivid ». Soft ou Vivid force le profil
   porteur (`[MOT-17]`). L'erreur d'un code invalide reste sous son champ.
-  Sous le code, « Ajuster la référence » ouvre le panneau (`[UI-15]`) ; une
-  référence ajustée ajoute « Ajustée depuis #16A34A · Revenir à l'originale ».
+  Sous le code, « Ajuster la référence » ouvre le sélecteur de couleur de la
+  référence sur son onglet « Ajuster » (`[UI-15]`) ; une référence ajustée
+  ajoute « Ajustée depuis #16A34A · Revenir à l'originale ».
   Libre retire la palette de base, dit « Sans rôles ni garanties », et montre
   sous les trois colonnes une puce par multiple de 50, de 50 à 1050, allumée
   quand la palette porte ce numéro. Une puce allumée ne s'éteint pas sous
@@ -1400,32 +1403,44 @@ palette » gardent leurs libellés au-dessus des champs.
   (`[UI-09]`) : la palette se règle avant de se juger. L'Interface de test
   (`[UI-14]`) ferme l'onglet.
 - `[UI-14]` L'Interface de test est la dernière carte de l'onglet Palettes,
-  repliée à l'ouverture. Elle montre, en HTML, un écran de réglages composé
-  sur le modèle de Radix Themes, peint de la palette ouverte dans le thème de
-  l'aperçu et le profil porteur : badge et encart en `surface`, onglet actif
-  souligné de `solid`, champ bordé de `border-control` et cerclé de
-  `focus` au focus, case et interrupteur en `solid`, et trois boutons, sans
-  fond, `surface` et `solid`. Chaque couleur vient de la table des emplois ;
-  le survol et l'appui avancent d'une nuance, texte et fond ensemble. Les
-  contrôles se manipulent sans rien enregistrer. Une palette libre n'a pas
+  repliée à l'ouverture. Elle montre la palette ouverte, peinte dans le thème
+  de l'aperçu et le profil porteur, en deux vues qu'une bascule choisit, et
+  la vue choisie dure la session. « Écran » : une page « Membres de
+  l'équipe » sur le modèle de Radix Themes, en HTML, avec une navigation dont
+  l'entrée active est en `surface`, un encart en `surface`, un tableau dont
+  une ligne se choisit, des badges `surface` et `solid`, un champ bordé de
+  `border-control` et cerclé de `focus` au focus, une case et un
+  interrupteur en `solid`, et trois boutons, sans fond, `surface` et
+  `solid`. Le survol et l'appui avancent d'une nuance, texte et fond
+  ensemble, et les contrôles se manipulent sans rien enregistrer. « États » :
+  une rangée par composant, boutons plein, soft, contour et sans fond,
+  champ, lien et badge, et une colonne par état, `default`, `hover`,
+  `active` et `focus`, chaque cellule peinte de son état sans survol.
+  Chaque couleur vient de la table des emplois. Une palette libre n'a pas
   cette carte. La planche ne porte pas cet écran.
-- `[UI-15]` « Ajuster la référence » ouvre, dans la carte « Configuration de
-  la palette », un panneau qui part de la référence rangée : l'originale et
-  la proposition côte à côte, « − » et « + » par pas de 0,01 de luminosité
-  OKLCH, chroma et teinte gardées, le code de la proposition saisissable, la
-  nuance visée dans chaque thème, et les garanties avant et après, le bilan
-  de chaque profil puis chaque garantie manquée d'un côté, avec son badge.
-  Un pas qui changerait le numéro de la référence l'annonce avant le clic.
-  Seul « Appliquer » range : la proposition devient la référence, et
-  `originale` garde celle du premier ajustement. « Annuler » et Échap
-  referment sans rien écrire et rendent le focus au lien. « Revenir à
+- `[UI-15]` Le sélecteur de couleur de la référence a deux onglets,
+  « Choisir » et « Ajuster ». « Ajuster la référence », sous le code ou
+  parmi les réglages d'une garantie en échec, l'ouvre sur « Ajuster ». Cet
+  onglet part de la référence rangée : l'originale et la proposition en
+  grandes pastilles côte à côte, « − » et « + » par pas de 0,01 de
+  luminosité OKLCH, chroma et teinte gardées, et entre eux une piste qui
+  peint les propositions voisines et marque d'un trait le passage d'une
+  nuance à la suivante. Suivent la luminosité, le code de la proposition
+  saisissable, la nuance visée dans chaque thème, et les garanties avant et
+  après : le bilan de chaque profil, puis chaque garantie manquée d'un côté,
+  avec sa pastille. Une phrase ne s'ajoute que lorsque le pas voisin
+  franchit une frontière de nuance. Seul « Appliquer » range : la
+  proposition devient la référence de la palette courante, et `originale`
+  garde celle du premier ajustement. « Annuler » et Échap referment le
+  sélecteur sans rien écrire et rendent le focus à la pastille. « Revenir à
   l'originale » rend l'originale et retire le champ ; un code saisi dans la
   configuration le retire aussi, et une notice le dit. Aucun ajustement ne
   se fait sans le geste du designer.
 - `[UI-13]` Aucune couleur ne se choisit dans le sélecteur du navigateur, qui
   s'ouvre en RGB dans Figma. La pastille de la couleur de référence, celle
   de la création, celles des deux fonds des Réglages communs et celle du
-  fond de l'aperçu ouvrent le sélecteur embarqué : 232 px sous le contrôle,
+  fond de l'aperçu ouvrent le sélecteur embarqué (celui de la référence a
+  aussi l'onglet « Ajuster », `[UI-15]`) : 232 px sous le contrôle,
   par-dessus le contenu, aligné sur son bord. Il porte une zone de saturation
   et de luminosité, un curseur de teinte, un menu de format et le code, en
   Hex à chaque ouverture ; RGB et HSL donnent trois champs. Aucune opacité.
@@ -1447,9 +1462,11 @@ palette » gardent leurs libellés au-dessus des champs.
   et prennent la hauteur de la liste. « Nouvelle palette » ouvre la création
   sous le sélecteur, dans une carte de même forme que « Configuration de la
   palette » : trois colonnes, libellé au-dessus du champ, pour Nom de la
-  palette, Couleur de référence (pastille et code) et Palette de base (Auto,
-  Soft ou Vivid, Auto par défaut). Sous les colonnes, sur une ligne : « Créer
-  la palette » et « Annuler ». Entrée crée ;
+  palette, Couleur de référence (pastille et code) et Modèle (Standard ou
+  Libre, Standard par défaut), avec la palette de base dessous (Auto, Soft ou
+  Vivid, Auto par défaut). En Libre, les puces des numéros viennent sous les
+  colonnes, allumées sur la liste commune. Puis, à gauche : « Créer la
+  palette » et « Annuler ». Entrée crée ;
   Échap annule quand « Annuler » est offert. Après création, la palette est
   ouverte ; après annulation, le focus revient à « Nouvelle palette ».
 

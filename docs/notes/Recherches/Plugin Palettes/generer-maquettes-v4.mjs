@@ -30,7 +30,7 @@ import { changementAuPasVoisin, garantiesComparees, manqueesParProfil, propositi
 import { analyserPalette } from '../../../../packages/plugin-palettes/src/analyse.ts';
 import { ajouter, appliquerLAjustement, nouvellePalette, renommer } from '../../../../packages/plugin-palettes/src/edition.ts';
 import { couleursDeLInterface } from '../../../../packages/plugin-palettes/src/ui/interfaceDeTest.ts';
-import { TEXTES_DE_L_INTERFACE_DE_TEST, annonceDuPas, gesteDeGeneration, jugementDuSeuil, niveauEcrit } from '../../../../packages/plugin-palettes/src/ui/textes.ts';
+import { annonceDuPas, gesteDeGeneration, jugementDuSeuil, niveauEcrit } from '../../../../packages/plugin-palettes/src/ui/textes.ts';
 
 const ICI = path.dirname(fileURLToPath(import.meta.url));
 
@@ -270,9 +270,22 @@ function sectionTitre() {
 
 /* X2.5 : interface de test */
 
+/** Les textes de l'écran E2 du premier passage, que le plugin a remplacés par l'écran de l'équipe. */
+const ECRAN_E2 = {
+  titre: 'Paramètres de l’équipe',
+  badge: 'Nouveau',
+  onglets: ['Général', 'Membres', 'Facturation'],
+  libelle: 'Nom de l’équipe',
+  valeur: 'Studio Nord',
+  caseACocher: 'Notifier les membres',
+  interrupteur: 'Accès invité',
+  encart: 'Les membres invités reçoivent un e-mail. En savoir plus',
+  boutons: ['Annuler', 'Brouillon', 'Enregistrer'],
+};
+
 function ecranE2(mode) {
   const couleurs = couleursDeLInterface(RECETTE, ANALYSES.Bleu, mode);
-  const e = TEXTES_DE_L_INTERFACE_DE_TEST.exemple;
+  const e = ECRAN_E2;
   const c = (emploi, etat = 0) => couleurs.emploi(emploi, etat);
   return `<div class="e2" style="background:${couleurs.fond};color:${couleurs.encre};border-color:${c('border-decorative')}">
     <div class="e2-tete"><b>${esc(e.titre)}</b><span class="e2-badge" style="background:${c('surface')};color:${c('text')}">${esc(e.badge)}</span></div>
