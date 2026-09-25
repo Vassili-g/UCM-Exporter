@@ -25,6 +25,7 @@ import {
   hasCornerRadiusProperty,
   resolveContainerSizing,
   resolveField,
+  resolveOpacity,
   resolveRowGap,
   resolveSidedField,
   resolveSizeBounds,
@@ -178,6 +179,29 @@ function warnUndeclaredDrawing(
     action: `Ajoutez une règle @icons dont le layer « icon » porte « ${cible.name} », puis `
       + `réexportez.`,
   });
+}
+
+/**
+ * Opacité publiée sur l'entrée d'une dépendance.
+ *
+ * Le contrat de la dépendance publie déjà l'opacité de son composant principal :
+ * l'entrée ne la porte que si l'instance en diffère, sans quoi le rendu
+ * l'appliquerait deux fois. Un composant principal illisible compte pour
+ * opaque, la valeur par défaut de Figma.
+ */
+async function dependencyOpacity(
+  instance: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<string | null> {
+  const opacite = (instance as unknown as { opacity?: unknown }).opacity;
+  if (typeof opacite !== 'number') return null;
+  // `getMainComponentAsync` lève sur une instance orpheline.
+  const principal = await (instance as InstanceNode).getMainComponentAsync?.()
+    .catch(() => null);
+  const reference = typeof principal?.opacity === 'number' ? principal.opacity : 1;
+  if (opacite === reference) return null;
+  return resolveOpacity(instance, resolver, warnings, { ecartAuPrincipal: true });
 }
 
 /**
@@ -434,6 +458,10 @@ async function describeNode(
       warnUndeclaredDrawing(parent, child, iconNames, composed, warnings);
     }
   }
+  const opacity = estUneDependance
+    ? await dependencyOpacity(child, resolver, warnings)
+    : await resolveOpacity(child, resolver, warnings);
+  if (opacity) entry.opacity = opacity;
 
   const describesChildren = publishesChildren(child, iconNames, composed, depth);
   // La borne de profondeur se dit ici, et non dans une branche : un calque coupé
@@ -683,10 +711,12 @@ export async function extractLayout(
 
   // Lus sur le composant même quand `sizes` porte les dimensions : la taille du
   // composant est la première décision de qui l'intègre, et `structure.sizing`
-  // est toujours publié.
-  const [sizing, bounds] = await Promise.all([
+  // est toujours publié. L'opacité n'est pas une dimension de taille : elle
+  // se lit elle aussi hors de `publishDimensions`.
+  const [sizing, bounds, opacity] = await Promise.all([
     resolveContainerSizing(component, resolver, warnings),
     resolveSizeBounds(component, resolver, warnings),
+    resolveOpacity(layoutNode, resolver, warnings),
   ]);
 
   const children = await Promise.all(
@@ -716,6 +746,7 @@ export async function extractLayout(
     ...(bounds ? { bounds } : {}),
     ...flexContainerProperties(layoutNode, warnings),
     ...applyRotation(layoutNode),
+    ...(opacity ? { opacity } : {}),
     ...(gap ? { gap } : {}),
     ...(rowGap ? { rowGap } : {}),
     ...(columnGap ? { columnGap } : {}),

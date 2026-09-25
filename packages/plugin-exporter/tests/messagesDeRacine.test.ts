@@ -168,15 +168,37 @@ test('une ombre sur les racines donne une ligne, sans nom de calque', async () =
 });
 
 test('une propriété dont le texte n’est pas validé garde une ligne par racine', async () => {
-  const racines = ['Wide', 'Narrow'].map((nom) => racine(nom, { opacity: 0.5 }));
+  const racines = ['Wide', 'Narrow'].map((nom) => racine(nom, { blendMode: 'MULTIPLY' }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  await extraire(racines, canal);
+
+  const lignes = [...new Set(canal.filter((message) => message.includes('blend mode')))];
+  assert.equal(lignes.length, 2);
+  assert.ok(lignes[0].startsWith('Layer « Wide », blend mode :'));
+});
+
+const OPACITE = {
+  titre: 'opacity : aucune variable associée.',
+  impact: "Le contrat ne transmettra pas l'opacité des variants concernés.",
+  action: 'Reliez opacity à une variable dans chaque variant concerné, puis réexportez.',
+};
+
+test('trois racines atténuées sans variable donnent une ligne à trois cibles', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racine(nom, { opacity: 0.5 }));
   const canal: string[] = [];
   declarerLesRacinesDeVariants(canal, racines);
 
   await extraire(racines, canal);
 
   const lignes = [...new Set(canal.filter((message) => message.includes('opacity')))];
-  assert.equal(lignes.length, 2);
-  assert.ok(lignes[0].startsWith('Layer « Wide », opacity :'));
+  assert.deepEqual(lignes, [phrase(OPACITE)]);
+  assert.deepEqual(partiesDe(canal).get(phrase(OPACITE)), OPACITE);
+  assert.deepEqual(
+    localisationsDe(canal).get(phrase(OPACITE)),
+    racines.map((noeud) => noeud.id),
+  );
 });
 
 test('un gap sans variable sur les racines donne une ligne, sans nom de calque', async () => {

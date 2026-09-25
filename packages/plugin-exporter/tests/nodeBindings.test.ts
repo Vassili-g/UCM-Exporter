@@ -11,6 +11,7 @@ import {
   BINDING_PATTERNS,
   resolveContainerSizing,
   resolveField,
+  resolveOpacity,
   resolveSidedField,
   resolveSlotSize,
   resolveTokenName,
@@ -476,4 +477,57 @@ test('un enfant absolu, un enfant de grille et la racine gardent la lecture du s
   const racine = { ...etire, layoutSizingHorizontal: 'FIXED' } as unknown as SceneNode;
   const sizing = await resolveContainerSizing(racine, resolverFor({}), []);
   assert.deepEqual(sizing, { width: 'stretch', height: 'stretch' });
+});
+
+/** Un calque atténué, relié ou non à une variable d'opacité. */
+const calqueAttenue = (opacity: number | undefined, lie = false) => ({
+  type: 'FRAME',
+  id: 'overlay',
+  name: 'Overlay',
+  ...(opacity === undefined ? {} : { opacity }),
+  boundVariables: lie ? { opacity: alias('opacite') } : {},
+}) as unknown as SceneNode;
+
+const OPACITE_DU_CALQUE = 'Layer « Overlay », opacity : aucune variable associée. '
+  + "Le contrat ne transmettra pas l'opacité de ce layer. "
+  + 'Reliez opacity à une variable, puis réexportez.';
+
+test('une opacité reliée à une variable publie sa référence, sans un mot', async () => {
+  const warnings: string[] = [];
+  const opacite = await resolveOpacity(
+    calqueAttenue(0.3, true),
+    resolverFor({ opacite: 'opacity.overlay' }),
+    warnings,
+  );
+  assert.equal(opacite, '{opacity.overlay}');
+  assert.deepEqual(warnings, []);
+});
+
+test('un calque opaque sans variable ne publie rien et ne dit rien', async () => {
+  const warnings: string[] = [];
+  assert.equal(await resolveOpacity(calqueAttenue(1), resolverFor({}), warnings), null);
+  assert.deepEqual(warnings, []);
+});
+
+test('une opacité sans variable ne publie rien et produit le texte retenu', async () => {
+  const warnings: string[] = [];
+  assert.equal(await resolveOpacity(calqueAttenue(0.3), resolverFor({}), warnings), null);
+  assert.deepEqual(warnings, [OPACITE_DU_CALQUE]);
+});
+
+test('un node qui n’expose pas d’opacité ne dit rien', async () => {
+  const warnings: string[] = [];
+  assert.equal(await resolveOpacity(calqueAttenue(undefined), resolverFor({}), warnings), null);
+  assert.deepEqual(warnings, []);
+});
+
+test('une opacité ramenée à 1 sous un principal atténué réclame sa variable', async () => {
+  // Le contrat de la dépendance publie déjà l'atténuation de son principal :
+  // une instance opaque ne se tait que si son opacité est portée par un token.
+  const warnings: string[] = [];
+  assert.equal(
+    await resolveOpacity(calqueAttenue(1), resolverFor({}), warnings, { ecartAuPrincipal: true }),
+    null,
+  );
+  assert.deepEqual(warnings, [OPACITE_DU_CALQUE]);
 });

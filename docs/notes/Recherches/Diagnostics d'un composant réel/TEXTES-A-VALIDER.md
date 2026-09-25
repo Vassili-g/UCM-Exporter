@@ -169,6 +169,18 @@ déclarent **min width** et **max width** sans token ».
 
 Le composant exporté est nommé en premier, le contrat déjà présent en second.
 
+### Opacité sans variable (E2)
+
+Retenu à la porte H1 du [plan d'évolution](./PLAN-EVOLUTION-MOTEUR.md), avec
+les autres textes de ce plan, que le journal
+[PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md) recopie en
+entier. Un texte entre ici avec le lot qui l'écrit.
+
+| Cible | Titre | Impact | Action |
+|---|---|---|---|
+| Un layer | Layer « Overlay », opacity : aucune variable associée. | Le contrat ne transmettra pas l'opacité de ce layer. | Reliez opacity à une variable, puis réexportez. |
+| Les racines | opacity : aucune variable associée. | Le contrat ne transmettra pas l'opacité des variants concernés. | Reliez opacity à une variable dans chaque variant concerné, puis réexportez. |
+
 ### Ajustements de forme
 
 - Les titres de L6 finissent par un point : la phrase compacte de
@@ -180,10 +192,10 @@ Le composant exporté est nommé en premier, le contrat déjà présent en secon
 ## Reste à valider
 
 L6 n'écrit un texte de groupe que pour ce que le mainteneur a validé. Sur la
-racine d'un variant, ces messages gardent une ligne par variant :
+racine d'un variant, ces messages gardent une ligne par variant jusqu'au lot qui
+écrit leur texte retenu :
 
-- `opacity`, `blend mode`, `mask`, `dash`, `fill` et `stroke` de la propriété
-  sans champ ;
+- `blend mode`, `mask`, `dash`, `fill` et `stroke` de la propriété sans champ ;
 - les autres refus d'un champ : côtés reliés à des variables différentes,
   réglages qui se contredisent, côtés sans variable, absence d'auto layout ;
 - l'alignement d'auto layout illisible et l'auto layout absent de la racine.

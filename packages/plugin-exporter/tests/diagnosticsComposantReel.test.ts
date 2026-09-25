@@ -313,6 +313,8 @@ const FAMILLES = {
   effet: /^Propriété non supportée par le moteur\. Le contrat n’exportera pas l’ombre ou le flou/,
   opaciteDuCalqueAbsolu: /^Layer « Overlay », opacity : le contrat n’a aucun champ/,
   opaciteDeRacine: /^Layer « State=Disabled », opacity : le contrat n’a aucun champ/,
+  opaciteSansVariable: /^Layer « Overlay », opacity : aucune variable associée\./,
+  opaciteDesVariants: /^opacity : aucune variable associée\. Le contrat ne transmettra pas l'opacité des variants/,
   cadreSansAutoLayout: /^Layer « Overlay » : il range 2 layers/,
   dimensionSousContrainte: /^Layer « (Mask|Circle) », (width|height) :/,
   resteDuCalqueAbsolu: /^Layer « (Mask », mask|Circle », corner radius|Overlay », width|Overlay », height) :/,
@@ -334,6 +336,8 @@ const CORRIGEES: ReadonlySet<Famille> = new Set<Famille>([
   'hauteurDuTexteMasque',
   'horsDuNodeElu',
   'dessinImbrique',
+  'opaciteDuCalqueAbsolu',
+  'opaciteDeRacine',
 ]);
 
 /** Le nombre de lignes de chaque famille dans une liste de messages. */
@@ -394,6 +398,17 @@ test('la borne et l’ombre des racines de variant se regroupent en une ligne ch
   assert.equal(cibles('borneSansVariable')?.length, 4);
   assert.equal(comptes.effet, 1);
   assert.equal(cibles('effet')?.length, 2);
+});
+
+test('l’opacité sans variable dit une ligne pour le calque et une pour les variants', async () => {
+  const { resultat, comptes } = await exporterLeScenario();
+  const cibles = (famille: Famille) =>
+    [...resultat.localisations].find(([message]) => FAMILLES[famille].test(message))?.[1];
+
+  assert.equal(comptes.opaciteSansVariable, 1);
+  assert.equal(comptes.opaciteDesVariants, 1);
+  // Seule la racine `Disabled` est atténuée.
+  assert.equal(cibles('opaciteDesVariants')?.length, 1);
 });
 
 test('un imbriqué sans règles donne son point en tête, en perte de portabilité, et ses dessins se taisent', async () => {

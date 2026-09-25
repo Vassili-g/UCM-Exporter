@@ -2,7 +2,7 @@
 
 ## État
 
-- Lot courant : E2
+- Lot courant : E3
 - Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
 - Portes franchies : H0 (reste le rang des ombres dans `effects`), H2 et H1
   (reste la remarque sur les messages 11 à 13, qui rouvre H2 pour E4)
@@ -132,6 +132,44 @@ copiés ; le build y tourne étape par étape.
   `AGENTS.md` et le glossaire de `POUR-LES-DESIGNERS.md`. Le plan ajoute ce
   dernier à E3. L'entrée 14.0 de `CHANGELOG-FORMAT.md` décrit la version que
   E2 à E4 terminent ; le plugin ne se publie pas avant E10.
+- Écart ou réserve : aucun.
+
+### E2 : l'opacité se publie
+
+- Commit : ce commit, précédé de `fd17d3f`.
+- Changement : `resolveOpacity` (`nodeBindings.ts`) publie `opacity` sur le
+  node de layout, hors de `publishDimensions`, et sur chaque calque publié.
+  `IMPLICIT_DEFAULTS.opacity` vaut 1. Une dépendance ne publie son opacité que
+  si son instance diffère de son composant principal ; ramenée à 1 sous un
+  principal atténué, elle réclame sa variable. Les messages 1 et 2 de H1
+  passent par `TEXTES_SANS_VARIABLE`, que `signalerSansVariable` lit avant le
+  texte commun du champ sans variable. `unsupportedProperties.ts` ne relève plus
+  l'opacité.
+- Tests vus rouges avant le changement : treize, dont les cinq de
+  `resolveOpacity`, les cinq d'extraction, le regroupement des trois racines et
+  les deux du scénario. Le test « une propriété dont le texte n'est pas validé
+  garde une ligne par racine » passe au blend mode ; E6 le supprime.
+- Scénario : `opaciteDuCalqueAbsolu` et `opaciteDeRacine` passent aux familles
+  corrigées. `opaciteSansVariable` (une ligne, `Overlay`) et
+  `opaciteDesVariants` (une ligne, la seule racine `Disabled`) s'ajoutent.
+- Commandes, worktree à `fd17d3f` avec les fichiers du lot : `npm test` : 0,
+  suite du plugin de 931 à 943 tests. `npm run typecheck` : 0. Build étape par
+  étape : 0 à chaque étape ; `dist/code.js` porte le texte retenu.
+- Mutations, dans le worktree, chacune restaurée par copie puis revue verte :
+  - `opacity` retiré de `IMPLICIT_DEFAULTS` : « un calque opaque sans
+    variable… » échoue ;
+  - branche `ecartAuPrincipal` neutralisée : les deux tests d'une instance
+    ramenée à 1 échouent ;
+  - `estUneRacineDeVariant` ignoré dans `signalerSansVariable` : cinq tests
+    échouent, dont le regroupement de l'opacité et celui du gap ;
+  - égalité au principal ignorée : « une dépendance de même opacité… »
+    échoue ;
+  - opacité du composant soumise à `publishDimensions` : « un composant doté
+    d'un axe de tailles… » échoue.
+- Documents : `FORMAT.md` gagne « Opacité » sous « 6. Structure » et retire
+  l'opacité des propriétés non portables ; `AGENTS.md`, invariant des
+  propriétés à effet visuel ; `SPEC.md`, portée du relevé et racine de variant ;
+  `TEXTES-A-VALIDER.md`, textes retenus et « Reste à valider ».
 - Écart ou réserve : aucun.
 
 ### Porte H : réponses reçues

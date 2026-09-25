@@ -639,10 +639,14 @@ La spécification en lien porte le raisonnement.
   les tracés ; la seconde écarte `clipsContent` et un `listSpacing` nul. Aucune
   réserve ne se lit sur l’usage supposé d’un calque : sur un calque publié,
   `isMask` avertit comme le reste. Une propriété que le contrat écrit n’y figure
-  jamais, `rotation`, l’alignement et la casse d’un texte compris. Pour le
-  soulignement et `openTypeFeatures`, dont Figma ne documente pas les défauts,
-  la valeur neutre est celle que CSS rend sans déclaration.
+  jamais, `rotation`, `opacity`, l’alignement et la casse d’un texte compris.
+  `opacity` cite sa variable, et une dépendance ne la porte que si son instance
+  diffère de son composant principal ; `resolveOpacity` (`nodeBindings.ts`) en
+  est l’unique lecture. Pour le soulignement et `openTypeFeatures`, dont Figma
+  ne documente pas les défauts, la valeur neutre est celle que CSS rend sans
+  déclaration.
   → [spec](./docs/format/FORMAT.md#propriétés-non-portables)
+  → [spec](./docs/format/FORMAT.md#opacité)
 
 ### Grilles
 

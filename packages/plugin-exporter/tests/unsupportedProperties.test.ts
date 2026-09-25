@@ -130,11 +130,10 @@ test('une ombre visible est signalée, une ombre masquée ne l’est pas', () =>
   assert.deepEqual(avertissementsDe(ombreMasquee), []);
 });
 
-test('une opacité partielle est signalée — c’est le réglage courant d’un état disabled', () => {
-  const avertissements = avertissementsDe(frameParDefaut({ opacity: 0.4 }));
-  assert.equal(avertissements.length, 1);
-  assert.ok(avertissements[0].includes('opacity'));
-  assert.ok(avertissements[0].includes('rendu opaque'));
+test('une opacité partielle ne relève pas de ce relevé : le contrat la publie', () => {
+  // `opacity` a son champ depuis la 14.0 ; `nodeBindings.resolveOpacity` en
+  // réclame la variable.
+  assert.deepEqual(avertissementsDe(frameParDefaut({ opacity: 0.4 })), []);
 });
 
 test('un dégradé est signalé : le relevé des couleurs ne le voit pas', () => {
@@ -269,7 +268,7 @@ test('openTypeFeatures avertit dès qu’un réglage diffère de ce que le navig
 
 test('deux propriétés du même layer donnent deux messages : deux gestes différents', () => {
   const cumul = frameParDefaut({
-    opacity: 0.5,
+    blendMode: 'MULTIPLY',
     effects: [{ type: 'LAYER_BLUR', visible: true }],
   });
   const avertissements = avertissementsDe(cumul);

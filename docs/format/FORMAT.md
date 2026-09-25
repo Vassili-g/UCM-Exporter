@@ -658,6 +658,19 @@ comme dans Figma, la place de ses voisins peut différer de quelques pixels.
 Aucun geste n'est demandé, le redresser lui retirerait sa rotation, donc
 l'export n'en dit rien.
 
+#### Opacité
+
+`opacity` cite le token qui porte l'opacité du layer, sur le composant comme
+sur chaque layer publié. Le token s'exprime de 0 à 100, comme le panneau de
+Figma : le consommateur divise sa valeur par 100. Un layer opaque n'écrit
+rien. Une opacité partielle sans variable n'est pas publiée et avertit, comme
+toute dimension écrite à la main.
+
+Une dépendance ne porte `opacity` que si son instance diffère de son composant
+principal. Le contrat de la dépendance publie déjà l'opacité du principal, et
+la republier à égalité la ferait appliquer deux fois. Une instance ramenée à 1
+sous un principal atténué réclame donc sa variable, comme une autre valeur.
+
 #### Grilles
 
 Un enfant de **grille** publie sa place dans sa cellule : `columnStart`,
@@ -722,9 +735,8 @@ rien en silence.
 - les bornes d'un calque intermédiaire, entre le composant et ses slots, n'ont
   aucun propriétaire dans le contrat ;
 - sur **chaque calque publié**, et sur lui seul, les propriétés à effet visuel
-  qu'aucun champ ne porte : les **effets** (ombre, flou), l'**opacité**
-  partielle, un **mask**, une peinture non unie (**dégradé**,
-  image) en `fill` ou en `stroke`, plusieurs peintures « mixed » sur un même
+  qu'aucun champ ne porte : les **effets** (ombre, flou), un **mask**, une
+  peinture non unie (**dégradé**, image) en `fill` ou en `stroke`, plusieurs peintures « mixed » sur un même
   calque, un **blend mode** non neutre, un **pointillé**, et pour un texte :
   une liste à puces ou numérotée, `listSpacing` et `hangingList` (le contrat ne
   décrit aucune liste), `hangingPunctuation`, un réglage du soulignement ou
@@ -736,8 +748,8 @@ rien en silence.
   Du gras ou de l'italique ajouté par-dessus le style avertit de même.
 
 Une propriété que le contrat écrit n'entre pas dans ce relevé de ce qui manque,
-`rotation` et `inset` compris : la réclamer enverrait le designer redresser un
-layer que le développeur rend incliné.
+`rotation`, `opacity` et `inset` compris : la réclamer enverrait le designer
+redresser un layer que le développeur rend incliné.
 
 Le `mask` est le seul de cette liste dont le contrat ne perd pas la propriété
 mais en **invente** une : la couleur du calque masquant entre normalement dans

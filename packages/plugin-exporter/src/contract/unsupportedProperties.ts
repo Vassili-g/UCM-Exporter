@@ -24,8 +24,9 @@
  * design correct, et coûtait un découpage à chaque design qui l'employait pour
  * de bon.
  *
- * Une propriété que le contrat écrit n'entre pas dans ce relevé, `rotation`
- * comprise : `flexLayout.rotationDegrees` en est l'autorité, seuil compris.
+ * Une propriété que le contrat écrit n'entre pas dans ce relevé, `rotation` et
+ * `opacity` comprises : `flexLayout.rotationDegrees` et
+ * `nodeBindings.resolveOpacity` en sont les autorités.
  */
 import { pointDe, sujet } from './localisation';
 import type { PointACorriger } from './localisation';
@@ -100,16 +101,6 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
       manque: 'l’ombre ou le flou de ce layer',
       geste: 'Retirez cet effect si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
       impactDesVariants: 'Le contrat n’exportera pas l’ombre ou le flou de ces variants.',
-    });
-  }
-
-  // L'opacité est le premier réglage d'un état « disabled » : sans elle, le
-  // contrat décrit cet état comme identique à l'état par défaut.
-  if (typeof values.opacity === 'number' && values.opacity < 1) {
-    relevees.push({
-      champ: 'opacity',
-      manque: 'la transparence de ce layer, qui sera rendu opaque',
-      geste: 'Exprimez cette transparence par une couleur reliée à une variable, ou signalez cette limite au mainteneur du plugin',
     });
   }
 

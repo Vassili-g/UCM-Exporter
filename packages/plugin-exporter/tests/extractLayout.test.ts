@@ -1675,3 +1675,107 @@ test('un texte masqué en Fill publie son étirement sans réclamer de hauteur',
   // Un calque visible figé sans étirement réclame toujours sa variable.
   assert.ok(warnings.some((warning) => warning.startsWith('Layer « Badge », height')));
 });
+
+/** Un composant qui range un seul slot, tous deux atténués et reliés à une variable. */
+function composantAttenue(slot: Record<string, unknown>): ComponentNode {
+  const enfant = {
+    type: 'FRAME',
+    id: 'card',
+    name: 'Card',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+    children: [],
+    findAll: findAllOn([]),
+    ...slot,
+  };
+  return {
+    type: 'COMPONENT',
+    id: 'root',
+    name: 'Root',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'MIN',
+    opacity: 0.5,
+    boundVariables: { opacity: alias('attenue') },
+    children: [enfant],
+    findAll: findAllOn([enfant]),
+  } as unknown as ComponentNode;
+}
+
+const OPACITES = { attenue: 'opacity.muted', voile: 'opacity.overlay' };
+
+test('le composant et un slot publient leur opacité reliée', async () => {
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    composantAttenue({ opacity: 0.3, boundVariables: { opacity: alias('voile') } }),
+    resolverFor(OPACITES),
+    warnings,
+  );
+
+  assert.equal(layout.opacity, '{opacity.muted}');
+  assert.equal(layout.children[0].opacity, '{opacity.overlay}');
+  assert.deepEqual(warnings.filter((warning) => warning.includes('opacity')), []);
+});
+
+test('un composant doté d’un axe de tailles publie encore son opacité', async () => {
+  // Sous un axe de tailles, `sizes` porte gap, paddings et radius : l'opacité
+  // n'en fait pas partie et reste sur la structure.
+  const layout = await extractLayout(
+    composantAttenue({}),
+    resolverFor(OPACITES),
+    [],
+    new Map(),
+    new Set(),
+    undefined,
+    false,
+  );
+  assert.equal(layout.opacity, '{opacity.muted}');
+});
+
+/** Une dépendance d'opacité donnée, dont le composant principal a la sienne. */
+function composantAvecDependance(instance: number, principal: number, lie: boolean) {
+  const bouton = boutonDependant({
+    opacity: instance,
+    boundVariables: lie ? { opacity: alias('voile') } : {},
+    getMainComponentAsync: async () => ({ type: 'COMPONENT', name: 'Button', opacity: principal }),
+  });
+  return alerteAvec(bouton);
+}
+
+test('une dépendance atténuée par rapport à son principal publie son opacité', async () => {
+  const layout = await extractLayout(
+    composantAvecDependance(0.4, 1, true),
+    resolverFor(OPACITES),
+    [],
+    dependanceDe(),
+  );
+  assert.equal(layout.children[0].composes, 'Button');
+  assert.equal(layout.children[0].opacity, '{opacity.overlay}');
+});
+
+test('une dépendance de même opacité que son principal ne publie rien', async () => {
+  // Le contrat de la dépendance publie déjà cette opacité : la republier ici
+  // la ferait appliquer deux fois.
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    composantAvecDependance(0.4, 0.4, false),
+    resolverFor(OPACITES),
+    warnings,
+    dependanceDe(),
+  );
+  assert.equal(layout.children[0].opacity, undefined);
+  assert.deepEqual(warnings.filter((warning) => warning.includes('opacity')), []);
+});
+
+test('une dépendance ramenée à 1 sous un principal atténué réclame sa variable', async () => {
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    composantAvecDependance(1, 0.4, false),
+    resolverFor(OPACITES),
+    warnings,
+    dependanceDe(),
+  );
+  assert.equal(layout.children[0].opacity, undefined);
+  assert.ok(warnings.some((warning) => warning.startsWith('Layer « Button », opacity :')));
+});

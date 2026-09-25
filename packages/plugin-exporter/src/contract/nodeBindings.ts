@@ -17,6 +17,7 @@ import {
 } from './flexLayout';
 import type { ContainerSizing, GridStructuralSize, SizeBounds, SlotSize } from '@ucm-kit/core/format';
 import { estUneRacineDeVariant, pousserLocalise, pousserPourLesVariants } from './localisation';
+import type { Constat, PointACorriger } from './localisation';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
 export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
@@ -58,6 +59,7 @@ export const BINDING_PATTERNS = {
   minHeight: [['minHeight']],
   maxHeight: [['maxHeight']],
   fontSize: [['fontSize']],
+  opacity: [['opacity']],
   strokeWidth: [
     ['strokeWeight'],
     ['strokeTopWeight', 'strokeRightWeight', 'strokeBottomWeight', 'strokeLeftWeight'],
@@ -96,6 +98,7 @@ const FIELD_LABELS: Record<string, string> = {
   strokeBottomWeight: 'bottom stroke weight',
   strokeLeftWeight: 'left stroke weight',
   fontSize: 'font size',
+  opacity: 'opacity',
   fills: 'fill',
   strokes: 'stroke',
 };
@@ -128,6 +131,8 @@ const IMPLICIT_DEFAULTS: Readonly<Record<string, number>> = {
   strokeRightWeight: 0,
   strokeBottomWeight: 0,
   strokeLeftWeight: 0,
+  // Un calque opaque : le contrat n'écrit alors aucune opacité.
+  opacity: 1,
 };
 
 /**
@@ -329,6 +334,49 @@ export const SIDE_KEYS = {
   },
 } as const;
 
+/**
+ * Les champs dont le message « sans variable » a son propre texte, sur un
+ * calque et sur les racines de variants. Les autres champs reçoivent le texte
+ * commun de `signalerSansVariable`.
+ */
+const TEXTES_SANS_VARIABLE: Readonly<Record<string, {
+  calque: Constat;
+  variants: PointACorriger;
+}>> = {
+  opacity: {
+    calque: {
+      champ: 'opacity',
+      manque: 'aucune variable associée.',
+      impact: "Le contrat ne transmettra pas l'opacité de ce layer.",
+      action: 'Reliez opacity à une variable, puis réexportez.',
+    },
+    variants: {
+      titre: 'opacity : aucune variable associée.',
+      impact: "Le contrat ne transmettra pas l'opacité des variants concernés.",
+      action: 'Reliez opacity à une variable dans chaque variant concerné, puis réexportez.',
+    },
+  },
+};
+
+/** Signale un champ qu'aucune variable ne porte, une fois pour toutes les racines d'un set. */
+function signalerSansVariable(node: SceneNode, label: string, warnings: string[]): void {
+  const propre = TEXTES_SANS_VARIABLE[label];
+  if (estUneRacineDeVariant(warnings, node)) {
+    pousserPourLesVariants(warnings, node, propre?.variants ?? {
+      titre: `${label} : aucun token n'est relié à cette propriété.`,
+      impact: `Le contrat n'exportera pas cette propriété.`,
+      action: `Reliez-la à un token, puis réexportez.`,
+    });
+    return;
+  }
+  pousserLocalise(warnings, 'Layer', node, propre?.calque ?? {
+    champ: label,
+    manque: `aucune variable Figma n'est reliée.`,
+    impact: `Le développeur n'aura pas cette valeur.`,
+    action: `Reliez-la à une variable, puis réexportez.`,
+  });
+}
+
 /** Un groupe résolu : une valeur unique, ou le détail par côté. */
 type GroupResolution<K extends string> = string | Partial<Record<K, string>> | null;
 
@@ -519,20 +567,7 @@ async function resolveGroup<K extends string>(
   const withBindings = resolved.filter((entry) => entry.aliases.some(Boolean));
   if (withBindings.length === 0) {
     if (hasImplicitDefaultValue(node, alternatives)) return null;
-    if (estUneRacineDeVariant(warnings, node)) {
-      pousserPourLesVariants(warnings, node, {
-        titre: `${label} : aucun token n'est relié à cette propriété.`,
-        impact: `Le contrat n'exportera pas cette propriété.`,
-        action: `Reliez-la à un token, puis réexportez.`,
-      });
-      return null;
-    }
-    pousserLocalise(warnings, 'Layer', node, {
-      champ: label,
-      manque: `aucune variable Figma n'est reliée.`,
-      impact: `Le développeur n'aura pas cette valeur.`,
-      action: `Reliez-la à une variable, puis réexportez.`,
-    });
+    signalerSansVariable(node, label, warnings);
     return null;
   }
 
@@ -675,6 +710,29 @@ export async function resolveField(
 ): Promise<string | null> {
   const token = await resolveTokenName(node, alternatives, label, resolver, warnings);
   return token ? toRef(token) : null;
+}
+
+/**
+ * Opacité d'un calque : la référence de sa variable, ou rien.
+ *
+ * Un node qui n'expose pas d'opacité ne dit rien. `ecartAuPrincipal` sert à
+ * l'instance d'une dépendance dont l'opacité diffère de celle de son composant
+ * principal : l'opacité 1 n'y est plus neutre, puisque le contrat de la
+ * dépendance publie déjà l'atténuation du principal, et elle réclame sa
+ * variable comme une autre valeur.
+ */
+export async function resolveOpacity(
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+  { ecartAuPrincipal = false }: { ecartAuPrincipal?: boolean } = {},
+): Promise<string | null> {
+  if (!exposesAnyField(node, BINDING_PATTERNS.opacity)) return null;
+  if (ecartAuPrincipal && !firstVariableAlias(getBinding(node, 'opacity'))) {
+    signalerSansVariable(node, fieldLabel('opacity'), warnings);
+    return null;
+  }
+  return resolveField(node, BINDING_PATTERNS.opacity, fieldLabel('opacity'), resolver, warnings);
 }
 
 /**

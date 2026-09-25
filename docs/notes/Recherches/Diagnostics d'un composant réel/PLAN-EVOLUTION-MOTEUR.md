@@ -1,9 +1,9 @@
 # Plan d'évolution du moteur : propriétés visuelles et messages de racine
 
-> Statut : en cours. E0, E5 et E1 sont faits, H0, H1 et H2 franchies ; leurs
-> preuves, décisions et textes retenus sont dans
+> Statut : en cours. E0, E5, E1 et E2 sont faits, H0, H1 et H2 franchies ;
+> leurs preuves, décisions et textes retenus sont dans
 > [PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md), qui fait foi
-> sur la section 9. Le prochain lot est E2. Ce plan réunit deux sujets qui
+> sur la section 9. Le prochain lot est E3. Ce plan réunit deux sujets qui
 > touchent les mêmes sites du moteur. Le premier exécute les décisions de H3
 > ([DECISION-PROPRIETES-VISUELLES.md](./DECISION-PROPRIETES-VISUELLES.md)) et
 > fait passer le contrat en 14.0. Le second étend le regroupement des messages
@@ -436,8 +436,8 @@ première action sans preuve.
 
 ## 7. Lots
 
-Ordre : E0 (fait), E5 (fait), H0 et H2 (franchies), E1 (fait), porte H1, E2,
-E3, E4, E6, E7, E8, E9, E10.
+Ordre : E0 (fait), E5 (fait), H0 et H2 (franchies), E1 (fait), porte H1
+(franchie), E2 (fait), E3, E4, E6, E7, E8, E9, E10.
 
 E1 n'attend plus rien : il ne dépend d'aucun texte de H1. La porte H1 vient
 après lui ; l'agent y présente la section 9 et s'arrête.
@@ -593,35 +593,35 @@ Faits : F5, F9, F17. Attend E1 et H1 (texte 9.1.1). Tests :
 `nodeBindings.test.ts`, `unsupportedProperties.test.ts`,
 `messagesDeRacine.test.ts`, le scénario.
 
-- [ ] Tests : un calque d'opacité 0,3 liée publie `opacity` avec sa référence ;
+- [x] Tests : un calque d'opacité 0,3 liée publie `opacity` avec sa référence ;
       d'opacité 1 sans liaison ne publie rien et ne dit rien ; d'opacité 0,3
       sans liaison ne publie rien et produit le texte retenu à H1 ; trois
       racines d'opacité 0,5 sans liaison donnent une ligne à trois cibles ; un
       composant doté d'un axe de tailles publie son opacité ; l'instance d'une
       dépendance d'opacité 0,4 liée, dont le composant principal est à 1,
       publie `opacity` sur son entrée, et rien à égalité.
-- [ ] `messagesDeRacine.test.ts` : le test « une propriété dont le texte n'est
+- [x] `messagesDeRacine.test.ts` : le test « une propriété dont le texte n'est
       pas validé garde une ligne par racine » prend l'opacité comme exemple.
       Il passe au blend mode dans ce commit, pour garder ce qu'il prouve ; E6
       le supprime.
-- [ ] `nodeBindings.ts` : `BINDING_PATTERNS.opacity`, `FIELD_LABELS.opacity`,
+- [x] `nodeBindings.ts` : `BINDING_PATTERNS.opacity`, `FIELD_LABELS.opacity`,
       `IMPLICIT_DEFAULTS.opacity = 1`. La résolution passe par `resolveField`,
       donc par le texte de groupe du champ sans variable, sauf si H1 retient un
       texte propre.
-- [ ] `extractLayout.ts` : `opacity` sur le node de layout et dans
+- [x] `extractLayout.ts` : `opacity` sur le node de layout et dans
       `describeNode`, après la sortie des dépendances. L'opacité se résout hors
       de `publishDimensions`, qui vaut `false` sous un axe de tailles : sinon
       elle disparaît de ces composants. Sur l'entrée d'une dépendance, qui
       sort de `describeNode` avant les autres relevés, l'opacité se compare à
       celle du composant principal (`getMainComponentAsync`) avant d'être
       résolue.
-- [ ] `unsupportedProperties.ts` : retirer l'opacité du relevé.
-- [ ] `FORMAT.md` : `opacity` dans « 6. Structure » et hors de « Propriétés non
+- [x] `unsupportedProperties.ts` : retirer l'opacité du relevé.
+- [x] `FORMAT.md` : `opacity` dans « 6. Structure » et hors de « Propriétés non
       portables » ; `AGENTS.md`, invariant des propriétés à effet visuel ;
       `SPEC.md`, section du relevé. Scénario : les deux familles d'opacité
       posées en E0 passent dans les familles corrigées ; les textes retenus à
       H1, sur un calque et sur les racines, forment deux familles nouvelles.
-- [ ] Mutation : retirer `opacity` de `IMPLICIT_DEFAULTS`, constater
+- [x] Mutation : retirer `opacity` de `IMPLICIT_DEFAULTS`, constater
       l'avertissement sur un calque opaque.
 
 ### E3 : les effect styles se publient

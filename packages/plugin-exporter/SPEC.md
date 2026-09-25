@@ -299,6 +299,11 @@ tracés internes d’une icône restent hors de la portée du relevé. Le seuil 
 neutralité de la rotation est un centième de degré, très en dessous du premier
 pixel visible et très au-dessus du bruit de flottant.
 
+L'opacité ne figure pas dans ce relevé : elle a son champ, et `resolveOpacity`
+en réclame la variable comme pour une dimension. Sur une dépendance, elle se lit
+contre l'opacité du composant principal, obtenue par `getMainComponentAsync`.
+Une instance orpheline compte pour un principal opaque.
+
 ##### Racine de variant : une phrase pour tous les variants
 
 La vue exacte de chaque variant part de sa racine, donc les messages qui visent
@@ -308,10 +313,11 @@ messages s'écrivent une fois, sans nom de calque : une borne sans variable, une
 propriété sans champ et un champ sans variable. Leur carte garde chaque racine
 pour cible. `extractVariantTokens` relève les couleurs de chaque variant dans un
 canal à part, qui reprend les racines déclarées : un stroke weight sans variable
-sur les racines s'écrit donc lui aussi une fois. Pour la propriété sans champ,
-seul `effect` a un texte de groupe ;
-les autres propriétés gardent une ligne par racine tant que le leur n'est pas
-validé. Les représentants de tailles d'un wrapper ne sont pas des racines du
+sur les racines s'écrit donc lui aussi une fois. L'opacité sans variable a son
+propre texte, sur un calque comme sur les racines (`TEXTES_SANS_VARIABLE`,
+`nodeBindings.ts`). Pour la propriété sans champ, seul `effect` a un texte de
+groupe ; les autres propriétés gardent une ligne par racine tant que le leur
+n'est pas validé. Les représentants de tailles d'un wrapper ne sont pas des racines du
 set exporté et gardent le nom de leur variant.
 
 ##### Passage à la ligne : les mots du message
