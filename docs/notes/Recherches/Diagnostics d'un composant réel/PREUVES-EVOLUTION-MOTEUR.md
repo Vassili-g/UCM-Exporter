@@ -37,7 +37,7 @@ copiés ; le build y tourne étape par étape.
   | `opaciteDuCalqueAbsolu` | 1 | E2 |
   | `opaciteDeRacine` | 1 | E2 |
   | `cadreSansAutoLayout` | 1 | E4 |
-  | `dimensionSousContrainte` (`Mask`, `Circle`) | 4 | E4 |
+  | `dimensionSousContrainte` (`Mask`, `Circle`) | 4 | aucun, depuis H2 |
   | `resteDuCalqueAbsolu` (mask, rayon, dimensions de `Overlay`) | 4 | aucun |
   | `imbriqueSansRegles` (huit cibles) | 1 | aucun |
   | `regleIconsSansMarqueur` | 1 | aucun |
@@ -84,11 +84,15 @@ Mesures du mainteneur (H0) :
 - M5 : sur un cadre sans fill qui contient un cercle, l'ombre suit le cercle.
   L'aide `ombre` écrit donc `filter: drop-shadow()` pour ce cas, pas
   `box-shadow`. Le cas du texte reste à mesurer.
-- M3 : le mainteneur n'a pas pu poser deux ombres sur un calque. Les typings
-  déclarent `effects` comme une liste ; la mesure est à refaire avec le bouton
-  « + » de la section Effects.
-- M1 et M2 : dans le fichier de test désigné par le mainteneur. Non lus : le
-  MCP Figma n'était pas connecté.
+- M3 : de deux ombres posées sur un calque, celle ajoutée en dernier peint
+  au-dessus. Son rang dans `effects` reste à lire par l'API.
+- M1 : le panneau lit l'opacité de 0 à 100 %, et une variable de valeur 0,5
+  donne 0,5 %. Le token d'opacité s'exprime donc de 0 à 100, et l'aide
+  `opacite` dit de diviser sa valeur par 100.
+- M2 : après la modification d'un effet dans le panneau, le calque garde son
+  effect style, marqué modifié. E3 écrit donc l'écart de 9.1.3.
+- Le fichier de test désigné par le mainteneur n'a pas été lu : le MCP Figma
+  n'était pas connecté.
 
 Décisions (H2) :
 
@@ -98,8 +102,11 @@ Décisions (H2) :
 - Un axe figé sans token d'un composant sans auto layout avertit : accepté.
 - Opacité d'une dépendance : publiée quand elle diffère de celle de son
   composant principal.
-- Restent ouverts : les calques placés par leurs contraintes (la question a
-  été comprise comme portant sur les enfants d'un auto layout), et le silence
-  du repli `flex-row` quand tous les enfants sont placés.
+- Une contrainte `STRETCH` ou `SCALE` ne dispense pas un axe figé de sa
+  variable, pour le moment. E4 place les enfants d'un cadre libre sans
+  changer `menuDeDimensionnement` ; les dimensions de `Mask` et `Circle`
+  avertissent toujours.
+- Reste ouvert : le silence du repli `flex-row` quand tous les enfants sont
+  placés.
 
 Textes (H1) : non commencés.
