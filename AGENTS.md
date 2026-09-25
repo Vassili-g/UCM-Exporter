@@ -930,8 +930,10 @@ La spécification en lien porte le raisonnement.
   identifiant : une copie du designer n'est jamais réécrite. Les polices se
   chargent avant tout calque ; une erreur au milieu d'un cadre retire tout ce
   qu'il avait posé. Redessiner construit le cadre neuf, puis retire l'ancien
-  et reprend sa place : l'identifiant du cadre change à chaque dessin. Un seul
-  `commitUndo` clôt le dessin. `packages/plugin-palettes/tests/dessin.test.ts`
+  et reprend sa place : même parent, même rang, même transformation ;
+  l'identifiant du cadre change à chaque dessin. Un cadre que Figma refuse de
+  lire arrête le dessin de sa palette, et un suivi des cadres d'une version
+  plus récente arrête tout dessin. Un seul `commitUndo` clôt le dessin. `packages/plugin-palettes/tests/dessin.test.ts`
   le tient, contre le double de `tests/figmaDeTest.ts`.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planche)
 - Chaque calque posé porte le marqueur `ucm_palettes/calque`. Un calque sans
@@ -942,11 +944,15 @@ La spécification en lien porte le raisonnement.
   `packages/plugin-palettes/tests/dessin.test.ts` le tient.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#91-emplacement-et-propriété)
 - Un cadre est à jour quand l'empreinte qu'il range égale celle du modèle
-  que la recette donne aujourd'hui, recalculé avec la grille du cadre. La
-  lecture ne charge que la page de la planche, et n'en lit que les enfants de
-  premier niveau. L'interface recalcule la fraîcheur après chaque état lu et
-  chaque rangement, sur l'onglet Planche ouvert ; elle ne redessine jamais
-  sans le geste du designer. `packages/plugin-palettes/tests/fraicheur.test.ts`
+  que la recette donne aujourd'hui, styles de texte compris. La lecture
+  retrouve chaque cadre par son identifiant rangé, sur n'importe quelle page,
+  puis parcourt la seule page de la planche, sections comprises ; elle ne
+  parcourt toutes les pages qu'au geste « Chercher dans tout le fichier ». Un
+  cadre rangé que Figma ne connaît plus est introuvable, un cadre qu'il
+  refuse de lire est illisible : aucun des deux n'est « jamais dessiné ».
+  L'interface recalcule la fraîcheur après chaque état lu et chaque
+  rangement, sur l'onglet Planche ouvert ; elle ne redessine jamais sans le
+  geste du designer. `packages/plugin-palettes/tests/fraicheur.test.ts`
   le tient.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#96-fraîcheur)
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planche)
@@ -957,14 +963,16 @@ La spécification en lien porte le raisonnement.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#73-rangement-et-version)
 - L'interface range à la fin d'un geste, jamais pendant une saisie, et un seul
   rangement est en vol : un geste suivant attend l'empreinte que la réponse
-  apporte. Après un refus, rien ne se range avant « Recharger ». Un dessin
-  demandé pendant un rangement part après lui ; un refus l'abandonne.
+  apporte. Après un refus, rien ne se range ni ne se dessine avant
+  « Recharger », et le brouillon reste exportable. Un dessin demandé pendant
+  un rangement part après lui ; un refus l'abandonne.
   `src/ui/frontiere.ts` en est l'unique autorité, et
   `packages/plugin-palettes/tests/frontiere.test.ts` le tient.
 - Un import ne range rien avant la confirmation du designer : le fichier se
   classe comme la recette rangée, et un fichier cassé, invalide ou futur
   laisse la recette du fichier intacte. L'écart compare les palettes par
-  identifiant. Une recette illisible ou future s'exporte telle qu'elle est
+  identifiant, champ par champ, et annonce les cadres à jour qu'il
+  périmerait. Une recette illisible ou future s'exporte telle qu'elle est
   rangée. `packages/plugin-palettes/tests/importation.test.ts` et les tests
   d'interface le tiennent.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#101-la-recette-exportée)

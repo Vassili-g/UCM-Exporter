@@ -10,6 +10,11 @@ associations utilisables ; les détails techniques se consultent à la demande.
 Ce plan est destiné à l’agent qui réalisera les changements. Les cases décrivent
 du travail à faire, pas des fonctionnalités déjà livrées.
 
+Le [plan d’ergonomie, second tour](./PLAN-ERGONOMIE-PALETTES-V2.md) remplace ce
+document pour ses cases ouvertes : il les reprend en V8 à V12, avec les
+amendements du second tour de recette. Ce document reste la trace des lots R0 à
+R5.
+
 ## Autorités et décisions acquises
 
 Lire dans cet ordre :

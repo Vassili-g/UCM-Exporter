@@ -699,12 +699,17 @@ Repris du lot R9 du premier plan.
   ou orphelins. Rien ne s’écrit avant la confirmation.
 - [ ] **V12.3** (ex-R9.3) Exécuter la recette ci-dessous sur les parcours
   finis. Consigner les observations et les limites restantes.
-- [ ] **V12.4** (ex-R9.4) Mettre à jour AGENTS.md, la spécification et les
+- [x] **V12.4** (ex-R9.4) Mettre à jour AGENTS.md, la spécification et les
   liens des plans. Marquer le premier plan comme remplacé pour ses cases
+  ouvertes.
+  Fait : les invariants de dessin, de fraîcheur, de frontière et d’import
+  d’AGENTS.md suivent V8 et V12 ; le premier plan renvoie ici pour ses cases
   ouvertes.
 - [ ] **V12.5** (ex-R9.5) Construire ensemble code et interface, puis
   recharger le plugin avant la recette Figma. Un écart de version entre les
   deux ne se confond pas avec un défaut de couleur.
+  Construit : `npm run build` produit code, interface et manifest ensemble à
+  chaque lot. Reste à recharger le plugin dans Figma avant la recette.
 
 Critère de clôture : contrôles du dépôt, typecheck, build, tests d’interface
 de Palettes et recette Figma terminés.
