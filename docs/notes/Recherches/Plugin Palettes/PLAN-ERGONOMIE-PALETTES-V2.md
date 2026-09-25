@@ -14,6 +14,11 @@ reprend certaines cases déjà faites, que le second tour de recette a
 modifiées. Le premier plan reste la trace des lots R0 à R5 ; ses décisions
 restent valables quand ce document ne les remplace pas.
 
+Le [plan d’ergonomie, troisième tour](./PLAN-ERGONOMIE-PALETTES-V3.md)
+remplace ce document pour ses cases ouvertes : il les reprend en W1 à W8, avec
+les amendements du troisième tour de recette. Ce document reste la trace des
+lots V0 à V12.
+
 ## Autorités
 
 Lire dans cet ordre :
