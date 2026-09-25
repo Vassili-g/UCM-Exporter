@@ -74,3 +74,32 @@ copiés ; le build y tourne étape par étape.
 - `SPEC.md`, « Racine de variant » : le canal des couleurs reprend les racines
   déclarées.
 - Écart ou réserve : aucun.
+
+### Porte H : réponses reçues
+
+Mesures du mainteneur (H0) :
+
+- M4 : un flou de calque de 8 donne `blur(4px)` dans Dev Mode. `blur()` reçoit
+  la moitié du rayon Figma.
+- M5 : sur un cadre sans fill qui contient un cercle, l'ombre suit le cercle.
+  L'aide `ombre` écrit donc `filter: drop-shadow()` pour ce cas, pas
+  `box-shadow`. Le cas du texte reste à mesurer.
+- M3 : le mainteneur n'a pas pu poser deux ombres sur un calque. Les typings
+  déclarent `effects` comme une liste ; la mesure est à refaire avec le bouton
+  « + » de la section Effects.
+- M1 et M2 : dans le fichier de test désigné par le mainteneur. Non lus : le
+  MCP Figma n'était pas connecté.
+
+Décisions (H2) :
+
+- Forme 14.0 de la section 4 : acceptée.
+- Échelle de `opacity` : l'aide `opacite` dit de diviser par 100 si M1 lit
+  une échelle de 0 à 100.
+- Un axe figé sans token d'un composant sans auto layout avertit : accepté.
+- Opacité d'une dépendance : publiée quand elle diffère de celle de son
+  composant principal.
+- Restent ouverts : les calques placés par leurs contraintes (la question a
+  été comprise comme portant sur les enfants d'un auto layout), et le silence
+  du repli `flex-row` quand tous les enfants sont placés.
+
+Textes (H1) : non commencés.
