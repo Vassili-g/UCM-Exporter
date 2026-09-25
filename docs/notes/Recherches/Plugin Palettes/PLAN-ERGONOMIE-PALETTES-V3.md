@@ -143,37 +143,37 @@ Critère : l’agent peut placer chaque élément de W1 et W2 sans relire ce pla
 Fichiers : `selecteur.ts`, `menuPalette.ts`, `creation.ts`,
 `ongletPalettes.ts`, `nuancier.ts`, `styles.css`, `textes.ts`.
 
-- [ ] **W1.1** La liste déroulante prend toute la largeur libre de sa ligne ;
+- [x] **W1.1** La liste déroulante prend toute la largeur libre de sa ligne ;
   « + Nouvelle palette » et « … » gardent leur largeur naturelle. Vérifier un
   nom long à 500 px : il se coupe par des points de suspension, sans pousser
   les boutons hors du panneau.
-- [ ] **W1.2** « + Nouvelle palette » et « … » prennent la hauteur de la liste
+- [x] **W1.2** « + Nouvelle palette » et « … » prennent la hauteur de la liste
   déroulante, par une hauteur commune du socle et non par un nombre de pixels
   répété.
-- [ ] **W1.3** Titre de premier rang « Palette [nom] », avec le nom que
+- [x] **W1.3** Titre de premier rang « Palette [nom] », avec le nom que
   `nomDeLaPalette` donne au sélecteur ; il suit un changement de nom sans
   faire perdre le focus du champ Nom. La carte « Couleur de base » devient
   « Configuration de la palette ».
-- [ ] **W1.4** Refaire la création en carte, sur le modèle de W1.3 : trois
+- [x] **W1.4** Refaire la création en carte, sur le modèle de W1.3 : trois
   colonnes, libellé au-dessus du champ ; Nom, Couleur de référence (pastille
   et code), Palette de base (Auto, Soft, Vivid ; Auto par défaut). Créer,
   Depuis la sélection et Annuler sur une ligne sous les colonnes. Entrée crée,
   Échap annule quand Annuler est offert. Réutiliser `champEnColonne` et les
   segments de la palette de base, sans les recopier.
-- [ ] **W1.5** Dans la carte d’aperçu : retirer le titre « Aperçu » ; placer
+- [x] **W1.5** Dans la carte d’aperçu : retirer le titre « Aperçu » ; placer
   les onglets Light et Dark tout à gauche de l’en-tête ; donner à l’onglet
   actif un fond plus foncé, lisible aux deux thèmes de Figma, avec
   `aria-pressed` inchangé. La ligne « ◆ Référence » passe sous le nuancier.
-- [ ] **W1.6** La pastille du fond devient un bouton qui ouvre le sélecteur de
+- [x] **W1.6** La pastille du fond devient un bouton qui ouvre le sélecteur de
   couleur sur le fond du thème affiché ; « Modifier » disparaît. En attendant
   W4.1, le sélecteur natif s’ouvre. La saisie passe par `poserFond`, comme
   dans les Réglages communs : les deux vues montrent la même valeur. Une ligne
   sous le sélecteur dit que le fond vaut pour toutes les palettes. Le bouton
   porte une étiquette accessible qui nomme le thème et la valeur.
-- [ ] **W1.7** Les liens qui menaient à « Modifier » (`modifierLeFond`)
+- [x] **W1.7** Les liens qui menaient à « Modifier » (`modifierLeFond`)
   ouvrent désormais la pastille, ou les Réglages communs quand le lien vient
   d’un message ; le retour suit R3.7.
-- [ ] **W1.8** (ex-V1.4) Test `[UI-03]` : à 500 × 520, sélecteur, titre, carte
+- [x] **W1.8** (ex-V1.4) Test `[UI-03]` : à 500 × 520, sélecteur, titre, carte
   « Configuration de la palette » et haut de l’aperçu se lisent sans
   défiler. Si la création en carte ou la hauteur des boutons l’empêche, le
   dire au mainteneur plutôt que de réduire les marges.
@@ -187,28 +187,28 @@ sans quitter l’onglet.
 Fichiers : `ongletPlanche.ts`, `textes.ts`, `styles.css`, la frontière et
 `src/ecriture/planche.ts`.
 
-- [ ] **W2.1** Renommer l’onglet « Planches » ; garder ses ancres et ses
+- [x] **W2.1** Renommer l’onglet « Planches » ; garder ses ancres et ses
   cibles de lien.
-- [ ] **W2.2** Afficher chaque palette supprimée dans une carte de même
+- [x] **W2.2** Afficher chaque palette supprimée dans une carte de même
   facture que les fiches, avec une teinte orange discrète : fond et bordure
   dérivés de la couleur d’avertissement du socle, lisibles aux deux thèmes,
   et jamais la couleur de danger. Titre : le nom de la palette. Texte : une
   phrase, à valider (W0.3). Gestes : « Afficher dans Figma », « Supprimer
   définitivement ». Les copies et la recherche bornée gardent leur notice.
-- [ ] **W2.3** « Supprimer définitivement » retire le cadre de Figma et son
+- [x] **W2.3** « Supprimer définitivement » retire le cadre de Figma et son
   entrée du suivi, dans une seule écriture terminée par un seul `commitUndo`.
   Aucune confirmation. Le geste est inactif, avec sa raison, pendant un
   conflit d’enregistrement (V12.1) et sur un suivi plus récent (V8.8).
   Un cadre qui a disparu entre la lecture et le geste oublie seulement son
   suivi, sans erreur.
-- [ ] **W2.4** Après le geste, la carte disparaît et le focus passe à la carte
+- [x] **W2.4** Après le geste, la carte disparaît et le focus passe à la carte
   suivante, ou au compte de palettes. Un message bref dit que Ctrl+Z dans
   Figma rend le cadre.
 - [ ] **W2.5** Tests : écriture qui retire cadre et suivi ensemble ; cadre
   déjà absent ; geste bloqué en conflit. Constater dans Figma qu’un seul
   Ctrl+Z rend le cadre et son suivi, et que le cadre revient comme palette
   supprimée, pas comme copie.
-- [ ] **W2.6** Mettre à jour l’invariant d’écriture d’UCM Palettes dans
+- [x] **W2.6** Mettre à jour l’invariant d’écriture d’UCM Palettes dans
   AGENTS.md : le plugin peut retirer un cadre qu’il possède, sur un geste
   explicite.
 

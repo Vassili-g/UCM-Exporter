@@ -11,6 +11,8 @@ export interface OptionsDeCarte {
   readonly repliable?: { readonly ouverte: boolean };
   /** La carte de génération porte le fond du panneau, et son titre ne se montre pas. */
   readonly plate?: boolean;
+  /** Le titre ne sert que de nom accessible : l'en-tête ne porte que les contrôles que l'appelant y pose ([UI-04]). */
+  readonly sansTitre?: boolean;
 }
 
 export interface CarteUi {
@@ -43,6 +45,7 @@ export function createCarte(options: OptionsDeCarte): CarteUi {
   titre.textContent = options.titre;
   const resume = document.createElement('span');
   resume.className = 'carte-resume';
+  resume.hidden = true;
   element.setAttribute('aria-label', options.titre);
 
   let ouverte = options.repliable?.ouverte ?? true;
@@ -68,7 +71,8 @@ export function createCarte(options: OptionsDeCarte): CarteUi {
   } else {
     tete = document.createElement('div');
     tete.className = 'carte-tete';
-    tete.append(titre, resume);
+    if (options.sansTitre) tete.append(resume);
+    else tete.append(titre, resume);
   }
   if (options.plate) element.append(corps);
   else element.append(tete, corps);

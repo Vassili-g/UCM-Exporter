@@ -19,7 +19,11 @@
   color: var(--texte-second);
 }
 
-/* Un nom de palette long se coupe dans le sélecteur : les gestes restent dans la fenêtre. */
+/*
+ * La liste prend la largeur libre et un nom long s'y coupe ; « + Nouvelle
+ * palette » et le menu gardent leur largeur et prennent la hauteur d'action de
+ * la liste ([UI-06]).
+ */
 .barre-gestes {
   display: flex;
   min-width: 0;
@@ -27,7 +31,17 @@
   gap: var(--espace-controle);
 }
 
+.barre-gestes .bouton-de-barre {
+  height: var(--hauteur-action);
+  flex-shrink: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  white-space: nowrap;
+}
+
 .barre-gestes .icon-button {
+  width: var(--hauteur-action);
+  height: var(--hauteur-action);
   flex-shrink: 0;
 }
 
@@ -35,11 +49,12 @@
   position: relative;
 }
 
+/* Le menu est au bord droit de la barre : sa liste s'ouvre vers la gauche. */
 .menu-liste {
   position: absolute;
   z-index: 1;
-  top: calc(var(--hauteur-secondaire) + var(--espace-serre));
-  left: 0;
+  top: calc(var(--hauteur-action) + var(--espace-serre));
+  right: 0;
   min-width: 140px;
   margin: 0;
   padding: var(--espace-serre);
@@ -66,8 +81,7 @@
   cursor: not-allowed;
 }
 
-/* La création et la confirmation portent le fond des blocs : un geste en cours. */
-.creation,
+/* La confirmation porte le fond des blocs : un geste en cours. */
 .confirmation {
   display: grid;
   gap: var(--espace-controle);
@@ -97,12 +111,12 @@
 .selecteur {
   position: relative;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
 }
 
 .selecteur-bouton {
-  display: inline-flex;
-  max-width: 100%;
+  display: flex;
+  width: 100%;
   height: var(--hauteur-action);
   align-items: center;
   gap: var(--espace-controle);
@@ -121,7 +135,9 @@
 
 .selecteur-nom {
   min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -666,6 +682,18 @@
   gap: var(--espace-controle);
 }
 
+/*
+ * Une palette supprimée : la couleur d'avertissement du socle, mêlée au fond
+ * et à la bordure des fiches pour rester discrète. Le premier couple sert au
+ * moteur qui ne lit pas `color-mix`.
+ */
+.carte.carte-supprimee {
+  border-color: var(--texte-avertissement);
+  background: var(--fond-avertissement);
+  border-color: color-mix(in srgb, var(--texte-avertissement) 45%, var(--bordure));
+  background: color-mix(in srgb, var(--fond-avertissement) 55%, var(--fond-bloc));
+}
+
 .fiche-planche .carte-titre {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -894,24 +922,78 @@
  */
 .nuancier-tete {
   display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--espace-controle);
 }
 
+/*
+ * Les onglets de thème sont posés sur le fond des blocs, celui de la carte :
+ * l'onglet actif prend le fond tertiaire de Figma pour se détacher dans les
+ * deux thèmes.
+ */
+.onglets-de-theme .bascule-option[aria-pressed='true'] {
+  background: var(--fond-note);
+}
+
 .nuancier-fond {
+  position: relative;
   display: flex;
   align-items: center;
+  margin-left: auto;
   gap: var(--espace-serre);
 }
 
+/* La pastille et le code du fond forment un bouton, qui ouvre le sélecteur de couleur. */
 .pastille-du-fond {
+  display: inline-flex;
+  height: var(--hauteur-secondaire);
+  align-items: center;
+  gap: var(--espace-serre);
+  padding: 0 var(--espace-serre);
+  border: 1px solid transparent;
+  border-radius: var(--rayon);
+  background: none;
+  color: var(--texte);
+  cursor: pointer;
+}
+
+.pastille-du-fond:hover {
+  border-color: var(--bordure);
+}
+
+.pastille-du-fond:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.pastille-du-fond-teinte {
   display: inline-block;
   width: 16px;
   height: 16px;
   border: 1px solid var(--bordure);
   border-radius: 4px;
+}
+
+/* Le sélecteur du navigateur reste sous la pastille, invisible : il ne sert qu'à s'ouvrir là. */
+.selecteur-du-fond {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mention-du-fond {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: right;
 }
 
 .nuancier-surface {

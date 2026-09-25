@@ -58,8 +58,11 @@ export interface EntreesDuNuancier {
 export interface GestesDuNuancier {
   /** Le thème a changé : la carte des garanties et l'éditeur de dérive le suivent. */
   surMode(): void;
-  /** « Modifier » ouvre les couleurs de fond des Réglages communs ([UI-04]). */
-  modifierLeFond(): void;
+  /**
+   * Un fond saisi dans le sélecteur de couleur de la pastille ([UI-04]) :
+   * `fin` à la fermeture du sélecteur, qui enregistre.
+   */
+  saisirFond(mode: Mode, hexa: string, fin: boolean): void;
   /** Une garantie du détail se choisit dans la carte des garanties ([UI-10]). */
   choisirGarantie(association: Association): void;
 }
@@ -67,7 +70,7 @@ export interface GestesDuNuancier {
 export interface NuancierUi {
   /** La surface peinte, dans le corps de la carte Aperçu. */
   element: HTMLDivElement;
-  /** La bascule des thèmes, le retour et le fond, dans l'en-tête de la carte. */
+  /** Les onglets de thème à gauche, le retour, puis le fond à droite, dans l'en-tête de la carte. */
   tete: HTMLDivElement;
   afficher(entrees: EntreesDuNuancier): void;
   mode(): Mode;
@@ -138,11 +141,11 @@ function copier(texte: string): void {
 const colonne = (rang: number): number => rang + 3;
 
 export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
-  // En-tête : les deux thèmes, le retour vers le thème d'avant, et le fond.
+  // En-tête : les deux thèmes à gauche, le retour vers le thème d'avant, et le fond à droite.
   const tete = document.createElement('div');
   tete.className = 'nuancier-tete';
   const bascule = document.createElement('div');
-  bascule.className = 'bascule';
+  bascule.className = 'bascule onglets-de-theme';
   bascule.setAttribute('role', 'group');
   bascule.setAttribute('aria-label', TEXTES.modesDeLApercu);
   const retour = bouton('bouton-discret');
@@ -152,14 +155,51 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   const libelleDuFond = document.createElement('span');
   libelleDuFond.className = 'libelle-de-champ';
   libelleDuFond.textContent = TEXTES_DU_NUANCIER.fond;
-  const pastilleDuFond = document.createElement('span');
+  /*
+   * La pastille ouvre le sélecteur de couleur du navigateur, caché derrière
+   * elle. La mention du fond commun se montre tant que ce sélecteur a le focus.
+   */
+  const pastilleDuFond = document.createElement('button');
+  pastilleDuFond.type = 'button';
   pastilleDuFond.className = 'pastille-du-fond';
+  const teinteDuFond = document.createElement('span');
+  teinteDuFond.className = 'pastille-du-fond-teinte';
+  teinteDuFond.setAttribute('aria-hidden', 'true');
   const hexaDuFond = document.createElement('span');
   hexaDuFond.className = 'ligne-secondaire';
-  const modifier = bouton('lien-de-constat', TEXTES_DU_NUANCIER.modifier);
-  modifier.addEventListener('click', () => gestes.modifierLeFond());
-  fond.append(libelleDuFond, pastilleDuFond, hexaDuFond, modifier);
-  tete.append(bascule, retour, fond);
+  hexaDuFond.setAttribute('aria-hidden', 'true');
+  pastilleDuFond.append(teinteDuFond, hexaDuFond);
+  const selecteurDuFond = document.createElement('input');
+  selecteurDuFond.type = 'color';
+  selecteurDuFond.className = 'selecteur-du-fond';
+  selecteurDuFond.tabIndex = -1;
+  selecteurDuFond.setAttribute('aria-hidden', 'true');
+  const mentionDuFond = paragraphe(TEXTES_DU_NUANCIER.fondCommun, 'ligne-secondaire');
+  mentionDuFond.classList.add('mention-du-fond');
+  mentionDuFond.hidden = true;
+  fond.append(libelleDuFond, pastilleDuFond, selecteurDuFond);
+  tete.append(bascule, retour, fond, mentionDuFond);
+
+  /** Le thème dont le sélecteur est ouvert : un changement de thème pendant la saisie ne détourne pas la valeur. */
+  let modeDuSelecteur: Mode = 'light';
+  pastilleDuFond.addEventListener('click', () => {
+    if (!donnees) return;
+    modeDuSelecteur = mode;
+    selecteurDuFond.value = donnees.recette.fonds[mode].toLowerCase();
+    mentionDuFond.hidden = false;
+    selecteurDuFond.focus({ preventScroll: true });
+    try {
+      selecteurDuFond.showPicker();
+    } catch {
+      selecteurDuFond.click();
+    }
+  });
+  selecteurDuFond.addEventListener('input', () => gestes.saisirFond(modeDuSelecteur, selecteurDuFond.value, false));
+  selecteurDuFond.addEventListener('change', () => {
+    gestes.saisirFond(modeDuSelecteur, selecteurDuFond.value, true);
+    pastilleDuFond.focus({ preventScroll: true });
+  });
+  selecteurDuFond.addEventListener('blur', () => { mentionDuFond.hidden = true; });
 
   const surface = document.createElement('div');
   surface.className = 'nuancier-surface';
@@ -434,8 +474,9 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     surface.style.setProperty('--encre-surface-seconde', encres.seconde);
     surface.style.setProperty('--bordure-surface', encres.bordure);
     surface.style.setProperty('--colonnes', String(recette.crans.length));
-    pastilleDuFond.style.background = recette.fonds[mode];
+    teinteDuFond.style.background = recette.fonds[mode];
     hexaDuFond.textContent = recette.fonds[mode];
+    pastilleDuFond.setAttribute('aria-label', TEXTES_DU_NUANCIER.modifierLeFond(mode, recette.fonds[mode]));
 
     const numeros = document.createElement('div');
     numeros.className = 'nuancier-rangee';

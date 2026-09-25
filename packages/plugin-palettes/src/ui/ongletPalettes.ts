@@ -1,8 +1,9 @@
 /**
  * L'onglet Palettes (section 13.2) : le choix ou la création d'une palette,
- * puis « Configuration de la palette » en cartes : Couleur de base, Aperçu,
- * Intensités et Dérive de teinte repliables, et la génération en dernière
- * carte. Un message se lit sous la carte qu'il concerne.
+ * le titre « Palette [nom] », puis les cartes : Configuration de la palette,
+ * aperçu, Garanties de contraste, Intensités et Dérive de teinte repliables,
+ * et la génération en dernière carte. Un message se lit sous la carte qu'il
+ * concerne.
  *
  * Une saisie recalcule l'aperçu dans l'interface ([ENT-02]). La recette
  * s'enregistre à la fin de chaque geste : valider un champ, relâcher un
@@ -22,6 +23,7 @@ import {
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
 import { analyserPalette } from '../analyse';
+import { poserFond } from '../configuration';
 import {
   MOTIF_HEXA,
   ajouter,
@@ -40,6 +42,7 @@ import { fraicheurDUnePalette } from '../planche/fraicheur';
 import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction } from '../presentation';
 import { blocDeConstat, listeDesMessages, type Message } from './constats';
 import { createCarte } from './carte';
+import { champEnColonne, createChoixDeBase, type ChoixDeBase } from './champs';
 import { createCreation } from './creation';
 import { createEditeur } from './derive/editeur';
 import type { EtatDuDessin, GestesDuResultat } from './dessin';
@@ -53,7 +56,6 @@ import { messagesDeLaPalette } from './messagesDePalette';
 import { createNuancier } from './nuancier';
 import { createSelecteur } from './selecteur';
 import {
-  NOM_DU_PROFIL,
   STATUTS_DU_RANGEMENT,
   TEXTES,
   TEXTES_DE_LA_BASE,
@@ -122,20 +124,6 @@ function ligneDEtat(texte: string): HTMLParagraphElement {
   return ligne;
 }
 
-/** Un champ de la carte Couleur de base : son libellé au-dessus, ses saisies sur une ligne ([UI-11]). */
-function champEnColonne(libelle: string, ...saisies: HTMLElement[]): HTMLLabelElement {
-  const etiquette = document.createElement('label');
-  etiquette.className = 'champ-colonne';
-  const texte = document.createElement('span');
-  texte.className = 'libelle-de-champ';
-  texte.textContent = libelle;
-  const ligne = document.createElement('span');
-  ligne.className = 'champ-ligne';
-  ligne.append(...saisies);
-  etiquette.append(texte, ligne);
-  return etiquette;
-}
-
 export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalettesUi {
   const element = document.createElement('div');
   element.className = 'page-stack colonne';
@@ -152,27 +140,23 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   let refus: Constat | null = null;
   let dernierDessin: { etat: EtatDuDessin; noms: { readonly [id: string]: string } } = { etat: { phase: 'repos' }, noms: {} };
 
-  // Le choix ou la création d'une palette, en tête de l'onglet.
+  // Le choix ou la création d'une palette, en tête de l'onglet : la liste prend la largeur libre ([UI-06]).
   const selecteur = createSelecteur((id) => {
     idOuvert = id;
     suppressionDemandee = false;
     recalculerLeCadre();
     rendre();
   });
-  const plus = document.createElement('button');
-  plus.type = 'button';
-  plus.className = 'icon-button';
-  plus.textContent = '+';
-  plus.setAttribute('aria-label', TEXTES.nouvellePalette);
+  const plus = createButton({ label: TEXTES.nouvellePalette, variant: 'secondary', onClick: () => ouvrirLaCreation() });
+  plus.classList.add('bouton-de-barre');
   plus.setAttribute('aria-expanded', 'false');
-  plus.addEventListener('click', () => ouvrirLaCreation());
   const menu = createMenuPalette(agir);
   const barre = document.createElement('div');
   barre.className = 'barre-gestes';
   barre.append(selecteur.element, plus, menu.element);
 
   const creation = createCreation({
-    onCreer: (saisie, nom) => creer(saisie, nom, null),
+    onCreer: (saisie, nom, base) => creer(saisie, nom, base, null),
     onSelection: () => demandes.lireLaSelection(),
     onAnnuler: () => {
       creationOuverte = false;
@@ -207,10 +191,9 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   choix.className = 'choix-de-palette';
   choix.append(barre, confirmation, zoneDeLaNote);
 
-  // Le titre de premier rang, et l'état de l'enregistrement au rang 3.
+  // Le titre de premier rang, « Palette [nom] » ([UI-11]), et l'état de l'enregistrement au rang 3.
   const titreDeConfiguration = document.createElement('h2');
   titreDeConfiguration.className = 'titre-de-premier-rang';
-  titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre;
   const indication = document.createElement('span');
   indication.className = 'etat-rangement ligne-secondaire';
   indication.setAttribute('aria-live', 'polite');
@@ -218,7 +201,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   teteDeConfiguration.className = 'tete-de-configuration';
   teteDeConfiguration.append(titreDeConfiguration, indication);
 
-  // Carte Couleur de base ([UI-11]).
+  // Carte Configuration de la palette ([UI-11]).
   const pipette = document.createElement('input');
   pipette.type = 'color';
   pipette.className = 'pipette';
@@ -237,49 +220,30 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const colonneDeLaReference = champEnColonne(TEXTES.reference, pipette, hexa);
   colonneDeLaReference.append(erreurHexa);
   // La palette de base : Auto, Soft ou Vivid ([UI-11], [ENT-11]).
-  const choixDeBase = document.createElement('div');
-  choixDeBase.className = 'bascule bascule-de-base';
-  choixDeBase.setAttribute('role', 'group');
-  choixDeBase.setAttribute('aria-label', TEXTES_DE_LA_BASE.libelle);
-  const boutonsDeBase = (['auto', 'soft', 'vivid'] as const).map((valeur) => {
-    const bouton = document.createElement('button');
-    bouton.type = 'button';
-    bouton.className = 'bascule-option';
-    bouton.textContent = valeur === 'auto' ? TEXTES_DE_LA_BASE.auto : NOM_DU_PROFIL[valeur];
-    bouton.addEventListener('click', () => {
-      const courante = ouverte();
-      if (recette && courante) valider(remplacerPalette(recette, choisirLaBase(courante, valeur)));
-    });
-    choixDeBase.append(bouton);
-    return { valeur, bouton };
+  const choixDeBase = createChoixDeBase((valeur) => {
+    const courante = ouverte();
+    if (recette && courante) valider(remplacerPalette(recette, choisirLaBase(courante, valeur)));
   });
-  const choixAutomatique = document.createElement('span');
-  choixAutomatique.className = 'ligne-secondaire';
-  const libelleDeLaBase = document.createElement('span');
-  libelleDeLaBase.className = 'libelle-de-champ';
-  libelleDeLaBase.textContent = TEXTES_DE_LA_BASE.libelle;
-  const colonneDeLaBase = document.createElement('div');
-  colonneDeLaBase.className = 'champ-colonne';
-  colonneDeLaBase.append(libelleDeLaBase, choixDeBase, choixAutomatique);
+  const choixAutomatique = choixDeBase.aide;
 
   const colonnes = document.createElement('div');
   colonnes.className = 'colonnes-de-base';
-  colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference, colonneDeLaBase);
-  const carteDeBase = createCarte({ titre: TEXTES_DE_L_ONGLET.couleurDeBase });
+  colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference, choixDeBase.element);
+  const carteDeBase = createCarte({ titre: TEXTES_DE_L_ONGLET.configuration });
   const messagesDeBase = document.createElement('div');
   carteDeBase.corps.append(colonnes, messagesDeBase);
 
-  // Carte Aperçu ([UI-04]) : la bascule des thèmes et le fond dans l'en-tête.
+  // Carte d'aperçu sans titre ([UI-04]) : thèmes et fond dans l'en-tête, la référence sous la surface.
   const nuancier = createNuancier({
     surMode: () => rendre(),
-    modifierLeFond: () => demandes.ouvrirReglages('fonds'),
+    saisirFond: (mode, hexa, fin) => saisirFond(mode, hexa, fin),
     choisirGarantie: (association) => garanties.choisir(association),
   });
-  const carteDApercu = createCarte({ titre: TEXTES_DE_L_ONGLET.apercu });
+  const carteDApercu = createCarte({ titre: TEXTES_DE_L_ONGLET.apercu, sansTitre: true });
   carteDApercu.tete.append(nuancier.tete);
   const repereDeReference = document.createElement('p');
   repereDeReference.className = 'repere-de-la-reference';
-  carteDApercu.corps.append(repereDeReference, nuancier.element);
+  carteDApercu.corps.append(nuancier.element, repereDeReference);
   const messagesDApercu = document.createElement('div');
 
   // Carte Garanties de contraste ([UI-09]) : elle suit le thème de l'aperçu.
@@ -410,10 +374,10 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     suppressionDemandee = false;
     creation.ouvrir(Boolean(recette && recette.palettes.length > 0));
     rendre();
-    creation.element.querySelector<HTMLInputElement>('.champ-creation')?.focus();
+    creation.focaliser();
   }
 
-  function creer(saisie: string, nomSaisi: string, notice: Constat | null): void {
+  function creer(saisie: string, nomSaisi: string, base: ChoixDeBase, notice: Constat | null): void {
     if (!recette) return;
     const id = nouvelIdentifiant(recette, demandes.tirer);
     const palette = nouvellePalette(recette, id, saisie);
@@ -424,8 +388,22 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     idOuvert = id;
     creationOuverte = false;
     note = notice;
-    valider(ajouter(recette, renommer(palette, nomSaisi)));
+    valider(ajouter(recette, choisirLaBase(renommer(palette, nomSaisi), base)));
     nom.focus();
+  }
+
+  /**
+   * Un fond saisi depuis la pastille de l'aperçu : il change le réglage commun
+   * `fonds` par `poserFond`, comme les Réglages communs, qui le relisent.
+   */
+  function saisirFond(mode: Mode, hexa: string, fin: boolean): void {
+    const suivante = recette ? poserFond(recette, mode, hexa) : null;
+    if (!suivante) return;
+    if (fin) valider(suivante);
+    else {
+      recette = suivante;
+      rendre();
+    }
   }
 
   function agir(geste: GesteDePalette): void {
@@ -546,8 +524,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     poser(pipette, courante.reference.toLowerCase());
     poser(nom, courante.nom ?? '');
     nom.placeholder = courante.reference;
-    const base = courante.base ?? 'auto';
-    for (const { valeur, bouton } of boutonsDeBase) bouton.setAttribute('aria-pressed', String(valeur === base));
+    titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre(nomDeLaPalette(courante));
+    choixDeBase.poser(courante.base ?? 'auto');
     choixAutomatique.textContent = courante.base ? '' : TEXTES_DE_LA_BASE.choixAutomatique(profilAutomatique(lue, courante));
     choixAutomatique.hidden = Boolean(courante.base);
     repereDeReference.textContent = `◆ ${ligneDeLaReference(analyse.ancrage, nuancier.mode())}`;
@@ -634,7 +612,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
         creation.signaler(lecture.raison === 'vide' ? TEXTES.selectionVide : TEXTES.selectionSansRemplissage);
         return;
       }
-      creer(lecture.hexa, creation.nom(), lecture.ramenee ? couleurRamenee(lecture.hexa) : null);
+      creer(lecture.hexa, creation.nom(), creation.base(), lecture.ramenee ? couleurRamenee(lecture.hexa) : null);
     },
     recette: () => recette,
     ouverte() {

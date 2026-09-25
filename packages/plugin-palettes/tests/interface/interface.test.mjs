@@ -18,13 +18,16 @@ const RELEVE = `<script>
   window.demandes = [];
   window.addEventListener('message', (event) => {
     const type = event.data.pluginMessage && event.data.pluginMessage.type;
-    if (['lire-etat', 'lire-selection', 'ranger-recette', 'dessiner', 'voir-sur-la-planche'].includes(type)) window.demandes.push(event.data.pluginMessage);
+    if (['lire-etat', 'lire-selection', 'ranger-recette', 'dessiner', 'voir-sur-la-planche', 'retirer-cadre'].includes(type)) window.demandes.push(event.data.pluginMessage);
   });
 </script>`;
 
-/** Ouvre l'interface à sa taille minimale. */
-async function ouvrir() {
-  const page = await navigateur.newPage({ viewport: { width: 440, height: 520 } });
+/** La taille minimale de la fenêtre ([UI-01]). */
+const MINIMALE = { width: 500, height: 520 };
+
+/** Ouvre l'interface, par défaut à 440 × 520, sous la largeur minimale. */
+async function ouvrir(viewport = { width: 440, height: 520 }) {
+  const page = await navigateur.newPage({ viewport });
   page.setDefaultTimeout(5000);
   await page.setContent(html.replace('<head>', () => `<head>${RELEVE}`));
   return page;
@@ -35,7 +38,7 @@ test('la fenêtre s’ouvre sur l’onglet Palettes et demande l’état du fich
   try {
     const palettes = page.getByRole('tab', { name: 'Palettes', exact: true });
     assert.equal(await palettes.getAttribute('aria-selected'), 'true');
-    assert.equal(await page.getByRole('tab', { name: 'Planche', exact: true }).getAttribute('aria-selected'), 'false');
+    assert.equal(await page.getByRole('tab', { name: 'Planches', exact: true }).getAttribute('aria-selected'), 'false');
     assert.equal(await page.locator('#panneau-palettes').isVisible(), true);
     assert.equal(await page.locator('#panneau-planche').isVisible(), false);
     await page.waitForFunction(() => window.demandes.length > 0);
@@ -78,10 +81,10 @@ test('un état plus ancien que la dernière lecture est écarté', async () => {
 const { ETATS } = createRequire(import.meta.url)('../../galerie/etats.cjs');
 const messageDe = (id) => ETATS.find((etat) => etat.id === id).atteinte[0].message;
 
-async function ouvrirSur(id) {
-  const page = await ouvrir();
+async function ouvrirSur(id, viewport) {
+  const page = await ouvrir(viewport);
   await page.evaluate((message) => window.postMessage({ pluginMessage: message }, '*'), messageDe(id));
-  await page.locator('.section-onglet').first().waitFor();
+  await page.locator('.titre-de-premier-rang').waitFor();
   return page;
 }
 
@@ -90,13 +93,17 @@ const dansLaFenetre = async (locator) => {
   return boite !== null && boite.y >= 0 && boite.y + boite.height <= 520;
 };
 
-test('[UI-03] à 440 × 520, le choix de la palette, le verdict et le nuancier se lisent sans défiler ; la génération suit dans le flux', async () => {
-  const page = await ouvrirSur('promesses-manquees');
+test('[UI-03] à 500 × 520, le sélecteur, le titre, la carte « Configuration de la palette » et le haut de l’aperçu se lisent sans défiler ; la génération suit dans le flux', async () => {
+  const page = await ouvrirSur('promesses-manquees', MINIMALE);
   try {
-    assert.equal(await page.locator('.verdict').textContent(), '2 promesses à corriger');
-    assert.equal(await dansLaFenetre(page.locator('.verdict')), true);
-    assert.equal(await dansLaFenetre(page.locator('.selecteur-bouton')), true);
-    assert.equal(await dansLaFenetre(page.locator('.nuancier-rangee').nth(2)), true, 'la rangée Vivid est visible');
+    const visibles = {
+      sélecteur: page.locator('.selecteur-bouton'),
+      titre: page.locator('.titre-de-premier-rang'),
+      configuration: page.locator('[aria-label="Configuration de la palette"]'),
+      'onglets de thème': page.locator('.onglets-de-theme'),
+      'rampe Soft': page.locator('.pastille[data-profil="soft"]').first(),
+    };
+    for (const [nom, locator] of Object.entries(visibles)) assert.equal(await dansLaFenetre(locator), true, `${nom} hors de la fenêtre`);
     assert.equal(await page.evaluate(() => document.scrollingElement.scrollTop), 0);
     // « Générer sur Figma » reste dans le flux : aucune barre fixe ne recouvre l'aperçu ou un champ.
     const generer = page.getByRole('button', { name: 'Générer sur Figma' });
@@ -152,10 +159,10 @@ test('[MOT-17] [UI-04] la nuance qui porte la référence porte son repère, qui
   try {
     // #A855F7 : Vivid 600 en Light, Vivid 700 en Dark.
     const reperee = () => page.locator('.pastille[data-reference="true"]').evaluate((pastille) => `${pastille.dataset.profil} ${pastille.dataset.cran}`);
-    await page.getByRole('button', { name: 'Thème Light' }).click();
+    await page.getByRole('button', { name: 'Thème Light', exact: true }).click();
     assert.equal(await reperee(), 'vivid 600');
     assert.equal(await page.locator('.repere-de-la-reference').textContent(), '◆ Référence : Vivid · nuance 600');
-    await page.getByRole('button', { name: 'Thème Dark' }).click();
+    await page.getByRole('button', { name: 'Thème Dark', exact: true }).click();
     assert.equal(await reperee(), 'vivid 700');
     assert.equal(await page.locator('.repere-de-la-reference').textContent(), '◆ Référence : Vivid · nuance 700');
     assert.equal(await page.locator('.pastille[data-reference="true"]').count(), 1);
@@ -170,7 +177,7 @@ test('[UI-04] le nuancier porte le fond du thème choisi, et ses textes s’y li
     const { fond, encre } = await page.locator('.nuancier-surface').evaluate((surface) => ({ fond: getComputedStyle(surface).backgroundColor, encre: getComputedStyle(surface).color }));
     assert.equal(fond, 'rgb(255, 216, 77)');
     assert.equal(encre, 'rgb(30, 30, 30)');
-    await page.getByRole('button', { name: 'Thème Dark' }).click();
+    await page.getByRole('button', { name: 'Thème Dark', exact: true }).click();
     assert.equal(await page.locator('.nuancier-surface').evaluate((surface) => getComputedStyle(surface).backgroundColor), 'rgb(18, 18, 18)');
   } finally {
     await page.close();
@@ -199,9 +206,9 @@ test('[UI-04] une promesse du thème Dark bascule le nuancier sur ce thème, et 
     message.classement.recette.courbes = { ...message.classement.recette.courbes, light: [0.975, 0.95, 0.905, 0.845, 0.76, 0.67, 0.585, 0.5, 0.42, 0.34, 0.27], dark };
     await envoyer(page, message);
     await page.locator('[data-geste="inspecter"]').first().click();
-    assert.equal(await page.getByRole('button', { name: 'Thème Dark' }).getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.getByRole('button', { name: 'Thème Dark', exact: true }).getAttribute('aria-pressed'), 'true');
     await page.getByRole('button', { name: 'Revenir au thème Light' }).click();
-    assert.equal(await page.getByRole('button', { name: 'Thème Light' }).getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.getByRole('button', { name: 'Thème Light', exact: true }).getAttribute('aria-pressed'), 'true');
   } finally {
     await page.close();
   }
@@ -211,8 +218,8 @@ test('la bascule montre la rampe sombre', async () => {
   const page = await ouvrirSur('alertes-seules');
   try {
     const clair = await page.locator('[aria-label^="Profil Vivid, nuance 700,"]').getAttribute('aria-label');
-    await page.getByRole('button', { name: 'Thème Dark' }).click();
-    assert.equal(await page.getByRole('button', { name: 'Thème Dark' }).getAttribute('aria-pressed'), 'true');
+    await page.getByRole('button', { name: 'Thème Dark', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: 'Thème Dark', exact: true }).getAttribute('aria-pressed'), 'true');
     assert.notEqual(await page.locator('[aria-label^="Profil Vivid, nuance 700,"]').getAttribute('aria-label'), clair);
   } finally {
     await page.close();
@@ -394,12 +401,12 @@ test('[ENT-04] une palette se crée depuis la couleur de la sélection', async (
   const page = await ouvrirSur('alertes-seules');
   try {
     let avant = await compte(page);
-    await page.getByRole('button', { name: 'Ajouter une palette' }).click();
+    await page.getByRole('button', { name: '+ Nouvelle palette' }).click();
     await page.getByRole('button', { name: 'Utiliser la couleur sélectionnée dans Figma' }).click();
     const demande = await prochaine(page, avant);
     assert.equal(demande.type, 'lire-selection');
     await envoyer(page, { type: 'selection', demande: demande.demande, lecture: { raison: 'sans-remplissage-uni' } });
-    assert.match(await page.locator('.creation .field-error').textContent(), /remplissage uni/);
+    assert.match(await page.locator('[aria-label="Nouvelle palette"] .field-error').textContent(), /remplissage uni/);
     avant = await compte(page);
     await envoyer(page, { type: 'selection', demande: demande.demande, lecture: { hexa: '#16A34A', ramenee: false } });
     const rangement = await prochaine(page, avant);
@@ -449,6 +456,121 @@ test('[UI-03] un nom de palette long ne pousse ni les gestes ni « Générer sur
       const boite = await locator.boundingBox();
       assert.ok(boite.x + boite.width <= largeur, JSON.stringify(boite));
     }
+  } finally {
+    await page.close();
+  }
+});
+
+test('[UI-06] à 500 px, la liste prend la largeur libre, les deux gestes ont sa hauteur, et un nom long se coupe', async () => {
+  const page = await ouvrir(MINIMALE);
+  try {
+    const message = structuredClone(messageDe('alertes-seules'));
+    message.classement.recette.palettes[0].nom = 'Jaune principal de la marque, déclinaison institutionnelle';
+    await envoyer(page, message);
+    const liste = await page.locator('.selecteur-bouton').boundingBox();
+    const nouvelle = await page.getByRole('button', { name: '+ Nouvelle palette' }).boundingBox();
+    const menu = await page.getByRole('button', { name: 'Actions sur la palette' }).boundingBox();
+    const barre = await page.locator('.barre-gestes').boundingBox();
+    assert.deepEqual([nouvelle.height, menu.height], [liste.height, liste.height]);
+    // La liste occupe ce que les deux gestes et leurs écarts laissent : 8 px chacun.
+    assert.equal(Math.round(liste.width), Math.round(barre.width - nouvelle.width - menu.width - 16));
+    assert.ok(menu.x + menu.width <= barre.x + barre.width + 0.5, JSON.stringify({ menu, barre }));
+    const coupe = await page.locator('.selecteur-nom').evaluate((nom) => nom.scrollWidth > nom.clientWidth && getComputedStyle(nom).textOverflow === 'ellipsis');
+    assert.equal(coupe, true);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[UI-11] le titre dit « Palette [nom] » et suit la saisie du nom, sans retirer le focus du champ', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const titre = page.locator('.titre-de-premier-rang');
+    assert.equal(await titre.textContent(), 'Palette Jaune');
+    assert.equal(await page.locator('[aria-label="Configuration de la palette"] .carte-titre').textContent(), 'Configuration de la palette');
+    const nom = page.getByRole('textbox', { name: 'Nom de la palette' });
+    await nom.click();
+    await nom.press('End');
+    await page.keyboard.type(' vif');
+    assert.equal(await titre.textContent(), 'Palette Jaune vif');
+    assert.equal(await nom.evaluate((champ) => champ === document.activeElement), true);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[UI-06] la création est une carte en trois colonnes, en Auto ; Entrée crée avec la palette de base choisie, Échap annule', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const nouvelle = page.getByRole('button', { name: '+ Nouvelle palette' });
+    await nouvelle.click();
+    const carte = page.locator('[aria-label="Nouvelle palette"]');
+    assert.deepEqual(await carte.locator('.colonnes-de-base .libelle-de-champ').allTextContents(), ['Nom de la palette', 'Couleur de référence', 'Palette de base']);
+    assert.equal(await carte.getByRole('button', { name: 'Auto', exact: true }).getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('.champ-creation').evaluate((champ) => champ === document.activeElement), true);
+    await page.keyboard.press('Escape');
+    assert.equal(await carte.isVisible(), false);
+    assert.equal(await nouvelle.evaluate((bouton) => bouton === document.activeElement), true);
+
+    await nouvelle.click();
+    await carte.getByRole('button', { name: 'Vivid', exact: true }).click();
+    await carte.getByRole('textbox', { name: 'Nom de la palette' }).fill('Menthe');
+    const avant = await compte(page);
+    await page.locator('.champ-creation').fill('#16A34A');
+    await page.locator('.champ-creation').press('Enter');
+    const demande = await prochaine(page, avant);
+    assert.equal(demande.type, 'ranger-recette');
+    assert.deepEqual(
+      (({ nom, reference, base }) => ({ nom, reference, base }))(demande.recette.palettes.at(-1)),
+      { nom: 'Menthe', reference: '#16A34A', base: 'vivid' },
+    );
+    assert.equal(await page.locator('.titre-de-premier-rang').textContent(), 'Palette Menthe');
+  } finally {
+    await page.close();
+  }
+});
+
+test('[UI-04] la carte d’aperçu n’a pas de titre : les onglets de thème à gauche, l’actif sur un fond plus foncé, la référence sous la surface', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const carte = page.locator('[aria-label="Aperçu"]');
+    assert.equal(await carte.locator('.carte-titre').count(), 0);
+    const onglets = await carte.locator('.onglets-de-theme').boundingBox();
+    const fond = await carte.locator('.pastille-du-fond').boundingBox();
+    const tete = await carte.locator('.carte-tete').boundingBox();
+    assert.equal(Math.round(onglets.x), Math.round(tete.x), 'les onglets ouvrent l’en-tête');
+    assert.ok(fond.x > onglets.x + onglets.width);
+    const fondDe = (nom) => carte.getByRole('button', { name: nom, exact: true }).evaluate((bouton) => getComputedStyle(bouton).backgroundColor);
+    assert.notEqual(await fondDe('Thème Light'), await fondDe('Thème Dark'));
+    assert.notEqual(await fondDe('Thème Light'), await carte.evaluate((element) => getComputedStyle(element).backgroundColor), 'l’onglet actif se détache de la carte');
+    const ordre = await carte.locator('.nuancier-surface, .repere-de-la-reference').evaluateAll((elements) => elements.map((element) => element.className));
+    assert.deepEqual(ordre, ['nuancier-surface', 'repere-de-la-reference']);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[UI-04] la pastille du fond nomme le thème et la valeur ; le fond saisi se range et les Réglages communs le montrent', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const pastille = page.getByRole('button', { name: 'Modifier le fond du thème Light, actuellement #F7F7F7' });
+    await pastille.click();
+    assert.equal(await page.locator('.mention-du-fond').isVisible(), true);
+    assert.equal(await page.locator('.mention-du-fond').textContent(), 'Ce fond s’applique à toutes les palettes.');
+    const avant = await compte(page);
+    await page.locator('.selecteur-du-fond').evaluate((selecteur) => {
+      selecteur.value = '#ffd84d';
+      selecteur.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    assert.equal(await page.locator('.nuancier-surface').evaluate((surface) => surface.style.background), 'rgb(255, 216, 77)');
+    assert.equal(await compte(page), avant, 'la saisie ne range rien');
+    await page.locator('.selecteur-du-fond').evaluate((selecteur) => selecteur.dispatchEvent(new Event('change', { bubbles: true })));
+    const demande = await prochaine(page, avant);
+    assert.equal(demande.type, 'ranger-recette');
+    assert.equal(demande.recette.fonds.light, '#FFD84D');
+    assert.equal(await page.getByRole('button', { name: 'Modifier le fond du thème Light, actuellement #FFD84D' }).count(), 1);
+    await page.getByRole('button', { name: 'Ouvrir les réglages communs' }).click();
+    assert.equal(await page.locator('.champ-hexa[aria-label="Fond du thème Light"]').inputValue(), '#FFD84D');
   } finally {
     await page.close();
   }
@@ -869,7 +991,7 @@ test('[PLA-24] [UI-05] « Générer sur Figma » envoie la palette ouverte, dit 
 test('[PLA-24] D-I : au-delà de six palettes, tout dessiner se confirme, et suit la grille cochée', async () => {
   const page = await ouvrirSur('confirmation-six-palettes');
   try {
-    await page.getByRole('tab', { name: 'Planche', exact: true }).click();
+    await page.getByRole('tab', { name: 'Planches', exact: true }).click();
     assert.equal(await page.locator('.ligne-planche').count(), 7);
     const options = page.locator('#panneau-planche .options-de-generation');
     assert.equal(await options.locator('summary').textContent(), 'Options de génération : sans grille des contrastes');
@@ -917,7 +1039,7 @@ test('[PLA-24] six palettes se dessinent sans confirmation', async () => {
     const recette = JSON.parse(JSON.stringify(sept.classement.recette));
     recette.palettes = recette.palettes.slice(0, 6);
     await envoyer(page, { ...sept, classement: { ...sept.classement, recette } });
-    await page.getByRole('tab', { name: 'Planche', exact: true }).click();
+    await page.getByRole('tab', { name: 'Planches', exact: true }).click();
     const avant = await compte(page);
     await page.getByRole('button', { name: 'Générer toutes les palettes' }).click();
     assert.equal((await prochaine(page, avant)).palettes.length, 6);
@@ -966,7 +1088,7 @@ test('l’onglet Planche d’un fichier sans palette renvoie vers l’onglet Pal
   const page = await ouvrir();
   try {
     await envoyer(page, messageDe('planche-sans-palette'));
-    await page.getByRole('tab', { name: 'Planche', exact: true }).click();
+    await page.getByRole('tab', { name: 'Planches', exact: true }).click();
     assert.equal(await page.getByRole('button', { name: 'Générer toutes les palettes' }).isVisible(), false);
     await page.getByRole('button', { name: 'Créer une palette' }).click();
     assert.equal(await page.getByRole('tab', { name: 'Palettes', exact: true }).getAttribute('aria-selected'), 'true');
@@ -994,8 +1116,8 @@ test('E13 : un dessin qui attendait un rangement refusé est abandonné, et l’
 });
 
 const ID_DU_JAUNE = 'p-08b7d4a0';
-const ouvrirLaPlanche = (page) => page.getByRole('tab', { name: 'Planche', exact: true }).click();
-const etatsDesLignes = (page) => page.locator('.ligne-planche').evaluateAll((lignes) => lignes.map((ligne) => ligne.dataset.etat));
+const ouvrirLaPlanche = (page) => page.getByRole('tab', { name: 'Planches', exact: true }).click();
+const etatsDesLignes = (page) => page.locator('.fiche-planche[data-palette]').evaluateAll((lignes) => lignes.map((ligne) => ligne.dataset.etat));
 const dessinsEnvoyes = async (page) => (await demandes(page)).filter((demande) => demande.type === 'dessiner');
 /** Attend le `rang`-ième dessin envoyé, compté à partir de 1. */
 async function dessinEnvoye(page, rang) {
@@ -1054,16 +1176,75 @@ test('[PLA-20] une courbe rangée depuis la configuration, ouverte sur l’ongle
   }
 });
 
-test('[ENT-03] un cadre orphelin se signale en notice, et « Afficher dans Figma » le montre', async () => {
-  const page = await ouvrirSur('cadre-orphelin');
+const carteSupprimee = (page, cadre) => page.locator(`.carte-supprimee[data-cadre="${cadre}"]`);
+
+test('[ENT-03] [UI-02] une palette supprimée se lit en une carte, et « Afficher dans Figma » montre son cadre', async () => {
+  const page = await ouvrirSur('palette-supprimee');
   try {
     await ouvrirLaPlanche(page);
-    const notice = page.locator('#panneau-planche .constat-notice');
-    assert.equal(await notice.locator('.constat-ou').textContent(), 'Palette supprimée : cadre « Ardoise »');
+    assert.deepEqual(await page.locator('.carte-supprimee .carte-titre').allTextContents(), ['Ardoise', 'Rouge']);
+    const ardoise = carteSupprimee(page, '40:4');
+    assert.equal(await ardoise.locator('p').first().textContent(), 'Palette supprimée du plugin. Ce cadre ne sera plus mis à jour.');
+    assert.equal(await page.locator('#panneau-planche .constat-notice').count(), 0, 'plus de notice pour un cadre sans palette');
+    const couleurs = await ardoise.evaluate((carte) => [getComputedStyle(carte).backgroundColor, getComputedStyle(document.querySelector('.fiche-planche[data-palette]')).backgroundColor]);
+    assert.notEqual(couleurs[0], couleurs[1], 'la carte porte sa teinte d’avertissement');
     const avant = await compte(page);
-    await notice.getByRole('button', { name: 'Afficher dans Figma' }).click();
+    await ardoise.getByRole('button', { name: 'Afficher dans Figma' }).click();
     const demande = await prochaine(page, avant);
     assert.deepEqual({ ...demande, demande: 0 }, { type: 'voir-sur-la-planche', demande: 0, page: '40:1', cadres: ['40:4'] });
+  } finally {
+    await page.close();
+  }
+});
+
+test('[PLA-27] « Supprimer définitivement » part sans confirmation ; la carte disparaît, le focus passe à la suivante, puis au compte', async () => {
+  const page = await ouvrirSur('palette-supprimee');
+  try {
+    await ouvrirLaPlanche(page);
+    let avant = await compte(page);
+    await carteSupprimee(page, '40:4').getByRole('button', { name: 'Supprimer définitivement' }).click();
+    const demande = await prochaine(page, avant);
+    assert.deepEqual({ ...demande, demande: 0 }, { type: 'retirer-cadre', demande: 0, palette: 'p-5c1d0e77', cadre: '40:4' });
+    assert.equal(await carteSupprimee(page, '40:6').getByRole('button', { name: 'Supprimer définitivement' }).isDisabled(), true, 'un seul retrait en vol');
+    avant = await compte(page);
+    await envoyer(page, { type: 'retrait', demande: demande.demande, issue: { issue: 'retire' } });
+    assert.equal(await carteSupprimee(page, '40:4').count(), 0);
+    assert.equal(await page.locator('#panneau-planche [role="status"]').textContent(), 'Cadre « Ardoise » supprimé. Ctrl+Z dans Figma le rétablit.');
+    assert.equal(await carteSupprimee(page, '40:6').getByRole('button', { name: 'Afficher dans Figma' }).evaluate((bouton) => bouton === document.activeElement), true);
+    assert.equal((await prochaine(page, avant)).type, 'lire-etat', 'l’état se relit');
+
+    avant = await compte(page);
+    await carteSupprimee(page, '40:6').getByRole('button', { name: 'Supprimer définitivement' }).click();
+    const second = await prochaine(page, avant);
+    await envoyer(page, { type: 'retrait', demande: second.demande, issue: { issue: 'deja-absent' } });
+    assert.equal(await page.locator('.carte-supprimee').count(), 0);
+    assert.equal(await page.locator('.planche-compte').evaluate((ligne) => ligne === document.activeElement), true);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[PLA-27] un retrait refusé laisse la carte et le dit ; pendant un conflit, le geste est inactif et dit pourquoi', async () => {
+  const page = await ouvrirSur('palette-supprimee');
+  try {
+    await ouvrirLaPlanche(page);
+    let avant = await compte(page);
+    await carteSupprimee(page, '40:4').getByRole('button', { name: 'Supprimer définitivement' }).click();
+    const demande = await prochaine(page, avant);
+    await envoyer(page, { type: 'retrait', demande: demande.demande, issue: { issue: 'refuse' } });
+    assert.equal(await carteSupprimee(page, '40:4').count(), 1);
+    assert.equal(await page.locator('#panneau-planche [role="status"] .constat-ou').textContent(), 'Cadre non supprimé : Ardoise');
+
+    await page.getByRole('tab', { name: 'Palettes', exact: true }).click();
+    avant = await compte(page);
+    await page.getByRole('textbox', { name: 'Nom de la palette' }).fill('Bleu roi');
+    await page.getByRole('textbox', { name: 'Nom de la palette' }).press('Tab');
+    const rangement = await prochaine(page, avant);
+    await envoyer(page, { type: 'rangement', demande: rangement.demande, issue: { issue: 'modifiee-ailleurs' } });
+    await ouvrirLaPlanche(page);
+    const geste = carteSupprimee(page, '40:4').getByRole('button', { name: 'Supprimer définitivement' });
+    assert.equal(await geste.isDisabled(), true);
+    assert.equal(await geste.getAttribute('title'), 'Exportez vos modifications ou rechargez les palettes avant de supprimer un cadre.');
   } finally {
     await page.close();
   }

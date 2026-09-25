@@ -40,6 +40,7 @@ import {
 } from '../configuration';
 import { apercuCompact, resultatsDesGaranties } from './apercuCompact';
 import { createCarte, type CarteUi } from './carte';
+import { champEnColonne } from './champs';
 import { blocDeConstat } from './constats';
 import {
   NOM_DU_PROFIL,
@@ -92,20 +93,6 @@ function paragraphe(texte = '', classe = ''): HTMLParagraphElement {
   element.textContent = texte;
   if (classe) element.className = classe;
   return element;
-}
-
-/** Un libellé au-dessus de ses saisies, comme la carte Couleur de base (V9.1). */
-function champEnColonne(libelle: string, ...saisies: HTMLElement[]): HTMLLabelElement {
-  const etiquette = document.createElement('label');
-  etiquette.className = 'champ-colonne';
-  const texte = document.createElement('span');
-  texte.className = 'libelle-de-champ';
-  texte.textContent = libelle;
-  const ligne = document.createElement('span');
-  ligne.className = 'champ-ligne';
-  ligne.append(...saisies);
-  etiquette.append(texte, ligne);
-  return etiquette;
 }
 
 function unite(texte: string): HTMLSpanElement {

@@ -89,6 +89,12 @@ function cadreDessine(texte, palette, cadre, { profil = 'SRGB', ...reglages } = 
 }
 const PAGE_DE_LA_PLANCHE = '40:1';
 
+/** Les cadres de deux palettes supprimées de la recette, restés dans Figma et toujours possédés. */
+const CADRES_SUPPRIMES = [
+  { palette: 'p-5c1d0e77', cadre: '40:4', nom: 'Ardoise', page: PAGE_DE_LA_PLANCHE, nomDeLaPage: 'Palettes', empreinte: '0badc0de', grille: true, possede: true },
+  { palette: 'p-1a2b3c4d', cadre: '40:6', nom: 'Rouge', page: PAGE_DE_LA_PLANCHE, nomDeLaPage: 'Palettes', empreinte: '0badc0de', grille: true, possede: true },
+];
+
 /** La planche que la lecture relève : sa page, ses cadres, et ce qu'elle n'a pas trouvé. */
 const plancheLue = (cadres, reglages = {}) => ({ ...PLANCHE_VIDE, page: PAGE_DE_LA_PLANCHE, nomDeLaPage: 'Palettes', cadres, ...reglages });
 const ouvrirLaPlanche = { clic: '#onglet-planche' };
@@ -232,7 +238,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU]), 'DISPLAY_P3'),
-      { clic: '[aria-label="Ajouter une palette"]' },
+      { clic: '.bouton-de-barre' },
       { clic: '[data-geste="selection"]' },
       { message: { type: 'selection', demande: 2, lecture: { hexa: '#FF2D1F', ramenee: true } } },
       { message: { type: 'rangement', demande: 3, issue: { issue: 'rangee', empreinte: '9b41d0e2' } } },
@@ -372,14 +378,27 @@ const ETATS = [
     ],
   },
   {
-    id: 'cadre-orphelin',
-    titre: 'Cadre orphelin',
-    quand: 'La palette Ardoise a été supprimée ; son cadre est resté sur la planche.',
-    regarder: 'La notice sous les gestes de génération, qui nomme le cadre, dit qu’il ne sera plus mis à jour, et propose « Afficher dans Figma ».',
+    id: 'palette-supprimee',
+    titre: 'Palette supprimée',
+    quand: 'Les palettes Ardoise et Rouge ont été supprimées ; leurs cadres sont restés dans Figma.',
+    regarder: 'Une carte par palette supprimée sous les gestes de génération, teinte d’avertissement discrète : son nom, sa phrase, « Afficher dans Figma » et « Supprimer définitivement ».',
     existe: true,
     atteinte: [
-      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2'), { palette: 'p-5c1d0e77', cadre: '40:4', nom: 'Ardoise', page: PAGE_DE_LA_PLANCHE, nomDeLaPage: 'Palettes', empreinte: '0badc0de', grille: true, possede: true }])),
+      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2'), ...CADRES_SUPPRIMES])),
       ouvrirLaPlanche,
+    ],
+  },
+  {
+    id: 'cadre-supprime',
+    titre: 'Cadre supprimé définitivement',
+    quand: 'Le designer clique « Supprimer définitivement » sur la carte d’Ardoise ; le sandbox retire le cadre.',
+    regarder: 'La carte d’Ardoise disparue, celle de Rouge restante avec le focus sur « Afficher dans Figma », et la ligne qui dit que Ctrl+Z dans Figma rétablit le cadre.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2'), ...CADRES_SUPPRIMES])),
+      ouvrirLaPlanche,
+      { clic: '.carte-supprimee[data-cadre="40:4"] [data-geste="supprimer"]' },
+      { message: { type: 'retrait', demande: 3, issue: { issue: 'retire' } } },
     ],
   },
   {
@@ -445,10 +464,10 @@ const ETATS = [
   {
     id: 'creation-ouverte',
     titre: 'Création ouverte',
-    quand: 'Le designer clique [+] : la création s’ouvre sous le sélecteur.',
-    regarder: 'La création sous le sélecteur : couleur de référence, nom, sélection Figma, « Créer la palette » et « Annuler », le focus dans le code.',
+    quand: 'Le designer clique « + Nouvelle palette » : la création s’ouvre sous le sélecteur.',
+    regarder: 'La carte « Nouvelle palette » : nom, couleur de référence et palette de base en trois colonnes, Auto pressé, puis « Créer la palette », la sélection Figma et « Annuler » sur une ligne, le focus dans le code.',
     existe: true,
-    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '[aria-label="Ajouter une palette"]' }],
+    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '.bouton-de-barre' }],
   },
   {
     id: 'reference-soft',
@@ -573,14 +592,6 @@ const ETATS = [
       ),
       ouvrirLaPlanche,
     ],
-  },
-  {
-    id: 'palette-supprimee',
-    titre: 'Palette supprimée',
-    quand: 'La palette Ardoise a été supprimée ; son cadre est resté dans Figma.',
-    regarder: null,
-    existe: false,
-    attendu: 'W2.2',
   },
   {
     id: 'fond-dans-le-selecteur',

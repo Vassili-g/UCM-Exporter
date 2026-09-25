@@ -39,6 +39,14 @@ export interface Frontiere {
    * réponse : son numéro ne rend caduc aucun état attendu.
    */
   voirSurLaPlanche(page: string, cadres: readonly string[]): void;
+  /**
+   * Retire le cadre d'une palette supprimée ([PLA-27]). Pendant un conflit
+   * d'enregistrement, rien ne part : la réponse est `false`. La demande rend
+   * caduc un état demandé avant elle, qui montrerait encore le cadre.
+   */
+  retirer(palette: string, cadre: string): boolean;
+  /** Vrai quand l'issue répond au dernier retrait demandé. */
+  accepterRetrait(message: Extract<PluginMessage, { type: 'retrait' }>): boolean;
   /** Vrai quand la progression ou le résultat répond au dernier dessin demandé. */
   accepterDessin(message: Extract<PluginMessage, { type: 'progression' | 'dessin' }>): boolean;
   /** Vrai quand l'état répond à la dernière demande : l'interface l'affiche. */
@@ -66,6 +74,7 @@ export function createFrontiere(
   let enAttente: Recette | null = null;
   let dessinEnAttente: { demande: DemandeDeDessin; surAbandon: () => void } | null = null;
   let dernierDessin = 0;
+  let dernierRetrait = 0;
   let courant: StatutDuRangement = 'lu';
 
   function numeroter(): number {
@@ -122,6 +131,15 @@ export function createFrontiere(
     voirSurLaPlanche(page, cadres) {
       compteur += 1;
       envoyer({ type: 'voir-sur-la-planche', demande: compteur, page, cadres: [...cadres] });
+    },
+    retirer(palette, cadre) {
+      if (courant === 'refuse') return false;
+      dernierRetrait = numeroter();
+      envoyer({ type: 'retirer-cadre', demande: dernierRetrait, palette, cadre });
+      return true;
+    },
+    accepterRetrait(message) {
+      return message.demande === dernierRetrait;
     },
     accepterDessin(message) {
       return message.demande === dernierDessin;

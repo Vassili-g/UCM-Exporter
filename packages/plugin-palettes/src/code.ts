@@ -3,9 +3,9 @@
  * fichier et route les demandes de l'interface.
  *
  * Le routage n'a qu'une porte par geste d'écriture ([ARC-14]) : « ranger la
- * recette » et « dessiner ».
+ * recette », « dessiner » et « retirer un cadre ».
  */
-import { dessinerLaRecetteRangee } from './ecriture/planche';
+import { dessinerLaRecetteRangee, retirerLeCadre } from './ecriture/planche';
 import { rangerRecette } from './ecriture/recette';
 import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
 import { couleurDeLaSelection, lireEtat, lireLaPlanche } from './lecture';
@@ -53,6 +53,11 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     const resultat = await dessinerLaRecetteRangee(figma, message, (fait, total, nom) =>
       versUi({ type: 'progression', demande: message.demande, fait, total, nom }));
     versUi({ type: 'dessin', demande: message.demande, resultat });
+    return;
+  }
+
+  if (message.type === 'retirer-cadre') {
+    versUi({ type: 'retrait', demande: message.demande, issue: await retirerLeCadre(figma, message) });
     return;
   }
 

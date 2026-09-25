@@ -1,7 +1,8 @@
 /**
- * Dessine les cadres de palette dans la page de la planche (section 9.1).
- * Avec la recette, c'est l'une des deux écritures du plugin. Le modèle décide
- * de tout ([ARC-07]) ; ce fichier le traduit en nodes Figma.
+ * Dessine les cadres de palette dans la page de la planche (section 9.1), et
+ * retire le cadre d'une palette supprimée ([PLA-27]). Avec la recette, ce
+ * sont les écritures du plugin. Le modèle décide de tout ([ARC-07]) ; ce
+ * fichier le traduit en nodes Figma.
  *
  * Un cadre se construit entier avant de remplacer l'ancien : une erreur en
  * chemin retire le cadre neuf, et aucun cadre à moitié dessiné ne reste
@@ -378,4 +379,75 @@ function pageDuCadre(cadre: FrameNode | undefined): string {
   let courant: BaseNode | null = cadre?.parent ?? null;
   while (courant && courant.type !== 'PAGE') courant = courant.parent;
   return courant?.id ?? '';
+}
+
+/** L'API que le retrait d'un cadre emploie. */
+export type FigmaDuRetrait = Pick<PluginAPI, 'root' | 'getNodeByIdAsync' | 'commitUndo'>;
+
+/** Ce que l'interface demande : le cadre d'une palette supprimée, par les identifiants qu'elle a lus. */
+export interface DemandeDeRetrait {
+  readonly palette: string;
+  readonly cadre: string;
+}
+
+/** L'issue de « Supprimer définitivement » ([PLA-27]). */
+export type IssueDuRetrait =
+  /** Le cadre est retiré de Figma, et son entrée du suivi avec lui. */
+  | { readonly issue: 'retire' }
+  /** Le cadre avait déjà disparu : seule son entrée du suivi est oubliée. */
+  | { readonly issue: 'deja-absent' }
+  /**
+   * Rien n'est écrit : la recette ne se lit pas ou contient de nouveau la
+   * palette, Figma refuse de lire le cadre, ou le cadre n'est plus celui que
+   * le plugin possède pour cette palette.
+   */
+  | { readonly issue: 'refuse' }
+  /** Le suivi vient d'une version plus récente du plugin : rien n'est écrit (V8.8). */
+  | { readonly issue: 'suivi-futur' };
+
+/**
+ * Retire le cadre d'une palette supprimée et son entrée du suivi, dans une
+ * seule écriture close par un seul `commitUndo` : un Ctrl+Z rend les deux, et
+ * le cadre revient comme celui d'une palette supprimée ([PLA-27]). Le sandbox
+ * relit tout : il ne retire qu'un cadre possédé, qui porte encore
+ * l'identifiant de sa palette, quand la recette rangée ne la contient plus.
+ */
+export async function retirerLeCadre(figma: FigmaDuRetrait, demande: DemandeDeRetrait): Promise<IssueDuRetrait> {
+  const rangee = lirePlanche(figma.root);
+  if (rangee.version > VERSION_DU_SUIVI) return { issue: 'suivi-futur' };
+  const { classement } = lireEtat(figma.root);
+  if (classement.etat !== 'courante' && classement.etat !== 'migree') return { issue: 'refuse' };
+  if (classement.recette.palettes.some((palette) => palette.id === demande.palette)) return { issue: 'refuse' };
+
+  let cadre: BaseNode | null;
+  try {
+    cadre = await figma.getNodeByIdAsync(demande.cadre);
+  } catch {
+    return { issue: 'refuse' };
+  }
+  const present = cadre !== null && !cadre.removed;
+  if (present) {
+    const possede = cadre!.type === 'FRAME'
+      && cadre!.getSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.cadre) === demande.palette
+      && cadre!.getSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.proprietaire) === cadre!.id;
+    if (!possede) return { issue: 'refuse' };
+  }
+
+  const cadres = Object.fromEntries(Object.entries(rangee.cadres).filter(([, id]) => id !== demande.cadre));
+  const suiviChange = Object.keys(cadres).length !== Object.keys(rangee.cadres).length;
+  if (!present && !suiviChange) return { issue: 'deja-absent' };
+
+  if (present) {
+    // La page du cadre se charge avant de le retirer (`documentAccess: "dynamic-page"`).
+    let page: BaseNode | null = cadre!.parent;
+    while (page && page.type !== 'PAGE') page = page.parent;
+    if (page) await (page as PageNode).loadAsync();
+    cadre!.remove();
+  }
+  if (suiviChange) {
+    const suivante: PlancheRangee = { version: VERSION_DU_SUIVI, page: rangee.page, cadres };
+    figma.root.setSharedPluginData(ESPACE_PARTAGE, CLE_PLANCHE, JSON.stringify(suivante));
+  }
+  figma.commitUndo();
+  return { issue: present ? 'retire' : 'deja-absent' };
 }

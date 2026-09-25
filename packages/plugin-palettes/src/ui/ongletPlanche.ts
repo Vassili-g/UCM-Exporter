@@ -1,11 +1,13 @@
 /**
- * L'onglet Planche (section 13.2, [UI-02]) : une fiche par palette, dans
+ * L'onglet Planches (section 13.2, [UI-02]) : une fiche par palette, dans
  * l'ordre de la recette, avec ses rampes Soft et Vivid dans le thème choisi
  * en tête, sa référence, le résultat de ses garanties et l'état de son cadre
  * (V8.1, V8.2). Chaque fiche porte trois gestes : « Afficher dans Figma » pour
  * un cadre localisé, « Modifier la palette » et « Générer sur Figma » (V8.3).
  * Suivent la génération des palettes qui ne sont pas à jour et celle de toutes
- * (V8.4), les notices, puis la carte repliée « Palettes et réglages » (V8.5).
+ * (V8.4), une carte par palette supprimée dont le cadre reste dans Figma
+ * ([PLA-27]), les notices, puis la carte repliée « Palettes et réglages »
+ * (V8.5).
  *
  * Chaque génération dessine la grille des contrastes (section 9.5). Au-delà de
  * six palettes, une génération groupée demande confirmation ([PLA-24], D-I).
@@ -14,7 +16,8 @@ import { MODES, type Classement, type Mode, type Recette } from 'ucm-couleur';
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
 import { analyserPalette } from '../analyse';
-import { VERSION_DU_SUIVI, type EtatDeLaPlanche, type ProfilDuDocument } from '../lecture';
+import type { IssueDuRetrait } from '../ecriture/planche';
+import { VERSION_DU_SUIVI, type CadreLu, type EtatDeLaPlanche, type ProfilDuDocument } from '../lecture';
 import { fraicheurDeLaPlanche, type CadreDUnePalette, type FraicheurDeLaPlanche } from '../planche/fraicheur';
 import { apercuCompact, resultatsDesGaranties } from './apercuCompact';
 import { createCarte } from './carte';
@@ -23,8 +26,8 @@ import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dess
 import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
 import {
   TEXTES,
+  TEXTES_DE_LA_PALETTE_SUPPRIMEE,
   TEXTES_DU_DESSIN,
-  cadreOrphelin,
   confirmationDuDessin,
   copieDeCadre,
   detailsTechniques,
@@ -40,6 +43,7 @@ import {
   recetteFuture,
   recetteIllisible,
   suiviFutur,
+  suppressionRefusee,
   type Constat,
 } from './textes';
 
@@ -52,6 +56,12 @@ export interface OngletPlancheUi {
   afficherDessin(etat: EtatDuDessin, noms: { readonly [id: string]: string }): void;
   /** Rend les gestes de génération inactifs, avec la raison ; `null` les rend (V12.1). */
   bloquer(raison: string | null): void;
+  /**
+   * L'issue de « Supprimer définitivement » ([PLA-27]). Un cadre retiré ou
+   * déjà absent quitte la planche par l'état suivant ; sa carte disparaît
+   * alors, et le focus passe à la carte suivante, ou au compte des palettes.
+   */
+  recevoirRetrait(issue: IssueDuRetrait): void;
 }
 
 export interface GestesDeLaPlanche extends GestesDuResultat {
@@ -61,6 +71,8 @@ export interface GestesDeLaPlanche extends GestesDuResultat {
   modifier(id: string, mode: Mode): void;
   /** Relit la planche ; `'fichier'` cherche les cadres sur toutes les pages (V8.6, V8.7). */
   actualiser(recherche?: 'fichier'): void;
+  /** Demande le retrait du cadre d'une palette supprimée ; `false` quand rien ne part, pendant un conflit. */
+  retirer(palette: string, cadre: string): boolean;
   /** Les gestes de la recette en fichier, dans la carte « Palettes et réglages » (V8.5). */
   recetteEnFichier: GestesDeLaRecetteUi;
 }
@@ -84,6 +96,8 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   // En-tête : le compte des palettes, le thème des fiches et « Actualiser ».
   const compte = document.createElement('p');
   compte.className = 'planche-compte';
+  // Le focus y revient quand la dernière carte de palette supprimée disparaît.
+  compte.tabIndex = -1;
   const bascule = document.createElement('div');
   bascule.className = 'bascule';
   bascule.setAttribute('role', 'group');
@@ -148,7 +162,15 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   details.className = 'ligne-secondaire';
   carteDeLaRecette.corps.append(gestes.recetteEnFichier.element, details);
 
-  element.append(enTete, zoneDuResultat, vide, liste, confirmation, pied, notices, carteDeLaRecette.element);
+  // Les palettes supprimées dont le cadre reste dans Figma, puis l'issue du dernier retrait ([PLA-27]).
+  const supprimees = document.createElement('div');
+  supprimees.className = 'liste-planche';
+  const annonceDuRetrait = document.createElement('div');
+  annonceDuRetrait.className = 'page-stack';
+  annonceDuRetrait.setAttribute('role', 'status');
+  annonceDuRetrait.hidden = true;
+
+  element.append(enTete, zoneDuResultat, vide, liste, confirmation, pied, supprimees, annonceDuRetrait, notices, carteDeLaRecette.element);
 
   let recette: Recette | null = null;
   let planche: EtatDeLaPlanche | null = null;
@@ -162,6 +184,10 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   let pasAJour: readonly string[] = [];
   let enCours = false;
   let blocage: string | null = null;
+  /** Le retrait demandé, jusqu'à son issue : le cadre, son nom et le rang de sa carte. */
+  let retraitEnCours: { readonly cadre: string; readonly nom: string; readonly rang: number } | null = null;
+  /** Le rang de la carte retirée, que le focus rejoint au rendu qui la fait disparaître. */
+  let focusApresRetrait: number | null = null;
 
   /** Les gestes de génération, inactifs pendant un dessin ou un conflit d'enregistrement. */
   function rendreLesGestes(): void {
@@ -170,6 +196,35 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
       bouton.disabled = inactif;
       bouton.title = blocage ?? '';
     }
+    for (const bouton of Array.from(supprimees.querySelectorAll<HTMLButtonElement>('[data-geste="supprimer"]'))) {
+      bouton.disabled = inactif || retraitEnCours !== null;
+      bouton.title = blocage === null ? '' : TEXTES_DE_LA_PALETTE_SUPPRIMEE.enConflit;
+    }
+  }
+
+  function retirer(cadre: CadreLu, rang: number): void {
+    if (retraitEnCours || !gestes.retirer(cadre.palette, cadre.cadre)) return;
+    retraitEnCours = { cadre: cadre.cadre, nom: cadre.nom, rang };
+    annonceDuRetrait.replaceChildren();
+    rendreLesGestes();
+  }
+
+  /** La carte d'une palette supprimée : son nom, une phrase, « Afficher dans Figma » et « Supprimer définitivement ». */
+  function carteSupprimee(cadre: CadreLu, rang: number): HTMLElement {
+    const carte = createCarte({ titre: cadre.nom });
+    carte.element.classList.add('fiche-planche', 'carte-supprimee');
+    carte.element.dataset.cadre = cadre.cadre;
+    const texte = document.createElement('p');
+    texte.textContent = TEXTES_DE_LA_PALETTE_SUPPRIMEE.texte;
+    const gestesDeLaCarte = document.createElement('div');
+    gestesDeLaCarte.className = 'fiche-gestes';
+    const voir = bouton(TEXTES_DU_DESSIN.voirSurLaPlanche, 'bouton-discret', () => gestes.voirSurLaPlanche(cadre.page, [cadre.cadre]));
+    voir.dataset.geste = 'voir';
+    const supprimer = bouton(TEXTES_DE_LA_PALETTE_SUPPRIMEE.supprimer, 'bouton-discret', () => retirer(cadre, rang));
+    supprimer.dataset.geste = 'supprimer';
+    gestesDeLaCarte.append(voir, supprimer);
+    carte.corps.append(texte, gestesDeLaCarte);
+    return carte.element;
   }
 
   const noms = (): { [id: string]: string } =>
@@ -281,9 +336,21 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
       bloc.append(bouton(TEXTES_DU_DESSIN.chercherPartout, 'bouton-discret', () => gestes.actualiser('fichier')));
       bornee.push(bloc);
     }
+    // Une carte se reconstruit comme une fiche : le focus d'un geste revient au même geste de la même carte.
+    const repereSupprime = actif && supprimees.contains(actif) ? { cadre: actif.closest<HTMLElement>('.carte-supprimee')?.dataset.cadre, geste: actif.dataset.geste } : null;
+    supprimees.replaceChildren(...fraicheur.orphelins.map((cadre, rang) => carteSupprimee(cadre, rang)));
+    supprimees.hidden = fraicheur.orphelins.length === 0;
+    rendreLesGestes();
+    if (focusApresRetrait !== null) {
+      const suivante = supprimees.querySelectorAll<HTMLElement>('.carte-supprimee')[focusApresRetrait];
+      (suivante?.querySelector<HTMLElement>('[data-geste="voir"]') ?? compte).focus();
+      focusApresRetrait = null;
+    } else if (repereSupprime?.cadre && repereSupprime.geste) {
+      supprimees.querySelector<HTMLElement>(`.carte-supprimee[data-cadre="${repereSupprime.cadre}"] [data-geste="${repereSupprime.geste}"]`)?.focus();
+    }
+
     notices.replaceChildren(
       ...bornee,
-      ...fraicheur.orphelins.map(({ nom, cadre, page }) => noticeDeCadre(cadreOrphelin(nom), page, cadre)),
       ...fraicheur.copies.map(({ nom, cadre, page }) => noticeDeCadre(copieDeCadre(nom), page, cadre)),
       ...(profil === 'DISPLAY_P3' ? [blocDeConstat(noticeDisplayP3(), 'notice')] : []),
     );
@@ -330,6 +397,24 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     bloquer(raison) {
       blocage = raison;
       gestes.recetteEnFichier.bloquer(raison);
+      rendreLesGestes();
+    },
+    recevoirRetrait(issue) {
+      const retrait = retraitEnCours;
+      retraitEnCours = null;
+      if (!retrait) return;
+      if (issue.issue === 'retire' || issue.issue === 'deja-absent') {
+        focusApresRetrait = retrait.rang;
+        const annonce = document.createElement('p');
+        annonce.className = 'ligne-secondaire';
+        annonce.textContent = TEXTES_DE_LA_PALETTE_SUPPRIMEE.supprime(retrait.nom);
+        // Un cadre déjà absent n'a rien que Ctrl+Z puisse rendre : sa carte disparaît sans annonce.
+        annonceDuRetrait.replaceChildren(...(issue.issue === 'retire' ? [annonce] : []));
+      } else {
+        const constat = issue.issue === 'suivi-futur' ? suiviFutur() : suppressionRefusee(retrait.nom);
+        annonceDuRetrait.replaceChildren(blocDeConstat(constat, issue.issue === 'suivi-futur' ? 'bloquant' : 'notice'));
+      }
+      annonceDuRetrait.hidden = annonceDuRetrait.childElementCount === 0;
       rendreLesGestes();
     },
   };

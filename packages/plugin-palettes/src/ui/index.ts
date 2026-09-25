@@ -144,8 +144,34 @@ const ongletPlanche = createOngletPlanche({
     ongletPalettes.ouvrirLaPalette(id, mode);
   },
   actualiser: relireLaPlanche,
+  retirer(palette, cadre) {
+    const parti = frontiere.retirer(palette, cadre);
+    if (parti) cadreEnRetrait = cadre;
+    return parti;
+  },
   recetteEnFichier: createGestesDeLaRecette(demandesDeLaRecette),
 });
+
+/** Le cadre dont le retrait attend son issue ([PLA-27]). */
+let cadreEnRetrait: string | null = null;
+
+/**
+ * L'issue d'un retrait. Un cadre retiré ou déjà absent quitte l'état connu
+ * sans attendre la relecture : un rendu entre-temps, après un rangement, ne
+ * remontre pas sa carte. La relecture suit, comme après un dessin.
+ */
+function recevoirRetrait(message: Extract<PluginMessage, { type: 'retrait' }>): void {
+  const cadre = cadreEnRetrait;
+  cadreEnRetrait = null;
+  ongletPlanche.recevoirRetrait(message.issue);
+  const parti = message.issue.issue === 'retire' || message.issue.issue === 'deja-absent';
+  if (parti && cadre && dernierEtat) {
+    const planche = dernierEtat.planche;
+    dernierEtat = { ...dernierEtat, planche: { ...planche, cadres: planche.cadres.filter((lu) => lu.cadre !== cadre) } };
+    afficherLaPlanche();
+  }
+  relireLaPlanche();
+}
 
 /**
  * Relit l'état pour la planche (V8.7) : à l'accès à l'onglet, et au geste
@@ -247,6 +273,8 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
     frontiere.recevoirRangement(message);
   } else if (message.type === 'progression' || message.type === 'dessin') {
     suivi.recevoir(message);
+  } else if (message.type === 'retrait' && frontiere.accepterRetrait(message)) {
+    recevoirRetrait(message);
   }
 };
 

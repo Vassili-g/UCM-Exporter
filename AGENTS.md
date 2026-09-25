@@ -225,20 +225,21 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/planche/fraicheur.ts chaque cadre à jour, périmé, jamais dessiné, introuvable ou illisible, les cadres orphelins et copiés, et l'effet d'un import
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
   src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
-  src/ecriture/planche.ts  le dessin de la planche : page, cadres possédés remplacés à leur place, polices, calques étrangers, un commitUndo par dessin
+  src/ecriture/planche.ts  le dessin de la planche : page, cadres possédés remplacés à leur place, polices, calques étrangers, un commitUndo par dessin ; le retrait du cadre d'une palette supprimée
   src/navigation.ts        « Afficher dans Figma » : ouvre la page du cadre et le cadre, sans toucher au document
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
-  src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
-  src/ui/ongletPalettes.ts le sélecteur, puis « Configuration de la palette » en cartes, chaque message sous la sienne
+  src/ui/                  l'en-tête du socle, les onglets Palettes et Planches, la configuration
+  src/ui/ongletPalettes.ts le sélecteur, le titre « Palette [nom] », puis les cartes, chaque message sous la sienne
+  src/ui/champs.ts         le libellé au-dessus de ses saisies, et le choix de la palette de base
   src/ui/carte.ts          une carte de la configuration, fixe ou repliable, avec son résumé
   src/ui/nuancier.ts       l'aperçu peint du fond du thème : pastille on-solid, pastilles en grille, accolades des rôles, détail d'une nuance
   src/ui/garanties.ts      la carte des garanties : bascule Soft/Vivid, réglette et arcs, une ligne par association
   src/ui/specimens.ts      le spécimen d'un rôle : bouton, texte, champ, anneau, trait ou aplat
   src/ui/selecteur.ts      la palette ouverte, en liste déroulante avec la pastille de chaque référence
-  src/ui/creation.ts       une palette neuve, par sa référence ou par la couleur de la sélection
+  src/ui/creation.ts       une palette neuve, en carte : nom, référence ou couleur de la sélection, palette de base
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
   src/ui/frontiere.ts      la numérotation des demandes, un seul rangement en vol, le dessin après lui
-  src/ui/ongletPlanche.ts  une fiche par palette : rampes, garanties, état du cadre, trois gestes ; génération groupée, notices, recette repliée
+  src/ui/ongletPlanche.ts  une fiche par palette : rampes, garanties, état du cadre, trois gestes ; génération groupée, une carte par palette supprimée, notices, recette repliée
   src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
   src/ui/configuration.ts  les Réglages communs en cartes : aperçu de la palette ouverte, fonds, intensités, courbes, seuils repliés
   src/ui/traceDesCourbes.ts le tracé des deux courbes au-dessus de leur table, et le ◆ de la référence insérée
@@ -922,7 +923,17 @@ La spécification en lien porte le raisonnement.
   `figma.variables`, `loadAllPagesAsync` ni une API de style. La même loi le
   tient.
 - `src/code.ts` est le seul fichier qui importe `src/ecriture/`, avec une porte
-  par geste d'écriture : `ranger-recette` et `dessiner`.
+  par geste d'écriture : `ranger-recette`, `dessiner` et `retirer-cadre`.
+- Le plugin ne retire un cadre de Figma que sur « Supprimer définitivement »,
+  geste explicite du designer. Le sandbox relit la recette rangée et le cadre :
+  il ne retire qu'un cadre possédé qui porte encore l'identifiant de sa
+  palette, quand la recette se lit et ne contient plus cette palette. Le cadre
+  et son entrée du suivi partent dans une seule écriture, close par un seul
+  `commitUndo`. Un cadre déjà disparu fait seulement oublier son entrée ; un
+  suivi plus récent refuse avant toute écriture.
+  `packages/plugin-palettes/tests/retrait.test.ts` le tient, contre le double
+  de `tests/figmaDeTest.ts`.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#91-emplacement-et-propriété)
 - Le dessin part de la recette rangée, jamais de couleurs envoyées par
   l'interface : la demande ne porte que des identifiants de palette et
   l'empreinte lue, et une recette rangée depuis n'est pas dessinée. Un cadre

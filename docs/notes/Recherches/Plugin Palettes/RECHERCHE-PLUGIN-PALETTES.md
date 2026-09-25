@@ -1452,9 +1452,9 @@ qui le créera.
 - `[UI-07]` `messages.ts` déclare les deux sens de la frontière. L'interface
   envoie des demandes : lire l'état, lire la couleur de la sélection, ranger la
   recette, dessiner une palette ou toutes, importer, voir sur la planche,
-  redimensionner. Le sandbox envoie l'état (recette rangée, profil du document,
-  état de chaque cadre), la couleur de la sélection, la progression et les
-  résultats. Un message entre dans `messages.ts` au lot qui le met en scène
+  retirer le cadre d'une palette supprimée, redimensionner. Le sandbox envoie
+  l'état (recette rangée, profil du document, état de chaque cadre), la
+  couleur de la sélection, la progression et les résultats. Un message entre dans `messages.ts` au lot qui le met en scène
   dans la galerie.
 - `[UI-08]` Chaque résultat porte le numéro de la demande qui l'a produit.
   L'interface écarte un résultat plus ancien que la dernière demande du même

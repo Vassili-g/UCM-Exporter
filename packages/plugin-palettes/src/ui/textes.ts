@@ -39,7 +39,8 @@ export const TEXTES = {
   titreConfiguration: 'Réglages communs',
   etiquetteDesOnglets: 'Navigation du plugin',
   ongletPalettes: 'Palettes',
-  ongletPlanche: 'Planche',
+  // N078.
+  ongletPlanche: 'Planches',
   lectureEnCours: 'Chargement des palettes et des réglages…',
   recetteAbsente: 'Créez votre première palette. Les réglages par défaut seront utilisés.',
   choisirUnePalette: 'Choisir une palette',
@@ -54,7 +55,9 @@ export const TEXTES = {
   titrePromesses: 'Promesses à corriger',
   titreAlertes: 'Points à vérifier',
   titreNotices: 'À savoir',
-  nouvellePalette: 'Ajouter une palette',
+  // N075, N086 : le bouton de la barre, puis le titre de la carte qu'il ouvre.
+  nouvellePalette: '+ Nouvelle palette',
+  titreDeLaCreation: 'Nouvelle palette',
   creer: 'Créer la palette',
   depuisLaSelection: 'Utiliser la couleur sélectionnée dans Figma',
   annuler: 'Annuler',
@@ -75,10 +78,14 @@ export const TEXTES = {
   retour: 'Retour aux palettes et à la planche',
 } as const;
 
-/** Le titre de premier rang de l'onglet Palettes et les titres de ses cartes (N026, N027). */
+/**
+ * Le titre de premier rang de l'onglet Palettes et les titres de ses cartes
+ * (N076, N077, N027). La carte d'aperçu ne montre pas son titre : il reste son
+ * nom accessible.
+ */
 export const TEXTES_DE_L_ONGLET = {
-  titre: 'Configuration de la palette',
-  couleurDeBase: 'Couleur de base',
+  titre: (nom: string) => `Palette ${nom}`,
+  configuration: 'Configuration de la palette',
   apercu: 'Aperçu',
   garanties: 'Garanties de contraste',
   intensites: 'Intensités',
@@ -469,7 +476,9 @@ export const TEXTES_DU_DETAIL = {
 /** Les textes du nuancier et de son détail ([UI-04]). */
 export const TEXTES_DU_NUANCIER = {
   fond: 'Fond',
-  modifier: 'Modifier',
+  // N081, N082 : le fond est un réglage commun, que la pastille ouvre.
+  fondCommun: 'Ce fond s’applique à toutes les palettes.',
+  modifierLeFond: (mode: Mode, hexa: string) => `Modifier le fond du thème ${NOM_DU_MODE[mode]}, actuellement ${hexa}`,
   reference: 'Référence',
   copier: 'Copier le code',
   copie: 'Code copié',
@@ -986,12 +995,20 @@ export function constatDesCalquesEtrangers(nom: string, calques: readonly string
   };
 }
 
-/** Un cadre dont la palette a été supprimée ([ENT-03]). */
-export function cadreOrphelin(nom: string): Constat {
+/** La carte d'une palette supprimée dont le cadre reste dans Figma ([ENT-03], [PLA-27], N079, N080, N083, N084). */
+export const TEXTES_DE_LA_PALETTE_SUPPRIMEE = {
+  texte: 'Palette supprimée du plugin. Ce cadre ne sera plus mis à jour.',
+  supprimer: 'Supprimer définitivement',
+  enConflit: 'Exportez vos modifications ou rechargez les palettes avant de supprimer un cadre.',
+  supprime: (nom: string) => `Cadre « ${nom} » supprimé. Ctrl+Z dans Figma le rétablit.`,
+} as const;
+
+/** Le sandbox a refusé « Supprimer définitivement » : le fichier a changé depuis la lecture ([PLA-27], N085). */
+export function suppressionRefusee(nom: string): Constat {
   return {
-    ou: `Palette supprimée : cadre « ${nom} »`,
-    quoi: 'Ce cadre reste dans Figma, mais sa palette a été supprimée du plugin. Il ne sera plus mis à jour.',
-    geste: 'Vous pouvez conserver ce cadre ou le supprimer directement dans Figma.',
+    ou: `Cadre non supprimé : ${nom}`,
+    quoi: 'Le fichier a changé depuis la dernière lecture : ce cadre n’est plus celui d’une palette supprimée.',
+    geste: 'Actualisez l’onglet Planches.',
   };
 }
 

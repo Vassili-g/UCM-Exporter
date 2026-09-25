@@ -12,7 +12,7 @@
 import type { Classement, Recette } from 'ucm-couleur';
 import type { DemandeDeTaille } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
-import type { ResultatDuDessin } from './ecriture/planche';
+import type { IssueDuRetrait, ResultatDuDessin } from './ecriture/planche';
 import type { IssueDuRangement } from './ecriture/recette';
 import type { EtatDeLaPlanche, LectureDeSelection, ProfilDuDocument } from './lecture';
 
@@ -35,9 +35,14 @@ export type UiRequest =
    */
   | { type: 'dessiner'; demande: number; palettes: string[]; grille: boolean; empreinteLue: string | null; etrangersConfirmes: string[] }
   | { type: 'voir-sur-la-planche'; demande: number; page: string; cadres: string[] }
+  /**
+   * Troisième écriture : « Supprimer définitivement » le cadre d'une palette
+   * supprimée, que le sandbox vérifie avant de le retirer ([PLA-27]).
+   */
+  | { type: 'retirer-cadre'; demande: number; palette: string; cadre: string }
   | DemandeDeTaille;
 
-export type { ResultatDuDessin };
+export type { IssueDuRetrait, ResultatDuDessin };
 
 /** Ce que le sandbox envoie à l'interface. */
 export type PluginMessage =
@@ -53,4 +58,6 @@ export type PluginMessage =
   | { type: 'rangement'; demande: number; issue: IssueDuRangement }
   /** Le cadre en cours de dessin ([PLA-24]). */
   | { type: 'progression'; demande: number; fait: number; total: number; nom: string }
-  | { type: 'dessin'; demande: number; resultat: ResultatDuDessin };
+  | { type: 'dessin'; demande: number; resultat: ResultatDuDessin }
+  /** L'issue de « Supprimer définitivement », en réponse à `retirer-cadre`. */
+  | { type: 'retrait'; demande: number; issue: IssueDuRetrait };
