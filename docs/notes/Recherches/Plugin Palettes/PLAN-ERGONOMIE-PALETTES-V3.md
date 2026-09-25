@@ -115,22 +115,22 @@ une sauvegarde.
 
 ## Lot W0 : règles, documents et galerie
 
-- [ ] **W0.1** Mettre à jour « Les surfaces d’UCM Palettes » dans
+- [x] **W0.1** Mettre à jour « Les surfaces d’UCM Palettes » dans
   CONTRIBUTING.md : titre « Palette [nom] », carte « Configuration de la
   palette » en tête, création sur le même modèle, onglets de thème à gauche
   de la carte d’aperçu sans titre, ligne de la référence sous le nuancier.
-- [ ] **W0.2** Mettre à jour la spécification : `[UI-04]` (ligne de la
+- [x] **W0.2** Mettre à jour la spécification : `[UI-04]` (ligne de la
   référence, onglets de thème, fond cliquable), `[UI-06]` (sélecteur et
   création), `[UI-11]` (titres), section 13.2 et l’onglet Planches ; ajouter
   l’exigence de « Supprimer définitivement ». Le sélecteur de couleur, la
   palette libre et l’ajustement de la référence entrent avec leurs lots.
-- [ ] **W0.3** Porter dans l’inventaire des textes les libellés dictés par le
+- [x] **W0.3** Porter dans l’inventaire des textes les libellés dictés par le
   mainteneur, marqués validés : « + Nouvelle palette », « Palette [nom] »,
   « Configuration de la palette », « Planches », « Supprimer
   définitivement ». Ajouter, marqués « À valider », le texte court d’une
   palette supprimée et la mention du fond commun. Ne pas redemander N043 à
   N074.
-- [ ] **W0.4** Déclarer dans `galerie/etats.cjs` les états de ce plan :
+- [x] **W0.4** Déclarer dans `galerie/etats.cjs` les états de ce plan :
   création en carte, palette supprimée en carte, fond ouvert dans le
   sélecteur de couleur, palette libre, référence ajustée. Chaque état annoncé
   nomme la case qui le rendra atteignable.

@@ -245,17 +245,27 @@ La table des rangs, la borne des deux moyens et le rôle de la couleur
 sémantique valent pour UCM Palettes. La règle des deux cartes décrit l’écran
 d’UCM Exporter ; l’onglet Palettes applique celles-ci :
 
-- le sélecteur de palette vient en tête, puis un seul titre de premier rang,
-  « Configuration de la palette ». Chaque sous-section de la configuration est
-  une carte de même facture : fond secondaire de Figma, bordure du socle,
-  rayon de 8 px, sans ombre. Trois niveaux de titre, pas davantage : le titre
-  de premier rang, le titre de carte et le libellé de champ ;
-- les cartes se suivent dans cet ordre : Couleur de base, Aperçu, Garanties de
-  contraste, Intensités, Dérive de teinte, puis la carte de génération. Les
-  cartes de réglage se replient ; leur en-tête est un bouton qui porte le
-  chevron, le titre et un résumé aligné à droite ;
-- l’aperçu est une surface peinte du fond du thème choisi, à l’intérieur de sa
-  carte. Il peut occuper la plus grande part du panneau ;
+- la barre du sélecteur vient en tête : la liste déroulante prend toute la
+  largeur libre, « + Nouvelle palette » et « … » gardent leur largeur
+  naturelle et la hauteur de la liste. Suit un seul titre de premier rang,
+  « Palette [nom] », avec le nom que le sélecteur affiche. Chaque sous-section
+  de la configuration est une carte de même facture : fond secondaire de
+  Figma, bordure du socle, rayon de 8 px, sans ombre. Trois niveaux de titre,
+  pas davantage : le titre de premier rang, le titre de carte et le libellé de
+  champ ;
+- la création d’une palette s’ouvre sous le sélecteur, dans une carte sur le
+  modèle de « Configuration de la palette » : trois colonnes, libellé au-dessus
+  du champ, puis ses gestes sur une ligne ;
+- les cartes se suivent dans cet ordre : Configuration de la palette, carte
+  d’aperçu, Garanties de contraste, Intensités, Dérive de teinte, puis la
+  carte de génération. Les cartes de réglage se replient ; leur en-tête est un
+  bouton qui porte le chevron, le titre et un résumé aligné à droite ;
+- la carte d’aperçu n’a pas de titre : son en-tête porte à gauche les onglets
+  Light et Dark, l’onglet actif sur un fond plus foncé, et à droite la
+  pastille du fond, qui ouvre le sélecteur de couleur. L’aperçu est une
+  surface peinte du fond du thème choisi, à l’intérieur de sa carte. Il peut
+  occuper la plus grande part du panneau. La ligne « ◆ Référence » se lit sous
+  lui ;
 - « Générer sur Figma » occupe seul la dernière carte, qui porte le fond du
   panneau. Le résultat de la génération et l’accès au cadre prennent la même
   ligne, et un nouveau résultat remplace le précédent au même endroit ;
@@ -267,7 +277,11 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
 - les Réglages communs reprennent les mêmes cartes : l’aperçu compact de la
   palette ouverte en tête, puis Couleurs de fond, Intensités, Luminosité des
   nuances, et deux cartes repliées de seuils. Une carte fixe porte son compte
-  de palettes et « Rétablir » à droite de son titre.
+  de palettes et « Rétablir » à droite de son titre ;
+- dans l’onglet Planches, une palette supprimée dont le cadre reste dans Figma
+  a sa carte, de même facture que les fiches, avec un fond et une bordure
+  dérivés de la couleur d’avertissement du socle. La couleur de danger ne s’y
+  applique pas : aucun geste n’y a échoué.
 
 Le bleu de marque signale une action ou une sélection, jamais une section.
 

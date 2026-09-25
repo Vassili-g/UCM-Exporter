@@ -574,6 +574,38 @@ const ETATS = [
       ouvrirLaPlanche,
     ],
   },
+  {
+    id: 'palette-supprimee',
+    titre: 'Palette supprimée',
+    quand: 'La palette Ardoise a été supprimée ; son cadre est resté dans Figma.',
+    regarder: null,
+    existe: false,
+    attendu: 'W2.2',
+  },
+  {
+    id: 'fond-dans-le-selecteur',
+    titre: 'Fond dans le sélecteur de couleur',
+    quand: 'Le designer clique la pastille du fond, dans l’en-tête de la carte d’aperçu.',
+    regarder: null,
+    existe: false,
+    attendu: 'W4.1',
+  },
+  {
+    id: 'palette-libre',
+    titre: 'Palette libre',
+    quand: 'Une palette sort du modèle du design system : six nuances, numérotées par le designer.',
+    regarder: null,
+    existe: false,
+    attendu: 'W6.5',
+  },
+  {
+    id: 'reference-ajustee',
+    titre: 'Référence ajustée',
+    quand: 'La référence #16A34A a été ajustée d’un pas plus sombre, en #0DA047, et l’originale est gardée.',
+    regarder: null,
+    existe: false,
+    attendu: 'W7.4',
+  },
 ];
 
 module.exports = { ETATS };

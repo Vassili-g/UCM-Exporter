@@ -541,7 +541,8 @@ dix-sept paires.
   sandbox : le moteur est inclus dans l'interface.
 - `[ENT-03]` Une palette se crée, se renomme, se duplique, se réordonne et se
   supprime dans l'onglet Palettes. Supprimer une palette ne supprime pas son
-  cadre de la planche ; le cadre est signalé orphelin.
+  cadre de la planche : l'onglet Planches montre le cadre comme celui d'une
+  palette supprimée, que « Supprimer définitivement » retire (`[PLA-27]`).
 - `[ENT-04]` Créer une palette depuis la sélection : si un calque sélectionné a
   un remplissage uni, le plugin propose sa couleur comme référence. Seule une
   peinture `SOLID` visible et d'opacité 1 se propose. Dans un document
@@ -639,7 +640,7 @@ présenter et à comparer des palettes côte à côte.
   n'est jamais réécrit. Un cadre dont Figma refuse de lire le nom devient
   illisible, sans faire échouer la lecture.
   Elle ne parcourt toutes les pages qu'au geste « Chercher dans tout le
-  fichier » ; l'onglet Planche annonce cette limite quand un cadre reste
+  fichier » ; l'onglet Planches annonce cette limite quand un cadre reste
   introuvable. Le plugin charge la page de la planche et celles des cadres
   retrouvés, et aucune autre sans ce geste.
 - `[PLA-02]` Un cadre par palette, posé au premier niveau de la page de la
@@ -668,8 +669,8 @@ présenter et à comparer des palettes côte à côte.
   nouvelle position. Un cadre neuf se pose à 200 px à droite du cadre possédé
   le plus à droite, aligné sur le haut du premier cadre.
 - `[PLA-06]` Le geste « Générer sur Figma » porte sur une palette : la palette
-  ouverte dans l'onglet Palettes, ou celle d'une fiche de l'onglet Planche.
-  L'onglet Planche propose aussi de générer les palettes à mettre à jour, et
+  ouverte dans l'onglet Palettes, ou celle d'une fiche de l'onglet Planches.
+  L'onglet Planches propose aussi de générer les palettes à mettre à jour, et
   toutes les palettes. Après une génération, le plugin appelle
   `figma.commitUndo()` : un Ctrl+Z défait cette génération entière, et elle
   seule. Le résultat propose « Afficher dans Figma », qui ouvre la page du
@@ -677,6 +678,17 @@ présenter et à comparer des palettes côte à côte.
 - `[PLA-25]` Un cadre dont `ucm_palettes/proprietaire` diffère de son propre
   `id` est une copie faite par le designer. Le plugin la signale en notice et ne
   la réécrit jamais.
+- `[PLA-27]` « Supprimer définitivement » retire de Figma le cadre d'une
+  palette supprimée, et son entrée du suivi, dans une seule écriture close par
+  un seul `figma.commitUndo()` : un Ctrl+Z dans Figma rend le cadre et son
+  entrée, et le cadre revient comme celui d'une palette supprimée. Le geste
+  ne demande pas de confirmation. Le sandbox ne retire qu'un cadre possédé,
+  qui porte encore l'identifiant de sa palette, quand la recette rangée se lit
+  et ne contient plus cette palette ; il ne touche jamais une copie. Un cadre
+  qui a disparu entre la lecture et le geste fait seulement oublier son
+  entrée, sans erreur. Le geste est inactif pendant un conflit
+  d'enregistrement, et un suivi d'une version plus récente le refuse avant
+  toute écriture.
 
 ### 9.2 Le cadre d'une palette
 
@@ -835,7 +847,7 @@ ses cases ne sont pas des promesses.
   cadre. Un écart classe le cadre « À mettre à jour » dans l'interface, avec le
   geste « Générer sur Figma ». Le plugin ne redessine jamais sans ce geste.
   L'état du cadre se distingue du résultat des garanties : un ratio
-  insuffisant n'est pas une panne de génération. L'onglet Planche relit l'état
+  insuffisant n'est pas une panne de génération. L'onglet Planches relit l'état
   à son ouverture, après chaque génération et au geste « Actualiser », pour ce
   que les événements de Figma ne signalent pas. Renommer une
   palette peut périmer le cadre d'une autre, dont l'alerte « Palettes proches »
@@ -1157,24 +1169,27 @@ titre et, à droite, le résumé du préréglage et de la synchronisation.
   clé propre au plugin par la fenêtre du socle. La poignée de
   redimensionnement ne descend pas sous la largeur minimale, et une taille
   rangée plus étroite s'ouvre à 500 px. Le designer peut élargir la fenêtre.
-- `[UI-02]` Deux onglets, **Palettes** et **Planche**, et un bouton en forme
+- `[UI-02]` Deux onglets, **Palettes** et **Planches**, et un bouton en forme
   d'engrenage dans l'en-tête, qui ouvre les Réglages communs (section 8.3)
   comme celui d'UCM Exporter ouvre sa configuration. L'onglet Palettes génère
-  la palette ouverte. L'onglet Planche montre chaque palette, dans l'ordre de
+  la palette ouverte. L'onglet Planches montre chaque palette, dans l'ordre de
   la recette : son nom, ses rampes Soft et Vivid dans le thème choisi en tête
   de l'onglet, sa référence, le résultat Soft et Vivid de ses garanties et
   l'état de son cadre, avec trois gestes, « Afficher dans Figma »,
   « Modifier la palette » et « Générer sur Figma ». Il propose aussi de générer
   les palettes à mettre à jour, ou toutes, et range dans une section
   secondaire l'export et l'import des palettes et réglages et l'export du
-  rapport.
+  rapport. Chaque palette supprimée dont le cadre reste dans Figma a sa
+  carte : son nom, une phrase, « Afficher dans Figma » et « Supprimer
+  définitivement » (`[PLA-27]`).
 - `[UI-03]` La hiérarchie de l'information de
   [CONTRIBUTING.md](../../../../CONTRIBUTING.md#la-hiérarchie-de-linformation)
   s'applique, avec les surfaces propres à
   [UCM Palettes](../../../../CONTRIBUTING.md#les-surfaces-ducm-palettes) : à
   500 × 520, le sélecteur de palette, le titre de premier rang, la carte
-  Couleur de base et le haut de l'aperçu se lisent sans défiler. Le reste
-  s'atteint en défilant, sans barre flottante qui recouvre le contenu.
+  « Configuration de la palette » et le haut de l'aperçu se lisent sans
+  défiler. Le reste s'atteint en défilant, sans barre flottante qui recouvre
+  le contenu.
 
 ### 13.2 Écrans
 
@@ -1182,16 +1197,15 @@ Onglet Palettes, une palette ouverte, à 600 × 720 :
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
-│ [● Bleu marque                     ▾] [+] [⋯]                         │
-│   la création s'ouvre ici, seulement après [+]                        │
-│ Configuration de la palette                               Enregistré  │
-│ ┌ Couleur de base ────────────────────────────────────────────────┐  │
+│ [● Bleu marque                          ▾] [+ Nouvelle palette] [⋯]  │
+│   la création s'ouvre ici, en carte, seulement après [+ Nouvelle …]   │
+│ Palette Bleu marque                                       Enregistré  │
+│ ┌ Configuration de la palette ────────────────────────────────────┐  │
 │ │ Nom de la palette    Couleur de référence   Palette de base     │  │
 │ │ [Bleu marque     ]   [■ #1E6FD9        ]    [Auto|Soft|Vivid]   │  │
 │ │                                             Auto a choisi Vivid │  │
 │ └─────────────────────────────────────────────────────────────────┘  │
-│ ┌ Aperçu ───────────────────────── [Light|Dark]  Fond ■ Modifier ─┐  │
-│ │ ◆ Référence : Vivid · nuance 600                                │  │
+│ ┌ [Thème Light|Thème Dark] ─────────────────────────── Fond [■] ──┐  │
 │ │ ┌ surface peinte du fond du thème ──────────────────────────┐  │  │
 │ │ │         50 100 200 300 400 500 600 700 800 900 950        │  │  │
 │ │ │ Soft  ┆┆ ■   ■   ■   ■   ■   ■   ■   ■   ■   ■   ■        │  │  │
@@ -1202,6 +1216,7 @@ Onglet Palettes, une palette ouverte, à 600 × 720 :
 │ │ │       border-decorative      border-control · focus       │  │  │
 │ │ │ détail de la nuance choisie                                │  │  │
 │ │ └────────────────────────────────────────────────────────────┘  │  │
+│ │ ◆ Référence : Vivid · nuance 600                                │  │
 │ └─────────────────────────────────────────────────────────────────┘  │
 │ ┌ ⌄ Garanties de contraste ─────────────────────── Thème Dark ────┐  │
 │ │ [Soft ✓ | Vivid ✗ 2]                                            │  │
@@ -1222,14 +1237,20 @@ Onglet Palettes, une palette ouverte, à 600 × 720 :
 ```
 
 À 500 × 520, la même disposition tient en largeur : les noms de profil
-restent à gauche des rangées, et les trois colonnes de Couleur de base gardent
-leurs libellés au-dessus des champs.
+restent à gauche des rangées, et les trois colonnes de « Configuration de la
+palette » gardent leurs libellés au-dessus des champs.
 
 - `[UI-04]` L'aperçu occupe la largeur utile de sa carte : ses colonnes se
-  calculent après les espacements et les bordures réels. L'en-tête de la carte
-  porte la bascule Light/Dark et le fond du thème, avec « Modifier ». Sous le
-  titre, la ligne « ◆ Référence : Vivid · nuance 600 » nomme le profil porteur
-  et la nuance du thème montré. La surface est peinte du fond du thème choisi,
+  calculent après les espacements et les bordures réels. La carte n'a pas de
+  titre. Son en-tête porte à gauche les onglets Light et Dark ; l'onglet actif
+  prend un fond plus foncé, lisible aux deux thèmes de Figma, et garde
+  `aria-pressed`. À droite, la pastille du fond du thème est un bouton : elle
+  ouvre le sélecteur de couleur sur ce fond, et une ligne sous le sélecteur
+  dit que le fond vaut pour toutes les palettes. La saisie change le réglage
+  commun `fonds`, que les Réglages communs montrent aussi. L'étiquette
+  accessible du bouton nomme le thème et la valeur. Sous la surface, la ligne
+  « ◆ Référence : Vivid · nuance 600 » nomme le profil porteur et la nuance du
+  thème montré. La surface est peinte du fond du thème choisi,
   et ses textes, bordures, sélection et focus prennent des couleurs lisibles
   sur ce fond ; le reste du panneau garde le thème de Figma. Chaque colonne
   porte son numéro de nuance, aligné entre Soft et Vivid. Une pastille
@@ -1301,11 +1322,13 @@ leurs libellés au-dessus des champs.
   blanc et le noir, les valeurs OKLCH et la mention d'une nuance identique à
   une autre se replient sous « Mesures détaillées ». Aucun ratio ne s'affiche
   sans le nom de ce qu'il compare.
-- `[UI-11]` La carte « Couleur de base » ouvre la configuration, en trois
-  colonnes égales, libellé au-dessus du champ : Nom de la palette, Couleur de
-  référence (pastille cliquable et code hexadécimal), Palette de base (Auto,
-  Soft ou Vivid). En Auto, une ligne sous le sélecteur dit le profil que le
-  classement a choisi : « Auto a choisi Vivid ». Soft ou Vivid force le profil
+- `[UI-11]` Le titre de premier rang est « Palette [nom] », avec le nom que le
+  sélecteur affiche ; il suit un changement de nom pendant la saisie, sans
+  retirer le focus du champ. La carte « Configuration de la palette » ouvre la
+  configuration, en trois colonnes égales, libellé au-dessus du champ : Nom
+  de la palette, Couleur de référence (pastille cliquable et code
+  hexadécimal), Palette de base (Auto, Soft ou Vivid). En Auto, une ligne
+  sous le sélecteur dit le profil que le classement a choisi : « Auto a choisi Vivid ». Soft ou Vivid force le profil
   porteur (`[MOT-17]`). L'erreur d'un code invalide reste sous son champ.
 - `[UI-12]` « Intensités » et « Dérive de teinte » sont deux cartes
   repliables de même forme, repliées à l'ouverture, qui gardent leur état
@@ -1316,12 +1339,19 @@ leurs libellés au-dessus des champs.
   profils confondus par exemple. Un lien de message qui vise un réglage déplie
   sa carte avant de focaliser le contrôle.
 - `[UI-06]` Le sélecteur de palette liste chaque palette par son nom ou son
-  hexa, avec une pastille de sa référence. Le bouton [+] ouvre la création
-  sous le sélecteur : couleur de référence et nom, ou couleur de la sélection
-  Figma, puis « Créer la palette » ou « Annuler ». Après création, la palette
-  est ouverte ; après annulation, le focus revient au bouton [+].
+  hexa, avec une pastille de sa référence. Sa liste déroulante prend toute la
+  largeur libre de sa ligne, et un nom long s'y coupe par des points de
+  suspension. « + Nouvelle palette » et « … » gardent leur largeur naturelle
+  et prennent la hauteur de la liste. « + Nouvelle palette » ouvre la création
+  sous le sélecteur, dans une carte de même forme que « Configuration de la
+  palette » : trois colonnes, libellé au-dessus du champ, pour Nom de la
+  palette, Couleur de référence (pastille et code) et Palette de base (Auto,
+  Soft ou Vivid, Auto par défaut). Sous les colonnes, sur une ligne : « Créer
+  la palette », la couleur de la sélection Figma et « Annuler ». Entrée crée ;
+  Échap annule quand « Annuler » est offert. Après création, la palette est
+  ouverte ; après annulation, le focus revient à « + Nouvelle palette ».
 
-Onglet Planche :
+Onglet Planches :
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -1334,8 +1364,12 @@ Onglet Planche :
 │ └──────────────────────────────────────────────────────────┘ │
 │ … une fiche par palette                                       │
 │ [Générer les 2 palettes qui ne sont pas à jour] [Générer toutes] │
+│ ┌ Ardoise ──────────────────────────── teinte d'avertissement ┐ │
+│ │ phrase courte : palette supprimée, cadre resté dans Figma  │ │
+│ │ [Afficher dans Figma] [Supprimer définitivement]           │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ Informations : cadre introuvable, copie, P3                   │
 │ ▸ Palettes et réglages : exporter, importer, rapport          │
-│ Informations : cadre introuvable, cadre orphelin, copie, P3   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -1370,7 +1404,7 @@ qui le créera.
 |---|---|
 | Premier lancement | Aucune recette rangée, recette par défaut proposée, aucune palette |
 | Premier lancement, palette créée | La première palette ouverte, recette rangée |
-| Création ouverte | Le formulaire sous le sélecteur : couleur de référence, nom, sélection Figma, « Annuler » |
+| Création ouverte | La carte de création sous le sélecteur : nom, couleur de référence, palette de base en Auto, sélection Figma, « Annuler » |
 | Palette créée depuis la sélection | Couleur Display P3 ramenée dans sRGB, information sous la création |
 | Palette en saisie | Aperçu à jour, rien de généré |
 | Référence Soft | Une référence peu intense, portée par Soft, avec son repère et sa nuance |
@@ -1383,6 +1417,7 @@ qui le créera.
 | Nuance libre | Une nuance sans rôle : « Nuance libre », contraste avec le fond |
 | Cartes repliées | « Intensités » et « Dérive de teinte » repliées, leur résumé, un point à vérifier annoncé |
 | Fond personnalisé | Un fond saturé peint sous le nuancier, textes et focus lisibles dessus |
+| Fond dans le sélecteur de couleur | La pastille du fond ouverte, la mention du fond commun à toutes les palettes |
 | Réglages communs | Fonds, intensités, luminosité et groupes repliés, avec le nombre de palettes concernées |
 | Réglages communs sans palette | Aucun aperçu en tête, tracé sans ◆, aucune palette concernée |
 | Courbe hors garantie | Alerte sous la courbe : cran, mode, profil, teinte du pire cas et contraste |
@@ -1398,11 +1433,11 @@ qui le créera.
 | Génération partielle | Palettes déjà créées nommées, palette fautive, reprise possible |
 | Génération interrompue | Arrêt nommé, cadre précédent conservé, détail technique replié, « Réessayer » |
 | Confirmation au-delà de six palettes | « Générer toutes les palettes » demande confirmation |
-| Onglet Planche sans palette | Aucune palette à générer, geste vers l'onglet Palettes |
+| Onglet Planches sans palette | Aucune palette à générer, geste vers l'onglet Palettes |
 | Planche à jour | Chaque fiche dit « À jour » |
 | Planche à mettre à jour | Fiches à mettre à jour ou pas encore sur la planche, génération groupée |
 | Cadre déplacé | Un cadre rangé dans une section ou sur une autre page, retrouvé par son identité |
-| Cadre orphelin | Palette supprimée, cadre toujours dans Figma |
+| Palette supprimée | Une carte par cadre resté dans Figma, teinte d'avertissement, « Supprimer définitivement » |
 | Copie de cadre | Information, la copie n'est pas réécrite |
 | Calques étrangers | Confirmation avant génération, qui nomme les calques ajoutés |
 | Document Display P3 | Information de conversion |
@@ -1537,7 +1572,7 @@ du chemin qui le précède.
   `selection`) est dans `src/navigation.ts`, hors de la loi d'écriture : elle
   ne modifie pas le document.
 - `[ARC-14]` Le routage de `code.ts` n'a qu'une porte par geste d'écriture :
-  « dessiner » et « ranger la recette ».
+  « dessiner », « ranger la recette » et « retirer un cadre » (`[PLA-27]`).
 
 ### 14.4 Invariants
 

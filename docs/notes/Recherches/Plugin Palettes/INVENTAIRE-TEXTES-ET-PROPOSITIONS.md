@@ -684,6 +684,18 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N074 | Écart d’import, conséquence sur la planche | Sur la planche : aucun cadre à jour n’est touché. · {nombre} cadres passeront « À mettre à jour » ({palettes}) · {nombre} cadres resteront sans palette ({palettes}) | À valider |
 | N026 | Résumé du repli N008 | Options de génération : sans grille des contrastes · Options de génération : avec la grille des contrastes | À valider |
 | N027 | Détail d’un usage peint sur le fond du thème | {usage} · Fond du thème | À valider |
+| N075 | Barre du sélecteur, bouton qui ouvre la création ; remplace T021 | + Nouvelle palette | Plan |
+| N076 | Onglet Palettes, titre de premier rang ; remplace N026 | Palette {nom} | Plan |
+| N077 | Première carte de la configuration ; remplace « Couleur de base » dans N027 | Configuration de la palette | Plan |
+| N078 | Second onglet du plugin ; remplace T005 | Planches | Plan |
+| N079 | Carte d’une palette supprimée, geste qui retire son cadre de Figma | Supprimer définitivement | Plan |
+| N080 | Carte d’une palette supprimée, sous son nom | Palette supprimée du plugin. Ce cadre ne sera plus mis à jour. | À valider |
+| N081 | Sous le sélecteur de couleur ouvert sur le fond du thème | Ce fond s’applique à toutes les palettes. | À valider |
+| N082 | Étiquette accessible de la pastille du fond | Modifier le fond du thème {Light ou Dark}, actuellement {hexa} | À valider |
+| N083 | Après « Supprimer définitivement » | Cadre « {nom} » supprimé. Ctrl+Z dans Figma le rétablit. | À valider |
+| N084 | Infobulle de « Supprimer définitivement » inactif pendant un conflit | Exportez vos modifications ou rechargez les palettes avant de supprimer un cadre. | À valider |
+| N085 | Suppression refusée par le sandbox | Cadre non supprimé : {nom} · Le fichier a changé depuis la dernière lecture : ce cadre n’est plus celui d’une palette supprimée. · Actualisez l’onglet Planches. | À valider |
+| N086 | Titre de la carte de création | Nouvelle palette | À valider |
 
 ## Points à conserver lors de l’application
 
