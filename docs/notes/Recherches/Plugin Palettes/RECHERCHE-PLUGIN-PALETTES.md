@@ -641,7 +641,7 @@ composant du socle la porte (`[UI-02]`).
 ## 9. Sortie 1 : la planche
 
 La planche dessine chaque palette dans Figma : ses rampes, ses usages et
-leurs garanties, une interface d'exemple et ses contrastes. Elle sert à
+leurs garanties et ses contrastes. Elle sert à
 choisir une nuance, à présenter une palette et à comparer des palettes côte à
 côte.
 
@@ -721,8 +721,9 @@ côte.
 Le cadre répond à la question que le designer se pose en posant un
 composant : quelle nuance pour quel usage, et est-elle lisible (récit R1,
 maquette W3.6). Chaque thème se lit de haut en bas : les deux rampes, les
-usages du profil porteur dans leurs états, une interface d'exemple, puis les
-contrastes nuance par nuance.
+usages du profil porteur dans leurs états, puis les contrastes nuance par
+nuance. L'écran de réglages qui essaie la palette est dans l'onglet Palettes
+(`[UI-14]`).
 
 ```text
 ┌ Bleu ─────────────────────────────────────────────────────────────────────┐
@@ -740,7 +741,6 @@ contrastes nuance par nuance.
 │ surface            ✓ text 700 dessus : 5,34:1 …                            │
 │ Textes colorés     Lien coloré 700   …                                     │
 │ Fonds pleins · Bordures de champ · Anneau de focus · Séparateurs           │
-│ Interface d'exemple · Vivid          écran de réglages E2                  │
 │ Contrastes, nuance par nuance        une grille Soft, une grille Vivid     │
 ├ Thème Dark · fond #121212 ── filet ───────────────────────────────────────┤
 └────────────────────────────────────────────────────────────────────────────┘
@@ -815,17 +815,13 @@ l'état, son numéro, puis ses garanties.
 - `[PLA-17]` Toutes les paires du moteur sont représentées, dans chaque
   thème. Sous un état, une ligne par paire dont il est membre : « sur » son
   second membre quand il est premier, « dessus » son premier membre quand il
-  est second, avec ✓ ou ✗ et le contraste mesuré. Une paire se lit donc sous
+  est second, avec ✓ ou ✗, le contraste mesuré et son niveau WCAG
+  (`[VER-13]`), dans le même texte. Une paire se lit donc sous
   chacun de ses membres qui a une ligne. Une garantie manquée prend la
   couleur de danger. `border-decorative` n'a aucune promesse, et aucune ligne
   ne lui en invente une.
 - `[PLA-18]` Les usages montrent le profil porteur, que leur titre nomme ;
   l'autre profil se lit dans les rampes.
-- `[PLA-28]` L'interface d'exemple suit les usages : un écran de réglages
-  composé, sur le modèle de Radix Themes, peint des nuances du profil porteur
-  à leur numéro de la table des emplois. Onglet actif souligné de `solid`,
-  champ au focus, case, interrupteur, encart en `surface`, et trois boutons :
-  sans fond, `surface`, `solid`.
 
 ### 9.5 Les contrastes, nuance par nuance
 
@@ -834,7 +830,9 @@ profil de chaque thème, une grille sous une rangée de pastilles, dans les
 colonnes des rampes : la ligne donne le fond, la colonne le texte. Une paire
 qui atteint le minimum des éléments visibles se peint telle qu'elle se lira :
 le fond de sa ligne, le ratio écrit dans la couleur de sa colonne, en gras à
-partir du minimum des textes. En dessous, la case s'efface sur un aplat
+partir du minimum des textes. Une case qui atteint 4,5:1 écrit après son
+ratio le niveau qu'un texte courant y atteint, AA ou AAA (`[VER-13]`). En
+dessous du minimum des éléments visibles, la case s'efface sur un aplat
 neutre. Une nuance ne se compare pas à elle-même. La grille compare librement
 toutes les nuances : ses cases ne sont pas des promesses.
 ### 9.6 Fraîcheur
@@ -868,8 +866,8 @@ toutes les nuances : ses cases ne sont pas des promesses.
   résultat n'a pas de largeur fixe : il ne se coupe jamais.
 - `[PLA-23]` Les couleurs de l'en-tête, du filet et du danger sont des
   constantes du plugin ; les encres d'un thème s'en déduisent sur son fond.
-  Aucune légende ne prend une couleur de la palette : seuls les spécimens,
-  l'interface d'exemple et les grilles en portent.
+  Aucune légende ne prend une couleur de la palette : seuls les spécimens et
+  les grilles en portent.
 - `[PLA-24]` Le dessin se fait palette par palette, avec un message de
   progression. Une génération groupée demande une confirmation au-delà de six
   palettes. Interrompue, elle nomme les palettes déjà générées et celles qui
@@ -1010,7 +1008,17 @@ composants : `default`, puis `hover` à une nuance, `active` à deux.
   s'affiche comme un usage possible. Le contraste non textuel n'a pas de
   niveau AAA. Une promesse respectée avec un minimum de texte abaissé à 4 peut
   rester insuffisante pour le texte courant ; les deux résultats s'affichent
-  séparément. Sources : critères
+  séparément.
+
+  Le plugin et la planche écrivent ce niveau en badge à côté de chaque
+  contraste jugé : « AAA », « AA », ou « AA ✗ » sous le premier niveau.
+  L'assistance technique lit ce que le badge juge et son résultat : « Texte
+  courant : AA atteint, AAA non atteint ». Une paire au minimum des textes se
+  juge en texte courant ; une paire au minimum des éléments visibles se juge
+  en élément graphique, sans AAA. Le détail d'une nuance et les grilles de la
+  planche jugent en texte courant. Les badges suivent les seuils fixes du
+  WCAG, jamais les minimums de la recette : une promesse manquée au minimum
+  de 6:1 peut porter un badge AA. Sources : critères
   [1.4.3](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html),
   [1.4.6](https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html) et
   [1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html).
@@ -1220,13 +1228,14 @@ Onglet Palettes, une palette ouverte, à 600 × 720 :
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
-│ [● Bleu marque                          ▾] [+ Nouvelle palette] [⋯]  │
-│   la création s'ouvre ici, en carte, seulement après [+ Nouvelle …]   │
-│ Palette Bleu marque                                       Enregistré  │
+│ [● Bleu marque                            ▾] [Nouvelle palette] [⋯]  │
+│   la création s'ouvre ici, en carte, seulement après [Nouvelle …]     │
+│ Palette Bleu marque                             [Générer sur Figma]   │
+│ Enregistré · Afficher dans Figma                                      │
 │ ┌ Configuration de la palette ────────────────────────────────────┐  │
 │ │ Nom de la palette    Couleur de référence   Palette de base     │  │
 │ │ [Bleu marque     ]   [■ #1E6FD9        ]    [Auto|Soft|Vivid]   │  │
-│ │                                             Auto a choisi Vivid │  │
+│ │ Ajuster la référence                        Auto a choisi Vivid │  │
 │ └─────────────────────────────────────────────────────────────────┘  │
 │ ┌ [Thème Light|Thème Dark] ─────────────────────────── Fond [■] ──┐  │
 │ │ ┌ surface peinte du fond du thème ──────────────────────────┐  │  │
@@ -1241,25 +1250,24 @@ Onglet Palettes, une palette ouverte, à 600 × 720 :
 │ │ └────────────────────────────────────────────────────────────┘  │  │
 │ │ ◆ Référence : Vivid · nuance 600                                │  │
 │ └─────────────────────────────────────────────────────────────────┘  │
+│ ┌ › Intensités ─────────────── Communes · Soft 0,45 · Vivid 0,95 ─┐  │
+│ ┌ › Dérive de teinte ─────────────────────── Tailwind · synchronisée┐ │
+│   points à vérifier, sous la carte qu'ils concernent                  │
 │ ┌ ⌄ Garanties de contraste ─────────────────────── Thème Dark ────┐  │
 │ │ [Soft ✓ | Vivid ✗ 2]                                            │  │
 │ │ réglette : on-solid, onze nuances, arcs de la garantie choisie  │  │
 │ │ Textes lisibles                                 minimum 4,5:1   │  │
 │ │   text sur surface     700 / 100   800 / 200   900 / 300        │  │
-│ │   texte coloré…        ✓ 5,78      ✓ 7,11      ✓ 8,04           │  │
+│ │   texte coloré…     ✓ 5,78 AA   ✓ 7,11 AAA  ✓ 8,04 AAA          │  │
 │ │ Éléments visibles                                 minimum 3:1   │  │
 │ │ border-decorative 300 · séparateur, sans minimum de contraste   │  │
 │ └─────────────────────────────────────────────────────────────────┘  │
-│ ┌ › Intensités ─────────────── Communes · Soft 0,45 · Vivid 0,95 ─┐  │
-│ ┌ › Dérive de teinte ─────────────────────── Tailwind · synchronisée┐ │
-│   points à vérifier, sous la carte qu'ils concernent                  │
-│ ┌─────────────────────────────────────────────────────────────────┐  │
-│ │ [Générer sur Figma]   À mettre à jour      Afficher dans Figma  │  │
-│ └─────────────────────────────────────────────────────────────────┘  │
+│ ┌ › Interface de test ─────────────────────── Thème Light · Vivid ─┐ │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-À 500 × 520, la même disposition tient en largeur : les noms de profil
+À 500 × 520, la même disposition tient en largeur : le nom de la palette se
+coupe avant le bouton de génération, les noms de profil
 restent à gauche des rangées, et les trois colonnes de « Configuration de la
 palette » gardent leurs libellés au-dessus des champs.
 
@@ -1289,21 +1297,27 @@ palette » gardent leurs libellés au-dessus des champs.
   déborde sur les colonnes libres de sa ligne, sans chevaucher son voisin. Les
   accolades ne se focalisent pas et ne dessinent pas les états.
   La nuance qui porte la référence exacte montre un repère fixe ◆, et la
-  sélection d'une nuance est un double anneau. Un clic, Entrée ou Espace
-  ouvre le détail d'une nuance ou de la pastille `on-solid` à une place stable,
-  qui peut grandir sans couper le texte (`[UI-10]`) ; le survol signale la
+  sélection d'une nuance est un anneau plein de 2 px de l'encre du fond,
+  séparé de la pastille par un liseré du fond ; le focus reste un contour
+  tireté. Un clic, Entrée ou Espace ouvre le détail d'une nuance ou de la
+  pastille `on-solid` à une place stable, qui peut grandir sans couper le
+  texte (`[UI-10]`). Le même geste sur la cellule déjà choisie la relâche et
+  referme le détail, et le focus reste sur elle ; le survol signale la
   cible sans déplacer la page. Les flèches, Origine et Fin déplacent le focus ;
   une copie de code est un geste distinct de la sélection.
-- `[UI-05]` « Générer sur Figma » occupe seul la dernière carte de la
-  configuration, qui porte le fond du panneau. Il enregistre la palette si un
-  geste est en attente, puis génère son cadre, grille des contrastes comprise :
-  la génération n'a pas d'option. L'état du cadre, À jour, À mettre à jour ou
-  Pas encore sur la planche, se lit sur la même ligne, avec « Afficher dans
-  Figma » quand le cadre est localisé. La progression, puis le résultat ou
-  l'erreur, prennent la place de cet état : un nouveau résultat remplace le
-  précédent.
-- `[UI-09]` La carte « Garanties de contraste » suit l'aperçu et montre le
-  thème qu'il a choisi, qu'elle nomme dans son en-tête. Dépliée à l'ouverture,
+- `[UI-05]` Le geste de génération se pose à droite du titre « Palette
+  [nom] », sur la même ligne. Il enregistre la palette si un geste est en
+  attente, puis génère son cadre, grille des contrastes comprise : la
+  génération n'a pas d'option. Son libellé dit l'état du cadre : « Générer
+  sur Figma » sans cadre, « Actualiser sur Figma » quand le cadre a changé,
+  « À jour sur Figma », inactif, quand il est à jour. Un cadre introuvable ou
+  illisible garde « Générer sur Figma », et son état s'écrit sous le titre.
+  Cette ligne de rang 3 porte aussi l'état de l'enregistrement, la
+  progression pendant la génération, où le bouton dit « Génération… », et
+  « Afficher dans Figma » quand le cadre est localisé. L'erreur ou les écarts
+  de peinture viennent dessous : un nouveau résultat remplace le précédent.
+- `[UI-09]` La carte « Garanties de contraste » suit la Dérive de teinte et
+  montre le thème que l'aperçu a choisi, qu'elle nomme dans son en-tête. Dépliée à l'ouverture,
   elle garde son état replié pendant la session ; repliée, son en-tête garde le
   résultat des deux profils sur les deux thèmes. Une bascule Soft/Vivid choisit
   le profil affiché. Chaque segment porte le résultat de son profil dans le
@@ -1321,9 +1335,11 @@ palette » gardent leurs libellés au-dessus des champs.
   textuel, chaque groupe avec son minimum lu dans la recette. Une ligne porte
   la relation (« `text` sur `surface` ») et son nom français, puis un spécimen
   par état. Sous chaque spécimen : les deux numéros comparés (« 700 / 100 »,
-  « fond / 700 »), le ratio avec ✓ ou ✗, puis l'état. Une ligne en échec
+  « fond / 700 »), le ratio avec ✓ ou ✗ et son badge de niveau
+  (`[VER-13]`), puis l'état. Une ligne en échec
   porte l'état fautif, son ratio et le minimum, puis le lien vers le réglage
-  qui peut agir (`[VER-15]`). La liste se termine par `border-decorative`,
+  qui peut agir (`[VER-15]`), « Ajuster la référence » (`[UI-15]`) en
+  dernier. La liste se termine par `border-decorative`,
   sans spécimen et sans minimum.
   Une ligne se choisit au clic ou au clavier. Au départ, la première ligne en
   échec est choisie, sinon `text` sur `surface` ; le choix redessine les arcs
@@ -1336,24 +1352,29 @@ palette » gardent leurs libellés au-dessus des champs.
   ajoute « ◆ Votre couleur de référence exacte ». Sous « Sert à », une ligne
   par usage de la nuance : un spécimen, le rôle et l'état (« `solid` ·
   default »), le nom français du rôle, puis la garantie qui le concerne avec le
-  numéro du partenaire (« ✓ sur `surface` 100 : 5,78:1 »). Un clic sur la
+  numéro du partenaire et son badge (« ✓ sur `surface` 100 : 5,78:1 AA »). Un clic sur la
   garantie la choisit dans la carte des garanties. La pastille `on-solid` a son
   propre détail : le fond de page du thème, `neutral.50` du design system,
   posé en texte sur `solid` 700 à 900, avec les garanties de ces trois états.
-  Une nuance sans rôle affiche « Nuance libre : aucun usage prévu » et son
-  contraste avec le fond. Les niveaux WCAG (`[VER-13]`), les contrastes avec le
-  blanc et le noir, les valeurs OKLCH et la mention d'une nuance identique à
-  une autre se replient sous « Mesures détaillées ». Aucun ratio ne s'affiche
-  sans le nom de ce qu'il compare.
+  Une nuance sans rôle affiche « Sans rôle » à la place de « Sert à ». Toute
+  nuance porte ensuite une table « Contrastes » de trois lignes : fond du
+  thème, blanc et noir, chacune avec son ratio et son badge de texte courant
+  (`[VER-13]`). La mention d'une nuance identique ou confondue suit la
+  table ; les valeurs OKLCH se replient sous « OKLCH ». Aucun contraste ne
+  s'écrit deux fois, et aucun ratio ne s'affiche sans le nom de ce qu'il
+  compare.
 - `[UI-11]` Le titre de premier rang est « Palette [nom] », avec le nom que le
-  sélecteur affiche ; il suit un changement de nom pendant la saisie, sans
-  retirer le focus du champ. La carte « Configuration de la palette » ouvre la
+  sélecteur affiche, et le geste de génération à sa droite (`[UI-05]`) ; il
+  suit un changement de nom pendant la saisie, sans retirer le focus du
+  champ. La carte « Configuration de la palette » ouvre la
   configuration, en trois colonnes égales, libellé au-dessus du champ : Nom
   de la palette, Couleur de référence (pastille cliquable et code
   hexadécimal), Modèle (Standard ou Libre). Dans le modèle, la palette de base
   (Auto, Soft ou Vivid) se règle sous le choix du modèle. En Auto, une ligne
   sous le sélecteur dit le profil que le classement a choisi : « Auto a choisi Vivid ». Soft ou Vivid force le profil
   porteur (`[MOT-17]`). L'erreur d'un code invalide reste sous son champ.
+  Sous le code, « Ajuster la référence » ouvre le panneau (`[UI-15]`) ; une
+  référence ajustée ajoute « Ajustée depuis #16A34A · Revenir à l'originale ».
   Libre retire la palette de base, dit « Sans rôles ni garanties », et montre
   sous les trois colonnes une puce par multiple de 50, de 50 à 1050, allumée
   quand la palette porte ce numéro. Une puce allumée ne s'éteint pas sous
@@ -1369,7 +1390,33 @@ palette » gardent leurs libellés au-dessus des champs.
   valeurs ; celui de la dérive, le préréglage et la synchronisation. Repliée,
   une carte annonce dans son résumé le point à vérifier qui la concerne, des
   profils confondus par exemple. Un lien de message qui vise un réglage déplie
-  sa carte avant de focaliser le contrôle.
+  sa carte avant de focaliser le contrôle. Les deux cartes suivent l'aperçu,
+  Intensités puis Dérive de teinte, avant les Garanties de contraste
+  (`[UI-09]`) : la palette se règle avant de se juger. L'Interface de test
+  (`[UI-14]`) ferme l'onglet.
+- `[UI-14]` L'Interface de test est la dernière carte de l'onglet Palettes,
+  repliée à l'ouverture. Elle montre, en HTML, un écran de réglages composé
+  sur le modèle de Radix Themes, peint de la palette ouverte dans le thème de
+  l'aperçu et le profil porteur : badge et encart en `surface`, onglet actif
+  souligné de `solid`, champ bordé de `border-control` et cerclé de
+  `focus` au focus, case et interrupteur en `solid`, et trois boutons, sans
+  fond, `surface` et `solid`. Chaque couleur vient de la table des emplois ;
+  le survol et l'appui avancent d'une nuance, texte et fond ensemble. Les
+  contrôles se manipulent sans rien enregistrer. Une palette libre n'a pas
+  cette carte. La planche ne porte pas cet écran.
+- `[UI-15]` « Ajuster la référence » ouvre, dans la carte « Configuration de
+  la palette », un panneau qui part de la référence rangée : l'originale et
+  la proposition côte à côte, « − » et « + » par pas de 0,01 de luminosité
+  OKLCH, chroma et teinte gardées, le code de la proposition saisissable, la
+  nuance visée dans chaque thème, et les garanties avant et après, le bilan
+  de chaque profil puis chaque garantie manquée d'un côté, avec son badge.
+  Un pas qui changerait le numéro de la référence l'annonce avant le clic.
+  Seul « Appliquer » range : la proposition devient la référence, et
+  `originale` garde celle du premier ajustement. « Annuler » et Échap
+  referment sans rien écrire et rendent le focus au lien. « Revenir à
+  l'originale » rend l'originale et retire le champ ; un code saisi dans la
+  configuration le retire aussi, et une notice le dit. Aucun ajustement ne
+  se fait sans le geste du designer.
 - `[UI-13]` Aucune couleur ne se choisit dans le sélecteur du navigateur, qui
   s'ouvre en RGB dans Figma. La pastille de la couleur de référence, celle
   de la création, celles des deux fonds des Réglages communs et celle du
@@ -1391,15 +1438,15 @@ palette » gardent leurs libellés au-dessus des champs.
 - `[UI-06]` Le sélecteur de palette liste chaque palette par son nom ou son
   hexa, avec une pastille de sa référence. Sa liste déroulante prend toute la
   largeur libre de sa ligne, et un nom long s'y coupe par des points de
-  suspension. « + Nouvelle palette » et « … » gardent leur largeur naturelle
-  et prennent la hauteur de la liste. « + Nouvelle palette » ouvre la création
+  suspension. « Nouvelle palette » et « … » gardent leur largeur naturelle
+  et prennent la hauteur de la liste. « Nouvelle palette » ouvre la création
   sous le sélecteur, dans une carte de même forme que « Configuration de la
   palette » : trois colonnes, libellé au-dessus du champ, pour Nom de la
   palette, Couleur de référence (pastille et code) et Palette de base (Auto,
   Soft ou Vivid, Auto par défaut). Sous les colonnes, sur une ligne : « Créer
   la palette », la couleur de la sélection Figma et « Annuler ». Entrée crée ;
   Échap annule quand « Annuler » est offert. Après création, la palette est
-  ouverte ; après annulation, le focus revient à « + Nouvelle palette ».
+  ouverte ; après annulation, le focus revient à « Nouvelle palette ».
 
 Onglet Planches :
 
@@ -1464,10 +1511,14 @@ qui le créera.
 | Garantie en échec | Bascule ✗ sur le profil, première ligne en échec choisie, arc de danger, lien vers le réglage |
 | Garantie de l'autre thème | Ligne qui compte les garanties manquées de l'autre thème, aperçu basculé, « Revenir au thème » |
 | Détail de la référence | La nuance de la référence choisie : usages, garanties avec numéros, repère ◆ |
-| Nuance libre | Une nuance sans rôle : « Nuance libre », contraste avec le fond |
+| Nuance sans rôle | « Sans rôle », puis la table des contrastes, fond du thème, blanc et noir, chacun avec son badge |
+| Nuance désélectionnée | La nuance choisie recliquée : détail refermé, focus resté sur la pastille |
 | Cartes repliées | « Intensités » et « Dérive de teinte » repliées, leur résumé, un point à vérifier annoncé |
 | Fond personnalisé | Un fond saturé peint sous le nuancier, textes et focus lisibles dessus |
 | Fond dans le sélecteur de couleur | La pastille du fond ouverte, la mention du fond commun à toutes les palettes |
+| Interface de test | L'écran de réglages peint de la palette, aux deux thèmes de l'aperçu |
+| Ajuster la référence | Le panneau ouvert après un pas : originale et proposition, nuance visée, garanties avant et après |
+| Référence ajustée | « Ajustée depuis #16A34A · Revenir à l'originale » sous le code |
 | Palette libre | Libre pressé, six puces allumées, l’aperçu à six colonnes sans `on-solid` ni accolades, aucune carte des garanties |
 | Référence dans le sélecteur de couleur | La pastille de la référence ouverte, les nuances Vivid de la palette proposées |
 | Réglages communs | Fonds, intensités, luminosité et groupes repliés, avec le nombre de palettes concernées |
@@ -1481,13 +1532,14 @@ qui le créera.
 | Couleur presque grise | Éditeur désactivé, alerte |
 | Palette avec points à vérifier seuls | Garanties respectées, points à vérifier sous la carte qu'ils concernent |
 | Génération en cours | Progression, aucun geste possible |
-| Génération réussie | État du cadre et « Afficher dans Figma » sur la ligne de l'action |
+| Génération réussie | « À jour sur Figma » inactif à droite du titre, « Afficher dans Figma » dessous |
+| Titre et génération | « Générer sur Figma » sans cadre, « Actualiser sur Figma » sur un cadre périmé, un nom long coupé devant le bouton |
 | Génération partielle | Palettes déjà créées nommées, palette fautive, reprise possible |
 | Génération interrompue | Arrêt nommé, cadre précédent conservé, détail technique replié, « Réessayer » |
 | Confirmation au-delà de six palettes | « Générer toutes les palettes » demande confirmation |
 | Onglet Planches sans palette | Aucune palette à générer, geste vers l'onglet Palettes |
 | Planche à jour | Chaque fiche dit « À jour » |
-| Planche à mettre à jour | Fiches à mettre à jour ou pas encore sur la planche, génération groupée |
+| Planche à mettre à jour | Fiches à mettre à jour, ou jamais générées et sans état écrit, génération groupée |
 | Cadre déplacé | Un cadre rangé dans une section ou sur une autre page, retrouvé par son identité |
 | Palette supprimée | Une carte par cadre resté dans Figma, teinte d'avertissement, « Supprimer définitivement » |
 | Copie de cadre | Information, la copie n'est pas réécrite |

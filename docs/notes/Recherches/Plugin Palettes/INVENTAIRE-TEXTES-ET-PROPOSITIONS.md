@@ -646,7 +646,7 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N036 | Ligne des garanties manquées de l’autre thème | Thème {mode} : 1 garantie manquée · Thème {mode} : {nombre} garanties manquées · Voir le thème {mode} | À valider |
 | N037 | Garantie `on-solid`, explication unique du fond de page | `on-solid` est le fond de page du thème, `neutral.50` du design system. | À valider |
 | N038 | Dernière ligne de la carte des garanties | `border-decorative` {numéro} · séparateur, sans minimum de contraste | À valider |
-| N039 | Détail d’une nuance | Sert à · Nuance libre : aucun usage prévu · Mesures détaillées · ◆ Votre couleur de référence exacte | À valider |
+| N039 | Détail d’une nuance ; « Nuance libre » et « Mesures détaillées » retirés par le plan V4 (N106) | Sert à · ◆ Votre couleur de référence exacte | À valider |
 | N040 | Résumé replié de la carte Intensités | Communes · Propres · Palette de base {profil} · Soft {intensité} · Vivid {intensité} | À valider |
 | N041 | Résumé replié de la carte Dérive de teinte | {préréglage} · synchronisée · {préréglage soft} et {préréglage vivid} · désynchronisée | À valider |
 | N042 | Sous les réglettes de la dérive, remplace le bilan | Garanties : {résultat soft} · {résultat vivid} · Voir les garanties | À valider |
@@ -684,7 +684,7 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N074 | Écart d’import, conséquence sur la planche | Sur la planche : aucun cadre à jour n’est touché. · {nombre} cadres passeront « À mettre à jour » ({palettes}) · {nombre} cadres resteront sans palette ({palettes}) | À valider |
 | N026 | Résumé du repli N008 | Options de génération : sans grille des contrastes · Options de génération : avec la grille des contrastes | À valider |
 | N027 | Détail d’un usage peint sur le fond du thème | {usage} · Fond du thème | À valider |
-| N075 | Barre du sélecteur, bouton qui ouvre la création ; remplace T021 | + Nouvelle palette | Plan |
+| N075 | Barre du sélecteur, bouton qui ouvre la création ; remplace T021. « + Nouvelle palette » retiré (retour du mainteneur, round 4) | Nouvelle palette | Mainteneur, round 4 |
 | N076 | Onglet Palettes, titre de premier rang ; remplace N026 | Palette {nom} | Plan |
 | N077 | Première carte de la configuration ; remplace « Couleur de base » dans N027 | Configuration de la palette | Plan |
 | N078 | Second onglet du plugin ; remplace T005 | Planches | Plan |
@@ -706,7 +706,7 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N094 | Planche, chaque usage : nom, rôle et ce qu’il habille | Fonds légers · fond d’un bloc, d’un bouton soft · Textes colorés · lien, texte d’accent · Fonds pleins · bouton principal, badge plein · Bordures de champ · champ de saisie, case · Anneau de focus · focus clavier · focus · état focus · Séparateurs · filet, bordure de carte | Maquette W3.6 |
 | N095 | Planche, libellés des spécimens | Soft · Lien coloré · Bouton · Champ | Maquette W3.6 |
 | N096 | Planche, repères d’une pastille et note sous les rampes | ◆ · ≈ · ◆ : la couleur de référence exacte. · ≈ : Soft et Vivid presque identiques à cette nuance. | À valider |
-| N097 | Planche, interface d’exemple E2 | Paramètres de l’équipe · Nouveau · Général · Membres · Facturation · Nom de l’équipe · Studio Nord · Notifier les membres · Accès invité · Les membres invités reçoivent un e-mail. En savoir plus · Annuler · Brouillon · Enregistrer | Maquette W3.6 |
+| N097 | Interface de test de l’onglet Palettes, écran E2 ; la planche ne le porte plus (plan V4, X5) | Paramètres de l’équipe · Nouveau · Général · Membres · Facturation · Nom de l’équipe · Studio Nord · Notifier les membres · Accès invité · Les membres invités reçoivent un e-mail. En savoir plus · Annuler · Brouillon · Enregistrer | Maquette W3.6 |
 | N098 | Planche, en-tête d’un thème et verdict ; remplace N062 pour le résultat, et l’en-tête de section | Thème {Light ou Dark} · fond {hexa} · ✓ Toutes les garanties tenues · 1 garantie manquée · {nombre} garanties manquées | À valider |
 | N099 | Planche, garantie sous un état, et légende des grilles ; remplace N064 à N069 | ✓ sur {partenaire} : {ratio}:1 · ✗ {partenaire} dessus : {ratio}:1 · Ligne : fond · colonne : texte · gras dès {seuil}:1 · maigre dès {seuil}:1 · effacé en dessous | À valider |
 | N100 | États d’une paire, dans le plugin et sur la planche ; remplace T131, T132 et les états de N033 et N034 | default · hover · active · « {emploi}, état hover » · « État {état} : {ratio} pour un minimum de {seuil}:1 » · Trait plein : default · tireté : hover · pointillé : active. | Mainteneur, W3.4 |
@@ -714,6 +714,12 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N102 | Bilan d’une palette libre, à la place des résultats Soft et Vivid : Réglages communs, fiche, éditeur de dérive, en-tête d’un thème de la planche | Palette libre · {nombre} nuances | Maquette W3.5 |
 | N103 | Choix du modèle et numéros d’une palette libre | Modèle · Standard · Libre · Sans rôles ni garanties · Nuances · {nombre} sur 13 au plus · Nuance {numéro} | À valider |
 | N104 | Préréglage du nombre de nuances, et ce qu’il changerait ; réécrit aussi N060 | Nombre de nuances · {nombre} nuances · Liste importée : aucun préréglage ne la reconnaît. · Passer à {nombre} nuances ajoute {numéros} et retire {numéros}. Les rôles gardent leurs numéros. Aucune nuance gardée ne change de couleur. · Une palette change / {nombre} palettes changent de couleur à une nuance gardée : {palettes}. · 1 cadre passera / {nombre} cadres passeront « À mettre à jour ». · Passer à {nombre} nuances · Annuler · Cette liste de nuances vient d’un import : aucune courbe par défaut ne s’y applique. · Luminosité de chaque nuance, Light puis Dark | À valider |
+| N105 | Geste de génération à droite du titre, selon l’état du cadre ; « Pas encore sur la planche » retiré, un cadre jamais dessiné n’a plus d’état écrit | Générer sur Figma · Actualiser sur Figma · À jour sur Figma · Génération… | Actualiser sur Figma : mainteneur, round 4 ; À jour sur Figma : Q4.5 ; Génération… : à valider |
+| N106 | Détail d’une nuance refait (plan V4, X3.1) : remplace « Nuance libre : aucun usage prévu » et « Mesures détaillées » | Sans rôle · Contrastes · Fond du thème · Blanc · Noir · OKLCH · L {L} · C {C} · H {H}° | À valider |
+| N107 | Badge d’un niveau WCAG, et son étiquette pour l’assistance technique ; légende des grilles de la planche | AAA · AA · AA ✗ · {Texte courant / Grand texte / Éléments graphiques} : AAA atteint · … : AA atteint, AAA non atteint · … : AA non atteint · AA dès 4,5:1 · AAA dès 7:1 | À valider |
+| N108 | Carte « Interface de test » | Interface de test · Thème {mode} · {profil} · Écran de réglages peint de la palette | À valider |
+| N109 | Ajuster la référence : lien, panneau, trace dans la configuration | Ajuster la référence · Originale · Proposition · Luminosité · Un pas plus sombre · Un pas plus clair · Code de la proposition · Nuance visée : {n} dans les deux thèmes / {n} en Thème Light, {n} en Thème Dark · Le pas plus sombre / plus clair place la référence au {n} en Thème {mode}. · Aucun pas possible dans ce sens : la luminosité est à sa limite. · Garanties : {profil} ✗ {n} → ✓ · {profil} ✓ inchangé · {association} · Thème {mode} · {profil} : {avant} → {après} · Aucune garantie manquée, avant comme après. · Appliquer · Annuler · Ajustée depuis {hexa} · Revenir à l’originale | À valider |
+| N110 | Notice : un code saisi dans la configuration retire l’originale | Couleur d’origine retirée : {hexa} · La couleur saisie devient la nouvelle référence. La palette ne garde plus la couleur d’origine de l’ajustement. · Pour la retrouver, annulez avec Ctrl+Z, ou saisissez-la de nouveau. | À valider |
 
 ## Points à conserver lors de l’application
 

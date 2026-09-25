@@ -216,12 +216,13 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/messages.ts          les deux sens de la frontière sandbox ↔ interface
   src/lecture.ts           la recette rangée, classée, son empreinte, le profil du document, et les cadres retrouvés où qu'ils soient
   src/analyse.ts           une palette pour l'onglet : rampes, promesses, alertes et notices triées
-  src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
+  src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement, ajustement de la référence compris
+  src/ajustementDeLaReference.ts  le panneau d'ajustement sans DOM : pas, proposition, nuance visée, annonce d'un pas, garanties avant et après
   src/configuration.ts     les champs de la configuration, fonds et seuils compris, les palettes que chacun touche, et « Rétablir » par carte
   src/importation.ts       un fichier importé, classé comme la recette rangée, son écart avec elle, champ par champ, et la nature de cet écart
   src/rapport.ts           le rapport de vérification : crans, promesses, alertes, empreinte et écarts du dernier dessin
   src/presentation.ts      les promesses manquées groupées, la place de chaque alerte, le réglage que chaque message ouvre, les accolades de l'aperçu
-  src/planche/modele.ts    le modèle pur d'un cadre de planche : par thème, rampes, usages et leurs garanties, interface d'exemple, grilles ; styles nommés, empreinte
+  src/planche/modele.ts    le modèle pur d'un cadre de planche : par thème, rampes, usages et leurs garanties avec leur niveau WCAG, grilles ; styles nommés, empreinte
   src/planche/fraicheur.ts chaque cadre à jour, périmé, jamais dessiné, introuvable ou illisible, les cadres orphelins et copiés, et l'effet d'un import
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
   src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
@@ -229,11 +230,12 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/navigation.ts        « Afficher dans Figma » : ouvre la page du cadre et le cadre, sans toucher au document
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planches, la configuration
-  src/ui/ongletPalettes.ts le sélecteur, le titre « Palette [nom] », puis les cartes, chaque message sous la sienne
+  src/ui/ongletPalettes.ts le sélecteur, le titre « Palette [nom] » et la génération, puis les cartes, chaque message sous la sienne
   src/ui/champs.ts         le libellé au-dessus de ses saisies, et le choix de la palette de base
   src/ui/carte.ts          une carte de la configuration, fixe ou repliable, avec son résumé
   src/ui/couleur/          le sélecteur de couleur embarqué, ses formats Hex, RGB et HSL, et les pastilles qu'il propose
-  src/ui/nuancier.ts       l'aperçu peint du fond du thème : pastille on-solid, pastilles en grille, accolades des rôles, détail d'une nuance
+  src/ui/nuancier.ts       l'aperçu peint du fond du thème : pastille on-solid, pastilles en grille, accolades des rôles, choix et relâche d'une nuance, détail d'une nuance
+  src/ui/badge.ts          le badge d'un niveau WCAG, AAA, AA ou AA ✗, et ce qu'il juge pour l'assistance technique
   src/ui/garanties.ts      la carte des garanties : bascule Soft/Vivid, réglette et arcs, une ligne par association
   src/ui/specimens.ts      le spécimen d'un rôle : bouton, texte, champ, anneau, trait ou aplat
   src/ui/selecteur.ts      la palette ouverte, en liste déroulante avec la pastille de chaque référence
@@ -247,7 +249,9 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/apercuCompact.ts  les rampes Soft et Vivid d'une palette et le résultat de ses garanties, pour une fiche ou les réglages
   src/ui/intensites.ts     les intensités de la palette : curseurs, repère de la référence, origine, retour aux réglages communs
   src/ui/messagesDePalette.ts les messages de la palette ouverte : ceux de la liste, et ceux des intensités
-  src/ui/generation.ts     « Générer sur Figma », l'état du cadre et « Afficher dans Figma » sur une ligne
+  src/ui/generation.ts     le bouton de génération à droite du titre, son libellé selon l'état du cadre ; la ligne dessous et le résultat
+  src/ui/ajustement.ts     le panneau « Ajuster la référence » : originale et proposition, pas, code, garanties avant et après, Appliquer
+  src/ui/interfaceDeTest.ts la dernière carte de l'onglet : l'écran de réglages E2 peint de la palette ouverte, par emploi et par état
   src/ui/gestesDeLaRecette.ts exporter la recette ou le rapport, importer avec l'écart, repartir de la recette par défaut
   src/ui/telechargement.ts le fichier proposé au designer, par un lien vers un blob
   src/ui/derive/           l'éditeur de dérive : géométrie pure, graphe SVG ; glisser, clavier, réglettes, préréglage, lien, annulation

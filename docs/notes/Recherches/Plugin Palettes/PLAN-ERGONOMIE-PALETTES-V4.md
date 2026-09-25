@@ -15,9 +15,11 @@ ajustement de la référence, recette dans Figma, tests d’interface anciens.
 
 Ce plan est destiné à l’agent qui réalisera les changements. Il remplace les
 cases encore ouvertes du [troisième plan](./PLAN-ERGONOMIE-PALETTES-V3.md),
-dont les décisions restent valables quand ce document ne les remplace pas. Il
-ne s’implémente pas avant que le mainteneur l’ait relu et ait répondu aux
-[questions](#questions-au-mainteneur).
+dont les décisions restent valables quand ce document ne les remplace pas.
+Le mainteneur a répondu aux [questions](#questions-au-mainteneur), sauf Q4.1,
+à discuter, et a demandé de coder sans les maquettes X2 : chaque lot dit la
+disposition retenue, que le mainteneur valide dans le plugin. Il fait
+lui-même les tests d’interface et la recette dans Figma.
 
 ## Autorités
 
@@ -34,7 +36,8 @@ Lire dans cet ordre :
    l’[inventaire des textes](./INVENTAIRE-TEXTES-ET-PROPOSITIONS.md) ;
 5. la [spécification](./RECHERCHE-PLUGIN-PALETTES.md), l’[architecture
    multi-marques](../Archi%20Tokens%20Multi-marques/ARCHITECTURE-FINALE-MULTIMARQUES.md),
-   [AGENTS.md](../../../../AGENTS.md) et [CONTRIBUTING.md](../../../../CONTRIBUTING.md).
+   [AGENTS.md](../../../../AGENTS.md) et
+  [CONTRIBUTING.md](../../../../CONTRIBUTING.md).
 
 ## Faits qui fondent les décisions
 
@@ -115,23 +118,28 @@ sauvegarde.
 
 ## Lot X0 : règles, documents et galerie
 
-- [ ] **X0.1** Mettre à jour « Les surfaces d’UCM Palettes » dans
+- [x] **X0.1** Mettre à jour « Les surfaces d’UCM Palettes » dans
   CONTRIBUTING.md : génération dans la ligne du titre, ordre des cartes,
-  section « Interface de test » en dernier, bouton danger du socle.
-- [ ] **X0.2** Mettre à jour la spécification : `[UI-04]` (trait de sélection,
+  section « Interface de test » en dernier, bouton danger du socle. Fait.
+- [x] **X0.2** Mettre à jour la spécification : `[UI-04]` (trait de sélection,
   désélection), `[UI-05]` et `[UI-11]` (génération au titre), `[UI-10]`
   (détail d’une nuance), `[UI-12]` (ordre des cartes), `[VER-13]` (niveaux
   affichés), et retirer `[PLA-28]`. La nuance 50 et l’interface de test
-  entrent avec leurs lots.
-- [ ] **X0.3** Inventaire des textes : « Nouvelle palette », validé, remplace
+  entrent avec leurs lots. Fait, avec deux marqueurs neufs : `[UI-14]` pour l’interface de test et `[UI-15]` pour le panneau d’ajustement. `[VER-13]` dit où les badges se posent et ce qu’ils jugent ; le tableau des états de galerie suit.
+- [x] **X0.3** Inventaire des textes : « Nouvelle palette », validé, remplace
   « + Nouvelle palette » ; « Actualiser sur Figma », validé ; « Pas encore
   sur la planche » marqué retiré. Les textes nouveaux des lots entrent « À
-  valider ».
-- [ ] **X0.4** Déclarer dans `galerie/etats.cjs` les états de ce plan :
+  valider ». Fait : N075 validé sans « + », N105 à N110 pour les textes neufs, « À valider » sauf ceux que le mainteneur a dictés.
+- [x] **X0.4** Déclarer dans `galerie/etats.cjs` les états de ce plan :
   nuance désélectionnée, titre avec « Générer sur Figma », titre avec
   « Actualiser sur Figma », détail refait avec ses niveaux, interface de
   test aux deux thèmes. Chaque état annoncé nomme la case qui le rendra
-  atteignable.
+  atteignable. Fait : « Nuance désélectionnée », « Titre et Générer sur Figma »,
+  « Titre et Actualiser sur Figma », « Titre d’un nom long », « Interface de
+  test » Light et Dark, « Ajuster la référence », et « Référence ajustée »
+  rendue atteignable ; « Nuance libre » devient « Nuance sans rôle ». Les états
+  qui visaient la carte de génération suivent le bouton du titre. Galerie non
+  rejouée : le mainteneur la regarde.
 
 Critère : l’agent place chaque élément de X1 sans relire ce plan, à partir de
 la spécification et de CONTRIBUTING.md.
@@ -141,33 +149,50 @@ la spécification et de CONTRIBUTING.md.
 Fichiers : `textes.ts`, `ongletPalettes.ts`, `nuancier.ts`, `styles.css`,
 `plugin-socle/src/ui/socle.css` et son `Button`.
 
-- [ ] **X1.1** « + Nouvelle palette » devient « Nouvelle palette ». Le bouton
-  garde sa hauteur commune et `aria-expanded`.
-- [ ] **X1.2** Ajouter au socle une variante « danger » : fond, texte, survol
+- [x] **X1.1** « + Nouvelle palette » devient « Nouvelle palette ». Le bouton
+  garde sa hauteur commune et `aria-expanded`. Fait. Les tests d’interface
+  visent le bouton par son nom exact.
+- [x] **X1.2** Ajouter au socle une variante « danger » : fond, texte, survol
   et focus propres, lisibles aux deux thèmes de Figma. La donner à tous les
   boutons qui portent `bouton-destructif`, « Supprimer la palette » et
   « Supprimer définitivement » compris, puis retirer la classe. Le socle sert
-  aussi UCM Exporter : vérifier que sa galerie ne change pas.
-- [ ] **X1.3** Trait de la nuance choisie : un seul anneau, 2 px au plus,
+  aussi UCM Exporter : vérifier que sa galerie ne change pas. Fait : variante
+  `danger` de `createButton`, rôles `--fond-danger-plein`,
+  `--fond-danger-plein-survol` et `--texte-sur-danger` du socle, focus du même
+  rouge ; le décalque de la galerie porte les trois variables Figma. La loi des
+  styles compte les variantes que `VarianteBouton` déclare : UCM Exporter ne la
+  pose pas et sa loi reste verte. Galerie d’UCM Exporter non rejouée.
+- [x] **X1.3** Trait de la nuance choisie : un seul anneau, 2 px au plus,
   peint de l’encre calculée sur le fond du thème. Le focus clavier reste
-  distinct de la sélection. Vérifier sur un fond personnalisé saturé.
-- [ ] **X1.4** Désélection : un clic, Entrée ou Espace sur la nuance déjà
+  distinct de la sélection. Vérifier sur un fond personnalisé saturé. Fait : un
+  anneau plein de 2 px de l’encre du fond, séparé de la pastille par un liseré
+  de 1 px du fond ; le focus reste un contour tireté, écarté de 4 px.
+- [x] **X1.4** Désélection : un clic, Entrée ou Espace sur la nuance déjà
   choisie la désélectionne, referme le détail et rend `aria-selected` à
-  faux ; le focus reste sur la pastille. Même règle pour `on-solid`.
-- [ ] **X1.5** Ordre des cartes : Intensités directement sous l’aperçu et
+  faux ; le focus reste sur la pastille. Même règle pour `on-solid`. Fait :
+  `memeChoix` décide, `basculer` relâche ; le focus reste sur la pastille.
+- [x] **X1.5** Ordre des cartes : Intensités directement sous l’aperçu et
   ses messages, Dérive de teinte directement sous Intensités, puis les
   Garanties, à la place que Q4.3 fixe. Les liens qui ouvrent une carte
   (`intensites-palette`, « Voir les garanties ») continuent de la trouver et
-  d’y porter le focus.
+  d’y porter le focus. Fait selon Q4.3 : Intensités, Dérive de teinte, puis
+  Garanties de contraste, puis Interface de test. Les liens gardent leur cible,
+  qui ne dépend pas de la place.
 - [ ] **X1.6** Tests : désélection au clic et au clavier ; ordre des cartes ;
   bouton danger au survol, par sa couleur calculée et non par sa classe.
-  Chaque test vu rouge sur une mutation de ce qu’il protège.
+  Chaque test vu rouge sur une mutation de ce qu’il protège. Fait en test
+  unitaire pour la désélection (`memeChoix`), vu rouge sur une mutation. L’ordre
+  des cartes et le survol du bouton danger restent au mainteneur, dans le plugin
+  : pas de test d’interface dans ce tour.
 
 Critère : aux deux thèmes de Figma, le bouton de suppression se lit comme
 une action destructive et ne vire jamais au bleu ; une nuance se choisit et
 se relâche d’un même geste.
 
 ## Lot X2 : maquettes à valider
+
+Non produites : le mainteneur a demandé de coder directement. Chaque lot
+suivant dit la disposition retenue.
 
 Un fichier `MAQUETTES-RECETTE-V4.html`, au format des précédentes : panneau à
 500 px, thème sombre de Figma, couleurs et ratios calculés par le moteur pour
@@ -206,20 +231,32 @@ imaginer une interaction.
 
 Après validation de X2.2 et X2.3, et la réponse à Q4.2.
 
-- [ ] **X3.1** Refaire le détail selon X2.2 : aucun doublon, un nouveau
+- [x] **X3.1** Refaire le détail selon X2.2 : aucun doublon, un nouveau
   libellé pour une nuance sans rôle, « Mesures détaillées » réduites à ce
   que la maquette garde. Le détail d’une palette libre ne prête toujours
-  aucun rôle.
-- [ ] **X3.2** Un composant de badge unique, qui reçoit un contraste et ce
+  aucun rôle. Fait : en-tête, « Sert à » ou « Sans rôle », puis une table «
+  Contrastes » de trois lignes, fond du thème, blanc et noir, un ratio et un
+  badge par ligne, puis OKLCH replié. « Mesures détaillées » et le doublon
+  disparaissent.
+- [x] **X3.2** Un composant de badge unique, qui reçoit un contraste et ce
   qu’il juge, et s’écrit à partir de `niveauxWcag`. Son texte est lu par
-  l’assistance technique : « AA atteint », « AAA non atteint ».
-- [ ] **X3.3** Poser le badge à chaque endroit retenu en X2.3, dans le plugin
+  l’assistance technique : « AA atteint », « AAA non atteint ». Fait :
+  `niveauEcrit` dans `textes.ts` et `badgeDeNiveau` dans `badge.ts`. Le badge
+  écrit « AAA », « AA » ou « AA ✗ », suit les seuils fixes (Q4.2), et porte une
+  étiquette « Texte courant : AA atteint, AAA non atteint ».
+- [x] **X3.3** Poser le badge à chaque endroit retenu en X2.3, dans le plugin
   et sur la planche. Sur la planche, le badge est un texte de style
   « chiffre » : il entre dans l’empreinte, et les cadres passent « À mettre
-  à jour ».
-- [ ] **X3.4** Tests : chaque seuil de `niveauxWcag` à la frontière, 4,49 et
+  à jour ». Fait dans le détail (garanties des usages, table des contrastes),
+  dans chaque état des Garanties, et sur la planche : « · AA » à la fin de
+  chaque garantie d’un usage, et le niveau de texte après le ratio de chaque
+  case de grille qui atteint AA, dans le même calque. La légende des grilles
+  ajoute « AA dès 4,5:1 · AAA dès 7:1 ». Non fait : la tête des Réglages
+  communs, qui ne montre aucun contraste.
+- [x] **X3.4** Tests : chaque seuil de `niveauxWcag` à la frontière, 4,49 et
   4,5, 6,99 et 7 ; un élément graphique sans AAA ; un minimum réglé à 5:1
-  qui échoue la promesse avec un badge AA atteint, selon Q4.2.
+  qui échoue la promesse avec un badge AA atteint, selon Q4.2. Fait dans
+  `textes.test.ts`, chaque seuil vu rouge sur une mutation.
 
 Critère : le designer lit en un regard si une nuance est AA ou AAA sur le
 fond, sans ouvrir de repli.
@@ -228,21 +265,32 @@ fond, sans ouvrir de repli.
 
 Après validation de X2.4.
 
-- [ ] **X4.1** Poser le bouton à droite du titre « Palette [nom] », sur la
+- [x] **X4.1** Poser le bouton à droite du titre « Palette [nom] », sur la
   même ligne. Le titre garde son rang, et suit toujours le champ Nom sans lui
-  prendre le focus.
-- [ ] **X4.2** Libellé selon l’état du cadre : « Générer sur Figma » pour
+  prendre le focus. Fait : le titre se coupe par des points de suspension, le
+  bouton garde sa largeur.
+- [x] **X4.2** Libellé selon l’état du cadre : « Générer sur Figma » pour
   `jamais-dessinee`, « Actualiser sur Figma » pour `perimee`, les trois
   autres selon X2.4. La progression, la neutralisation des onglets pendant
   la génération et la reprise après interruption (`[PLA-24]`) se conservent.
-- [ ] **X4.3** Retirer la carte « Générer sur Figma » et le texte « Pas encore
+  Fait selon Q4.5 : « À jour sur Figma » inactif pour `a-jour`, « Générer sur
+  Figma » pour `introuvable` et `illisible`, dont l’état s’écrit sous le titre.
+  Pendant la génération, le bouton dit « Génération… » et la progression s’écrit
+  sous le titre.
+- [x] **X4.3** Retirer la carte « Générer sur Figma » et le texte « Pas encore
   sur la planche ». Ce que la carte portait encore se range là où X2.4 l’a
-  placé.
+  placé. Fait : sous le titre, une ligne de rang 3 porte l’état de
+  l’enregistrement, l’état d’un cadre introuvable ou illisible, la progression
+  et « Afficher dans Figma » ; l’erreur ou les écarts viennent dessous. Dans
+  l’onglet Planches, un cadre jamais dessiné n’a plus d’état écrit, et un cadre
+  périmé propose « Actualiser sur Figma ».
 - [ ] **X4.4** Reprendre le test `[UI-03]` à 500 × 520 : titre et bouton sur
-  une ligne, configuration et haut de l’aperçu lisibles sans défiler.
-- [ ] **X4.5** Tests : libellé par état, « Actualiser sur Figma » après une
+  une ligne, configuration et haut de l’aperçu lisibles sans défiler. Au
+  mainteneur, dans le plugin.
+- [x] **X4.5** Tests : libellé par état, « Actualiser sur Figma » après une
   modification d’un cadre à jour, nom long qui ne pousse pas le bouton hors
-  du panneau.
+  du panneau. Fait pour le libellé par état, en test unitaire
+  (`gesteDeGeneration`). Le nom long est un état de galerie.
 
 Critère : le designer voit, sans défiler, si sa palette est dans Figma et à
 jour, et la génère d’un clic.
@@ -251,19 +299,25 @@ jour, et la génère d’un clic.
 
 Après validation de X2.5 et la réponse à Q4.4.
 
-- [ ] **X5.1** Retirer `sectionDExemple` du modèle de planche et `[PLA-28]` de
+- [x] **X5.1** Retirer `sectionDExemple` du modèle de planche et `[PLA-28]` de
   la spécification. L’empreinte change : tous les cadres existants passent
   « À mettre à jour ». Recompter les calques du cadre de Bleu, avec et sans
-  grilles, contre 1 712 et 546.
-- [ ] **X5.2** Écrire la section « Interface de test », dernière de l’onglet
+  grilles, contre 1 712 et 546. Fait. Le cadre de Bleu compte 1 632 calques avec
+  les grilles, 466 sans.
+- [x] **X5.2** Écrire la section « Interface de test », dernière de l’onglet
   Palettes : l’écran E2 en HTML, peint de la palette ouverte dans le thème de
   l’aperçu. Chaque couleur vient de la table des emplois, jamais d’un numéro
-  écrit à la main ; les textes de l’écran restent ceux de la planche.
-- [ ] **X5.3** Une palette libre n’a pas de rôles : la section le dit, ou se
-  retire, selon X2.5.
-- [ ] **X5.4** Tests : chaque élément de l’écran prend la couleur de son
+  écrit à la main ; les textes de l’écran restent ceux de la planche. Fait :
+  `interfaceDeTest.ts`, carte repliée à l’ouverture et dessinée seulement
+  dépliée. Les contrôles se manipulent, et chaque état de survol et d’appui
+  prend la nuance suivante de son emploi.
+- [x] **X5.3** Une palette libre n’a pas de rôles : la section le dit, ou se
+  retire, selon X2.5. Fait : la section se retire, comme la carte des garanties.
+- [x] **X5.4** Tests : chaque élément de l’écran prend la couleur de son
   emploi et de son état ; la section suit le thème de l’aperçu ; la planche
-  n’a plus d’interface d’exemple.
+  n’a plus d’interface d’exemple. Fait en tests unitaires : couleurs par emploi
+  et par état dans les deux thèmes (`couleursDeLInterface`), planche sans écran
+  de réglages. Le suivi du thème de l’aperçu reste au mainteneur.
 
 Critère : le designer essaie sa palette dans une interface sans quitter le
 plugin, et la planche ne montre plus que ce qu’elle doit prouver.
@@ -292,25 +346,34 @@ existant change de couleur à son insu.
 Reprise de W7, sur la [conception](./CONCEPTION-NUANCES-ET-FORMAT-3.md#3-la-référence-ajustée).
 Le champ `originale` et `propositionDAjustement` existent dans le moteur.
 
-- [ ] **X7.1** (ex-W7.1) Lien « Ajuster la référence » parmi les réglages
+- [x] **X7.1** (ex-W7.1) Lien « Ajuster la référence » parmi les réglages
   qu’une garantie en échec propose, et sous le code de la couleur de
-  référence. Une palette libre n’a que le second.
-- [ ] **X7.2** (ex-W7.3) Panneau d’ajustement : originale et proposition côte
+  référence. Une palette libre n’a que le second. Fait : « Ajuster la référence
+  » est le dernier réglage des lignes en échec, et un lien sous le code, pour
+  toute palette.
+- [x] **X7.2** (ex-W7.3) Panneau d’ajustement : originale et proposition côte
   à côte, « − » et « + » par pas de 0,01 de luminosité OKLCH, chroma et
   teinte gardées, code saisissable, nuance visée par thème, garanties avant
   et après, avec leurs niveaux AA et AAA (X3). Un pas qui ferait changer la
   référence de numéro l’annonce avant. La proposition part de l’originale ;
-  rien ne change tant que le designer ne fait pas de pas.
-- [ ] **X7.3** (ex-W7.4) Seul Appliquer change la référence. Annuler et Échap
+  rien ne change tant que le designer ne fait pas de pas. Fait : `ajustement.ts`
+  pour le panneau, `ajustementDeLaReference.ts` pour les calculs. Les garanties
+  comparées donnent le bilan de chaque profil, « Vivid ✗ 2 → ✓ », puis une ligne
+  par garantie manquée avant ou après, avec son badge.
+- [x] **X7.3** (ex-W7.4) Seul Appliquer change la référence. Annuler et Échap
   referment sans rien écrire. Après Appliquer : « Ajustée depuis #16A34A ·
   Revenir à l’originale », lisible après réouverture, dans l’export et sur
-  la planche.
-- [ ] **X7.4** (ex-W7.5) Aucun ajustement automatique, aucun effet à
+  la planche. Fait : `appliquerLAjustement` et `revenirALOriginale`. Un code
+  saisi dans la configuration retire l’originale et le dit par une notice.
+- [x] **X7.4** (ex-W7.5) Aucun ajustement automatique, aucun effet à
   l’ouverture du panneau, aucune proposition imposée par une courbe ou un
-  minimum.
-- [ ] **X7.5** (ex-W7.6) Tests d’interface : un pas sombre sur `#16A34A`
+  minimum. Fait : le panneau part de la référence rangée et ne rend une palette
+  qu’à « Appliquer ».
+- [x] **X7.5** (ex-W7.6) Tests d’interface : un pas sombre sur `#16A34A`
   donne `#0DA047` au 600 ; aller-retour vers l’originale ; un code saisi
-  dans la configuration retire l’originale et le dit.
+  dans la configuration retire l’originale et le dit. Fait en tests unitaires
+  (`ajustement.test.ts`), vus rouges sur des mutations ; les tests d’interface
+  restent au mainteneur.
 
 Critère : le designer corrige une référence à la limite sans perdre sa couleur
 d’origine, et le plugin ne change jamais la couleur à sa place.
@@ -318,23 +381,28 @@ d’origine, et le plugin ne change jamais la couleur à sa place.
 ## Lot X8 : recette et clôture
 
 - [ ] **X8.1** Récrire ou retirer les 36 tests d’interface écrits avant W1,
-  en gardant ce que chacun protégeait encore.
+  en gardant ce que chacun protégeait encore. Non fait : le mainteneur fait les
+  tests d’interface. Les sélecteurs de la génération et du bouton « Nouvelle
+  palette » y suivent le code, sans être rejoués.
 - [ ] **X8.2** (ex-W2.5) Tests de « Supprimer définitivement » : écriture qui
   retire cadre et suivi ensemble, cadre déjà absent, geste bloqué en
   conflit. Constater dans Figma qu’un seul Ctrl+Z rend le cadre et son
-  suivi, et que le cadre revient comme palette supprimée.
+  suivi, et que le cadre revient comme palette supprimée. Les tests du sandbox
+  existent dans `retrait.test.ts` ; le constat dans Figma revient au mainteneur.
 - [ ] **X8.3** (ex-W8.1, W8.2) Construire code et interface, recharger le
   plugin dans la copie partagée, puis exécuter la recette ci-dessous avec
   les constats restés ouverts : galerie d’UCM Exporter aux deux thèmes
   (V1.2), accolades à 500 et 600 px (V3.4), cadres dans une section et sur
   une autre page sous `dynamic-page` (V8.6), `EyeDropper` dans l’iframe de
-  Figma, passage à 13 nuances et palette libre (W6).
+  Figma, passage à 13 nuances et palette libre (W6). Au mainteneur.
 - [ ] **X8.4** (ex-W5.6) Mesurer dans Figma le temps et le nombre de calques
   d’une génération de douze palettes, sans interface d’exemple ; appliquer
-  `[PLA-24]` au résultat.
-- [ ] **X8.5** (ex-W8.3) Mettre à jour AGENTS.md, la spécification et les
+  `[PLA-24]` au résultat. Au mainteneur.
+- [x] **X8.5** (ex-W8.3) Mettre à jour AGENTS.md, la spécification et les
   liens des plans. Marquer le troisième plan comme remplacé pour ses cases
-  ouvertes.
+  ouvertes. Fait pour ce que ce
+  tour a changé : carte du code d’AGENTS.md, spécification, CONTRIBUTING.md ;
+  le troisième plan renvoie ici pour ses cases ouvertes.
 
 Critère de clôture : contrôles du dépôt, typecheck, build, tests d’interface
 de Palettes tous verts, et recette Figma terminée.
@@ -363,11 +431,11 @@ plusieurs garanties en échec.
 
 | Question | Ce qui en dépend | Recommandation |
 |---|---|---|
-| **Q4.1** La nuance 50 dans les fonds légers. A : `surface` passe à 50, ses états `hover` et `active` à 100 et 200. B : un emploi nouveau à 50, le fond de page teinté, sans toucher `surface`. C : aucun emploi ; la 50 se mentionne seulement dans la ligne des fonds légers, comme fond de page teinté | X6 | **B**. Objection à A : la 50 a la luminosité du fond de page dans les deux thèmes, si bien qu’une `surface` à 50 ne se distingue du fond que par sa teinte, et plus du tout sur une palette peu saturée. A change en outre la valeur de tous les tokens `surface` de la bibliothèque. B donne à la 50 l’usage que Radix donne à son premier cran, le fond d’application. Il demande une ligne dans l’architecture et un token nouveau, sans rien déplacer |
-| **Q4.2** Les badges AA et AAA suivent-ils les seuils fixes du WCAG, ou les minimums réglés dans « Minimums des promesses » ? | X3 | Les seuils fixes : AA et AAA sont des noms de normes, et un badge « AA » qui changerait avec un réglage mentirait. Le verdict de la promesse suit toujours les minimums |
-| **Q4.3** Où vont les Garanties de contraste, que le déplacement d’Intensités et de Dérive fait descendre ? | X1.5 | Sous la Dérive : on règle d’abord la palette, puis on lit ce qui la juge. Les liens « Voir les garanties » y mènent déjà |
-| **Q4.4** « Interface de test » : une section de l’onglet Palettes du plugin, ou la dernière section de la planche ? | X5 | L’onglet Palettes : le retour retire l’interface de l’export de la planche, et une section du plugin se met à jour à chaque réglage sans génération |
-| **Q4.5** Quel libellé le bouton porte-t-il quand le cadre est à jour ? | X4 | Posée dans la maquette X2.4, avec trois propositions : bouton inactif « À jour sur Figma », « Voir sur Figma », ou « Générer sur Figma » gardé |
+| **Q4.1** Réponse : à discuter ; le mainteneur voit la 50 comme un fond de composant plutôt qu’un fond de page. La nuance 50 dans les fonds légers. A : `surface` passe à 50, ses états `hover` et `active` à 100 et 200. B : un emploi nouveau à 50, le fond de page teinté, sans toucher `surface`. C : aucun emploi ; la 50 se mentionne seulement dans la ligne des fonds légers, comme fond de page teinté | X6 | **B**. Objection à A : la 50 a la luminosité du fond de page dans les deux thèmes, si bien qu’une `surface` à 50 ne se distingue du fond que par sa teinte, et plus du tout sur une palette peu saturée. A change en outre la valeur de tous les tokens `surface` de la bibliothèque. B donne à la 50 l’usage que Radix donne à son premier cran, le fond d’application. Il demande une ligne dans l’architecture et un token nouveau, sans rien déplacer |
+| **Q4.2** Réponse : les seuils fixes. Les badges AA et AAA suivent-ils les seuils fixes du WCAG, ou les minimums réglés dans « Minimums des promesses » ? | X3 | Les seuils fixes : AA et AAA sont des noms de normes, et un badge « AA » qui changerait avec un réglage mentirait. Le verdict de la promesse suit toujours les minimums |
+| **Q4.3** Réponse : la recommandation, sous la Dérive. Où vont les Garanties de contraste, que le déplacement d’Intensités et de Dérive fait descendre ? | X1.5 | Sous la Dérive : on règle d’abord la palette, puis on lit ce qui la juge. Les liens « Voir les garanties » y mènent déjà |
+| **Q4.4** Réponse : la recommandation, l’onglet Palettes. « Interface de test » : une section de l’onglet Palettes du plugin, ou la dernière section de la planche ? | X5 | L’onglet Palettes : le retour retire l’interface de l’export de la planche, et une section du plugin se met à jour à chaque réglage sans génération |
+| **Q4.5** Réponse : « À jour sur Figma », inactif. Quel libellé le bouton porte-t-il quand le cadre est à jour ? | X4 | Posée dans la maquette X2.4, avec trois propositions : bouton inactif « À jour sur Figma », « Voir sur Figma », ou « Générer sur Figma » gardé |
 
 ## Hors périmètre
 
@@ -422,7 +490,8 @@ Section "Générer sur Figma"
   refondre cette section pour qu'elle soit au niveau du titre avec un
   nouveau design cohérent (maquette claude à produire)
   Format :
-    Palette [nom palette] ...................................... Générer sur Figma
+    Palette [nom palette] ...................................... Générer sur
+  Figma
   si la planche est déjà sur figma mais que des éléments on changé, le
   bouton deviens "Actualiser sur Figma"
   suppression du message "pas encore sur la planche"

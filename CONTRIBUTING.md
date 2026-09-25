@@ -246,9 +246,11 @@ sémantique valent pour UCM Palettes. La règle des deux cartes décrit l’écr
 d’UCM Exporter ; l’onglet Palettes applique celles-ci :
 
 - la barre du sélecteur vient en tête : la liste déroulante prend toute la
-  largeur libre, « + Nouvelle palette » et « … » gardent leur largeur
+  largeur libre, « Nouvelle palette » et « … » gardent leur largeur
   naturelle et la hauteur de la liste. Suit un seul titre de premier rang,
-  « Palette [nom] », avec le nom que le sélecteur affiche. Chaque sous-section
+  « Palette [nom] », avec le nom que le sélecteur affiche, et le bouton de
+  génération à sa droite, sur la même ligne : un nom long se coupe, le bouton
+  garde son libellé entier. Chaque sous-section
   de la configuration est une carte de même facture : fond secondaire de
   Figma, bordure du socle, rayon de 8 px, sans ombre. Trois niveaux de titre,
   pas davantage : le titre de premier rang, le titre de carte et le libellé de
@@ -257,18 +259,22 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
   modèle de « Configuration de la palette » : trois colonnes, libellé au-dessus
   du champ, puis ses gestes sur une ligne ;
 - les cartes se suivent dans cet ordre : Configuration de la palette, carte
-  d’aperçu, Garanties de contraste, Intensités, Dérive de teinte, puis la
-  carte de génération. Les cartes de réglage se replient ; leur en-tête est un
-  bouton qui porte le chevron, le titre et un résumé aligné à droite ;
+  d’aperçu, Intensités, Dérive de teinte, Garanties de contraste, puis
+  Interface de test. La palette se règle avant de se juger. Les cartes de
+  réglage et l’Interface de test se replient ; leur en-tête est un bouton qui
+  porte le chevron, le titre et un résumé aligné à droite ;
 - la carte d’aperçu n’a pas de titre : son en-tête porte à gauche les onglets
   Light et Dark, l’onglet actif sur un fond plus foncé, et à droite la
   pastille du fond, qui ouvre le sélecteur de couleur. L’aperçu est une
   surface peinte du fond du thème choisi, à l’intérieur de sa carte. Il peut
   occuper la plus grande part du panneau. La ligne « ◆ Référence » se lit sous
   lui ;
-- « Générer sur Figma » occupe seul la dernière carte, qui porte le fond du
-  panneau. Le résultat de la génération et l’accès au cadre prennent la même
-  ligne, et un nouveau résultat remplace le précédent au même endroit ;
+- la génération n’a pas de carte. Sous le titre, une ligne de rang 3 porte
+  l’état de l’enregistrement, la progression et l’accès au cadre ; l’erreur
+  ou les écarts de peinture viennent dessous, et un nouveau résultat remplace
+  le précédent au même endroit ;
+- un geste destructif prend la variante `danger` du bouton du socle : fond et
+  survol de danger, jamais la couleur de marque ;
 - un message qui n’est pas une garantie de contraste n’a pas de carte : il
   garde un filet de sévérité, sous la carte qu’il concerne ;
 - un résultat nomme toujours la palette ouverte. Un résultat d’une autre
