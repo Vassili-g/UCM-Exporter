@@ -1,10 +1,10 @@
 # Plan d'évolution du moteur : propriétés visuelles et messages de racine
 
-> Statut : en cours. E0, E5 et E1 sont faits, H0 et H2 franchies ; leurs
-> preuves et décisions sont dans
-> [PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md). La porte H1
-> est ouverte : les textes de la section 9 attendent le mainteneur. Ce plan
-> réunit deux sujets qui touchent les mêmes sites du moteur. Le premier exécute les décisions de H3
+> Statut : en cours. E0, E5 et E1 sont faits, H0, H1 et H2 franchies ; leurs
+> preuves, décisions et textes retenus sont dans
+> [PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md), qui fait foi
+> sur la section 9. Le prochain lot est E2. Ce plan réunit deux sujets qui
+> touchent les mêmes sites du moteur. Le premier exécute les décisions de H3
 > ([DECISION-PROPRIETES-VISUELLES.md](./DECISION-PROPRIETES-VISUELLES.md)) et
 > fait passer le contrat en 14.0. Le second étend le regroupement des messages
 > de racine (L6 du [plan précédent](./PLAN-DIAGNOSTICS-COMPOSANT-REEL.md)) aux

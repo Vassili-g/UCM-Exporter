@@ -2,9 +2,10 @@
 
 ## État
 
-- Lot courant : porte H1, puis E2
+- Lot courant : E2
 - Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
-- Portes franchies : H0 (reste le rang des ombres dans `effects`) et H2
+- Portes franchies : H0 (reste le rang des ombres dans `effects`), H2 et H1
+  (reste la remarque sur les messages 11 à 13, qui rouvre H2 pour E4)
 
 La copie de travail partagée porte le travail non commité d'autres sessions
 (`docs/notes/Recherches/Optimisation Tokens`, `Plugin Palettes`,
@@ -170,4 +171,204 @@ Décisions (H2) :
 - Le MCP Figma n'a pas pu se connecter : le rang des ombres dans `effects`
   attend un agent qui en dispose.
 
-Textes (H1) : non commencés.
+M3, précisée par le mainteneur : une ombre ajoutée en dernier s'affiche
+par-dessus les autres. Son rang dans la liste `effects` de l'API n'est pas lu.
+
+### Porte H1 : textes retenus
+
+Le mainteneur a réécrit les vingt-huit messages présentés. Ses textes sont
+recopiés mot pour mot ; le numéro renvoie à la présentation, la section au
+plan. Un lot reprend son texte dans `TEXTES-A-VALIDER.md` quand il l'écrit.
+
+1. Opacité sans variable, sur un layer (9.1.1, E2)
+   - Titre : Layer « Overlay », opacity : aucune variable associée.
+   - Impact : Le contrat ne transmettra pas l’opacité de ce layer.
+   - Action : Reliez opacity à une variable, puis réexportez.
+2. Opacité sans variable, sur plusieurs variants (9.1.1, E2)
+   - Titre : opacity : aucune variable associée.
+   - Impact : Le contrat ne transmettra pas l’opacité des variants concernés.
+   - Action : Reliez opacity à une variable dans chaque variant concerné,
+     puis réexportez.
+3. Effet sans style, sur un layer (9.1.2, E3)
+   - Titre : Layer « Card », effect : aucun effect style appliqué.
+   - Impact : Le contrat ne transmettra pas l’ombre ou le flou de ce layer.
+   - Action : Appliquez à ce layer un effect style qui correspond au rendu
+     souhaité, puis réexportez.
+4. Effet sans style, sur plusieurs variants (9.1.2, E3)
+   - Titre : effect : aucun effect style appliqué.
+   - Impact : Le contrat ne transmettra pas les ombres ou les flous des
+     variants concernés.
+   - Action : Appliquez un effect style à chaque variant concerné, puis
+     réexportez.
+5. Style d’effet introuvable (9.1.3, E3)
+   - Titre : Layer « Card » : l’effect style appliqué est introuvable.
+   - Impact : Le contrat ne transmettra pas l’ombre ou le flou de ce layer.
+   - Action : Appliquez de nouveau un effect style accessible dans Figma, puis
+     réexportez.
+6. Effets modifiés après application du style (9.1.3, E3)
+   - Titre : Layer « Card » : ses effects diffèrent du style « Shadow/Focus ».
+   - Impact : Le contrat transmettra les réglages du style, sans les
+     modifications propres à ce layer.
+   - Action : Réappliquez le style pour retrouver ses réglages, ou créez et
+     appliquez un style correspondant au rendu souhaité, puis réexportez.
+7. Réglage d’un style d’effet sans variable (9.1.4, E3)
+   - Titre : Effect style « Shadow/Focus », y : aucune variable associée.
+   - Impact : Le contrat ne transmettra pas le décalage vertical de cette
+     ombre.
+   - Action : Dans l’effect style, reliez y à une variable, puis réexportez.
+8. Effet non pris en charge (9.1.5, E3)
+   - Titre : Effect style « Glass/Frost » : l’effet Glass n’est pas pris en
+     charge.
+   - Impact : Le contrat transmettra ce style sans l’effet Glass.
+   - Action : Si cet effet est nécessaire, signalez cette limite au mainteneur
+     du plugin. Sinon, retirez-le du style, puis réexportez.
+   - Note : cette formulation évite de demander une réexportation juste après
+     un signalement, qui ne corrige rien à lui seul.
+9. Hauteur sans variable, hors auto layout (9.1.6, E4)
+   - Titre : Layer « Badge », height : aucune variable associée.
+   - Impact : Le contrat ne transmettra pas la hauteur de ce layer sans auto
+     layout.
+   - Action : Reliez height à une variable, ou configurez un auto layout
+     adapté au contenu, puis réexportez.
+10. Même cas sur plusieurs variants (9.1.6, E4)
+    - Titre : height : aucune variable associée sur des variants sans auto
+      layout.
+    - Impact : Le contrat ne transmettra pas la hauteur des variants
+      concernés.
+    - Action : Reliez height à une variable dans chaque variant concerné, ou
+      configurez leur taille avec un auto layout, puis réexportez.
+    - Note : ici, « hauteur » est plus exact que « taille » : une largeur peut
+      être disponible.
+11. Nouvel impact pour l’absence d’auto layout (9.1.7, E4)
+    - Impact : Les layers ne se déplaceront pas automatiquement pour laisser
+      de la place à un texte plus long ou à un layer voisin plus grand.
+12. Absence d’auto layout sur plusieurs variants (9.1.7, R17, E4)
+    - Titre : Variants sans auto layout.
+    - Impact : Leurs layers ne se déplaceront pas automatiquement lorsque le
+      contenu d’un layer voisin grandit.
+    - Action : Si la disposition doit s’adapter au contenu, configurez un auto
+      layout dans chaque variant concerné, puis réexportez.
+13. Gap et padding sans auto layout (9.1.7, R10, E4)
+    - Titre : gap et padding : aucun auto layout configuré.
+    - Impact : Le contrat ne transmettra aucune valeur de gap ou de padding
+      pour ces variants.
+    - Action : Pour transmettre ces espacements, configurez un auto layout et
+      reliez les valeurs de gap et de padding à des variables, puis
+      réexportez.
+14. Fill en dégradé ou en image (9.2.1, R3 et R4, E6)
+    - Titre : fill : dégradé ou image non pris en charge.
+    - Impact : Le contrat ne transmettra pas les fills en dégradé ou en image.
+    - Action : Si ce rendu est nécessaire, signalez cette limite au mainteneur
+      du plugin. Sinon, remplacez les fills concernés par des couleurs unies
+      reliées à des variables, puis réexportez.
+    - Note : même rédaction pour stroke.
+15. Blend mode (9.2.2, R5, E6)
+    - Titre : blend mode : ce mode de fusion n’est pas pris en charge.
+    - Impact : Le contrat ne transmettra pas le mode de fusion des variants
+      concernés.
+    - Action : Si ce mode de fusion est nécessaire, signalez cette limite au
+      mainteneur du plugin. Sinon, choisissez « Normal » dans chaque variant
+      concerné, puis réexportez.
+16. Mask (9.2.3, R6, E6)
+    - Titre : mask : le masquage n’est pas pris en charge.
+    - Impact : Le contrat ne transmettra pas le découpage produit par ces
+      masks.
+    - Action : Si ce découpage est nécessaire, signalez cette limite au
+      mainteneur du plugin. Sinon, désactivez les masks concernés, puis
+      réexportez.
+17. Stroke en pointillé (9.2.4, R7, E6)
+    - Titre : stroke : le pointillé n’est pas pris en charge.
+    - Impact : Le contrat ne transmettra pas le motif de pointillé de ces
+      strokes.
+    - Action : Si le pointillé est nécessaire, signalez cette limite au
+      mainteneur du plugin. Sinon, choisissez un trait plein dans chaque
+      variant concerné, puis réexportez.
+18. Vertical gap automatique (9.2.5, R11, E7)
+    - Titre : vertical gap : la valeur « Auto » n’est pas exportée.
+    - Impact : Le contrat ne transmettra pas la répartition automatique de
+      l’espace entre les lignes.
+    - Action : Pour transmettre un espacement fixe, reliez vertical gap à une
+      variable dans chaque variant concerné, puis réexportez.
+19. Stroke weight associé à des variables différentes (9.2.6, R12, E7)
+    - Titre : stroke weight : les côtés utilisent des variables différentes.
+    - Impact : Le contrat ne transmettra pas l’épaisseur du stroke des
+      variants concernés.
+    - Action : Dans chaque variant concerné, reliez les épaisseurs des côtés à
+      une même variable, puis réexportez.
+    - Note : une seule carte, sans la liste des paires de tokens dans le texte
+      principal.
+20. Réglages contradictoires (9.2.7, R13, E7)
+    - Titre : corner radius : plusieurs variables définissent la même valeur.
+    - Impact : Le contrat ne transmettra pas le corner radius des variants
+      concernés.
+    - Action : Dans chaque variant concerné, retirez les liaisons
+      contradictoires pour ne conserver qu’une variable pour cette valeur,
+      puis réexportez.
+21. Côtés sans variable (9.2.8, R14, E7)
+    - Titre : horizontal padding : certains côtés n’ont pas de variable
+      associée.
+    - Impact : Le contrat transmettra uniquement les valeurs des côtés reliés
+      à une variable.
+    - Action : Reliez les côtés manquants à des variables dans chaque variant
+      concerné, puis réexportez.
+    - Note : pour corner radius, « côtés » devient « coins ». Une variable
+      introuvable se distingue d’une variable absente : « certains côtés
+      utilisent une variable introuvable ».
+22. Alignement d’auto layout illisible (9.2.9, R18, E8)
+    - Titre : auto layout : l’alignement ne peut pas être lu.
+    - Impact : Le contrat ne transmettra pas l’alignement des layers dans les
+      variants concernés.
+    - Action : Définissez de nouveau l’alignement sur les deux axes dans
+      chaque variant concerné, puis réexportez.
+23. Taille de colonne illisible (9.2.10, R19, E8)
+    - Titre : Grille, colonne 2 : la taille ne peut pas être lue.
+    - Impact : Le contrat indiquera une taille automatique pour cette colonne.
+    - Action : Définissez de nouveau la taille de la colonne 2 dans chaque
+      variant concerné, puis réexportez.
+    - Note : le remplacement par une taille automatique est une information
+      utile à conserver.
+24. Alignement d’un layer enfant illisible (9.2.11, R20, E8)
+    - Titre : Layer « Label » : son alignement dans l’auto layout ne peut pas
+      être lu.
+    - Impact : Le contrat ne précisera pas comment aligner ce layer dans les
+      variants concernés.
+    - Action : Définissez de nouveau son alignement dans l’auto layout de
+      chaque variant concerné, puis réexportez.
+25. Valeur inhabituelle de layout grow (9.2.11, R21, E8)
+    - Titre : Layer « Label » : son réglage d’étirement n’est pas pris en
+      charge.
+    - Impact : Le contrat ne précisera pas si ce layer doit occuper l’espace
+      disponible.
+    - Action : Choisissez Fill ou Fixed pour sa largeur dans un auto layout
+      horizontal, ou pour sa hauteur dans un auto layout vertical, puis
+      réexportez.
+    - Note : layout grow et la valeur 2 peuvent rester dans les détails
+      techniques ; ils n’aident pas le designer à trouver le réglage.
+26. Fill sans variable (9.2.12, R22, E9)
+    - Titre : fill : couleur sans variable associée.
+    - Impact : Le contrat ne transmettra pas les couleurs sans variable
+      associée.
+    - Action : Reliez chaque couleur concernée à une variable dans les
+      variants sélectionnés, puis réexportez.
+    - Note : même rédaction pour stroke.
+27. Alignement du stroke illisible (9.2.13, R23, E9)
+    - Titre : stroke : l’alignement ne peut pas être lu.
+    - Impact : Le contrat ne précisera pas si le stroke est placé en inside,
+      center ou outside.
+    - Action : Choisissez de nouveau inside, center ou outside dans chaque
+      variant concerné, puis réexportez.
+28. Deux fills superposés (9.2.14, R24, E9)
+    - Titre : fill : l’ordre des deux couleurs superposées n’est pas exporté.
+    - Impact : Le développeur recevra les deux couleurs sans indication de
+      leur ordre de superposition.
+    - Action : Si la superposition est nécessaire, signalez cette limite au
+      mainteneur du plugin. Sinon, ne conservez qu’un fill relié à une
+      variable dans chaque variant concerné, puis réexportez.
+
+Le bouton des cartes regroupées reste « Sélectionner les N calques ».
+
+Remarque du mainteneur sur 11 à 13 : ces messages doivent demander une
+adaptation réelle ; si la disposition sans auto layout est voulue et
+entièrement exportée, les règles du projet prévoient de ne pas afficher
+d’avertissement. Elle contredit la décision H2 qui garde ces avertissements
+quand tous les enfants sont placés : E4 attend que le mainteneur tranche.
