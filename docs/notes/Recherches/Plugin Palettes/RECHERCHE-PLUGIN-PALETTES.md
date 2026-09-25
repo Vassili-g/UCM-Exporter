@@ -676,43 +676,43 @@ présenter et à comparer des palettes côte à côte.
 ┌ Bleu ─────────────────────────────────────────────────────────────────────┐
 │ Bleu                                                                       │
 │ Couleur de référence #1E6FD9 · Vivid · nuance 600                          │
-│ 56/56 promesses respectées                                                 │
+│ Garanties : Soft ✓ · Vivid ✗ 2                                             │
 ├ Couleur de référence ─────────────────────────────────────────────────────┤
-│ [■■■■■■]  #1E6FD9   Thème Light : Vivid · nuance 600                       │
-│                     Thème Dark : Vivid · nuance 600                        │
-│ Contrastes     Blanc     Noir     Fond Light     Fond Dark                 │
-│                ratio et niveau de chaque comparaison                       │
-│ Mesures avancées : luminosité L, chroma C, teinte H, intensité             │
-│ Dérive de teinte : …                                                       │
+│ [■■■■■■]  #1E6FD9                                                          │
+│           Profil porteur : Vivid · nuance 600                              │
+│           Palette de base : Soft, choisie pour cette palette (si choisie)  │
+│           Contrastes : Comparée avec · Contraste · Niveau WCAG             │
+│           Blanc, Noir, Fond du thème Light, Fond du thème Dark             │
+│           Mesures avancées : L, C, H, intensité ; CSS oklch(…) ; dérives   │
 ├ Thème Light · fond #F7F7F7 ── filet ──────────────────────────────────────┤
-│ Soft   [50][100]…[950]                                                     │
-│ Vivid  [50][100]…[600 Référence]…[950]                                     │
+│ Soft   [fond on-solid, tireté] [50][100]…[950]                             │
+│ Vivid                          [50][100]…[600 ◆ Référence]…[950]           │
+│        └ on-solid ┘ └ surface ┘       └ solid · text ┘   accolades         │
 ├ Thème Dark · fond #121212 ── filet ───────────────────────────────────────┤
-│ Soft   …                                                                   │
-│ Vivid  …                                                                   │
-├ Promesses · Thème Light ──────────────────────────────────────────────────┤
-│ Texte sur fond plein · on-solid sur solid                                  │
-│   Repos    [Aa Soft] ratio · minimum · résultat  [Aa Vivid] …             │
-│   Survol   …                                                               │
-│   Appui    …                                                               │
-│ …                                                                          │
-├ Promesses · Thème Dark ───────────────────────────────────────────────────┤
-├ Grilles de contraste (option) ────────────────────────────────────────────┤
+├ Garanties de contraste · Thème Light ─────────────────────────────────────┤
+│ Textes lisibles · minimum 4,5:1                                            │
+│ text sur surface       repos   [Aa] Soft · 700 / 100 · ✓ 5,19:1   [Aa] …   │
+│ texte coloré sur …     survol  …                                           │
+│ Éléments visibles · minimum 3:1                                            │
+│ border-decorative 300 · séparateur, sans minimum de contraste              │
+├ Garanties de contraste · Thème Dark ──────────────────────────────────────┤
+├ Grilles de contraste ─────────────────────────────────────────────────────┤
 ├ Points à vérifier ────────────────────────────────────────────────────────┤
 ├ Lire les valeurs ─────────────────────────────────────────────────────────┤
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
 - `[PLA-07]` L'en-tête donne le nom de la palette, la couleur de référence avec
-  son profil porteur et son numéro de nuance, et le bilan des promesses
-  respectées sur le total évalué. La version de la recette, l'empreinte du
+  son profil porteur et son numéro de nuance, et le résultat Soft et Vivid des
+  garanties sur les deux thèmes, comme la bascule de la carte des garanties. La version de la recette, l'empreinte du
   modèle (`[PLA-19]`) et l'espace de couleur du document restent dans les
   données de plugin du cadre et dans le rapport ; aucun texte du cadre ne les
   imprime. Le cadre ne porte pas d'avertissement permanent sur son
   remplacement : la confirmation des calques ajoutés (`[PLA-03]`) le remplace.
 - `[PLA-08]` Le bloc « Couleur de référence » montre une grande pastille, son
   hexa, et le profil porteur et le numéro de nuance de chaque thème
-  (`[MOT-17]`). Un tableau légendé compare ses contrastes avec le blanc, le
+  (`[MOT-17]`), puis la palette de base quand le designer l'a choisie
+  (`[ENT-11]`). Un tableau légendé compare ses contrastes avec le blanc, le
   noir et les deux fonds, chacun avec son niveau WCAG (`[VER-13]`). Les
   mesures avancées, luminosité L, chroma C, teinte H et intensité, se lisent
   dans une zone séparée, chacune avec son nom. Suivent les dérives de chaque
@@ -726,8 +726,11 @@ présenter et à comparer des palettes côte à côte.
   claire sont sombres.
 - `[PLA-10]` Une rangée porte à gauche le nom de son profil, Soft ou Vivid,
   sans la part de chroma : l'intensité se lit dans les réglages. La nuance qui
-  porte la référence exacte montre le repère « Référence », au même endroit
-  que dans l'aperçu du thème.
+  porte la référence exacte montre le repère « ◆ Référence » dans sa pastille,
+  comme le ◆ de l'aperçu. Comme dans l'aperçu (`[UI-04]`), la pastille
+  `on-solid`, peinte du fond du thème et détachée par un contour tireté,
+  précède les rampes, et deux lignes d'accolades nomment les rôles sous
+  elles, en nom du design system puis en français.
 - `[PLA-11]` La légende, « Lire les valeurs », explique comment lire une
   promesse, comment distinguer Soft et Vivid par leurs spécimens, et ce que
   mesurent les contrastes d'une carte. Elle ne nomme pas les seuils par leur
@@ -741,10 +744,10 @@ présenter et à comparer des palettes côte à côte.
 │     700      │  numéro de la nuance, posé sur la pastille, en noir ou en blanc
 ├──────────────┤
 │ #0E5DC6      │  hexa
-│ Fond plein   │  les usages que la table confie à cette nuance, états compris
-│ Texte coloré │
-│ Fond 5,76:1  │  le contraste avec le fond du thème, et son niveau WCAG
-│ AA texte     │
+│ solid ·      │  les rôles que la table confie à cette nuance, en nom du
+│ fond plein   │  design system puis en français, états compris
+│ Fond 5,76:1  │  le contraste avec le fond du thème, et le niveau WCAG le plus
+│ · AA         │  haut qu'il atteint pour du texte
 └──────────────┘
 ```
 
@@ -785,11 +788,14 @@ membre. L'état d'une paire est le décalage le plus grand de ses deux membres :
 | `focus` sur `surface` | 13 | repos |
 | `solid` sur fond | 14 | survol |
 
-Chaque association occupe une ligne principale : le nom de ses deux usages en
-français, leurs identifiants et le minimum demandé. Ses états s'alignent
-dessous, chacun avec un spécimen Soft et un spécimen Vivid posés sur le même
-fond, le contraste mesuré et le résultat. Le spécimen montre le premier membre
-posé sur le second : le texte `on-solid` dans le fond `solid`.
+Les associations se groupent par minimum, comme dans la carte des garanties
+de l'onglet Palettes : « Textes lisibles » puis « Éléments visibles », chacun
+avec son minimum. Chaque association occupe une ligne : ses deux rôles en nom
+du design system, puis en français. Ses états s'alignent à droite, chacun
+avec un spécimen Soft et un spécimen Vivid ; sous chacun, les deux numéros de
+nuance comparés, le résultat et le contraste mesuré. Le spécimen montre le
+premier membre posé sur le second : un texte pour `text` et `on-solid`, un
+aplat pour `solid`, un contour pour une bordure ou un anneau de focus.
 
 - `[PLA-17]` Toutes les paires du moteur sont représentées. Une association
   sans état repos, `solid` sur fond, montre son seul état.
@@ -831,10 +837,13 @@ ses cases ne sont pas des promesses.
 
 - `[PLA-21]` Tous les cadres sont en auto layout, trame de 8 px, sans position
   absolue.
-- `[PLA-22]` Police Inter : 24 px gras pour le titre, 13 px moyen pour les
-  titres de section, 11 px normal pour les valeurs. Le plugin charge ces trois
-  styles par `loadFontAsync` avant de créer un seul calque ; un chargement qui
-  échoue arrête le dessin, sans cadre à moitié dessiné.
+- `[PLA-22]` Police Inter, en cinq styles nommés : titre de palette, 24 px
+  gras ; thème, 16 px demi-gras ; rôle, 13 px moyen ; valeur, 11 px normal ;
+  note, 10 px normal. Les styles entrent dans l'empreinte du modèle : en
+  changer périme les cadres déjà dessinés. Le plugin charge chaque police par
+  `loadFontAsync` avant de créer un seul calque ; un chargement qui échoue
+  arrête le dessin, sans cadre à moitié dessiné. Un titre, un code ou un
+  résultat n'a pas de largeur fixe : il ne se coupe jamais.
 - `[PLA-23]` Les couleurs de légende et de filet de la planche sont des
   constantes du plugin, séparées des couleurs de la palette.
 - `[PLA-24]` Le dessin se fait palette par palette, avec un message de

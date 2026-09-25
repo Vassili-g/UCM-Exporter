@@ -361,3 +361,17 @@ test('[PLA-01] V8.8 : un suivi sans version se lit comme la version 1 ; un suivi
   assert.deepEqual(await dessiner(figma, [BLEU]), { issue: 'suivi-futur' });
   assert.deepEqual(creations({ journal: figma.journal.slice(avant) } as FauxFigma), []);
 });
+
+test('V10.4 V10.8 : le filet d’une section et le tireté de la pastille on-solid se posent en contour intérieur ; chaque style prend sa police', async () => {
+  const figma = new FauxFigma();
+  await dessiner(figma, [BLEU]);
+  const [cadre] = cadres(figma);
+  const nomme = (nom: string) => figma.sous(cadre).find((noeud) => noeud.name === nom) as unknown as { strokes: unknown[]; strokeAlign: string; strokeWeight: number; dashPattern: number[] };
+  const section = nomme('section light');
+  assert.equal(section.strokes.length, 1);
+  assert.equal(section.strokeAlign, 'INSIDE');
+  assert.deepEqual(section.dashPattern, []);
+  assert.deepEqual(nomme('on-solid/light').dashPattern, [4, 3]);
+  const titre = figma.sous(cadre).find((noeud) => noeud.name === 'titre' && noeud.parent === figma.sous(cadre).find((autre) => autre.name === 'section light')) as unknown as { fontName: { style: string }; fontSize: number };
+  assert.deepEqual([titre.fontName.style, titre.fontSize], ['Semi Bold', 16]);
+});

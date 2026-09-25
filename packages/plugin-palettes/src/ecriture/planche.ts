@@ -23,7 +23,7 @@ import {
   type PlancheRangee,
   type ProfilDuDocument,
 } from '../lecture';
-import { modeleDeCadre, type Noeud, type NoeudCadre, type NoeudTexte, type StyleDeTexte } from '../planche/modele';
+import { STYLES_DE_TEXTE, modeleDeCadre, type Noeud, type NoeudCadre, type NoeudTexte } from '../planche/modele';
 
 /** Le marqueur que porte chaque calque posé par le plugin (D-H). */
 export const CLE_DU_MARQUEUR = 'calque';
@@ -34,12 +34,8 @@ export const NOMS_DE_PAGE = ['Palettes', 'Palettes (UCM)'] as const;
 /** L'écart entre deux cadres ([PLA-05], E17). */
 export const ECART_ENTRE_CADRES = 200;
 
-/** Les trois styles de la police Inter ([PLA-22]). */
-export const POLICES: { readonly [S in StyleDeTexte]: { readonly family: string; readonly style: string; readonly taille: number } } = {
-  titre: { family: 'Inter', style: 'Bold', taille: 24 },
-  section: { family: 'Inter', style: 'Medium', taille: 13 },
-  valeur: { family: 'Inter', style: 'Regular', taille: 11 },
-};
+/** Les styles nommés de la planche, que le modèle porte et que son empreinte couvre ([PLA-22], V10.8). */
+export const POLICES = STYLES_DE_TEXTE;
 
 interface AvecDonnees {
   setSharedPluginData(espace: string, cle: string, valeur: string): void;
@@ -125,6 +121,13 @@ function construireCadre(figma: FigmaDuDessin, modele: NoeudCadre, crees: Crees)
   cadre.paddingLeft = modele.marge;
   cadre.fills = remplissage(modele.fond);
   cadre.cornerRadius = modele.rayon;
+  // Un contour intérieur : le filet d'une section, la pastille on-solid, le spécimen d'une bordure (V10.4, V10.5).
+  if (modele.trait) {
+    cadre.strokes = remplissage(modele.trait.couleur);
+    cadre.strokeWeight = modele.trait.epaisseur;
+    cadre.strokeAlign = 'INSIDE';
+    cadre.dashPattern = modele.trait.tirets ? [4, 3] : [];
+  }
   if (modele.centre) {
     cadre.primaryAxisAlignItems = 'CENTER';
     cadre.counterAxisAlignItems = 'CENTER';

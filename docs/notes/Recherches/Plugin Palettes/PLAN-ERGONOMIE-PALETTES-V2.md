@@ -581,44 +581,66 @@ sont concernées et retrouve son point de départ après fermeture.
 Repris du lot R8 du premier plan. La planche reprend les termes et
 l’organisation des garanties de ce plan.
 
-- [ ] **V10.1** (ex-R8.1) En-tête : nom, référence avec son profil, résultat
+- [x] **V10.1** (ex-R8.1) En-tête : nom, référence avec son profil, résultat
   Soft et Vivid des garanties. Retirer version, empreinte imprimée, espace de
   couleur du document et avertissement permanent de remplacement. Garder les
   métadonnées dans les données de plugin et le rapport. L’empreinte ne dépend
   plus d’un texte qui doit contenir sa propre empreinte.
-- [ ] **V10.2** (ex-R8.2) Bloc Couleur de référence : grande pastille, code,
+  Fait : nom, référence avec profil et nuance, « Garanties : Soft ✓ · Vivid ✗ 2 ».
+  Aucun texte n’imprime version, empreinte ou espace de couleur.
+- [x] **V10.2** (ex-R8.2) Bloc Couleur de référence : grande pastille, code,
   profil porteur, nuance de chaque thème, et la palette de base choisie
   quand elle n’est pas Auto. Regrouper les contrastes comparés dans un
   tableau légendé ; placer les mesures avancées dans une zone séparée. Une
   chaîne présentée comme copiable en CSS emploie des points décimaux.
-- [ ] **V10.3** (ex-R8.3) Chaque rangée nomme Soft ou Vivid. Le repère de la
+  Fait : code, profil porteur, palette de base choisie, tableau « Comparée
+  avec · Contraste · Niveau WCAG », mesures avancées à part avec
+  `oklch(0.555 0.179 257)`.
+- [x] **V10.3** (ex-R8.3) Chaque rangée nomme Soft ou Vivid. Le repère de la
   référence se trouve au même endroit que dans l’aperçu.
-- [ ] **V10.4** (ex-R8.4) Délimiter chaque section Light et Dark par un filet
+  Fait : « ◆ Référence » dans la pastille de la nuance, comme le ◆ de l’aperçu.
+- [x] **V10.4** (ex-R8.4) Délimiter chaque section Light et Dark par un filet
   visible sur fond clair et sombre. Peindre selon le profil de couleur du
   document. Les couleurs de légende restent distinctes de celles de la
   palette.
-- [ ] **V10.5** (ex-R8.5) Une nuance porte son numéro, son code et ses rôles,
+  Fait : filet `#8C8C8C`, 3,4:1 sur le blanc et 5,5:1 sur `#121212`, en
+  contour intérieur ; la peinture suivait déjà le profil du document.
+- [x] **V10.5** (ex-R8.5) Une nuance porte son numéro, son code et ses rôles,
   nom du design system et nom français. Donner les contrastes utiles avec le
   nom de ce qu’ils comparent. Ajouter la pastille `on-solid` et les
   accolades de V3.
-- [ ] **V10.6** (ex-R8.6) Organiser les garanties par thème, puis en deux
+  Fait : rôles en nom du design system et en français, contraste au fond
+  avec son niveau ; pastille `on-solid` tiretée et deux lignes d’accolades,
+  calculées par `accoladesDe` comme dans l’aperçu.
+- [x] **V10.6** (ex-R8.6) Organiser les garanties par thème, puis en deux
   groupes par minimum, une ligne par association. Chaque état montre son
   spécimen Soft et Vivid, les deux numéros comparés, le ratio et le
   résultat. Toutes les paires du moteur restent représentées.
-- [ ] **V10.7** (ex-R8.7) Grille des contrastes toujours présente : titre de
+  Fait : deux groupes par minimum, huit associations, quatorze états par
+  thème ; spécimen texte, aplat ou contour selon le premier rôle.
+- [x] **V10.7** (ex-R8.7) Grille des contrastes toujours présente : titre de
   thème et de profil, numéros sur les deux axes, légende des ratios et valeur
   dans chaque cellule. Expliquer les catégories de couleur en mots. Distinguer
   cette comparaison libre des garanties.
-- [ ] **V10.8** (ex-R8.8) Définir la hiérarchie de la planche par des styles
+  Fait : numéros sur les deux axes, légende des trois fonds en mots, et une
+  note qui dit que les cases ne sont pas des garanties.
+- [x] **V10.8** (ex-R8.8) Définir la hiérarchie de la planche par des styles
   nommés : titre de palette, thème, rôle, valeur, note. Prévoir des largeurs
   suffisantes et charger toutes les polices avant le premier calque. Une
   longue palette ne coupe ni code ni résultat.
-- [ ] **V10.9** (ex-R8.9) Retirer les noms internes des seuils de la légende.
+  Fait : `STYLES_DE_TEXTE`, cinq styles chargés avant le premier calque ;
+  titres, codes et résultats sans largeur fixe. Un cadre compte 686 calques,
+  1 898 avec la grille, contre 1 552 avant ce lot.
+- [x] **V10.9** (ex-R8.9) Retirer les noms internes des seuils de la légende.
   Expliquer comment lire une garantie et distinguer Soft de Vivid par leurs
   spécimens.
-- [ ] **V10.10** (ex-R8.10) Répercuter toute modification du modèle dans sa
+  Fait : « Lire les valeurs » explique une garantie, Soft et Vivid, la carte
+  d’une nuance et les couleurs proches, sans nom interne.
+- [x] **V10.10** (ex-R8.10) Répercuter toute modification du modèle dans sa
   fraîcheur : les anciens cadres passent « À mettre à jour ». Garder la
   confirmation des calques ajoutés.
+  Fait : les styles entrent dans l’empreinte ; tout cadre dessiné avant ce
+  lot passe « À mettre à jour ». La confirmation des calques ajoutés reste.
 - [ ] **V10.11** Explorer une fausse interface par thème et par profil :
   carte, bouton, champ, lien et anneau de focus peints avec la palette, chaque
   élément annoté de ses rôles et numéros. Présenter une maquette au
