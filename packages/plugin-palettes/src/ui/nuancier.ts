@@ -114,10 +114,19 @@ function paragraphe(texte: string, classe = ''): HTMLParagraphElement {
   return element;
 }
 
-/** Un sous-titre du détail : « Sert à », « Nuance libre ». */
+/** Un sous-titre du détail : « Sert à », « Sans rôle », « Contrastes de la nuance ». */
 function sousTitre(texte: string): HTMLParagraphElement {
   const element = paragraphe(texte);
   element.className = 'detail-sous-titre';
+  return element;
+}
+
+/** Un groupe du détail, dans son encadré : son titre, puis son contenu. */
+function groupe(titre: string, ...contenu: HTMLElement[]): HTMLElement {
+  const element = document.createElement('section');
+  element.className = 'detail-groupe';
+  element.setAttribute('aria-label', titre);
+  element.append(sousTitre(titre), ...contenu);
   return element;
 }
 
@@ -364,14 +373,14 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       ligne.append(...cellules);
       table.append(ligne);
     }
-    const blocs: HTMLElement[] = [sousTitre(TEXTES_DU_DETAIL.contrastes), table];
+    const blocs: HTMLElement[] = [table];
     for (const autre of [rang - 1, rang + 1].filter((voisin) => analyse.rampes[profil][mode][voisin]?.hexa === cran.hexa)) {
       blocs.push(paragraphe(TEXTES_DU_NUANCIER.memeCouleur(analyse.grille.crans[autre]), 'ligne-secondaire'));
     }
     if (entrees.confondues.some((confondue) => confondue.mode === mode && confondue.cran === numero)) {
       blocs.push(paragraphe(TEXTES_DU_NUANCIER.tresProche(profil === 'soft' ? 'vivid' : 'soft'), 'ligne-secondaire'));
     }
-    return blocs;
+    return [groupe(TEXTES_DU_DETAIL.contrastes, ...blocs)];
   }
 
   /** Les valeurs OKLCH, repliées : elles servent à qui compare deux nuances, pas à choisir un usage. */
@@ -384,8 +393,8 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     return repli;
   }
 
-  /** L'en-tête d'un détail : grande pastille, titre, code et « Copier ». */
-  function enTeteDuDetail(couleur: string, titre: string, code: string): HTMLDivElement {
+  /** L'en-tête d'un détail : grande pastille, titre, code, la mention de la référence, et « Copier ». */
+  function enTeteDuDetail(couleur: string, titre: string, code: string, reference = false): HTMLDivElement {
     const enTete = document.createElement('div');
     enTete.className = 'detail-tete';
     const grande = document.createElement('span');
@@ -397,6 +406,11 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     const codeDuDetail = paragraphe(code);
     codeDuDetail.className = 'detail-code';
     nomme.append(nomDuDetail, codeDuDetail);
+    if (reference) {
+      const mention = paragraphe(TEXTES_DU_DETAIL.reference);
+      mention.className = 'detail-reference';
+      nomme.append(mention);
+    }
     const copie = bouton('bouton-discret', TEXTES_DU_NUANCIER.copier);
     copie.addEventListener('click', () => {
       copier(code);
@@ -411,22 +425,13 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     const cran = analyse.rampes[profil][mode][rang];
     const fondDuMode = lireHexa(recette.fonds[mode]) ?? [255, 255, 255];
     const { crans } = analyse.grille;
-    const blocs: HTMLElement[] = [enTeteDuDetail(cran.hexa, TEXTES_DU_DETAIL.titre(profil, crans[rang]), cran.hexa)];
-    if (analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang) {
-      const reference = paragraphe(TEXTES_DU_DETAIL.reference);
-      reference.className = 'detail-reference';
-      blocs.push(reference);
-    }
+    const reference = analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang;
+    const blocs: HTMLElement[] = [enTeteDuDetail(cran.hexa, TEXTES_DU_DETAIL.titre(profil, crans[rang]), cran.hexa, reference)];
     // Une palette libre n'a pas de rôles : aucune de ses nuances n'en reçoit (W6.5).
     const emplois = analyse.libre ? [] : emploisDuCran(crans, rang);
-    if (emplois.length === 0) {
-      blocs.push(sousTitre(TEXTES_DU_DETAIL.sansRole));
-    } else {
-      blocs.push(sousTitre(TEXTES_DU_DETAIL.sertA));
-      for (const { emploi, decalage } of emplois) {
-        blocs.push(ligneDUsage(emploi, decalage, specimenDuRole(emploi, cran.couleur, fondDuMode), promessesDuRole(analyse, profil, emploi, decalage)));
-      }
-    }
+    blocs.push(emplois.length === 0
+      ? groupe(TEXTES_DU_DETAIL.sansRole, paragraphe(TEXTES_DU_DETAIL.aucunRole, 'ligne-secondaire'))
+      : groupe(TEXTES_DU_DETAIL.sertA, ...emplois.map(({ emploi, decalage }) => ligneDUsage(emploi, decalage, specimenDuRole(emploi, cran.couleur, fondDuMode), promessesDuRole(analyse, profil, emploi, decalage)))));
     blocs.push(...contrastesDeLaNuance(cran, profil, rang, entrees, fondDuMode), repliOklch(cran));
     return blocs;
   }
@@ -437,20 +442,20 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     const fondDuMode = lireHexa(recette.fonds[mode]) ?? [255, 255, 255];
     const depart = recette.crans.indexOf(TABLE_DES_EMPLOIS.solid);
     const fin = recette.crans[Math.min(recette.crans.length - 1, depart + Math.max(...decalagesDeLEmploi('on-solid')))];
-    const blocs: HTMLElement[] = [
-      enTeteDuDetail(recette.fonds[mode], TEXTES_DU_DETAIL.titreDuFond, recette.fonds[mode]),
-      paragraphe(TEXTES_DU_DETAIL.fondDePage(TABLE_DES_EMPLOIS.solid, fin)),
-      sousTitre(TEXTES_DU_DETAIL.sertA),
-    ];
+    const lignes: HTMLElement[] = [];
     for (const profil of PROFILS) {
       const promesses = promessesDuRole(analyse, profil, 'on-solid', 0).sort((a, b) => etatDeLaPaire(a.paire) - etatDeLaPaire(b.paire));
       // Le texte on-solid se montre posé sur le fond plein de son premier état.
       const plein = analyse.rampes[profil][mode][depart];
       const ligne = ligneDUsage('on-solid', 0, specimenDuRole('solid', plein.couleur, fondDuMode, fondDuMode), promesses);
       ligne.querySelector('.usage-quoi p')?.prepend(`${NOM_DU_PROFIL[profil]} · `);
-      blocs.push(ligne);
+      lignes.push(ligne);
     }
-    return blocs;
+    return [
+      enTeteDuDetail(recette.fonds[mode], TEXTES_DU_DETAIL.titreDuFond, recette.fonds[mode]),
+      paragraphe(TEXTES_DU_DETAIL.fondDePage(TABLE_DES_EMPLOIS.solid, fin)),
+      groupe(TEXTES_DU_DETAIL.sertA, ...lignes),
+    ];
   }
 
   function rendreLeDetail(entrees: EntreesDuNuancier): void {

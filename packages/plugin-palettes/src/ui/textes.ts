@@ -507,7 +507,8 @@ export const TEXTES_DU_DETAIL = {
   sertA: 'Sert à',
   // Une nuance qu'aucun rôle ne vise ; « libre » désigne une palette sortie du modèle (N102).
   sansRole: 'Sans rôle',
-  contrastes: 'Contrastes',
+  aucunRole: 'Aucun rôle du modèle ne vise cette nuance.',
+  contrastes: 'Contrastes de la nuance',
   fondDuTheme: 'Fond du thème',
   blanc: 'Blanc',
   noir: 'Noir',
@@ -541,6 +542,10 @@ export const TEXTES_DU_SELECTEUR = {
   fondParDefaut: (mode: Mode) => `Fond ${NOM_DU_MODE[mode]} par défaut`,
   blanc: 'Blanc',
   nuance: (profil: string, numero: number) => `${profil} ${numero}`,
+  // N114 : les deux onglets du sélecteur de la couleur de référence (X2.7, R3).
+  onglets: 'Choisir ou ajuster la couleur',
+  choisir: 'Choisir',
+  ajuster: 'Ajuster',
   pastille: (titre: string, hexa: string) => `${titre}, ${hexa}`,
 } as const;
 
@@ -1198,23 +1203,53 @@ export const TEXTES_DE_LA_PLANCHE = {
   mode: { light: 'Thème Light', dark: 'Thème Dark' },
 } as const;
 
-/** La section « Interface de test » de l'onglet Palettes ([UI-14]) : l'écran E2, sur les textes qu'il portait sur la planche (N097). */
+/**
+ * La section « Interface de test » de l'onglet Palettes ([UI-14]) : l'écran
+ * « Membres de l'équipe », sur le modèle de Radix Themes, et la grille des
+ * composants par état (N108, N113).
+ */
 export const TEXTES_DE_L_INTERFACE_DE_TEST = {
   titre: 'Interface de test',
   resume: (mode: Mode, profil: string) => `Thème ${NOM_DU_MODE[mode]} · ${profil}`,
-  ecran: 'Écran de réglages peint de la palette',
-  exemple: {
-    titre: 'Paramètres de l’équipe',
-    badge: 'Nouveau',
-    onglets: ['Général', 'Membres', 'Facturation'],
-    libelle: 'Nom de l’équipe',
-    valeur: 'Studio Nord',
-    coche: '✓',
-    caseACocher: 'Notifier les membres',
-    interrupteur: 'Accès invité',
+  vue: 'Vue de l’interface de test',
+  vues: { ecran: 'Écran', etats: 'États' },
+  ecran: 'Écran de l’équipe peint de la palette',
+  etats: 'Composants de la palette, par état',
+  equipe: {
+    organisation: 'Studio Nord',
+    navigation: ['Paramètres', 'Membres', 'Facturation', 'Intégrations'],
+    titre: 'Membres de l’équipe',
+    sousTitre: '4 membres · 1 invitation en attente',
+    inviter: 'Inviter',
     icone: 'ⓘ',
-    encart: 'Les membres invités reçoivent un e-mail. En savoir plus',
+    encart: 'L’invitation de camille@nord.studio expire dans 2 jours.',
+    renvoyer: 'Renvoyer',
+    membres: [
+      { nom: 'Alex Martin', role: 'Administrateur', plein: true },
+      { nom: 'Camille Roy', role: 'Invitée', plein: false },
+      { nom: 'Inès Diallo', role: 'Membre', plein: false },
+    ],
+    roleParDefaut: 'Rôle par défaut',
+    membre: 'Membre',
+    coche: '✓',
+    notifier: 'Notifier par e-mail',
+    acces: 'Accès invité',
     boutons: ['Annuler', 'Brouillon', 'Enregistrer'],
+  },
+  composants: {
+    etats: ['default', 'hover', 'active', 'focus'],
+    plein: 'Bouton plein',
+    soft: 'Bouton soft',
+    contour: 'Bouton contour',
+    sansFond: 'Bouton sans fond',
+    champ: 'Champ',
+    lien: 'Lien',
+    badge: 'Badge',
+    action: 'Action',
+    texte: 'Texte',
+    lienColore: 'Lien coloré',
+    nouveau: 'Nouveau',
+    sansEtat: '—',
   },
 } as const;
 

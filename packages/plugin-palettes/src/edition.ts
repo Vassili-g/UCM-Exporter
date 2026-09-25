@@ -238,10 +238,14 @@ export function choisirLaBase(palette: Palette, choix: 'auto' | Profil): Palette
  */
 export function passerEnLibre(recette: Recette, palette: Palette): Palette {
   if (palette.crans !== undefined) return palette;
-  const { premier, dernier, pas, nombre } = BORNES_DES_CRANS_LIBRES;
-  const admis = recette.crans.filter((cran) => cran % pas === 0 && cran >= premier && cran <= dernier).slice(0, nombre[1]);
   const { base: _retiree, ...sansBase } = palette;
-  return { ...sansBase, crans: admis };
+  return { ...sansBase, crans: cransLibresParDefaut(recette) };
+}
+
+/** Les numéros qu'une palette libre reçoit en sortant du modèle : ceux de la liste commune que les bornes admettent. */
+export function cransLibresParDefaut(recette: Recette): number[] {
+  const { premier, dernier, pas, nombre } = BORNES_DES_CRANS_LIBRES;
+  return recette.crans.filter((cran) => cran % pas === 0 && cran >= premier && cran <= dernier).slice(0, nombre[1]);
 }
 
 /** Rend une palette libre au modèle du design system : elle suit de nouveau la liste commune, en Auto. */

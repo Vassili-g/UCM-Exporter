@@ -9,6 +9,10 @@
  * sélecteur ne fait que lui rendre des saisies. Un glisser prévisualise et sa
  * fin enregistre, comme les curseurs (V9.9) ; un code s'enregistre à Entrée ou
  * à la sortie du champ, et un code invalide reste dans son champ.
+ *
+ * Un contrôle peut offrir un second onglet, « Ajuster » : le sélecteur accueille
+ * alors le contenu que le contrôle lui donne, à la place de la zone, de la
+ * teinte, du code et des pastilles. La référence d'une palette s'y ajuste.
  */
 import { ecrireHexa, lireHexa, type Rgb8 } from 'ucm-couleur';
 
@@ -19,6 +23,15 @@ export interface PastilleProposee {
   readonly hexa: string;
   readonly titre: string;
 }
+
+/** Le contenu d'un second onglet, que le contrôle prépare à chaque ouverture de l'onglet. */
+export interface OngletDAjustement {
+  readonly element: HTMLElement;
+  preparer(): void;
+  focaliser(): void;
+}
+
+export type OngletDuSelecteur = 'choisir' | 'ajuster';
 
 export interface OuvertureDuSelecteur {
   /** Le contrôle qui ouvre le sélecteur : il le place, et reprend le focus à Échap. */
@@ -32,6 +45,10 @@ export interface OuvertureDuSelecteur {
   readonly pastilles?: readonly PastilleProposee[];
   /** Une couleur choisie, en `#RRGGBB` ; `fin` à la fin du geste. */
   saisir(hexa: string, fin: boolean): void;
+  /** Le second onglet ; sans lui, le sélecteur n'a pas d'onglets. */
+  readonly ajustement?: OngletDAjustement;
+  /** L'onglet montré à l'ouverture, « Choisir » par défaut. */
+  readonly onglet?: OngletDuSelecteur;
 }
 
 /** La largeur de la maquette W3.1, et l'écart au contrôle. */
@@ -59,12 +76,15 @@ export function suivreLaCouleur(ancre: HTMLElement, hexa: string): void {
   instance?.suivre(ancre, hexa);
 }
 
-export function fermerLeSelecteur(): void {
-  instance?.fermer(false);
+/** Referme le sélecteur ; `rendreLeFocus` rend le focus au contrôle qui l'a ouvert. */
+export function fermerLeSelecteur(rendreLeFocus = false): void {
+  instance?.fermer(rendreLeFocus);
 }
 
 export interface PipetteUi {
   readonly bouton: HTMLButtonElement;
+  /** Ouvre le sélecteur de la pastille sur un onglet, comme le lien « Ajuster la référence ». */
+  ouvrir(onglet: OngletDuSelecteur): void;
   /** Peint la pastille de la couleur relue, et la suit dans le sélecteur ouvert. */
   poser(hexa: string): void;
 }
@@ -90,6 +110,10 @@ export function createPipette(etiquette: string, ouvrir: (bouton: HTMLButtonElem
   });
   return {
     bouton,
+    ouvrir(onglet) {
+      const demande = ouvrir(bouton);
+      if (demande) ouvrirLeSelecteur({ ...demande, ancre: bouton, etiquette, onglet });
+    },
     poser(hexa) {
       const lue = lireHexa(hexa);
       teinte.style.background = lue ? ecrireHexa(lue) : 'transparent';
@@ -147,7 +171,27 @@ function creer() {
   titreDesPastilles.className = 'selecteur-titre ligne-secondaire';
   const pastilles = document.createElement('div');
   pastilles.className = 'selecteur-pastilles';
-  element.append(zone, teinte, ligneDuCode, mention, separation, titreDesPastilles, pastilles);
+
+  // Les onglets, quand le contrôle offre un ajustement : « Choisir », puis « Ajuster ».
+  const onglets = document.createElement('div');
+  onglets.className = 'bascule selecteur-onglets';
+  onglets.setAttribute('role', 'group');
+  onglets.setAttribute('aria-label', TEXTES_DU_SELECTEUR.onglets);
+  const boutonsDOnglet = (['choisir', 'ajuster'] as const).map((valeur) => {
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.className = 'bascule-option';
+    bouton.textContent = TEXTES_DU_SELECTEUR[valeur];
+    bouton.addEventListener('click', () => montrerLOnglet(valeur, true));
+    onglets.append(bouton);
+    return { valeur, bouton };
+  });
+  const choix = document.createElement('div');
+  choix.className = 'selecteur-choix';
+  choix.append(zone, teinte, ligneDuCode, mention, separation, titreDesPastilles, pastilles);
+  const accueil = document.createElement('div');
+  accueil.className = 'selecteur-accueil';
+  element.append(onglets, choix, accueil);
   document.body.append(element);
 
   let ouverture: OuvertureDuSelecteur | null = null;
@@ -157,6 +201,28 @@ function creer() {
   /** Vrai pendant un glisser : une valeur relue ailleurs ne déplace pas le repère sous le pointeur. */
   let glisse = false;
   let boutonsDesPastilles: { hexa: string; bouton: HTMLButtonElement }[] = [];
+  let onglet: OngletDuSelecteur = 'choisir';
+
+  /** Montre un onglet ; « Ajuster » prépare le contenu du contrôle. `focaliser` y porte le focus. */
+  function montrerLOnglet(suivant: OngletDuSelecteur, focaliser: boolean): void {
+    const ajustement = ouverture?.ajustement;
+    onglet = ajustement ? suivant : 'choisir';
+    for (const { valeur, bouton } of boutonsDOnglet) bouton.setAttribute('aria-pressed', String(valeur === onglet));
+    choix.hidden = onglet !== 'choisir';
+    accueil.hidden = onglet !== 'ajuster';
+    element.dataset.onglet = onglet;
+    if (ajustement && onglet === 'ajuster') {
+      if (ajustement.element.parentElement !== accueil) accueil.replaceChildren(ajustement.element);
+      ajustement.preparer();
+    }
+    if (ouverture) placer(ouverture.ancre);
+    if (!focaliser) return;
+    if (onglet === 'ajuster') ajustement?.focaliser();
+    else {
+      champs[0]?.focus({ preventScroll: true });
+      champs[0]?.select();
+    }
+  }
 
   const couleur = (): Rgb8 => hsvVersRgb8(position);
 
@@ -357,11 +423,11 @@ function creer() {
     batirLesPastilles(suivante.pastilles ?? []);
     batirLesChamps();
     peindre();
+    onglets.hidden = !suivante.ajustement;
+    if (!suivante.ajustement) accueil.replaceChildren();
     element.hidden = false;
     suivante.ancre.setAttribute('aria-expanded', 'true');
-    placer(suivante.ancre);
-    champs[0].focus({ preventScroll: true });
-    champs[0].select();
+    montrerLOnglet(suivante.onglet ?? 'choisir', true);
   }
 
   function fermer(rendreLeFocus: boolean): void {
@@ -376,8 +442,10 @@ function creer() {
 
   return {
     basculer(suivante: OuvertureDuSelecteur): void {
-      if (ouverture?.ancre === suivante.ancre) fermer(true);
-      else ouvrir(suivante);
+      // Le même contrôle referme le sélecteur, sauf s'il demande l'autre onglet : le sélecteur y passe.
+      if (ouverture?.ancre !== suivante.ancre) ouvrir(suivante);
+      else if ((suivante.onglet ?? 'choisir') !== onglet && suivante.ajustement) montrerLOnglet(suivante.onglet ?? 'choisir', true);
+      else fermer(true);
     },
     suivre(ancre: HTMLElement, hexa: string): void {
       if (ouverture?.ancre !== ancre || glisse || champs.includes(document.activeElement as HTMLInputElement)) return;

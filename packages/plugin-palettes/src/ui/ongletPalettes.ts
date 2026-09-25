@@ -30,6 +30,7 @@ import {
   basculerNuance,
   changerReference,
   choisirLaBase,
+  cransLibresParDefaut,
   deplacer,
   dupliquer,
   nouvelIdentifiant,
@@ -49,7 +50,7 @@ import { createAjustement } from './ajustement';
 import { createCarte } from './carte';
 import { champEnColonne, createChoixDeBase, createChoixDuModele, createPuces, type ChoixDeBase } from './champs';
 import { nuancesProposees } from './couleur/propositions';
-import { createPipette } from './couleur/selecteur';
+import { createPipette, fermerLeSelecteur } from './couleur/selecteur';
 import { createCreation } from './creation';
 import { createEditeur } from './derive/editeur';
 import type { EtatDuDessin, GestesDuResultat } from './dessin';
@@ -165,7 +166,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   barre.append(selecteur.element, plus, menu.element);
 
   const creation = createCreation({
-    onCreer: (saisie, nom, base) => creer(saisie, nom, base),
+    onCreer: (saisie, nom, base, crans) => creer(saisie, nom, base, crans),
+    cransLibres: () => (recette ? cransLibresParDefaut(recette) : []),
     onAnnuler: () => {
       creationOuverte = false;
       rendre();
@@ -235,6 +237,15 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       titreDesPastilles: TEXTES_DU_SELECTEUR.nuancesDeLaPalette,
       pastilles: nuancesProposees(analyserPalette(recette, courante), nuancier.mode()),
       saisir: (saisie, fin) => saisirReference(saisie, fin),
+      // L'onglet « Ajuster » part de la palette telle qu'elle est à son ouverture (X2.7, R3).
+      ajustement: {
+        element: ajustement.element,
+        preparer: () => {
+          const actuelle = ouverte();
+          if (recette && actuelle) ajustement.preparer(recette, actuelle);
+        },
+        focaliser: () => ajustement.focaliser(),
+      },
     };
   });
   const hexa = document.createElement('input');
@@ -257,7 +268,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   lienDAjustement.type = 'button';
   lienDAjustement.className = 'lien-de-constat';
   lienDAjustement.textContent = TEXTES_DE_L_AJUSTEMENT.lien;
-  lienDAjustement.addEventListener('click', () => ouvrirLAjustement(lienDAjustement));
+  lienDAjustement.addEventListener('click', () => pipette.ouvrir('ajuster'));
   const traceDeLAjustement = document.createElement('p');
   traceDeLAjustement.className = 'ligne-secondaire trace-de-l-ajustement';
   const ajusteeDepuis = document.createElement('span');
@@ -286,7 +297,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     if (!recette || !ajustee) return;
     note = null;
     valider(remplacerPalette(recette, ajustee));
-  });
+  }, () => fermerLeSelecteur(true));
   // La palette de base : Auto, Soft ou Vivid ([UI-11], [ENT-11]).
   const choixDeBase = createChoixDeBase((valeur) => {
     const courante = ouverte();
@@ -316,7 +327,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference, colonneDuModele);
   const carteDeBase = createCarte({ titre: TEXTES_DE_L_ONGLET.configuration });
   const messagesDeBase = document.createElement('div');
-  carteDeBase.corps.append(colonnes, puces.element, ajustement.element, messagesDeBase);
+  carteDeBase.corps.append(colonnes, puces.element, messagesDeBase);
 
   // Carte d'aperçu sans titre ([UI-04]) : thèmes et fond dans l'en-tête, la référence sous la surface.
   const nuancier = createNuancier({
@@ -409,7 +420,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       hexa.focus();
       hexa.select();
     } else if (cible === 'ajuster-reference') {
-      ouvrirLAjustement(lienDAjustement);
+      pipette.ouvrir('ajuster');
     } else if (cible === 'intensites-palette') {
       carteDesIntensites.ouvrir();
       intensites.ouvrir();
@@ -417,14 +428,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       carteDeLaDerive.ouvrir();
       if (carteDeLaDerive.estOuverte()) editeur.focaliser();
     }
-  }
-
-  /** Ouvre le panneau d'ajustement sur la palette ouverte, sous le code de la référence (W7.2). */
-  function ouvrirLAjustement(retour: HTMLElement): void {
-    const courante = ouverte();
-    if (!recette || !courante) return;
-    ajustement.ouvrir(recette, courante, retour);
-    ajustement.element.scrollIntoView({ block: 'nearest' });
   }
 
   function ouverte(): Palette | null {
@@ -467,7 +470,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     creation.focaliser();
   }
 
-  function creer(saisie: string, nomSaisi: string, base: ChoixDeBase): void {
+  function creer(saisie: string, nomSaisi: string, base: ChoixDeBase, crans: readonly number[] | null): void {
     if (!recette) return;
     const id = nouvelIdentifiant(recette, demandes.tirer);
     const palette = nouvellePalette(recette, id, saisie);
@@ -478,7 +481,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     idOuvert = id;
     creationOuverte = false;
     note = null;
-    valider(ajouter(recette, choisirLaBase(renommer(palette, nomSaisi), base)));
+    const dansLeModele = choisirLaBase(renommer(palette, nomSaisi), base);
+    valider(ajouter(recette, crans ? { ...passerEnLibre(recette, dansLeModele), crans: [...crans] } : dansLeModele));
     nom.focus();
   }
 
@@ -574,7 +578,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   vide.className = 'page-stack colonne';
   vide.append(ligneVide);
   const vue = document.createElement('div');
-  vue.className = 'page-stack colonne';
+  vue.className = 'page-stack colonne vue-de-la-palette';
   vue.append(choix, configuration);
   element.append(zoneDuRefus, zoneDuBloquant, vide, vue);
 
@@ -614,9 +618,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
 
     poser(hexa, courante.reference);
     pipette.poser(courante.reference);
-    // Une autre palette, ou une référence changée ailleurs, rend la proposition caduque : le panneau se referme.
-    const ajustee = ajustement.palette();
-    if (ajustee && (ajustee.id !== courante.id || ajustee.reference !== courante.reference)) ajustement.fermer(false);
     ajusteeDepuis.textContent = courante.originale ? TEXTES_DE_L_AJUSTEMENT.ajusteeDepuis(courante.originale) : '';
     traceDeLAjustement.hidden = !courante.originale;
     poser(nom, courante.nom ?? '');

@@ -1,14 +1,14 @@
 /**
- * Le panneau « Ajuster la référence » (W7), dans la carte « Configuration de
- * la palette » : l'originale et la proposition côte à côte, un pas de 0,01 de
- * luminosité OKLCH vers le sombre ou le clair, chroma et teinte gardées, le
- * code de la proposition saisissable, la nuance visée dans chaque thème et
- * les garanties avant et après, avec leur niveau WCAG.
+ * Ajuster la référence (W7), onglet « Ajuster » du sélecteur de couleur de la
+ * référence (maquette X2.7, R3) : l'originale et la proposition côte à côte,
+ * un pas de 0,01 de luminosité OKLCH vers le sombre ou le clair, chroma et
+ * teinte gardées, une piste qui marque d'un trait le passage d'une nuance à
+ * la suivante, le code de la proposition saisissable, la nuance visée dans
+ * chaque thème et les garanties avant et après, avec leur niveau WCAG.
  *
- * Rien ne change à l'ouverture ni pendant les pas : seul « Appliquer » rend
- * la proposition, que l'onglet applique à la palette courante. « Annuler » et Échap referment sans rien écrire, et
- * rendent le focus au lien qui a ouvert le panneau. Un pas qui changerait le
- * numéro de la référence l'annonce sous son bouton, avant le clic.
+ * Rien ne change pendant les pas : seul « Appliquer » rend la proposition,
+ * que l'onglet applique à la palette courante. Le sélecteur porte le reste :
+ * il referme le panneau à Échap et rend le focus à son contrôle.
  */
 import { associationDe, ecrireArrondi, etatDeLaPaire, lireHexa, rgb8VersOklch, type Palette, type Recette } from 'ucm-couleur';
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
@@ -36,14 +36,16 @@ import {
 } from './textes';
 
 export interface AjustementUi {
+  /** Le contenu de l'onglet « Ajuster », que le sélecteur de couleur accueille. */
   readonly element: HTMLDivElement;
-  /** Ouvre le panneau sur la palette, au pas qui mène à sa référence ; `retour` reprend le focus à la fermeture. */
-  ouvrir(recette: Recette, palette: Palette, retour: HTMLElement): void;
-  /** Referme sans rien écrire ; le focus revient au lien qui a ouvert le panneau, sauf `rendreLeFocus` à faux. */
-  fermer(rendreLeFocus?: boolean): void;
-  /** La palette telle qu'à l'ouverture du panneau, `null` panneau fermé. */
-  palette(): Palette | null;
+  /** Part de la palette telle qu'elle est rangée, au pas qui mène à sa référence. */
+  preparer(recette: Recette, palette: Palette): void;
+  /** Le premier contrôle du panneau, qui reçoit le focus à l'ouverture de l'onglet. */
+  focaliser(): void;
 }
+
+/** Le nombre de pas que la piste montre de chaque côté de la proposition. */
+const DEMI_PISTE = 8;
 
 function paragraphe(texte: string, classe = ''): HTMLParagraphElement {
   const element = document.createElement('p');
@@ -52,7 +54,7 @@ function paragraphe(texte: string, classe = ''): HTMLParagraphElement {
   return element;
 }
 
-/** Une pastille et son code, sous un libellé : l'originale, puis la proposition. */
+/** Une grande pastille et son code, sous un libellé : l'originale, puis la proposition. */
 function temoin(libelle: string): { element: HTMLDivElement; poser(hexa: string): void } {
   const element = document.createElement('div');
   element.className = 'ajustement-temoin';
@@ -60,7 +62,7 @@ function temoin(libelle: string): { element: HTMLDivElement; poser(hexa: string)
   pastille.className = 'ajustement-pastille';
   pastille.setAttribute('aria-hidden', 'true');
   const code = paragraphe('', 'detail-code');
-  element.append(paragraphe(libelle, 'libelle-de-champ'), pastille, code);
+  element.append(pastille, paragraphe(libelle, 'libelle-de-champ'), code);
   return {
     element,
     poser(hexa) {
@@ -70,31 +72,35 @@ function temoin(libelle: string): { element: HTMLDivElement; poser(hexa: string)
   };
 }
 
-export function createAjustement(appliquer: (proposition: string) => void): AjustementUi {
+/**
+ * @param appliquer reçoit la proposition, que l'onglet applique à la palette courante.
+ * @param refermer referme le sélecteur, après « Appliquer » comme après « Annuler ».
+ */
+export function createAjustement(appliquer: (proposition: string) => void, refermer: () => void): AjustementUi {
   const element = document.createElement('div');
   element.className = 'ajustement';
   element.setAttribute('role', 'group');
   element.setAttribute('aria-label', TEXTES_DE_L_AJUSTEMENT.titre);
-  element.hidden = true;
 
-  const titre = paragraphe(TEXTES_DE_L_AJUSTEMENT.titre);
-  titre.className = 'ajustement-titre';
   const originale = temoin(TEXTES_DE_L_AJUSTEMENT.originale);
   const proposition = temoin(TEXTES_DE_L_AJUSTEMENT.proposition);
   const temoins = document.createElement('div');
   temoins.className = 'ajustement-temoins';
   temoins.append(originale.element, proposition.element);
 
-  // Les deux pas, la luminosité entre eux, et l'annonce de chaque pas dessous.
+  // Les deux pas de part et d'autre de la piste, puis la luminosité et l'annonce d'un pas qui change de nuance.
   const plusSombre = createButton({ label: '−', variant: 'secondary', onClick: () => faireUnPas(-1) });
   plusSombre.setAttribute('aria-label', TEXTES_DE_L_AJUSTEMENT.plusSombre);
   const plusClair = createButton({ label: '+', variant: 'secondary', onClick: () => faireUnPas(1) });
   plusClair.setAttribute('aria-label', TEXTES_DE_L_AJUSTEMENT.plusClair);
-  const luminosite = document.createElement('output');
-  luminosite.className = 'ajustement-luminosite';
+  const piste = document.createElement('div');
+  piste.className = 'ajustement-piste';
+  piste.setAttribute('aria-hidden', 'true');
   const reglette = document.createElement('div');
   reglette.className = 'ajustement-reglette';
-  reglette.append(paragraphe(TEXTES_DE_L_AJUSTEMENT.luminosite, 'libelle-de-champ'), plusSombre, luminosite, plusClair);
+  reglette.append(plusSombre, piste, plusClair);
+  const luminosite = document.createElement('output');
+  luminosite.className = 'ajustement-luminosite ligne-secondaire';
   const annonces = document.createElement('div');
   annonces.className = 'ajustement-annonces';
   annonces.setAttribute('aria-live', 'polite');
@@ -112,16 +118,15 @@ export function createAjustement(appliquer: (proposition: string) => void): Ajus
   const gestes = document.createElement('div');
   gestes.className = 'confirmation-gestes';
   const boutonAppliquer = createButton({ label: TEXTES_DE_L_AJUSTEMENT.appliquer, onClick: () => valider() });
-  gestes.append(boutonAppliquer, createButton({ label: TEXTES_DE_L_AJUSTEMENT.annuler, variant: 'secondary', onClick: () => fermer() }));
+  gestes.append(createButton({ label: TEXTES_DE_L_AJUSTEMENT.annuler, variant: 'secondary', onClick: () => refermer() }), boutonAppliquer);
 
-  element.append(titre, temoins, reglette, annonces, code, visee, garanties, gestes);
+  element.append(temoins, reglette, luminosite, annonces, code, visee, garanties, gestes);
 
   let recette: Recette | null = null;
   let palette: Palette | null = null;
   let pas = 0;
   /** La proposition montrée : celle du pas, ou un code saisi dans le panneau. */
   let courante: string | null = null;
-  let retour: HTMLElement | null = null;
 
   function faireUnPas(sens: -1 | 1): void {
     if (!recette || !palette) return;
@@ -144,12 +149,33 @@ export function createAjustement(appliquer: (proposition: string) => void): Ajus
     rendre();
   });
 
-  element.addEventListener('keydown', (evenement) => {
-    if (evenement.key !== 'Escape') return;
-    evenement.preventDefault();
-    evenement.stopPropagation();
-    fermer();
-  });
+  /**
+   * La piste : les propositions de part et d'autre du pas courant, peintes en
+   * dégradé, un trait là où la nuance visée change dans un thème, et le
+   * curseur au pas courant.
+   */
+  function rendreLaPiste(lue: Recette, ajustee: Palette): void {
+    const pasMontres = Array.from({ length: 2 * DEMI_PISTE + 1 }, (_, rang) => pas - DEMI_PISTE + rang);
+    const propositions = pasMontres.map((candidat) => propositionAuPas(lue, ajustee, candidat));
+    const visees = propositions.map((hexa) => {
+      const apres = hexa ? paletteAjustee(lue, ajustee, hexa) : null;
+      return apres ? nuancesVisees(lue, apres) : null;
+    });
+    const couleurs = propositions.filter((hexa): hexa is string => hexa !== null);
+    piste.style.background = couleurs.length > 1 ? `linear-gradient(to right, ${couleurs.join(', ')})` : couleurs[0] ?? 'transparent';
+    const traits = visees.slice(1).flatMap((visee, rang) => {
+      const avant = visees[rang];
+      if (!visee || !avant || (visee.light === avant.light && visee.dark === avant.dark)) return [];
+      const trait = document.createElement('span');
+      trait.className = 'ajustement-frontiere';
+      trait.style.left = `${((rang + 0.5) / (pasMontres.length - 1)) * 100}%`;
+      return [trait];
+    });
+    const curseur = document.createElement('span');
+    curseur.className = 'ajustement-curseur';
+    curseur.style.left = '50%';
+    piste.replaceChildren(...traits, curseur);
+  }
 
   function rendreLesGaranties(lue: Recette, avant: Palette, apres: Palette): void {
     // Une palette libre n'a pas de garanties : la section se tait.
@@ -189,9 +215,11 @@ export function createAjustement(appliquer: (proposition: string) => void): Ajus
     originale.poser(originaleDe(palette).toUpperCase());
     proposition.poser(courante);
     const couleur = lireHexa(courante);
-    luminosite.textContent = couleur ? ecrireArrondi(rgb8VersOklch(couleur).L, 3) : '';
+    luminosite.textContent = couleur ? `${TEXTES_DE_L_AJUSTEMENT.luminosite} ${ecrireArrondi(rgb8VersOklch(couleur).L, 3)}` : '';
     if (document.activeElement !== code) code.value = courante;
+    rendreLaPiste(recette, palette);
 
+    // La phrase ne vient que lorsque le pas voisin franchit une frontière de la piste.
     const annoncesDesPas = ([-1, 1] as const).flatMap((sens) => {
       const changement = changementAuPasVoisin(recette!, palette!, pas, sens);
       if (changement === null) return [TEXTES_DE_L_AJUSTEMENT.horsLimite];
@@ -209,36 +237,22 @@ export function createAjustement(appliquer: (proposition: string) => void): Ajus
 
   function valider(): void {
     if (!recette || !palette || !courante) return;
-    const proposition = courante;
-    if (!paletteAjustee(recette, palette, proposition)) return;
-    fermer();
-    appliquer(proposition);
-  }
-
-  function fermer(rendreLeFocus = true): void {
-    const cible = rendreLeFocus ? retour : null;
-    element.hidden = true;
-    recette = null;
-    palette = null;
-    courante = null;
-    retour = null;
-    cible?.focus();
+    const choisie = courante;
+    if (!paletteAjustee(recette, palette, choisie)) return;
+    refermer();
+    appliquer(choisie);
   }
 
   return {
     element,
-    ouvrir(lue, ajustee, lien) {
+    preparer(lue, ajustee) {
       recette = lue;
       palette = ajustee;
-      retour = lien;
       pas = pasALOuverture(lue, ajustee);
       courante = ajustee.reference.toUpperCase();
       code.setAttribute('aria-invalid', 'false');
-      element.hidden = false;
       rendre();
-      plusSombre.focus();
     },
-    fermer: (rendreLeFocus = true) => fermer(rendreLeFocus),
-    palette: () => palette,
+    focaliser: () => plusSombre.focus({ preventScroll: true }),
   };
 }
