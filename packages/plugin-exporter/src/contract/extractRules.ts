@@ -252,8 +252,10 @@ export function nomDeComposantEcrit(node: NodeFouillable): string | null {
  * Un nom qui porte le marqueur est le texte d'aide du maître : il ne nomme
  * personne.
  */
-export function rulesContainerOwner(node: NodeFouillable): string | null {
-  const nom = nomDeComposantEcrit(node);
+export function rulesContainerOwner(
+  node: NodeFouillable,
+  nom: string | null = nomDeComposantEcrit(node),
+): string | null {
   if (nom === null || porteLeMarqueur(nom)) return null;
   return compactName(nom) || null;
 }
@@ -425,6 +427,24 @@ function ruleTagOf(instance: InstanceNode, warnings: string[]): RuleTag | null {
   return affiche ?? range;
 }
 
+/** Les instances sans calque de nom ne demandent aucune fouille de leur contenu. */
+function candidatsDeRegles(page: PageNode): SceneNode[] {
+  if (typeof page.findAllWithCriteria !== 'function') {
+    return page.findAll((node) => node.type === 'INSTANCE' || node.type === 'COMPONENT');
+  }
+  const instances = new Set<string>();
+  for (const texte of page.findAllWithCriteria({ types: ['TEXT'] })) {
+    if (!porteLeNom(texte, COMPONENT_NAME_LAYER)) continue;
+    let parent = texte.parent;
+    while (parent && parent !== page) {
+      if (parent.type === 'INSTANCE') instances.add(parent.id);
+      parent = parent.parent;
+    }
+  }
+  return page.findAllWithCriteria({ types: ['INSTANCE', 'COMPONENT'] })
+    .filter((node) => node.type === 'COMPONENT' || instances.has(node.id));
+}
+
 /**
  * Point d'entrée : lit le `.componentRules` du composant sélectionné et en tire
  * l'intention + la doc par valeur. `sectionFound` distingue « pas de conteneur »
@@ -445,7 +465,8 @@ export async function extractRules(
   // On les cherche tous : n'en lire qu'un alors que la page en porte plusieurs
   // ferait disparaître des règles sans que rien ne le dise. Le même parcours
   // relève ce dont l'offre de création a besoin.
-  const containers = figma.currentPage.findAll((node) => {
+  const candidats = candidatsDeRegles(figma.currentPage);
+  const containers = candidats.filter((node) => {
     if (node.type === 'COMPONENT' && compactName(node.name) === MAITRE_COMPACTE) {
       releve.maitreLocal ??= node;
       return false;
@@ -456,7 +477,7 @@ export async function extractRules(
     if (porteLeMarqueur(nom) && estVierge(node as InstanceNode)) {
       releve.conteneurVierge ??= node as InstanceNode;
     }
-    const estConteneur = rulesContainerOwner(node) === owner;
+    const estConteneur = rulesContainerOwner(node, nom) === owner;
     if (estConteneur) releve.conteneurDuComposant = true;
     return estConteneur;
   }) as (SceneNode & ChildrenMixin)[];
@@ -468,7 +489,7 @@ export async function extractRules(
     // perdu en silence. Il ne mérite pas son propre message, qui partirait dans
     // l'export de composants qui n'y sont pour rien : il devient l'action de
     // celui-ci, seul message que son absence de règles concerne vraiment.
-    const orphelin = figma.currentPage.findOne((node) => nomOrphelin(node) !== null);
+    const orphelin = candidats.find((node) => nomOrphelin(node) !== null);
     if (orphelin) {
       const marque = nomOrphelin(orphelin) === 'marque';
       pousserLocalise(absent, 'Layer', orphelin, {

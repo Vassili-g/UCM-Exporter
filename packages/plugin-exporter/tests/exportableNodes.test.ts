@@ -12,6 +12,38 @@ import { localisationsDe } from '../src/contract/localisation';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
+test('un parcours profond lit les parents un nombre linéaire de fois', () => {
+  let lectures = 0;
+  const descendants: SceneNode[] = [];
+  const root = { id: 'root', type: 'COMPONENT', visible: true,
+    findAll: () => descendants } as unknown as ComponentNode;
+  let parent: SceneNode = root;
+  for (let index = 0; index < 2000; index += 1) {
+    const ancetre = parent;
+    parent = { id: String(index), type: 'FRAME', visible: index !== 1999,
+      get parent() { lectures += 1; return ancetre; } } as unknown as SceneNode;
+    descendants.push(parent);
+  }
+  assert.deepEqual(getAllNodes(root), [root, ...descendants.slice(0, -1)]);
+  assert.ok(lectures <= descendants.length * 3, `${lectures} lectures de parent`);
+});
+
+test('le masque extérieur garde le diagnostic et une dépendance masque ses internes', () => {
+  const root = tree('Root', [{ type: 'FRAME', name: 'Masque', visible: false, children: [
+    { type: 'FRAME', name: 'Masque intérieur', visible: false,
+      boundVariables: { fills: [alias('fond')] } },
+    { type: 'INSTANCE', id: 'dependency', name: 'Dépendance', children: [
+      { type: 'RECTANGLE', name: 'Interne', boundVariables: { fills: [alias('interne')] } },
+    ] },
+  ] }]);
+  const warnings: string[] = [];
+  assert.deepEqual(getAllNodes(root, warnings, new Map([
+    ['dependency', { component: 'Other', figmaLayer: 'Dépendance' }],
+  ])), [root]);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /« Masque »/);
+});
+
 type TestNode = {
   type: string;
   id?: string;

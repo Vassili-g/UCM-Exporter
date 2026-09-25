@@ -13,6 +13,7 @@ import {
 } from './componentTree';
 import { indexContractedNamesInDocument, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
+import { getAllNodes } from './exportableNodes';
 import { pousserLesImbriques, releverLesImbriques } from './imbriques';
 import type { ReleveDesImbriques } from './imbriques';
 import { TAGS_D_INTENTION } from './rulesModel';
@@ -194,8 +195,8 @@ export function componentContractFilename(name: string): string {
  * Point d'entrée de la commande : crée le contrat du composant sélectionné.
  *
  * `annoncer` nomme les étapes traversées, il n'en décide aucune. Cet
- * export charge toutes les pages puis résout trois fois le même maître par
- * dépendance : un coût réel, non mesuré, pendant lequel un « Analyse du
+ * export charge les autres pages s'il rencontre des instances, puis résout
+ * leurs maîtres : un coût réel, non mesuré, pendant lequel un « Analyse du
  * composant… » figé se lit comme un plantage. Les étapes portent le nom de ce
  * que le code fait, jamais une durée ni un pourcentage : la mesure n'existe
  * pas, et une barre de progression inventerait une précision qu'on n'a pas.
@@ -283,7 +284,9 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
   // conditionne tout ce qui suit.
   annoncer('Lecture des composants imbriqués…');
-  const contractes = await indexContractedNamesInDocument();
+  const contientDesInstances = matrix.variants.some(({ component }) =>
+    getAllNodes(component).some((node) => node.type === 'INSTANCE'));
+  const contractes = contientDesInstances ? await indexContractedNamesInDocument() : new Set<string>();
   const {
     composes: scannedComposes,
     composed,
@@ -470,10 +473,9 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // L'échantillon se pose ici, une fois l'arbre exact connu et les valeurs
   // appliquées relevées : il ne recalcule ni chemin de slot, ni reconnaissance
   // de dépendance, il assemble ce que les deux extractions savent déjà.
+  const componentsById = new Map(matrix.variants.map(({ component }) => [component.id, component]));
   for (const variant of extracted.variants) {
-    const component = matrix.variants.find(
-      (entry) => entry.component.id === variant.nodeId,
-    )?.component;
+    const component = componentsById.get(variant.nodeId);
     if (!component) continue;
     const sample = extractVariantSample(
       { component, paths: extracted.exactPathsByVariant.get(component) ?? new Map() },

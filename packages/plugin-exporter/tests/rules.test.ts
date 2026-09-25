@@ -201,6 +201,20 @@ function monterPage(t: { after: (fn: () => void) => void }, enfants: any[]) {
   return page;
 }
 
+test('la recherche native épargne les instances sans nom de composant et garde le même relevé', async (t) => {
+  const ordinaires = Array.from({ length: 1000 }, (_, index) =>
+    noeud('INSTANCE', `Instance ${index}`, [noeud('TEXT', 'Label', [], { characters: 'Texte' })]));
+  const page = monterPage(t, [...ordinaires, conteneur('Button', [
+    regle('@usage', [noeud('TEXT', 'content', [], { characters: 'Action' })]),
+  ])]);
+  const attendu = await extractRules({ name: 'Button' } as ComponentSetNode);
+  page.findAllWithCriteria = ({ types }: { types: string[] }) =>
+    page.findAll((node: SceneNode) => types.includes(node.type));
+  for (const instance of ordinaires) instance.findOne = () => assert.fail('instance sans règles fouillée');
+  const obtenu = await extractRules({ name: 'Button' } as ComponentSetNode);
+  assert.deepEqual(obtenu, attendu);
+});
+
 test('le conteneur est reconnu par son calque, pas par son nom, à la casse près', async (t) => {
   // Le Component Set s'appelle « Icon Button », et le conteneur est renommé.
   // Les deux lectures doivent conclure la même chose : un composant reconnu

@@ -45,20 +45,6 @@ function hasVariableBindings(node: SceneNode): boolean {
   return containsVariableAlias(node.boundVariables);
 }
 
-/** Plus haut ancêtre statiquement masqué entre le node et la racine exclue. */
-function hiddenAncestor(node: SceneNode, root: SceneNode): SceneNode | null {
-  let current: BaseNode | null | undefined = node;
-  let hidden: SceneNode | null = null;
-
-  while (current && current !== root) {
-    if ('visible' in current && isStaticallyHidden(current as SceneNode)) {
-      hidden = current as SceneNode;
-    }
-    current = current.parent;
-  }
-  return hidden;
-}
-
 /**
  * Un point à corriger poussé une seule fois, quel que soit le nombre de calques
  * qui l'ont produit. La déduplication porte sur la phrase, comme partout
@@ -148,14 +134,40 @@ export function getAllNodes(
   if (composed.has(root.id)) return [root];
 
   const descendants = 'findAll' in root ? root.findAll(() => true) : [];
+  if (composed.size === 0 && !descendants.some(isStaticallyHidden)) return [root, ...descendants];
   const ignoredBindings = new Map<SceneNode, boolean>();
   const exportable: SceneNode[] = [root];
+  type Etat = { hidden: SceneNode | null; composed: boolean };
+  const visible: Etat = { hidden: null, composed: false };
+  const etats = new Map<BaseNode, Etat>([[root, visible]]);
+
+  // Un ancêtre se lit une fois par parcours. La pile accepte aussi un relevé
+  // dont les descendants précèdent leurs parents, sans récursion profonde.
+  const etatDe = (node: BaseNode | null): Etat => {
+    const chemin: BaseNode[] = [];
+    let parent = node;
+    while (parent && !etats.has(parent)) {
+      chemin.push(parent);
+      parent = parent.parent;
+    }
+    let etat = parent ? etats.get(parent)! : visible;
+    while (chemin.length > 0) {
+      const courant = chemin.pop()!;
+      etat = {
+        hidden: etat.hidden ?? ('visible' in courant && isStaticallyHidden(courant as SceneNode)
+          ? courant as SceneNode : null),
+        composed: etat.composed || composed.has(courant.id),
+      };
+      etats.set(courant, etat);
+    }
+    return etat;
+  };
 
   for (const node of descendants) {
     // L'instance composée elle-même n'est pas élaguée : seul son contenu l'est.
-    if (hasAncestorIn(node, root, composed)) continue;
+    if (etatDe(node.parent).composed) continue;
 
-    const hidden = hiddenAncestor(node, root);
+    const hidden = etatDe(node).hidden;
     if (!hidden) {
       exportable.push(node);
       continue;

@@ -166,6 +166,19 @@ function messagesDe(contrat: any): string[] {
   return (contrat.meta.diagnostics ?? []).map((diagnostic: any) => diagnostic.message);
 }
 
+test('un composant sans instance ne charge pas les autres pages du document', async () => {
+  const fichier = monterFigma();
+  try {
+    (globalThis as any).figma.loadAllPagesAsync = () => {
+      assert.fail('les autres pages ne portent aucune dépendance de ce composant');
+    };
+    const contrat = JSON.parse((await handleExportComponent()).content);
+    assert.equal(contrat.variants.length, 2);
+  } finally {
+    fichier.restaurer();
+  }
+});
+
 test('handleExportComponent assemble un contrat complet à partir du Component Set sélectionné', async () => {
   const figmaFaux = monterFigma();
   try {
