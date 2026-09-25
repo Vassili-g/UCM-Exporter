@@ -353,7 +353,7 @@ Le mode standard garde le modèle du design system ; la palette libre en sort.
   Dark au-dessus de 0,93, où il reste peu d’écart avant le blanc. Présenter
   `#1E6FD9` et `#16A34A` aux deux thèmes ; le mainteneur choisit. Choisi :
   1000 et 1050.
-- [ ] **W6.2** Écrire la conception : champ de la palette libre (nom décidé
+- [x] **W6.2** Écrire la conception : champ de la palette libre (nom décidé
   ici), bornes des numéros (multiples de 50, de 50 à 1050 ; 4 à 13
   nuances), luminosité d’une nuance libre par interpolation des courbes
   communes à son numéro, et au-delà de 950 par celles du préréglage de 13
@@ -362,10 +362,17 @@ Le mode standard garde le modèle du design system ; la palette libre en sort.
   l’[instruction](./INSTRUCTION-NOMBRE-DE-NUANCES.md#v71-ce-qui-suppose-onze-nuances-ou-un-numéro-précis)
   et dire, pour chaque ligne, ce que devient une palette libre : alertes de
   fond et de palettes proches, garanties, dérive, aperçu, planche, fiche.
-- [ ] **W6.3** Conception du format 3, commune avec W7.2 : les deux champs
+  Écrite dans [CONCEPTION-NUANCES-ET-FORMAT-3.md](./CONCEPTION-NUANCES-ET-FORMAT-3.md).
+  Le champ se nomme `crans`. La luminosité au-delà de la liste suit une
+  règle proportionnelle vers le bord, exacte sur les courbes par défaut.
+- [x] **W6.3** Conception du format 3, commune avec W7.2 : les deux champs
   nouveaux, la migration du format 2 et ses tests. Revue indépendante de
   W6.2 et de ce format avant le code ; ses conclusions se vérifient dans le
-  code avant d’être appliquées.
+  code avant d’être appliquées. Revue faite, vérifiée et intégrée. Elle a
+  changé quatre points : les bouts de la dérive se lisent aux numéros 50 et
+  950 ; 11 → 13 et 11 → 9 déplacent l’ancrage de certaines références, que le
+  geste compte ; l’analyse porte la liste de la palette ; deux palettes
+  libres se comparent dès qu’elles portent 500, 600 et 700.
 - [ ] **W6.4** Réglage du préréglage dans les Réglages communs, à la place
   que V9.2 lui réservait. Un changement de préréglage dit combien de palettes
   et de cadres il touche.
@@ -397,7 +404,8 @@ Parcours des [maquettes](./MAQUETTES-PLANCHE-ET-REFERENCE.html), en trois
 - [ ] **W7.1** Lien « Ajuster la référence » parmi les réglages qu’une
   garantie en échec propose, et sous le code de la couleur de référence.
 - [ ] **W7.2** Champ de l’originale dans la palette, facultatif, dans le
-  format 3 conçu en W6.3 : absent, aucun ajustement.
+  format 3 conçu en W6.3 : absent, aucun ajustement. Conçu : `originale`,
+  section 3 de la conception.
 - [ ] **W7.3** Panneau d’ajustement : originale et proposition côte à côte,
   « − » et « + » par pas de 0,01 de luminosité OKLCH, chroma et teinte
   gardées, code saisissable, nuance visée par thème, garanties avant et
