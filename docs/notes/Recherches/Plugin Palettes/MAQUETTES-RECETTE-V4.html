@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquettes du quatrième tour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root {
+  --sol: #F3F4F6; --papier: #FFFFFF; --encre: #17191E; --encre-2: #555C69; --filet: #D9DCE2;
+  --accent: #A8511B; --accent-fond: #FBEDE3; --ok: #17784A; --ko: #C7321B;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --sol: #15171B; --papier: #1D2026; --encre: #ECEEF2; --encre-2: #A3AAB7;
+    --filet: #343944; --accent: #F0A06A; --accent-fond: #3A2618; --ok: #5BD08F; --ko: #FF8C78;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --sol: #15171B; --papier: #1D2026; --encre: #ECEEF2; --encre-2: #A3AAB7;
+  --filet: #343944; --accent: #F0A06A; --accent-fond: #3A2618; --ok: #5BD08F; --ko: #FF8C78;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--sol); color: var(--encre); font: 15px/1.55 var(--sans); padding: 32px 16px 64px; }
+main { max-width: 1060px; margin: 0 auto; display: grid; gap: 64px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 21px; font-weight: 600; }
+h3 { font-size: 15px; font-weight: 600; }
+p { margin: 0; max-width: 72ch; }
+ul, ol { margin: 0; padding-left: 1.3em; max-width: 72ch; }
+li + li { margin-top: 6px; }
+code { font-family: var(--mono); font-size: 0.88em; }
+.intro, .bloc { display: grid; gap: 16px; min-width: 0; }
+.tete { display: grid; gap: 8px; }
+.sur { font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.sommaire { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+.sommaire a { color: var(--accent); }
+.note { border-left: 3px solid var(--filet); padding: 2px 0 2px 14px; color: var(--encre-2); font-size: 14px; }
+.legende { font-size: 13px; color: var(--encre-2); margin-top: 8px; max-width: 500px; }
+.options, .faits { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.option, .faits > div { background: var(--papier); border: 1px solid var(--filet); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.option.reco { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.option h3 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.option p, .faits span { font-size: 14px; color: var(--encre-2); }
+.faits b { font-size: 15px; }
+.chip-reco { font: 600 11px/1 var(--sans); color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+.pour::before { content: "+ "; color: var(--ok); font-weight: 600; }
+.contre::before { content: "− "; color: var(--ko); font-weight: 600; }
+.questions { background: var(--papier); border: 1px solid var(--filet); border-radius: 12px; padding: 16px 20px; display: grid; gap: 10px; }
+.reco { color: var(--accent); font-weight: 600; }
+.recap { background: var(--papier); border: 1px solid var(--filet); border-radius: 12px; overflow-x: auto; }
+.recap table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.recap th, .recap td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--filet); }
+.recap tr:last-child td { border-bottom: 0; }
+.recap th { font-weight: 600; color: var(--encre-2); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.scene { overflow-x: auto; padding: 4px 0 8px; display: grid; gap: 24px; }
+.scene-rangee { display: flex; gap: 24px; align-items: flex-start; width: max-content; }
+
+.fp {
+  --f-fond: #2C2C2C; --f-bloc: #383838; --f-tertiaire: #4A4A4A; --f-bord: #5E5E5E; --f-champ: #2C2C2C;
+  --f-texte: #FFFFFF; --f-texte-2: #B3B3B3; --f-marque: #0D99FF; --f-lien: #7CC4F8; --f-succes: #85E0A3;
+  flex: none; background: var(--f-fond); color: var(--f-texte); font: 11px/16px Inter, system-ui, sans-serif;
+  border: 1px solid #1B1B1B; border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.35); overflow: visible;
+}
+.fp-barre { height: 32px; display: flex; align-items: center; gap: 14px; padding: 0 16px; border-bottom: 1px solid var(--f-bord); font-weight: 500; }
+.fp-barre .actif { box-shadow: inset 0 -2px 0 var(--f-texte); padding: 8px 0 7px; }
+.fp-barre .inactif, .fp-barre .retour { color: var(--f-texte-2); }
+.fp-barre .actif-titre { margin-left: auto; font-weight: 600; }
+.fp-barre .engrenage { margin-left: auto; color: var(--f-texte-2); }
+.fp-corps { padding: 16px; display: grid; gap: 12px; }
+.fp-select { display: flex; gap: 8px; align-items: center; }
+.champ { height: 28px; border: 1px solid var(--f-bord); border-radius: 6px; display: flex; align-items: center; gap: 6px; padding: 0 8px; background: var(--f-champ); min-width: 0; }
+.champ.grand { height: 32px; flex: 1; }
+.champ .coupe { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.champ .fleche { color: var(--f-texte-2); }
+.pastille.rond { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--f-bord); flex: none; }
+.btn-f { height: 32px; padding: 0 12px; border: 1px solid var(--f-bord); border-radius: 6px; display: grid; place-items: center; font-weight: 600; white-space: nowrap; }
+.bouton-icone { width: 28px; height: 28px; border: 1px solid var(--f-bord); border-radius: 6px; display: grid; place-items: center; flex: none; }
+.bouton-icone.grand { width: 32px; height: 32px; }
+.fp-h1 { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; line-height: 24px; font-weight: 600; }
+.fp-h1 .aide { font-size: 11px; font-weight: 400; }
+.carte-f { position: relative; background: var(--f-bloc); border: 1px solid var(--f-bord); border-radius: 8px; padding: 12px; display: grid; gap: 10px; }
+.carte-titre { font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.carte-titre .droite { display: flex; gap: 10px; font-size: 11px; font-weight: 400; }
+.libelle, .aide { color: var(--f-texte-2); }
+.aide.petit { font-size: 10px; line-height: 13px; }
+.lien { color: var(--f-lien); }
+.trois { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.trois > div { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.champ-ligne { display: flex; gap: 6px; align-items: center; }
+.pipette-f { width: 28px; height: 28px; border-radius: 6px; border: 3px solid var(--f-champ); outline: 1px solid var(--f-bord); flex: none; }
+.pipette-f.ouverte, .pastille-fond.ouverte { outline: 2px solid var(--f-marque); outline-offset: 1px; }
+.segment { display: flex; border: 1px solid var(--f-bord); border-radius: 6px; height: 28px; padding: 2px; gap: 2px; background: var(--f-champ); }
+.segment span { flex: 1; display: grid; place-items: center; border-radius: 4px; color: var(--f-texte-2); white-space: nowrap; padding: 0 6px; }
+.segment .on { background: var(--f-tertiaire); color: var(--f-texte); font-weight: 600; }
+.segment.petit { height: 24px; }
+.tete-apercu { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.onglets-theme { display: flex; gap: 4px; }
+.onglets-theme span { height: 24px; padding: 0 8px; border-radius: 4px; display: grid; place-items: center; color: var(--f-texte-2); font-weight: 600; }
+.onglets-theme .on { background: var(--f-tertiaire); color: var(--f-texte); }
+.fond-f { display: flex; gap: 6px; align-items: center; }
+.pastille-fond { display: flex; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 6px; }
+.pastille-fond i { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--f-bord); }
+.ancre-picker { position: absolute; top: 44px; right: 12px; z-index: 2; }
+.ancre-picker.gauche { top: 86px; right: auto; left: 176px; }
+.picker { width: 232px; background: #2C2C2C; border: 1px solid #444; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,.55); padding: 10px; display: grid; gap: 10px; }
+.sv { position: relative; height: 150px; border-radius: 6px; }
+.sv i, .hue i { position: absolute; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.4); transform: translate(-50%, -50%); }
+.hue { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+.hue i { top: 50%; }
+.picker-ligne { display: flex; gap: 6px; }
+.format { height: 24px; padding: 0 8px; border-radius: 4px; display: grid; place-items: center; color: var(--f-texte-2); border: 1px solid transparent; }
+.code { flex: 1; height: 24px; padding: 0 8px; border-radius: 4px; border: 1px solid var(--f-bord); display: flex; align-items: center; font-variant-numeric: tabular-nums; white-space: pre; }
+.code.focus { border-color: var(--f-marque); box-shadow: 0 0 0 1px var(--f-marque); }
+.mention { color: var(--f-texte-2); }
+.picker-sep { height: 1px; background: #444; margin: 0 -10px; }
+.picker-titre { color: var(--f-texte-2); }
+.picker-pastilles { display: flex; flex-wrap: wrap; gap: 3px; }
+.picker-pastilles i { width: 16px; height: 16px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+.picker-pastilles i.choisie { box-shadow: 0 0 0 2px #2C2C2C, 0 0 0 3.5px #fff; }
+.mini-picker { display: grid; gap: 6px; font: 11px/16px Inter, sans-serif; --f-texte: #FFFFFF; --f-texte-2: #B3B3B3; --f-bord: #5E5E5E; --f-marque: #0D99FF; }
+.mini-picker .picker { color: var(--f-texte); }
+.mini-picker .picker-sep, .mini-picker .picker-titre, .mini-picker .picker-pastilles { display: none; }
+.surface { border-radius: 6px; padding: 10px 10px 8px; color: var(--encre); }
+.grille { display: grid; grid-template-columns: 34px 30px repeat(var(--col), 1fr); column-gap: 3px; row-gap: 3px; align-items: center; }
+.grille.libre { grid-template-columns: 34px repeat(var(--col), 1fr); }
+.grille .num { text-align: center; font-size: 9.5px; line-height: 12px; opacity: .7; font-variant-numeric: tabular-nums; }
+.grille .prof { font-size: 10px; font-weight: 600; }
+.sw { height: 26px; border-radius: 4px; position: relative; }
+.sw.onsolid { grid-row: span 2; height: 55px; border: 1px dashed #8C8C8C; }
+.sw.ref::after { content: "◆"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 10px; }
+.acc-note { margin-top: 6px; font-size: 9.5px; opacity: .6; }
+.ref-ligne { font-weight: 600; }
+.reglages-tete { display: flex; justify-content: space-between; }
+.trace { display: block; width: 100%; height: auto; background: #121212; border-radius: 6px; }
+.table-lum { display: grid; grid-template-columns: 36px repeat(11, 1fr); gap: 3px; align-items: center; }
+.num-f { text-align: center; font-size: 10px; color: var(--f-texte-2); font-variant-numeric: tabular-nums; }
+.num-f.g { text-align: left; }
+.mini-champ-f { height: 24px; border: 1px solid var(--f-bord); border-radius: 4px; background: var(--f-champ); display: grid; place-items: center; font-size: 11px; font-variant-numeric: tabular-nums; }
+.mini-champ-f.large { width: 56px; }
+.cote-a-cote { display: grid; grid-template-columns: 1fr 170px; gap: 12px; align-items: start; }
+.liste-lum { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 3px 6px; align-items: center; }
+.libelle.c { text-align: center; }
+.seuil-ligne { display: grid; grid-template-columns: 1fr 56px 44px; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--f-bord); }
+.seuil-ligne > div { display: grid; gap: 1px; }
+.unite { color: var(--f-texte-2); }
+.seuil-grille { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 10px; }
+.seuil-grille > div { display: grid; gap: 4px; }
+.aides { margin: 0; padding-left: 14px; color: var(--f-texte-2); font-size: 10.5px; line-height: 14px; }
+.aides li + li { margin-top: 2px; }
+.accordeon { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; background: var(--f-bloc); border: 1px solid var(--f-bord); border-radius: 8px; }
+.accordeon b { font-size: 12px; }
+.accordeon .resume { margin-left: auto; color: var(--f-texte-2); }
+.chevron { color: var(--f-texte-2); width: 10px; }
+.nuances-libres { display: grid; gap: 6px; }
+.puces { display: flex; flex-wrap: wrap; gap: 4px; }
+.puce { height: 22px; min-width: 36px; padding: 0 6px; border-radius: 11px; border: 1px solid var(--f-bord); display: grid; place-items: center; color: var(--f-texte-2); font-variant-numeric: tabular-nums; }
+.puce.on { background: var(--f-tertiaire); border-color: var(--f-texte-2); color: var(--f-texte); font-weight: 600; }
+.planche-tete-f { display: flex; align-items: center; gap: 10px; }
+.planche-tete-f b { margin-right: auto; }
+.fiche-ligne { display: flex; justify-content: space-between; }
+.etat-ok { color: var(--f-succes); }
+.gestes-f { display: flex; gap: 12px; color: var(--f-lien); }
+.planche-scene { display: grid; gap: 4px; }
+.planche-cadre { width: max-content; border: 1px solid var(--filet); border-radius: 6px; background: repeating-conic-gradient(#E5E5E5 0% 25%, #F0F0F0 0% 50%) 50% / 16px 16px; padding: 24px; }
+.planche-cadre .c { box-sizing: border-box; }
+.planche-cadre .t { display: block; font-family: Inter, system-ui, sans-serif; }
+.surface-13 { border-radius: 8px; padding: 12px; display: grid; gap: 8px; width: max-content; }
+.t13 { font-size: 12px; font-weight: 600; }
+.rampe-13 { display: flex; gap: 4px; }
+.rampe-13 > div { display: grid; gap: 2px; width: 62px; padding: 3px; border-radius: 6px; border: 1px solid transparent; font-size: 10px; line-height: 12px; }
+.rampe-13 > div.ajout { border-color: #D98A4A; }
+.rampe-13 b { font-weight: 600; }
+.rampe-13 i { font-style: normal; font-family: var(--mono); font-size: 9.5px; opacity: .75; }
+.surface-13[style*="#121212"] .rampe-13 { color: #F5F5F5; }
+.surface-13:not([style*="#121212"]) .rampe-13 { color: #1E1E1E; }
+.sw13 { height: 30px; border-radius: 4px; display: grid; place-items: center; font-size: 10px; }
+.sw13.ref::after { content: "◆"; }
+
+.b4 { height: 28px; padding: 0 10px; border-radius: 6px; display: inline-grid; place-items: center; font-weight: 600; white-space: nowrap; border: 1px solid var(--f-bord); }
+.b4.principal { background: var(--f-marque); border-color: var(--f-marque); color: #fff; }
+.b4.inactif { opacity: .5; }
+.gestes-4 { display: flex; flex-wrap: wrap; gap: 8px; }
+.gestes-4.ecartes { justify-content: space-between; }
+.gestes-4.a-droite { justify-content: flex-end; }
+.droite-4 { display: flex; gap: 8px; }
+.lien.petit, .petit { font-size: 10px; line-height: 13px; }
+.bdg { display: inline-block; margin-left: 4px; padding: 0 3px; border: 1px solid currentColor; border-radius: 3px; font: 600 9px/12px Inter, sans-serif; vertical-align: 1px; }
+.bdg.ko { border-style: dashed; }
+.bdg-plein { display: inline-block; padding: 0 4px; border-radius: 3px; font: 600 9px/13px Inter, sans-serif; background: #1F7A4A; color: #fff; }
+.bdg-plein.ko { background: #B42318; }
+.bdg-texte { font: 600 10px/13px Inter, sans-serif; }
+.bdg-texte.ko { color: #FF9C8A; }
+.bdg-planche { display: grid; gap: 8px; padding: 12px; width: 240px; }
+.bdg-ex { display: grid; grid-template-columns: 44px 44px 1fr; gap: 6px; align-items: center; }
+.sec { color: var(--f-texte-2); }
+.mono { font-family: var(--mono); }
+.d4 { border-radius: 6px; padding: 10px; display: grid; gap: 6px; }
+.d4 .sec { color: inherit; opacity: .72; }
+.d-tete { display: flex; gap: 8px; align-items: center; }
+.d-pastille { width: 36px; height: 36px; border-radius: 6px; border: 1px solid rgba(128,128,128,.4); }
+.d-copier { margin-left: auto; text-decoration: underline; }
+.d-sous { font-size: 10px; font-weight: 600; text-transform: uppercase; opacity: .72; }
+.d-usage { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: center; border-top: 1px solid rgba(128,128,128,.3); padding-top: 4px; }
+.spec { height: 22px; border-radius: 4px; border: 1.5px solid; }
+.d-gars { display: flex; flex-wrap: wrap; gap: 0 10px; }
+.gar.ko { text-decoration: underline; }
+.d-table { display: grid; grid-template-columns: 96px 56px auto; gap: 2px 8px; justify-items: start; }
+.d-repli { opacity: .72; }
+.d-ligne { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.g-ligne { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.g-ligne .gar { margin-left: auto; color: #FF9C8A; }
+.t4 { display: grid; gap: 2px; }
+.t4-ligne { display: flex; align-items: center; gap: 8px; }
+.t4-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; line-height: 24px; font-weight: 600; }
+.t4-dessous { display: flex; gap: 4px; flex-wrap: wrap; }
+.ko-t { color: #FF9C8A; }
+.e2 { max-width: 420px; border: 1px solid; border-radius: 12px; padding: 18px; display: grid; gap: 12px; font-size: 11px; }
+.e2-tete { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.e2-badge { padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+.e2-onglets { display: flex; gap: 14px; border-bottom: 1px solid; }
+.e2-onglets span { padding: 4px 0; }
+.e2-champ { display: grid; gap: 4px; }
+.e2-saisie { height: 30px; border: 1px solid; border-radius: 6px; display: flex; align-items: center; padding: 0 8px; }
+.e2-options { display: flex; gap: 16px; }
+.e2-options > span { display: flex; gap: 6px; align-items: center; }
+.e2-case { width: 16px; height: 16px; border-radius: 4px; display: grid; place-items: center; font-style: normal; font-size: 10px; }
+.e2-inter { width: 30px; height: 16px; border-radius: 8px; display: flex; justify-content: flex-end; padding: 2px; box-sizing: border-box; }
+.e2-inter b { width: 12px; height: 12px; border-radius: 50%; }
+.e2-encart { border: 1px solid; border-radius: 8px; padding: 8px 12px; }
+.e2-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.e2-actions span { height: 30px; padding: 0 14px; border-radius: 6px; display: grid; place-items: center; font-weight: 600; }
+.n50-grille { display: grid; gap: 12px; }
+.n50-rangee { display: grid; grid-template-columns: 180px repeat(4, 1fr); gap: 8px; align-items: stretch; }
+.n50-tete { display: grid; gap: 4px; align-content: center; font-size: 13px; }
+.n50-tete .sec { color: var(--encre-2); font-family: var(--mono); font-size: 11px; }
+.n50 { border-radius: 8px; padding: 10px; display: grid; gap: 6px; font: 11px/14px Inter, sans-serif; border: 1px solid var(--filet); }
+.n50-carte { height: 52px; border-radius: 6px; display: grid; place-items: center; border: 1px solid; }
+.n50-bouton { padding: 4px 12px; border-radius: 6px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+<section class="intro">
+  <span class="sur">UCM Palettes · plan d’ergonomie, quatrième tour · lot X2</span>
+  <h1>Maquettes à valider</h1>
+  <p>Chaque maquette montre le panneau à 500 px, dans le thème sombre de Figma, avec les couleurs et les ratios que le moteur calcule pour #1E6FD9 et #16A34A. Les lots X3, X4 et X5 sont déjà codés : leur disposition en place est la proposition A, face à au moins une autre. X2.1 et X2.6 n’ont rien dans le code. Chaque maquette finit par ses questions et une recommandation ; « recommandé » vaut accord si la question reste sans réponse.</p>
+  <p class="note">Page écrite par <code>generer-maquettes-v4.mjs</code>. Pour la régénérer : <code>node --import tsx "docs/notes/Recherches/Plugin Palettes/generer-maquettes-v4.mjs"</code>.</p>
+  <nav class="sommaire"><a href="#x2-1">X2.1 Création</a><a href="#x2-2">X2.2 Détail d’une nuance</a><a href="#x2-3">X2.3 Niveaux AA et AAA</a><a href="#x2-4">X2.4 Ligne du titre</a><a href="#x2-5">X2.5 Interface de test</a><a href="#x2-6">X2.6 Nuance 50</a></nav>
+</section>
+<section class="bloc" id="x2-1">
+  <div class="tete"><span class="sur">X2.1 · Création d’une palette</span><h2>Où poser Créer, la sélection Figma et Annuler</h2></div>
+  <p>Le retour du round 4 demande de revoir la place des gestes de la carte de création. Aujourd’hui, les trois boutons se suivent sous les colonnes, le geste principal en premier, et « Utiliser la couleur sélectionnée dans Figma » crée la palette tout de suite, sans passer par le champ de la couleur. Cette carte n’a pas changé dans le code : elle attend ta décision.</p>
+  <div class="scene"><div class="scene-rangee">
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="carte-f"><div class="carte-titre">Nouvelle palette</div><div class="trois">
+    <div><span class="libelle">Nom de la palette</span><div class="champ">Vert</div></div>
+    <div><span class="libelle">Couleur de référence</span><div class="champ-ligne"><span class="pipette-f" style="background:#16A34A"></span><div class="champ">#16A34A</div></div></div>
+    <div><span class="libelle">Palette de base</span><div class="segment"><span class="on">Auto</span><span>Soft</span><span>Vivid</span></div></div></div><div class="gestes-4"><span class="b4 principal">Créer la palette</span><span class="b4 second">Utiliser la couleur sélectionnée dans Figma</span><span class="b4 second">Annuler</span></div></div></div></div><p class="legende"><b>A · Aujourd’hui.</b> Trois boutons sur une ligne, de gauche à droite : Créer, la sélection Figma, Annuler. Annuler, le geste de sortie, finit la ligne après le plus long libellé.</p></div>
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="carte-f"><div class="carte-titre">Nouvelle palette</div><div class="trois">
+    <div><span class="libelle">Nom de la palette</span><div class="champ">Vert</div></div>
+    <div><span class="libelle">Couleur de référence</span><div class="champ-ligne"><span class="pipette-f" style="background:#16A34A"></span><div class="champ">#16A34A</div></div></div>
+    <div><span class="libelle">Palette de base</span><div class="segment"><span class="on">Auto</span><span>Soft</span><span>Vivid</span></div></div></div><div class="gestes-4 ecartes"><span><span class="b4 second">Utiliser la couleur sélectionnée dans Figma</span></span><span class="droite-4"><span class="b4 second">Annuler</span><span class="b4 principal">Créer la palette</span></span></div></div></div></div><p class="legende"><b>B · Geste principal à droite.</b> Annuler et Créer à droite, dans l’ordre des dialogues de Figma ; la sélection seule à gauche, comme un autre chemin.</p></div>
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="carte-f"><div class="carte-titre">Nouvelle palette</div><div class="trois">
+    <div><span class="libelle">Nom de la palette</span><div class="champ">Vert</div></div>
+    <div><span class="libelle">Couleur de référence</span><div class="champ-ligne"><span class="pipette-f" style="background:#16A34A"></span><div class="champ">#16A34A</div></div><span class="lien petit">Prendre la couleur sélectionnée dans Figma</span></div>
+    <div><span class="libelle">Palette de base</span><div class="segment"><span class="on">Auto</span><span>Soft</span><span>Vivid</span></div></div></div><div class="gestes-4 a-droite"><span class="b4 second">Annuler</span><span class="b4 principal">Créer la palette</span></div></div></div></div><p class="legende"><b>C · La sélection près du champ qu’elle remplit.</b> Un lien sous la couleur de référence prend la couleur du calque sélectionné et remplit le champ ; Créer reste le seul geste qui crée. Annuler et Créer à droite.</p></div>
+  </div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>La disposition.</b> <span class="reco">Recommandé : C.</span> La sélection Figma est une autre façon de saisir la couleur : elle se range près du champ, et le designer relit la couleur avant de créer. B garde le comportement actuel avec un ordre plus lisible.</li>
+    <li><b>Le comportement de la sélection, si C.</b> Elle remplit le champ sans créer. Une couleur Display P3 ramenée dans sRGB garde sa notice, sous le champ. <span class="reco">Recommandé.</span></li>
+  </ol></div>
+</section>
+<section class="bloc" id="x2-2">
+  <div class="tete"><span class="sur">X2.2 · Détail d’une nuance</span><h2>Une lecture courte : rôles, contrastes, niveaux</h2></div>
+  <p>Le détail d’aujourd’hui écrivait deux fois le contraste avec le fond et repliait le reste sous « Mesures détaillées ». Les deux dispositions gardent l’en-tête, les rôles avec leurs garanties et les trois contrastes ; chaque contraste porte son badge de texte courant. Bleu, Vivid 600, porte des rôles ; Vivid 500 n’en porte aucun.</p>
+  <div class="scene"><div class="scene-rangee">
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="carte-f"><div class="tete-apercu"><div class="onglets-theme"><span class="on">Thème Light</span><span>Thème Dark</span></div></div><div class="d4" style="background:#F7F7F7;color:#1E1E1E"><div class="d-tete"><span class="d-pastille" style="background:#1E6FD9"></span><div><b>Vivid · 600</b><div class="mono">#1E6FD9</div></div><span class="d-copier">Copier le code</span></div><b>◆ Votre couleur de référence exacte</b><div class="d-sous">Sert à</div><div class="d-usage"><span class="spec" style="background:transparent;border-color:#1E6FD9"></span><div><code>border-control</code> · default<div class="d-gars"><span class="gar">✓ sur fond : 4,52:1 <span class="bdg" title="Éléments graphiques : AA atteint">AA</span></span><span class="gar">✓ sur surface 100 : 4,19:1 <span class="bdg" title="Éléments graphiques : AA atteint">AA</span></span></div></div></div><div class="d-usage"><span class="spec" style="background:transparent;border-color:#1E6FD9"></span><div><code>focus</code> · default<div class="d-gars"><span class="gar">✓ sur fond : 4,52:1 <span class="bdg" title="Éléments graphiques : AA atteint">AA</span></span><span class="gar">✓ sur surface 100 : 4,19:1 <span class="bdg" title="Éléments graphiques : AA atteint">AA</span></span></div></div></div>
+      <div class="d-sous">Contrastes</div><div class="d-table"><span class="sec">Fond du thème</span><span>4,52:1</span><span class="bdg" title="Texte courant : AA atteint, AAA non atteint">AA</span><span class="sec">Blanc</span><span>4,84:1</span><span class="bdg" title="Texte courant : AA atteint, AAA non atteint">AA</span><span class="sec">Noir</span><span>4,33:1</span><span class="bdg ko" title="Texte courant : AA non atteint">AA ✗</span></div>
+      <div class="d-repli">▸ OKLCH</div></div></div></div></div><p class="legende"><b>A · Table compacte, en place dans le code.</b> Rôles d’abord, puis une table de trois lignes, un niveau par ligne ; OKLCH replié.</p></div>
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="carte-f"><div class="tete-apercu"><div class="onglets-theme"><span class="on">Thème Light</span><span>Thème Dark</span></div></div><div class="d4" style="background:#F7F7F7;color:#1E1E1E"><div class="d-tete"><span class="d-pastille" style="background:#1E6FD9"></span><div><b>Vivid · 600</b><div class="mono">#1E6FD9</div></div><span class="d-copier">Copier le code</span></div><b>◆ Votre couleur de référence exacte</b>
+    <div class="d-ligne"><span><span class="sec">Fond du thème</span> 4,52 <span class="bdg" title="Texte courant : AA atteint, AAA non atteint">AA</span></span><span><span class="sec">Blanc</span> 4,84 <span class="bdg" title="Texte courant : AA atteint, AAA non atteint">AA</span></span><span><span class="sec">Noir</span> 4,33 <span class="bdg ko" title="Texte courant : AA non atteint">AA ✗</span></span></div><div class="d-sous">Sert à</div><div class="d-usage"><span class="spec" style="background:transparent;border-color:#1E6FD9"></span><div><code>border-control</code> · default<div class="d-gars"><span class="gar">✓ sur fond : 4,52:1 <span class="bdg" title="Éléments graphiques : AA atteint">AA</span></span><span class="gar">✓ sur surface 100 : 4,19:1 <span class="bdg" title="Éléments graphiques : AA atteint">AA</span></span></div></div></div><div class="d-usage"><span class="spec" style="background:transparent;border-color:#1E6FD9"></span><div><code>focus</code> · default<div class="d-gars"><span class="gar">✓ sur fond : 4,52:1 <span class="bdg" title="Éléments graphiques : AA atteint">AA</span></span><span class="gar">✓ sur surface 100 : 4,19:1 <span class="bdg" title="Éléments graphiques : AA atteint">AA</span></span></div></div></div>
+    <div class="sec mono petit">L 0,555 · C 0,179 · H 257°</div></div></div></div></div><p class="legende"><b>B · Contrastes sous l’en-tête.</b> Les trois contrastes sur une ligne, sous le code ; les rôles ensuite ; OKLCH en clair, en petit, sans repli.</p></div>
+  </div><div class="scene-rangee">
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="carte-f"><div class="tete-apercu"><div class="onglets-theme"><span class="on">Thème Light</span><span>Thème Dark</span></div></div><div class="d4" style="background:#F7F7F7;color:#1E1E1E"><div class="d-tete"><span class="d-pastille" style="background:#4596FA"></span><div><b>Vivid · 500</b><div class="mono">#4596FA</div></div><span class="d-copier">Copier le code</span></div><div class="d-sous">Sans rôle</div>
+      <div class="d-sous">Contrastes</div><div class="d-table"><span class="sec">Fond du thème</span><span>2,80:1</span><span class="bdg ko" title="Texte courant : AA non atteint">AA ✗</span><span class="sec">Blanc</span><span>3,00:1</span><span class="bdg ko" title="Texte courant : AA non atteint">AA ✗</span><span class="sec">Noir</span><span>6,99:1</span><span class="bdg" title="Texte courant : AA atteint, AAA non atteint">AA</span></div>
+      <div class="d-repli">▸ OKLCH</div></div></div></div></div><p class="legende"><b>A · Nuance sans rôle.</b> « Sans rôle » à la place de « Sert à », puis la même table.</p></div>
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="carte-f"><div class="tete-apercu"><div class="onglets-theme"><span class="on">Thème Light</span><span>Thème Dark</span></div></div><div class="d4" style="background:#F7F7F7;color:#1E1E1E"><div class="d-tete"><span class="d-pastille" style="background:#4596FA"></span><div><b>Vivid · 500</b><div class="mono">#4596FA</div></div><span class="d-copier">Copier le code</span></div>
+    <div class="d-ligne"><span><span class="sec">Fond du thème</span> 2,80 <span class="bdg ko" title="Texte courant : AA non atteint">AA ✗</span></span><span><span class="sec">Blanc</span> 3,00 <span class="bdg ko" title="Texte courant : AA non atteint">AA ✗</span></span><span><span class="sec">Noir</span> 6,99 <span class="bdg" title="Texte courant : AA atteint, AAA non atteint">AA</span></span></div><div class="d-sous">Sans rôle</div>
+    <div class="sec mono petit">L 0,671 · C 0,168 · H 255°</div></div></div></div></div><p class="legende"><b>B · Nuance sans rôle.</b></p></div>
+  </div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>La disposition.</b> <span class="reco">Recommandé : A</span>, qui répond d’abord à « à quoi sert cette nuance », puis donne les contrastes alignés. B se lit plus vite quand la nuance n’a pas de rôle, mais ses trois contrastes ne s’alignent pas : le regard cherche chaque ratio dans la ligne.</li>
+    <li><b>Le libellé d’une nuance sans rôle.</b> « Sans rôle », en place ; « Aucun rôle dans le modèle » ; « Hors des rôles ». « Nuance libre » disparaît : « libre » désigne une palette sortie du modèle. <span class="reco">Recommandé : Sans rôle.</span></li>
+    <li><b>OKLCH.</b> Replié (A) ou lisible en petit (B). <span class="reco">Recommandé : replié</span> : il sert à comparer deux nuances, pas à choisir un usage.</li>
+  </ol></div>
+</section>
+<section class="bloc" id="x2-3">
+  <div class="tete"><span class="sur">X2.3 · Niveaux AA et AAA</span><h2>Un badge à côté de chaque contraste jugé</h2></div>
+  <p>Le badge suit les seuils fixes du WCAG (réponse Q4.2) : texte courant AA dès 4,5:1 et AAA dès 7:1, grand texte AA dès 3:1 et AAA dès 4,5:1, élément graphique AA dès 3:1 sans AAA. Son étiquette, lue par l’assistance technique, dit ce qu’il juge.</p>
+  <div class="scene"><div class="scene-rangee">
+    <div class="fp bdg-planche"><b>A · Cartouche, en place</b><div class="bdg-ex"><span>7,12:1</span><span class="bdg" title="Texte courant : AAA atteint">AAA</span><span class="sec petit">Texte courant : AAA atteint</span></div><div class="bdg-ex"><span>5,34:1</span><span class="bdg" title="Texte courant : AA atteint, AAA non atteint">AA</span><span class="sec petit">Texte courant : AA atteint, AAA non atteint</span></div><div class="bdg-ex"><span>4,19:1</span><span class="bdg ko" title="Texte courant : AA non atteint">AA ✗</span><span class="sec petit">Texte courant : AA non atteint</span></div><div class="bdg-ex"><span>3,20:1</span><span class="bdg ko" title="Texte courant : AA non atteint">AA ✗</span><span class="sec petit">Texte courant : AA non atteint</span></div><div class="bdg-ex"><span>2,07:1</span><span class="bdg ko" title="Texte courant : AA non atteint">AA ✗</span><span class="sec petit">Texte courant : AA non atteint</span></div></div>
+    <div class="fp bdg-planche"><b>B · Pastille pleine</b><div class="bdg-ex"><span>7,12:1</span><span class="bdg-plein">AAA</span><span class="sec petit">Texte courant : AAA atteint</span></div><div class="bdg-ex"><span>5,34:1</span><span class="bdg-plein">AA</span><span class="sec petit">Texte courant : AA atteint, AAA non atteint</span></div><div class="bdg-ex"><span>4,19:1</span><span class="bdg-plein ko">AA</span><span class="sec petit">Texte courant : AA non atteint</span></div><div class="bdg-ex"><span>3,20:1</span><span class="bdg-plein ko">AA</span><span class="sec petit">Texte courant : AA non atteint</span></div><div class="bdg-ex"><span>2,07:1</span><span class="bdg-plein ko">AA</span><span class="sec petit">Texte courant : AA non atteint</span></div></div>
+    <div class="fp bdg-planche"><b>C · Texte seul</b><div class="bdg-ex"><span>7,12:1</span><span class="bdg-texte">AAA ✓</span><span class="sec petit">Texte courant : AAA atteint</span></div><div class="bdg-ex"><span>5,34:1</span><span class="bdg-texte">AA ✓</span><span class="sec petit">Texte courant : AA atteint, AAA non atteint</span></div><div class="bdg-ex"><span>4,19:1</span><span class="bdg-texte ko">AA ✗</span><span class="sec petit">Texte courant : AA non atteint</span></div><div class="bdg-ex"><span>3,20:1</span><span class="bdg-texte ko">AA ✗</span><span class="sec petit">Texte courant : AA non atteint</span></div><div class="bdg-ex"><span>2,07:1</span><span class="bdg-texte ko">AA ✗</span><span class="sec petit">Texte courant : AA non atteint</span></div></div>
+  </div></div>
+  <p class="legende">A : un cartouche de la couleur du texte voisin, tireté sous AA. B : un fond vert ou rouge, qui fait porter au badge la couleur de sévérité. C : aucun cadre, le signe dit le résultat.</p>
+  <div class="scene"><div class="scene-rangee"><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="carte-f"><div class="carte-titre">Bleu · Garanties de contraste · minimum des textes réglé à 5,5:1</div><div class="g-ligne"><code>text</code> sur <code>surface</code> · Soft · Thème Light<span class="gar ko">✗ 5,19 <span class="bdg" title="Texte courant : AA atteint, AAA non atteint">AA</span></span></div><p class="aide">État default : 5,19:1 pour un minimum de 5,5:1. La promesse suit le minimum ; le badge dit le niveau WCAG.</p></div></div></div><p class="legende">Minimum des textes réglé à 5,5:1, faute d’une garantie de Bleu ou de Vert entre 4,5:1 et 5:1 : la promesse est manquée, le badge dit AA atteint. Les deux se lisent côte à côte sans se contredire, parce qu’ils ne jugent pas la même chose.</p></div></div></div>
+  <div class="recap"><table><tr><th>Endroit</th><th>Ce que le badge juge</th><th>Code</th></tr><tr><td>Détail d’une nuance, table des contrastes</td><td>Texte courant</td><td>Fait</td></tr><tr><td>Détail d’une nuance, garanties d’un rôle</td><td>Selon la paire : texte courant, ou élément graphique</td><td>Fait</td></tr><tr><td>Carte des garanties, sous chaque spécimen</td><td>Selon la paire</td><td>Fait</td></tr><tr><td>Planche, garanties d’un usage</td><td>Selon la paire, écrit « · AA » à la fin de la ligne</td><td>Fait</td></tr><tr><td>Planche, cases des grilles</td><td>Texte courant, seulement quand AA est atteint : « 7,11 AAA »</td><td>Fait</td></tr><tr><td>Panneau « Ajuster la référence », garanties après</td><td>Selon la paire</td><td>Fait</td></tr><tr><td>Tête des Réglages communs</td><td>Aucun contraste n’y est écrit ; un badge dirait le niveau que le minimum des textes vise : « 4,5:1 · AA »</td><td>À décider</td></tr></table></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>La forme.</b> <span class="reco">Recommandé : A</span>, qui reste lisible sur le fond peint de l’aperçu et laisse la couleur de sévérité au ✗ de la promesse. B double le signal de couleur ; C se confond avec le ratio.</li>
+    <li><b>Les endroits.</b> La table ci-dessus. <span class="reco">Recommandé : sans badge en tête des Réglages communs</span>, qui ne montre aucun contraste mesuré.</li>
+    <li><b>Les grilles de la planche.</b> Le niveau suit le ratio dans le même calque, seulement quand AA est atteint. <span class="reco">Recommandé</span> : une case sous 4,5:1 garde son ratio seul, la graisse dit déjà qu’elle ne tient pas le texte courant.</li>
+  </ol></div>
+</section>
+<section class="bloc" id="x2-4">
+  <div class="tete"><span class="sur">X2.4 · Ligne du titre</span><h2>« Palette [nom] » et le geste de génération sur une ligne</h2></div>
+  <p>Disposition A, en place dans le code : le libellé du bouton dit l’état du cadre. « Actualiser sur Figma » quand le cadre a changé, « À jour sur Figma » inactif quand il est à jour (réponse Q4.5). Sous le titre, une ligne de rang 3 porte l’enregistrement, l’état d’un cadre introuvable ou illisible, la progression et « Afficher dans Figma », qui quittent la carte de génération.</p>
+  <div class="scene"><div class="scene-rangee"><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette Bleu</span><span class="b4 principal">Générer sur Figma</span></div><div class="t4-dessous"><span class="sec">Enregistré</span></div></div><div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="aide">…</div></div></div></div><p class="legende"><b>Jamais générée.</b></p></div><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette Bleu</span><span class="b4 principal">Actualiser sur Figma</span></div><div class="t4-dessous"><span class="sec">Enregistré</span><span class="sec"> · </span><span class="lien">Afficher dans Figma</span></div></div><div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="aide">…</div></div></div></div><p class="legende"><b>Cadre changé depuis.</b></p></div><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette Bleu</span><span class="b4 principal inactif">À jour sur Figma</span></div><div class="t4-dessous"><span class="sec">Enregistré</span><span class="sec"> · </span><span class="lien">Afficher dans Figma</span></div></div><div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="aide">…</div></div></div></div><p class="legende"><b>Cadre à jour.</b></p></div><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette Bleu</span><span class="b4 principal">Générer sur Figma</span></div><div class="t4-dessous"><span class="sec">Enregistré</span><span class="sec"> · </span><span class="ko-t">Cadre introuvable</span></div></div><div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="aide">…</div></div></div></div><p class="legende"><b>Cadre introuvable.</b></p></div><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette Bleu</span><span class="b4 principal">Générer sur Figma</span></div><div class="t4-dessous"><span class="sec">Enregistré</span><span class="sec"> · </span><span class="ko-t">Lecture impossible</span></div></div><div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="aide">…</div></div></div></div><p class="legende"><b>Cadre illisible.</b></p></div></div><div class="scene-rangee"><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette Bleu</span><span class="b4 principal inactif">Génération…</span></div><div class="t4-dessous"><span class="sec">Enregistré</span><span class="sec"> · </span><span class="sec">Génération de « Bleu »…</span></div></div><div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="aide">…</div></div></div></div><p class="legende"><b>Pendant la génération.</b> Le bouton dit « Génération… », la progression s’écrit dessous.</p></div><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette Bleu</span><span class="b4 principal inactif">Actualiser sur Figma</span></div><div class="t4-dessous"><span class="sec">Enregistré</span><span class="sec"> · </span><span class="lien">Afficher dans Figma</span></div><p class="aide petit">Infobulle du bouton : Exportez vos modifications ou rechargez les palettes avant d’enregistrer, d’importer ou de générer.</p></div><div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="aide">…</div></div></div></div><p class="legende"><b>Conflit d’enregistrement.</b> Le bouton est inactif, sa raison en infobulle ; le refus est en tête de l’onglet.</p></div><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette Bleu institutionnel des parcours de souscription en ligne</span><span class="b4 principal">Générer sur Figma</span></div><div class="t4-dessous"><span class="sec">Enregistré</span></div></div><div class="carte-f"><div class="carte-titre">Configuration de la palette</div><div class="aide">…</div></div></div></div><p class="legende"><b>Nom long à 500 px.</b> Le nom se coupe, le bouton garde son libellé.</p></div><div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="fp-select"><div class="champ grand"><span class="pastille rond" style="background:#1E6FD9"></span><b class="coupe">Bleu</b><span class="fleche">▾</span></div><div class="btn-f">Nouvelle palette</div><div class="bouton-icone grand">⋯</div></div><div class="t4"><div class="t4-ligne"><span class="t4-nom">Palette Bleu</span><span class="sec">À mettre à jour</span><span class="b4 principal">Générer sur Figma</span></div><div class="t4-dessous"><span class="sec">Enregistré</span></div></div></div></div><p class="legende"><b>B · L’état entre le nom et le bouton.</b> Le bouton garde « Générer sur Figma » et l’état s’écrit à sa gauche : moins de libellés, mais le nom se coupe plus tôt.</p></div></div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>La disposition.</b> <span class="reco">Recommandé : A</span>, où le bouton dit à lui seul si la palette est dans Figma et à jour. B garde un libellé fixe au prix d’un objet de plus sur la ligne.</li>
+    <li><b>Introuvable et illisible.</b> Le bouton garde « Générer sur Figma », l’état s’écrit en rouge dessous. <span class="reco">Recommandé.</span></li>
+    <li><b>« Afficher dans Figma ».</b> Sous le titre, à côté de « Enregistré ». <span class="reco">Recommandé.</span> Autre choix : dans le menu « … » de la barre.</li>
+  </ol></div>
+</section>
+<section class="bloc" id="x2-5">
+  <div class="tete"><span class="sur">X2.5 · Interface de test</span><h2>L’écran de réglages, dans l’onglet et plus sur la planche</h2></div>
+  <p>La dernière carte de l’onglet montre l’écran E2 en HTML, peint de la palette ouverte dans le thème de l’aperçu et le profil porteur ; chaque couleur vient de la table des emplois. Dans le plugin, les contrôles se manipulent : survol et appui avancent d’une nuance.</p>
+  <div class="scene"><div class="scene-rangee">
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="accordeon"><span class="chevron">›</span><b>Garanties de contraste</b><span class="resume">Thème Light · Soft ✓ Vivid ✓</span></div><div class="accordeon"><span class="chevron">⌄</span><b>Interface de test</b><span class="resume">Thème Light · Vivid</span></div><div class="carte-f"><div class="e2" style="background:#F7F7F7;color:#1E1E1E;border-color:#A9D0FD">
+    <div class="e2-tete"><b>Paramètres de l’équipe</b><span class="e2-badge" style="background:#E3F0FE;color:#0E5DC6">Nouveau</span></div>
+    <div class="e2-onglets" style="border-color:#A9D0FD"><span style="box-shadow:inset 0 -2px 0 #0E5DC6;font-weight:600">Général</span><span style="color:rgba(30, 30, 30, 0.72)">Membres</span><span style="color:rgba(30, 30, 30, 0.72)">Facturation</span></div>
+    <div class="e2-champ"><span>Nom de l’équipe</span><span class="e2-saisie" style="border-color:#1E6FD9;box-shadow:0 0 0 2px #F7F7F7,0 0 0 4px #1E6FD9">Studio Nord</span></div>
+    <div class="e2-options"><span><i class="e2-case" style="background:#0E5DC6;color:#F7F7F7">✓</i>Notifier les membres</span><span><i class="e2-inter" style="background:#0E5DC6"><b style="background:#F7F7F7"></b></i>Accès invité</span></div>
+    <div class="e2-encart" style="background:#E3F0FE;color:#0E5DC6;border-color:#A9D0FD">ⓘ Les membres invités reçoivent un e-mail. En savoir plus</div>
+    <div class="e2-actions"><span style="color:#0E5DC6">Annuler</span><span style="background:#E3F0FE;color:#0E5DC6">Brouillon</span><span style="background:#0E5DC6;color:#F7F7F7">Enregistrer</span></div>
+  </div></div></div></div><p class="legende"><b>Thème Light, dépliée.</b></p></div>
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="accordeon"><span class="chevron">›</span><b>Garanties de contraste</b><span class="resume">Thème Light · Soft ✓ Vivid ✓</span></div><div class="accordeon"><span class="chevron">⌄</span><b>Interface de test</b><span class="resume">Thème Dark · Vivid</span></div><div class="carte-f"><div class="e2" style="background:#121212;color:#F5F5F5;border-color:#032D7B">
+    <div class="e2-tete"><b>Paramètres de l’équipe</b><span class="e2-badge" style="background:#01154B;color:#4596FA">Nouveau</span></div>
+    <div class="e2-onglets" style="border-color:#032D7B"><span style="box-shadow:inset 0 -2px 0 #4596FA;font-weight:600">Général</span><span style="color:rgba(245, 245, 245, 0.72)">Membres</span><span style="color:rgba(245, 245, 245, 0.72)">Facturation</span></div>
+    <div class="e2-champ"><span>Nom de l’équipe</span><span class="e2-saisie" style="border-color:#1E6FD9;box-shadow:0 0 0 2px #121212,0 0 0 4px #1E6FD9">Studio Nord</span></div>
+    <div class="e2-options"><span><i class="e2-case" style="background:#4596FA;color:#121212">✓</i>Notifier les membres</span><span><i class="e2-inter" style="background:#4596FA"><b style="background:#121212"></b></i>Accès invité</span></div>
+    <div class="e2-encart" style="background:#01154B;color:#4596FA;border-color:#032D7B">ⓘ Les membres invités reçoivent un e-mail. En savoir plus</div>
+    <div class="e2-actions"><span style="color:#4596FA">Annuler</span><span style="background:#01154B;color:#4596FA">Brouillon</span><span style="background:#4596FA;color:#121212">Enregistrer</span></div>
+  </div></div></div></div><p class="legende"><b>Thème Dark, dépliée.</b> L’écran suit le thème choisi dans l’aperçu.</p></div>
+  </div><div class="scene-rangee">
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="accordeon"><span class="chevron">›</span><b>Garanties de contraste</b><span class="resume">Thème Light · Soft ✓ Vivid ✓</span></div><div class="accordeon"><span class="chevron">›</span><b>Interface de test</b><span class="resume">Thème Light · Vivid</span></div></div></div><p class="legende"><b>Repliée à l’ouverture, en place.</b> Son résumé dit le thème et le profil.</p></div>
+    <div><div class="fp" style="width:500px"><div class="fp-barre"><span class="actif">Palettes</span><span class="inactif">Planches</span><span class="engrenage">⚙</span></div><div class="fp-corps"><div class="accordeon"><span class="chevron">⌄</span><b>Interface de test</b><span class="resume">Palette libre · 6 nuances</span></div><div class="carte-f"><p class="aide">Une palette libre n’a pas de rôles : l’écran de test ne sait pas quelle nuance poser où.</p></div></div></div><p class="legende"><b>Palette libre, variante B.</b> Aujourd’hui la carte se retire, comme les garanties ; B la garde avec une phrase.</p></div>
+  </div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>Ouverte ou repliée à l’ouverture.</b> <span class="reco">Recommandé : repliée</span>, comme Intensités et Dérive, gardée ouverte pendant la session une fois dépliée.</li>
+    <li><b>Palette libre.</b> <span class="reco">Recommandé : la carte se retire</span>, comme les garanties ; B explique pourquoi elle manque.</li>
+  </ol></div>
+</section>
+<section class="bloc" id="x2-6">
+  <div class="tete"><span class="sur">X2.6 · Nuance 50</span><h2>Quel emploi pour la nuance 50</h2></div>
+  <p>Ta réponse à Q4.1 : la 50 serait plutôt un fond de composant qu’un fond de page. Les options, sur une carte posée sur le fond du thème : <b>A</b>, <code>surface</code> passe à 50 (ses états à 100 et 200) ; <b>B</b>, un emploi nouveau à 50, le fond de page teinté ; <b>D</b>, un emploi nouveau à 50, fond discret d’un composant (bandeau, en-tête de carte, ligne alternée de tableau), le deuxième cran de Radix, <code>surface</code> restant à 100 ; <b>C</b>, aucun emploi, comme aujourd’hui. Chaque vignette mesure l’écart de la couleur de la carte avec ce qui l’entoure.</p>
+  <div class="n50-grille"><div class="n50-rangee"><div class="n50-tete" style="color:var(--encre)"><b>Bleu · Thème Light</b><span class="sec">fond #F7F7F7 · 50 #F1F8FF · 100 #E3F0FE</span></div>
+      <div class="n50" style="background:#F7F7F7;color:#1E1E1E"><b>A</b><div class="n50-carte" style="background:#F1F8FF;border-color:#A9D0FD"><span class="n50-bouton" style="background:#F1F8FF;color:#0E5DC6">Soft</span></div><span class="petit">carte et bouton soft en surface 50 ; la carte sur le fond : ΔEok 0,012 · 1,00:1</span></div>
+      <div class="n50" style="background:#F1F8FF;color:#1E1E1E"><b>B</b><div class="n50-carte" style="background:#F7F7F7;border-color:#A9D0FD"><span class="n50-bouton" style="background:#E3F0FE;color:#0E5DC6">Soft</span></div><span class="petit">fond de page 50 ; la carte garde le fond du thème : ΔEok 0,012 · 1,00:1</span></div>
+      <div class="n50" style="background:#F7F7F7;color:#1E1E1E"><b>D</b><div class="n50-carte" style="background:#F1F8FF;border-color:#A9D0FD"><span class="n50-bouton" style="background:#E3F0FE;color:#0E5DC6">Soft</span></div><span class="petit">carte en fond discret 50 sur le fond : ΔEok 0,012 · 1,00:1 ; bouton soft 100 sur la carte : ΔEok 0,029 · 1,07:1</span></div>
+      <div class="n50" style="background:#F7F7F7;color:#1E1E1E"><b>C</b><div class="n50-carte" style="background:#F7F7F7;border-color:#A9D0FD"><span class="n50-bouton" style="background:#E3F0FE;color:#0E5DC6">Soft</span></div><span class="petit">aujourd’hui : la 50 sans emploi, bouton soft en surface 100</span></div>
+    </div><div class="n50-rangee"><div class="n50-tete" style="color:var(--encre)"><b>Bleu · Thème Dark</b><span class="sec">fond #121212 · 50 #000C35 · 100 #01154B</span></div>
+      <div class="n50" style="background:#121212;color:#F5F5F5"><b>A</b><div class="n50-carte" style="background:#000C35;border-color:#032D7B"><span class="n50-bouton" style="background:#000C35;color:#4596FA">Soft</span></div><span class="petit">carte et bouton soft en surface 50 ; la carte sur le fond : ΔEok 0,084 · 1,01:1</span></div>
+      <div class="n50" style="background:#000C35;color:#F5F5F5"><b>B</b><div class="n50-carte" style="background:#121212;border-color:#032D7B"><span class="n50-bouton" style="background:#01154B;color:#4596FA">Soft</span></div><span class="petit">fond de page 50 ; la carte garde le fond du thème : ΔEok 0,084 · 1,01:1</span></div>
+      <div class="n50" style="background:#121212;color:#F5F5F5"><b>D</b><div class="n50-carte" style="background:#000C35;border-color:#032D7B"><span class="n50-bouton" style="background:#01154B;color:#4596FA">Soft</span></div><span class="petit">carte en fond discret 50 sur le fond : ΔEok 0,084 · 1,01:1 ; bouton soft 100 sur la carte : ΔEok 0,051 · 1,09:1</span></div>
+      <div class="n50" style="background:#121212;color:#F5F5F5"><b>C</b><div class="n50-carte" style="background:#121212;border-color:#032D7B"><span class="n50-bouton" style="background:#01154B;color:#4596FA">Soft</span></div><span class="petit">aujourd’hui : la 50 sans emploi, bouton soft en surface 100</span></div>
+    </div><div class="n50-rangee"><div class="n50-tete" style="color:var(--encre)"><b>Vert · Thème Light</b><span class="sec">fond #F7F7F7 · 50 #E6FFE9 · 100 #CAFED2</span></div>
+      <div class="n50" style="background:#F7F7F7;color:#1E1E1E"><b>A</b><div class="n50-carte" style="background:#E6FFE9;border-color:#2FF274"><span class="n50-bouton" style="background:#E6FFE9;color:#127735">Soft</span></div><span class="petit">carte et bouton soft en surface 50 ; la carte sur le fond : ΔEok 0,039 · 1,01:1</span></div>
+      <div class="n50" style="background:#E6FFE9;color:#1E1E1E"><b>B</b><div class="n50-carte" style="background:#F7F7F7;border-color:#2FF274"><span class="n50-bouton" style="background:#CAFED2;color:#127735">Soft</span></div><span class="petit">fond de page 50 ; la carte garde le fond du thème : ΔEok 0,039 · 1,01:1</span></div>
+      <div class="n50" style="background:#F7F7F7;color:#1E1E1E"><b>D</b><div class="n50-carte" style="background:#E6FFE9;border-color:#2FF274"><span class="n50-bouton" style="background:#CAFED2;color:#127735">Soft</span></div><span class="petit">carte en fond discret 50 sur le fond : ΔEok 0,039 · 1,01:1 ; bouton soft 100 sur la carte : ΔEok 0,048 · 1,06:1</span></div>
+      <div class="n50" style="background:#F7F7F7;color:#1E1E1E"><b>C</b><div class="n50-carte" style="background:#F7F7F7;border-color:#2FF274"><span class="n50-bouton" style="background:#CAFED2;color:#127735">Soft</span></div><span class="petit">aujourd’hui : la 50 sans emploi, bouton soft en surface 100</span></div>
+    </div><div class="n50-rangee"><div class="n50-tete" style="color:var(--encre)"><b>Vert · Thème Dark</b><span class="sec">fond #121212 · 50 #011705 · 100 #02230B</span></div>
+      <div class="n50" style="background:#121212;color:#F5F5F5"><b>A</b><div class="n50-carte" style="background:#011705;border-color:#06411A"><span class="n50-bouton" style="background:#011705;color:#16A34A">Soft</span></div><span class="petit">carte et bouton soft en surface 50 ; la carte sur le fond : ΔEok 0,049 · 1,00:1</span></div>
+      <div class="n50" style="background:#011705;color:#F5F5F5"><b>B</b><div class="n50-carte" style="background:#121212;border-color:#06411A"><span class="n50-bouton" style="background:#02230B;color:#16A34A">Soft</span></div><span class="petit">fond de page 50 ; la carte garde le fond du thème : ΔEok 0,049 · 1,00:1</span></div>
+      <div class="n50" style="background:#121212;color:#F5F5F5"><b>D</b><div class="n50-carte" style="background:#011705;border-color:#06411A"><span class="n50-bouton" style="background:#02230B;color:#16A34A">Soft</span></div><span class="petit">carte en fond discret 50 sur le fond : ΔEok 0,049 · 1,00:1 ; bouton soft 100 sur la carte : ΔEok 0,047 · 1,10:1</span></div>
+      <div class="n50" style="background:#121212;color:#F5F5F5"><b>C</b><div class="n50-carte" style="background:#121212;border-color:#06411A"><span class="n50-bouton" style="background:#02230B;color:#16A34A">Soft</span></div><span class="petit">aujourd’hui : la 50 sans emploi, bouton soft en surface 100</span></div>
+    </div></div>
+  <p class="legende">Sur un fond personnalisé saturé, #FFF1C2 et #1B2340 :</p>
+  <div class="n50-grille"><div class="n50-rangee"><div class="n50-tete" style="color:var(--encre)"><b>Bleu · Thème Light</b><span class="sec">fond #FFF1C2 · 50 #F1F8FF · 100 #E3F0FE</span></div>
+      <div class="n50" style="background:#FFF1C2;color:#1E1E1E"><b>A</b><div class="n50-carte" style="background:#F1F8FF;border-color:#A9D0FD"><span class="n50-bouton" style="background:#F1F8FF;color:#0E5DC6">Soft</span></div><span class="petit">carte et bouton soft en surface 50 ; la carte sur le fond : ΔEok 0,076 · 1,05:1</span></div>
+      <div class="n50" style="background:#F1F8FF;color:#1E1E1E"><b>B</b><div class="n50-carte" style="background:#FFF1C2;border-color:#A9D0FD"><span class="n50-bouton" style="background:#E3F0FE;color:#0E5DC6">Soft</span></div><span class="petit">fond de page 50 ; la carte garde le fond du thème : ΔEok 0,076 · 1,05:1</span></div>
+      <div class="n50" style="background:#FFF1C2;color:#1E1E1E"><b>D</b><div class="n50-carte" style="background:#F1F8FF;border-color:#A9D0FD"><span class="n50-bouton" style="background:#E3F0FE;color:#0E5DC6">Soft</span></div><span class="petit">carte en fond discret 50 sur le fond : ΔEok 0,076 · 1,05:1 ; bouton soft 100 sur la carte : ΔEok 0,029 · 1,07:1</span></div>
+      <div class="n50" style="background:#FFF1C2;color:#1E1E1E"><b>C</b><div class="n50-carte" style="background:#FFF1C2;border-color:#A9D0FD"><span class="n50-bouton" style="background:#E3F0FE;color:#0E5DC6">Soft</span></div><span class="petit">aujourd’hui : la 50 sans emploi, bouton soft en surface 100</span></div>
+    </div><div class="n50-rangee"><div class="n50-tete" style="color:var(--encre)"><b>Bleu · Thème Dark</b><span class="sec">fond #1B2340 · 50 #000C35 · 100 #01154B</span></div>
+      <div class="n50" style="background:#1B2340;color:#F5F5F5"><b>A</b><div class="n50-carte" style="background:#000C35;border-color:#032D7B"><span class="n50-bouton" style="background:#000C35;color:#4596FA">Soft</span></div><span class="petit">carte et bouton soft en surface 50 ; la carte sur le fond : ΔEok 0,091 · 1,23:1</span></div>
+      <div class="n50" style="background:#000C35;color:#F5F5F5"><b>B</b><div class="n50-carte" style="background:#1B2340;border-color:#032D7B"><span class="n50-bouton" style="background:#01154B;color:#4596FA">Soft</span></div><span class="petit">fond de page 50 ; la carte garde le fond du thème : ΔEok 0,091 · 1,23:1</span></div>
+      <div class="n50" style="background:#1B2340;color:#F5F5F5"><b>D</b><div class="n50-carte" style="background:#000C35;border-color:#032D7B"><span class="n50-bouton" style="background:#01154B;color:#4596FA">Soft</span></div><span class="petit">carte en fond discret 50 sur le fond : ΔEok 0,091 · 1,23:1 ; bouton soft 100 sur la carte : ΔEok 0,051 · 1,09:1</span></div>
+      <div class="n50" style="background:#1B2340;color:#F5F5F5"><b>C</b><div class="n50-carte" style="background:#1B2340;border-color:#032D7B"><span class="n50-bouton" style="background:#01154B;color:#4596FA">Soft</span></div><span class="petit">aujourd’hui : la 50 sans emploi, bouton soft en surface 100</span></div>
+    </div></div>
+  <div class="questions"><h3>Questions</h3><ol>
+    <li><b>L’emploi de la 50.</b> En A comme en D, une carte en 50 se distingue à peine du fond par défaut : sa luminosité est celle du fond, seule sa teinte l’en sépare (ΔEok 0,012 pour Bleu en Light). Un fond de composant en 50 se lit donc bordé, ou posé sur un fond personnalisé. A déplace en plus <code>surface</code>, et un bouton soft y disparaît dans une carte en 50. D garde <code>surface</code> à 100 et ajoute un token. <span class="reco">Recommandé : D</span>, avec un nom à choisir, par exemple <code>surface-subtle</code>, si un fond de composant bordé te suffit ; sinon C.</li>
+    <li><b>Si A.</b> Tous les tokens <code>surface</code> de la bibliothèque changent de valeur, et l’équipe du design system est prévenue (X6.2).</li>
+  </ol></div>
+</section>
+</main>
+</body>
+</html>

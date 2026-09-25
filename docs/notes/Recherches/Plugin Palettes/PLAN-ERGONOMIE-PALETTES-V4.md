@@ -17,9 +17,10 @@ Ce plan est destiné à l’agent qui réalisera les changements. Il remplace le
 cases encore ouvertes du [troisième plan](./PLAN-ERGONOMIE-PALETTES-V3.md),
 dont les décisions restent valables quand ce document ne les remplace pas.
 Le mainteneur a répondu aux [questions](#questions-au-mainteneur), sauf Q4.1,
-à discuter, et a demandé de coder sans les maquettes X2 : chaque lot dit la
-disposition retenue, que le mainteneur valide dans le plugin. Il fait
-lui-même les tests d’interface et la recette dans Figma.
+à discuter. Les lots X3, X4 et X5 ont été codés avant les maquettes X2 ; leur
+disposition est la proposition A des [maquettes du quatrième
+tour](./MAQUETTES-RECETTE-V4.html), et elle se reprend selon la réponse du
+mainteneur. Il fait lui-même les tests d’interface et la recette dans Figma.
 
 ## Autorités
 
@@ -28,8 +29,8 @@ Lire dans cet ordre :
 1. les [retours du mainteneur](#retours-du-mainteneur-round-4), conservés
    sans modification, et ses réponses aux questions, une fois données ;
 2. les décisions ci-dessous ;
-3. les maquettes du lot X2, une fois validées ; d’ici là, les
-   [maquettes du troisième tour](./MAQUETTES-RECETTE-V3.html) ;
+3. les [maquettes du lot X2](./MAQUETTES-RECETTE-V4.html), une fois validées ;
+   d’ici là, les [maquettes du troisième tour](./MAQUETTES-RECETTE-V3.html) ;
 4. le [troisième plan](./PLAN-ERGONOMIE-PALETTES-V3.md), la
    [conception du format 3](./CONCEPTION-NUANCES-ET-FORMAT-3.md), les
    [décisions de rédaction](./DECISIONS-REDACTION-PALETTES.md) et
@@ -184,6 +185,8 @@ Fichiers : `textes.ts`, `ongletPalettes.ts`, `nuancier.ts`, `styles.css`,
   unitaire pour la désélection (`memeChoix`), vu rouge sur une mutation. L’ordre
   des cartes et le survol du bouton danger restent au mainteneur, dans le plugin
   : pas de test d’interface dans ce tour.
+- [ ] **X1.7** Appliquer à la carte de création la disposition retenue en
+  X2.1, après validation.
 
 Critère : aux deux thèmes de Figma, le bouton de suppression se lit comme
 une action destructive et ne vire jamais au bleu ; une nuance se choisit et
@@ -191,38 +194,57 @@ se relâche d’un même geste.
 
 ## Lot X2 : maquettes à valider
 
-Non produites : le mainteneur a demandé de coder directement. Chaque lot
-suivant dit la disposition retenue.
+Produites dans [MAQUETTES-RECETTE-V4.html](./MAQUETTES-RECETTE-V4.html),
+que `generer-maquettes-v4.mjs` écrit. Toutes attendent la validation du
+mainteneur. X3, X4 et X5 sont déjà codés : leur disposition en place est la
+proposition A de leur maquette.
 
 Un fichier `MAQUETTES-RECETTE-V4.html`, au format des précédentes : panneau à
 500 px, thème sombre de Figma, couleurs et ratios calculés par le moteur pour
 `#1E6FD9` et `#16A34A`. Chaque maquette se termine par ses questions, avec
 une recommandation.
 
-- [ ] **X2.1** Création d’une palette : au moins deux placements des gestes
+- [x] **X2.1** Création d’une palette : au moins deux placements des gestes
   Créer, Depuis la sélection et Annuler, par exemple le geste principal à
   droite sous les colonnes et les deux autres à gauche, ou Depuis la
-  sélection à côté de la couleur de référence qu’il remplit.
-- [ ] **X2.2** Détail d’une nuance, avec rôle et sans rôle : en-tête (pastille,
+  sélection à côté de la couleur de référence qu’il remplit. Produite : A, la
+  disposition actuelle ; B, Créer à droite et la sélection à gauche ; C, la
+  sélection en lien sous la couleur de référence, qui remplit le champ sans
+  créer. Recommandé : C. Rien n’est codé : X1.7 applique la réponse.
+- [x] **X2.2** Détail d’une nuance, avec rôle et sans rôle : en-tête (pastille,
   numéro, code), rôles et états, contraste avec le fond et niveau, blanc et
   noir, OKLCH replié. Proposer le libellé qui remplace « Nuance libre ».
-  Deux dispositions au moins, dont une en table compacte.
-- [ ] **X2.3** Niveaux AA et AAA : forme du badge, réussite et échec, et la
+  Deux dispositions au moins, dont une en table compacte. Produite : A, table
+  compacte, en place ; B, contrastes sur une ligne sous l’en-tête. Libellés
+  proposés : « Sans rôle », en place, « Aucun rôle dans le modèle », « Hors
+  des rôles ».
+- [x] **X2.3** Niveaux AA et AAA : forme du badge, réussite et échec, et la
   liste des endroits. Au moins le détail d’une nuance, les lignes des
   Garanties, la tête des Réglages communs, les grilles de la planche. Pour
   chaque endroit, dire ce que le badge juge : texte courant, grand texte ou
   élément graphique. Montrer un minimum réglé à 5:1 pour que le verdict et
-  le badge se lisent sans se contredire.
-- [ ] **X2.4** Ligne du titre : « Palette [nom] » et le bouton, aux cinq états
+  le badge se lisent sans se contredire. Produite : trois
+  formes de badge, la table des endroits avec ce que chacun juge, et le
+  minimum des textes réglé à 5,5:1, faute d’une garantie de Bleu ou de Vert
+  entre 4,5:1 et 5:1.
+- [x] **X2.4** Ligne du titre : « Palette [nom] » et le bouton, aux cinq états
   du cadre, pendant la génération (progression) et quand la génération est
   impossible (conflit, palette sans nom). Un nom long à 500 px : le nom se
   coupe, le bouton garde son libellé. Dire où vont « Voir sur la planche »
-  et l’état du cadre, qui quittent la carte de génération.
-- [ ] **X2.5** Interface de test : l’écran E2 peint de la palette ouverte,
+  et l’état du cadre, qui quittent la carte de génération. Produite : les cinq
+  états, la génération en cours, le conflit, le nom long, et une variante B
+  où l’état s’écrit entre le nom et le bouton. Une palette sans nom prend
+  son hexa pour nom : la génération n’y est jamais impossible.
+- [x] **X2.5** Interface de test : l’écran E2 peint de la palette ouverte,
   dans le thème de l’aperçu, avec et sans palette libre. Section ouverte ou
-  repliée à l’ouverture.
-- [ ] **X2.6** Nuance 50 : les options de Q4.1 sur les deux références, aux
-  deux thèmes, posées sur le fond par défaut et sur un fond personnalisé.
+  repliée à l’ouverture. Produite : les deux
+  thèmes dépliés, la carte repliée, et une variante B qui garde la carte
+  d’une palette libre avec une phrase.
+- [x] **X2.6** Nuance 50 : les options de Q4.1 sur les deux références, aux
+  deux thèmes, posées sur le fond par défaut et sur un fond personnalisé. Produite : A, B, C
+  et une option D, un emploi nouveau à 50 pour un fond discret de composant
+  (lecture de la réponse du mainteneur à Q4.1), sur Bleu et Vert, aux deux
+  thèmes, sur les fonds par défaut et sur #FFF1C2 et #1B2340.
 
 Critère : le mainteneur valide ou corrige chaque maquette sans avoir à
 imaginer une interaction.
