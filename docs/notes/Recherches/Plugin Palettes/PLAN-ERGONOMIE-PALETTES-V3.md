@@ -222,7 +222,7 @@ des maquettes précédentes : panneau à 500 px, thème sombre de Figma, couleur
 et ratios calculés par le moteur pour `#1E6FD9` et `#16A34A`. Chaque maquette
 se termine par ses questions, avec une recommandation.
 
-- [ ] **W3.1** Sélecteur de couleur dans le style de Figma : zone saturation
+- [x] **W3.1** Sélecteur de couleur dans le style de Figma : zone saturation
   et luminosité, curseur de teinte, champ hexadécimal par défaut, menu de
   format (hexadécimal, RGB, HSL), pastilles des couleurs de la palette ouverte.
   Pas d’opacité : une palette n’en a pas. La pipette de l’écran seulement si
@@ -230,20 +230,20 @@ se termine par ses questions, avec une recommandation.
   dessiner. Montrer l’ouverture depuis la pastille du fond, avec la mention du
   fond commun, et depuis la couleur de référence. Clavier : flèches sur la
   zone et le curseur, Échap referme et rend le focus.
-- [ ] **W3.2** Carte « Luminosité des nuances » : les champs Light et Dark par
+- [x] **W3.2** Carte « Luminosité des nuances » : les champs Light et Dark par
   nuance aux tailles des trois niveaux de titre (V2), à côté du tracé des
   courbes. Deux dispositions au moins.
-- [ ] **W3.3** Cartes « Minimums des promesses » et « Détection des couleurs
+- [x] **W3.3** Cartes « Minimums des promesses » et « Détection des couleurs
   proches » : disposition refaite, libellé, valeur et unité alignés, aide
   lisible sans ouvrir d’infobulle. Deux dispositions au moins.
-- [ ] **W3.4** Planche générée. D’abord la question à laquelle elle répond,
+- [x] **W3.4** Planche générée. D’abord la question à laquelle elle répond,
   en deux ou trois récits : par exemple « quelle nuance pour quel usage »,
   « ma palette tient-elle ses promesses », ou une fiche de référence à la
   Radix. Chaque récit fixe l’ordre des sections, ce qui est gros et ce qui est
   une note. Puis le récit retenu en planche complète, Light et Dark, avec et
   sans interface d’exemple (ex-Q1). Donner le nombre de calques de chaque
   variante, grille des contrastes comprise, contre 686 et 1 898 aujourd’hui.
-- [ ] **W3.5** Palette libre : la carte « Configuration de la palette » avec
+- [x] **W3.5** Palette libre : la carte « Configuration de la palette » avec
   le choix du mode, la liste des numéros, et l’aperçu sans rôles ni
   garanties ; sa fiche dans l’onglet Planches.
 
@@ -294,7 +294,7 @@ lui dit, dans l’ordre choisi en W3.4.
 
 Le mode standard garde le modèle du design system ; la palette libre en sort.
 
-- [ ] **W6.1** Calculer les rampes des deux candidats au préréglage de 13 :
+- [x] **W6.1** Calculer les rampes des deux candidats au préréglage de 13 :
   450 et 550, ou deux nuances après 950. Pour le second, proposer les numéros
   et une méthode de luminosité au-delà de la courbe : en Light sous 0,27, en
   Dark au-dessus de 0,93, où il reste peu d’écart avant le blanc. Présenter
