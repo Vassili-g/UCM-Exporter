@@ -29,7 +29,7 @@ export interface Derive {
 /** Une dérive se borne à `[-90, 90]` degrés ([MOT-15]). */
 export const DERIVE_MAXIMALE = 90;
 
-/** Les deux clartés qui bornent la dérive : `Lc = courbes.light[0]`, `Ls = courbes.light[dernier]`. */
+/** Les deux clartés qui bornent la dérive : celles des numéros 50 et 950 en Light (`boutsDe`, nuances.ts). */
 export interface Bouts {
   readonly clair: number;
   readonly sombre: number;
@@ -39,11 +39,6 @@ export interface Bouts {
 export interface Courbes {
   readonly light: readonly number[];
   readonly dark: readonly number[];
-}
-
-/** Les bouts d'une recette, lus sur sa courbe claire. */
-export function boutsDe(courbes: Courbes): Bouts {
-  return { clair: courbes.light[0], sombre: courbes.light[courbes.light.length - 1] };
 }
 
 /**
@@ -146,10 +141,11 @@ export function partsEffectives(recette: Parts, propres?: Parts): Parts {
   return propres ? { soft: propres.soft, vivid: propres.vivid } : recette;
 }
 
-/** Ce qu'une palette demande pour produire ses quatre rampes. */
+/** Ce qu'une palette demande pour produire ses quatre rampes : ses courbes, et les bouts de la recette. */
 export interface EntreesPalette {
   readonly reference: Rgb8;
   readonly courbes: Courbes;
+  readonly bouts: Bouts;
   readonly parts: Parts;
   readonly derives: { readonly soft: Derive; readonly vivid: Derive };
   readonly gamut: Gamut;
@@ -165,7 +161,7 @@ export type Rampes = { readonly [P in Profil]: { readonly [M in Mode]: Cran[] } 
  */
 export function fabriquerPalette(entrees: EntreesPalette): Rampes {
   const reference = rgb8VersOklch(entrees.reference);
-  const bouts = boutsDe(entrees.courbes);
+  const { bouts } = entrees;
   const rampe = (profil: Profil, mode: Mode): Cran[] =>
     fabriquerRampe({
       courbe: entrees.courbes[mode],

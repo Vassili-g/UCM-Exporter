@@ -710,6 +710,7 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N098 | Planche, en-tête d’un thème et verdict ; remplace N062 pour le résultat, et l’en-tête de section | Thème {Light ou Dark} · fond {hexa} · ✓ Toutes les garanties tenues · 1 garantie manquée · {nombre} garanties manquées | À valider |
 | N099 | Planche, garantie sous un état, et légende des grilles ; remplace N064 à N069 | ✓ sur {partenaire} : {ratio}:1 · ✗ {partenaire} dessus : {ratio}:1 · Ligne : fond · colonne : texte · gras dès {seuil}:1 · maigre dès {seuil}:1 · effacé en dessous | À valider |
 | N100 | États d’une paire, dans le plugin et sur la planche ; remplace T131, T132 et les états de N033 et N034 | default · hover · active · « {emploi}, état hover » · « État {état} : {ratio} pour un minimum de {seuil}:1 » · Trait plein : default · tireté : hover · pointillé : active. | Mainteneur, W3.4 |
+| N101 | Refus du format 3, et noms des deux champs dans un refus ou un écart d’import | {champ} : choisissez entre 4 et 13 nuances. Nombre trouvé : {nombre}. · {champ} : « {valeur} » n’est pas accepté. Utilisez un multiple de 50 entre 50 et 1050, plus grand que le numéro précédent. · {champ} : une palette libre n’a pas de palette de base. Retirez ce champ dans le fichier importé. · {champ} : elle est identique à la couleur de référence. Retirez ce champ dans le fichier importé. · nuances de la palette libre · couleur de référence d’origine | À valider |
 
 ## Points à conserver lors de l’application
 

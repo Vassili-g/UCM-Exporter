@@ -204,8 +204,11 @@ est sombre et prend la teinte du bout sombre.
 
 La couleur de référence a une clarté `La` et une teinte `Ha`. Elle est le pivot :
 à la clarté `La`, la teinte vaut `Ha`, quelle que soit la dérive. Les deux bouts
-sont les clartés `Lc = courbes.light[0]` et `Ls = courbes.light[dernier]`, soit
-0,975 et 0,270. Le designer règle deux angles signés : `dClair`, la dérive au
+sont les clartés des numéros 50 et 950 sur la courbe claire, `Lc` et `Ls`, soit
+0,975 et 0,270. Lus à ces numéros et non aux extrémités de la liste, ils ne
+bougent pas quand treize nuances ajoutent 1000 et 1050 ; une liste sans 950 le
+calcule par la règle de la luminosité d’un numéro ([conception
+W6](./CONCEPTION-NUANCES-ET-FORMAT-3.md#luminosité-dun-numéro)). Le designer règle deux angles signés : `dClair`, la dérive au
 bout clair, et `dSombre`, la dérive au bout sombre.
 
 ```text
@@ -424,12 +427,14 @@ Une palette porte :
 | `derive.soft`, `derive.vivid` | `clair` et `sombre` en degrés, et `origine` : `tailwind`, `constante` ou `libre` |
 | `parts` | Facultatif : `soft` et `vivid`, une part de chroma chacun, qui remplace celle de la recette, et `origine` : `designer` ou `grise` (`[ENT-09]`) |
 | `base` | Facultatif : `soft` ou `vivid`, la palette de base qui force le profil porteur (`[ENT-11]`). Absent, le classement automatique décide |
+| `crans` | Facultatif : la liste d’une palette libre, 4 à 13 multiples de 50, de 50 à 1050, croissants. Chaque numéro suit les courbes communes. Absent, la palette suit la liste commune |
+| `originale` | Facultatif : le code de la référence avant le premier ajustement, en majuscules, différent de `reference`. Absent, aucun ajustement |
 
 ### 7.2 Exemple
 
 ```json
 {
-  "formatVersion": 2,
+  "formatVersion": 3,
   "crans": [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950],
   "courbes": {
     "light": [0.975, 0.95, 0.905, 0.845, 0.76, 0.67, 0.585, 0.5, 0.42, 0.34, 0.27],
@@ -500,9 +505,11 @@ dix-sept paires.
   version courante ne connaît pas est refusée, `planche` comprise. Une palette
   aux profils liés porte deux dérives identiques ; chaque origine est l'une de
   celles que la section 7.1 énumère ; `base` vaut `soft` ou `vivid` ; un
-  identifiant a la forme `p-` et huit chiffres hexadécimaux. La version 2 de
-  la recette ajoute `base` ; une recette de version 1 se migre sans autre
-  changement. La validation rend tous ses refus, chacun avec sa
+  identifiant a la forme `p-` et huit chiffres hexadécimaux. Une palette libre
+  porte 4 à 13 numéros, multiples de 50 de 50 à 1050, croissants, et pas de
+  `base` ; `originale` est un hexa différent de `reference`. La version 2 de
+  la recette ajoute `base`, la version 3 `crans` et `originale` ; une recette
+  de version antérieure se migre sans autre changement du texte. La validation rend tous ses refus, chacun avec sa
   règle et le chemin du champ, et ne rédige aucune phrase.
 - `[REC-06]` La recette se range automatiquement à la fin de chaque geste :
   relâcher une poignée, valider un champ, créer, dupliquer, réordonner ou
@@ -608,8 +615,11 @@ composant du socle la porte (`[UI-02]`).
   couleurs proches donnent une ligne par seuil : le libellé et son aide à
   gauche, lisibles sans survol, le champ et son unité dans deux colonnes
   alignées d'une ligne à l'autre.
-- `[ENT-08]` La liste des crans ne se modifie pas dans l'interface : elle
-  passe par un import de recette.
+- `[ENT-08]` La liste commune se choisit parmi trois préréglages, 9, 11 ou 13
+  nuances, dans les Réglages communs ; une autre liste passe par un import de
+  recette. Changer de préréglage garde la luminosité de chaque numéro gardé ;
+  un numéro ajouté prend celle du préréglage quand la courbe reste monotone,
+  sinon celle de la règle de la luminosité d’un numéro.
 - `[ENT-10]` La configuration mesure la garantie des courbes : le cran 600
   tient 3:1 et le cran 700 tient 4,5:1 contre le cran 50 de la même courbe,
   gris, sur 360 teintes, les deux profils et les deux modes, sur les couleurs à
@@ -1001,11 +1011,11 @@ composants : `default`, puis `hover` à une nuance, `active` à deux.
 
 | Alerte | Mesure | Seuil | Portée |
 |---|---|---|---|
-| Profils confondus | ΔEok entre `soft` et `vivid`, même cran et même mode, sur les crans de la table des emplois, états `+1` et `+2` compris | `profilsConfondus` | chaque palette, sauf parts `grise` (`[ENT-09]`) |
-| Palettes proches | ΔEok moyen sur les crans 500, 600 et 700 de `vivid`, en clair | `palettesProches` | chaque paire de palettes de la recette |
+| Profils confondus | ΔEok entre `soft` et `vivid`, même cran et même mode, sur les crans de la table des emplois, états `+1` et `+2` compris | `profilsConfondus` | chaque palette du modèle, sauf parts `grise` (`[ENT-09]`) |
+| Palettes proches | ΔEok moyen sur les crans 500, 600 et 700 de `vivid`, en clair, chaque palette lue sur sa liste | `palettesProches` | chaque paire de palettes dont les deux listes portent ces trois crans |
 | Couleur presque grise | chroma de la référence | `chromaGrise` | chaque palette |
 | Référence plus terne que `soft` | part de chroma de la référence inférieure à la part de `soft` | sans seuil | chaque palette |
-| Référence hors de la rampe | clarté de la référence hors de `[Ls, Lc]` | sans seuil | chaque palette |
+| Référence hors de la rampe | clarté de la référence hors de l’étendue de la liste de la palette, en clair | sans seuil | chaque palette |
 | Fond hors de la courbe | [section 8.2](#82-les-fonds-de-référence) | sans seuil | chaque fond |
 
 - `[VER-08]` Une alerte n'empêche rien. Elle dit ce qui ressemble, manque ou

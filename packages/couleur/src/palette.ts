@@ -6,6 +6,7 @@
  */
 import { ecrireHexa, lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
 import { partDeChroma } from './contraste';
+import { boutsDe, estLibre, grilleDe } from './nuances';
 import {
   arrondir,
   fabriquerPalette,
@@ -65,9 +66,13 @@ export function profilAutomatique(recette: Recette, palette: Palette): Profil {
   return versSoft < versVivid ? 'soft' : 'vivid';
 }
 
-/** Le profil qui porte la référence exacte : la palette de base forcée ([ENT-11]), sinon le classement automatique. */
+/**
+ * Le profil qui porte la référence exacte : la palette de base forcée
+ * ([ENT-11]), sinon le classement automatique. Une palette libre n'a pas de
+ * base : la validation la refuse.
+ */
 export function profilPorteur(recette: Recette, palette: Palette): Profil {
-  return palette.base ?? profilAutomatique(recette, palette);
+  return (estLibre(palette) ? undefined : palette.base) ?? profilAutomatique(recette, palette);
 }
 
 /**
@@ -90,14 +95,19 @@ export interface Ancrage {
   readonly crans: { readonly [M in Mode]: number };
 }
 
-/** L'ancrage de la référence d'une palette ([MOT-17]), l'unique désignation que toutes les vues lisent. */
+/**
+ * L'ancrage de la référence d'une palette ([MOT-17]), l'unique désignation
+ * que toutes les vues lisent, sur la grille de la palette : la liste commune,
+ * ou sa liste libre.
+ */
 export function ancrageDe(recette: Recette, palette: Palette): Ancrage {
   const clarte = rgb8VersOklch(referenceDe(palette)).L;
-  const rangs = { light: rangPorteur(recette.courbes.light, clarte), dark: rangPorteur(recette.courbes.dark, clarte) };
+  const { crans, courbes } = grilleDe(recette, palette);
+  const rangs = { light: rangPorteur(courbes.light, clarte), dark: rangPorteur(courbes.dark, clarte) };
   return {
     profil: profilPorteur(recette, palette),
     rangs,
-    crans: { light: recette.crans[rangs.light], dark: recette.crans[rangs.dark] },
+    crans: { light: crans[rangs.light], dark: crans[rangs.dark] },
   };
 }
 
@@ -117,7 +127,8 @@ export function rampesDe(recette: Recette, palette: Palette): Rampes {
   const reference = referenceDe(palette);
   const communes = fabriquerPalette({
     reference,
-    courbes: recette.courbes,
+    courbes: grilleDe(recette, palette).courbes,
+    bouts: boutsDe(recette),
     parts: partsDe(recette, palette),
     derives: { soft: palette.derive.soft, vivid: palette.derive.vivid },
     gamut: recette.gamut,

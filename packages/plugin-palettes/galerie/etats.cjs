@@ -53,7 +53,7 @@ function etatDuFichier(texte, profil = 'SRGB', planche = PLANCHE_VIDE, demande =
 
 /** Une palette au préréglage Tailwind, profils liés, parts grises posées s'il le faut. */
 function palette(id, nom, reference, recette = recetteParDefaut()) {
-  const derive = prereglageTailwind(rgb8VersOklch(lireHexa(reference)), boutsDe(recette.courbes));
+  const derive = prereglageTailwind(rgb8VersOklch(lireHexa(reference)), boutsDe(recette));
   return ajusterPartsGrises(recette, {
     id,
     nom,

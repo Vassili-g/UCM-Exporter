@@ -667,6 +667,8 @@ const CLES_DE_PALETTE: Record<string, string> = {
   derive: 'dérive de teinte',
   parts: 'intensités personnalisées',
   base: 'palette de base',
+  crans: 'nuances de la palette libre',
+  originale: 'couleur de référence d’origine',
   clair: 'côté clair',
   sombre: 'côté sombre',
   lien: 'liaison des teintes',
@@ -699,6 +701,8 @@ export function nommerChamp(chemin: string): string {
   if (trouve) return `Minimum ou seuil : ${NOMS_DES_SEUILS[trouve[1]] ?? trouve[1]}`;
   trouve = /^derives\[(\d+)\]$/.exec(chemin);
   if (trouve) return `Préréglage Tailwind, gamme ${Number(trouve[1]) + 1}`;
+  trouve = /^palettes\[(\d+)\]\.crans\[(\d+)\]$/.exec(chemin);
+  if (trouve) return `Palette ${Number(trouve[1]) + 1}, ${rangEcrit(Number(trouve[2]))} nuance`;
   trouve = /^palettes\[(\d+)\]((?:\.\w+)*)$/.exec(chemin);
   if (trouve) {
     const suite = trouve[2].split('.').filter(Boolean).map((cle) => CLES_DE_PALETTE[cle] ?? cle);
@@ -742,6 +746,11 @@ const REFUS: Record<RegleRecette, (champ: string, valeur: string) => string> = {
   'identifiants-uniques': (_, valeur) => `Deux palettes utilisent l’identifiant « ${valeur} ». Attribuez un identifiant différent à chacune dans le fichier importé.`,
   'base-inconnue': (champ, valeur) => `${champ} : « ${valeur} » n’est pas reconnu. Indiquez soft ou vivid, ou retirez ce champ pour le choix automatique. Faites vérifier ce champ dans le fichier importé.`,
   'crans-emplois': (_, valeur) => `La nuance ${valeur} manque. Ajoutez-la : elle est nécessaire aux usages et aux contrastes vérifiés par le plugin.`,
+  // N101 : les quatre règles du format 3 (W6.3, W7.2).
+  'crans-libres-nombre': (champ, valeur) => `${champ} : choisissez entre 4 et 13 nuances. Nombre trouvé : ${valeur}.`,
+  'crans-libres-numeros': (champ, valeur) => `${champ} : « ${valeur} » n’est pas accepté. Utilisez un multiple de 50 entre 50 et 1050, plus grand que le numéro précédent.`,
+  'base-libre': (champ) => `${champ} : une palette libre n’a pas de palette de base. Retirez ce champ dans le fichier importé.`,
+  'originale-identique': (champ) => `${champ} : elle est identique à la couleur de référence. Retirez ce champ dans le fichier importé.`,
 };
 
 /** Le texte d'un refus de [REC-05]. */
@@ -828,6 +837,9 @@ const NOMS_DES_CHAMPS: Record<ChampDePalette, string> = {
   base: 'palette de base',
   parts: 'intensités propres',
   derive: 'dérive de teinte',
+  // N101 : les deux champs du format 3.
+  crans: 'nuances de la palette libre',
+  originale: 'couleur de référence d’origine',
 };
 
 /** Les valeurs modifiées de chaque palette, palette de base comprise (V12.2, N072). */

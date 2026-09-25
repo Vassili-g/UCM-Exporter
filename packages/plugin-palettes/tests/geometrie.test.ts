@@ -19,7 +19,7 @@ import {
 
 const CADRE: Cadre = { largeur: 340, hauteur: 200, gauche: 42, droite: 0, haut: 10, bas: 10 };
 const COURBE = recetteParDefaut().courbes.light;
-const BOUTS = boutsDe(recetteParDefaut().courbes);
+const BOUTS = boutsDe(recetteParDefaut());
 const BLEU = rgb8VersOklch(lireHexa('#1E6FD9')!);
 const DERIVE = { clair: -7.53, sombre: 5.11 };
 

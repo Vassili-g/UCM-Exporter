@@ -35,10 +35,12 @@ Le préréglage n’est pas rangé : il se reconnaît à `recette.crans`. Une li
 qui n’est aucun des trois, arrivée par import (`[ENT-08]`), reste valide ; le
 réglage la dit « Liste importée » et offre de passer à un préréglage.
 
-**Changer de préréglage** remplace `crans`. Chaque numéro gardé garde sa
-luminosité, réglée ou non ; un numéro ajouté prend celle que donne la règle
-de la section 2 sur les courbes courantes, si bien que la courbe reste
-monotone. Le réglage dit avant le geste combien de palettes et de cadres il
+**Changer de préréglage** remplace `crans` (`grilleAuPrereglage`). Chaque
+numéro gardé garde sa luminosité, réglée ou non. Un numéro ajouté prend celle
+du préréglage quand la courbe reste strictement monotone : 9 → 11 rend ainsi
+les courbes par défaut. Sinon, parce que le designer a réglé ses voisines,
+chaque numéro ajouté prend celle que donne la règle de la section 2 sur les
+courbes courantes, au millième. Le réglage dit avant le geste combien de palettes et de cadres il
 touche : les palettes du modèle dont l’ancrage change (plus bas), et toutes
 les palettes libres qui portent un numéro interpolé.
 

@@ -37,6 +37,16 @@ test('un chemin de champ s’écrit en mots du designer', () => {
   assert.equal(nommerChamp(''), 'Palettes et réglages');
 });
 
+test('W6.3 : un refus du format 3 nomme la palette, la nuance fautive et le geste', () => {
+  assert.equal(nommerChamp('palettes[1].crans[2]'), 'Palette 2, 3e nuance');
+  assert.equal(nommerChamp('palettes[0].originale'), 'Palette 1, couleur de référence d’origine');
+  assert.equal(
+    texteDuRefus({ regle: 'crans-libres-numeros', chemin: 'palettes[0].crans[1]', valeur: 225 }),
+    'Palette 1, 2e nuance : « 225 » n’est pas accepté. Utilisez un multiple de 50 entre 50 et 1050, plus grand que le numéro précédent.',
+  );
+  assert.equal(texteDuRefus({ regle: 'crans-libres-nombre', chemin: 'palettes[0].crans', valeur: 3 }), 'Palette 1, nuances de la palette libre : choisissez entre 4 et 13 nuances. Nombre trouvé : 3.');
+});
+
 test('un refus porte le champ et la valeur, virgule décimale', () => {
   assert.equal(
     texteDuRefus({ regle: 'courbe-claire-decroissante', chemin: 'courbes.light[5]', valeur: 0.8 }),

@@ -67,22 +67,23 @@ test('vecteur : les gris de clarté 0,975 et 0,180 sont les fonds par défaut', 
 test('vecteur : #1E6FD9 au préréglage Tailwind, dérive 12,63°, clair -7,53, sombre +5,11', () => {
   const reference = rgb8VersOklch(hexa('#1E6FD9'));
   assert.equal(deriveTailwind(reference.H).toFixed(2), '12.63');
-  assert.deepEqual(prereglageTailwind(reference, boutsDe(COURBES)), { clair: -7.53, sombre: 5.11 });
+  assert.deepEqual(prereglageTailwind(reference, boutsDe({ crans: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950], courbes: COURBES })), { clair: -7.53, sombre: 5.11 });
 });
 
 test('vecteur : #F2A900 au préréglage Tailwind, dérive -39,63°, clair +10,69, sombre -28,94', () => {
   const reference = rgb8VersOklch(hexa('#F2A900'));
   assert.equal(deriveTailwind(reference.H).toFixed(2), '-39.63');
-  assert.deepEqual(prereglageTailwind(reference, boutsDe(COURBES)), { clair: 10.69, sombre: -28.94 });
+  assert.deepEqual(prereglageTailwind(reference, boutsDe({ crans: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950], courbes: COURBES })), { clair: 10.69, sombre: -28.94 });
 });
 
 /** Les quatre rampes d'une référence au préréglage Tailwind, les deux profils liés. */
 function paletteTailwind(texte: string) {
   const reference = hexa(texte);
-  const derive = prereglageTailwind(rgb8VersOklch(reference), boutsDe(COURBES));
+  const derive = prereglageTailwind(rgb8VersOklch(reference), boutsDe({ crans: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950], courbes: COURBES }));
   return fabriquerPalette({
     reference,
     courbes: COURBES,
+    bouts: boutsDe({ crans: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950], courbes: COURBES }),
     parts: PARTS,
     derives: { soft: derive, vivid: derive },
     gamut: 'srgb',

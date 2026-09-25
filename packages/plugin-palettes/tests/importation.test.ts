@@ -68,3 +68,12 @@ test('V12.2 : la nature d’un import distingue les couleurs, les minimums et le
   assert.deepEqual(nature({ ...ACTUELLE, palettes: [{ ...BLEU, reference: '#1D6DDB' }, AMBRE] }), { couleurs: true, minimums: false, detection: false });
   assert.deepEqual(nature({ ...ACTUELLE, fonds: { ...ACTUELLE.fonds, dark: '#1C1C1C' } }), { couleurs: true, minimums: false, detection: false });
 });
+
+test('W6.3 : une liste libre et une originale importées se nomment dans l’écart ; seule la liste change les couleurs', () => {
+  const libre = { ...BLEU, crans: [100, 300, 500, 700, 900] };
+  const ajustee = { ...AMBRE, originale: '#F2B000' };
+  const ecart = ecartDImport(ACTUELLE, { ...ACTUELLE, palettes: [libre, ajustee] });
+  assert.deepEqual(ecart.champs, { [BLEU.id]: ['crans'], [AMBRE.id]: ['originale'] });
+  assert.equal(natureDeLEcart(ecart).couleurs, true);
+  assert.equal(natureDeLEcart(ecartDImport(ACTUELLE, { ...ACTUELLE, palettes: [BLEU, ajustee] })).couleurs, false);
+});

@@ -388,9 +388,14 @@ Le mode standard garde le modèle du design system ; la palette libre en sort.
   préréglages 9, 11 et 13 et leurs numéros ; une palette libre n’alimente pas
   `theme`. Réviser `[DER-01]`, `[REC-05]` et `[ENT-08]` dans la
   spécification.
-- [ ] **W6.8** Tests : chaque préréglage garde les rôles à leurs numéros ;
+- [x] **W6.8** Tests : chaque préréglage garde les rôles à leurs numéros ;
   une palette libre sans 500 ne déclenche aucune alerte qui le suppose ;
-  propriété de la référence exacte dans une palette libre.
+  propriété de la référence exacte dans une palette libre. Faits dans le
+  moteur (`packages/couleur/tests/nuances.test.ts`), avec la section 4 de la
+  conception : le moteur lit la liste de chaque palette, les bouts aux
+  numéros 50 et 950, et la recette passe au format 3. Vu rouge sur une
+  mutation des bouts. Les vues lisent encore la liste commune : c’est
+  l’étape 2 de la conception, avant W6.4 à W6.6.
 
 Critère : le designer passe de 11 à 13 nuances sans qu’un rôle change de
 numéro, et crée une palette de six nuances pour un autre usage sans voir de

@@ -23,7 +23,7 @@ const COURBES: Courbes = {
   light: [0.975, 0.95, 0.905, 0.845, 0.76, 0.67, 0.585, 0.5, 0.42, 0.34, 0.27],
   dark: [0.18, 0.225, 0.275, 0.33, 0.4, 0.49, 0.58, 0.67, 0.76, 0.85, 0.93],
 };
-const BOUTS = boutsDe(COURBES);
+const BOUTS = boutsDe({ crans: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950], courbes: COURBES });
 
 /** Générateur à congruence linéaire (constantes de Numerical Recipes), valeurs dans `[0, 1)`. */
 function generateur(graine: number): () => number {
@@ -60,6 +60,7 @@ test('[MOT-12] un cran clair et un cran sombre de même clarté rendent le même
     const rampes = fabriquerPalette({
       reference,
       courbes: COURBES,
+      bouts: BOUTS,
       parts: { soft: 0.45, vivid: 0.95 },
       derives: { soft: derive, vivid: derive },
       gamut: 'srgb',

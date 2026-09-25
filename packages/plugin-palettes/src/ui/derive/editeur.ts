@@ -358,7 +358,7 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
 
     const reference = rgb8VersOklch(referenceDe(palette));
     const courbe = recette.courbes.light;
-    const bouts = boutsDe(recette.courbes);
+    const bouts = boutsDe(recette);
     const tailwind = prereglageDe(recette, palette);
     const sansSegment: Record<Bout, boolean> = { clair: reference.L > courbe[0], sombre: reference.L < courbe[courbe.length - 1] };
     for (const bout of BOUTS) {

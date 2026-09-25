@@ -10,8 +10,8 @@ import { classerRecette, jsonCanonique, type Palette, type Recette, type Refus, 
 export const PARAMETRES_COMMUNS = ['crans', 'courbes', 'profils', 'fonds', 'seuils', 'derives', 'gamut'] as const;
 export type ParametreCommun = (typeof PARAMETRES_COMMUNS)[number];
 
-/** Les champs d'une palette que l'écart nomme, palette de base comprise (V12.2). */
-export const CHAMPS_DE_PALETTE = ['nom', 'reference', 'base', 'parts', 'derive'] as const;
+/** Les champs d'une palette que l'écart nomme, palette de base, liste libre et originale comprises (V12.2, W6.3). */
+export const CHAMPS_DE_PALETTE = ['nom', 'reference', 'base', 'parts', 'derive', 'crans', 'originale'] as const;
 export type ChampDePalette = (typeof CHAMPS_DE_PALETTE)[number];
 
 export interface EcartDImport {
@@ -38,7 +38,8 @@ export interface NatureDeLEcart {
 }
 
 const PARAMETRES_DE_COULEUR: readonly ParametreCommun[] = ['crans', 'courbes', 'profils', 'fonds', 'derives', 'gamut'];
-const CHAMPS_DE_COULEUR: readonly ChampDePalette[] = ['reference', 'base', 'parts', 'derive'];
+// `originale` ne peint rien : la référence porte la couleur, et son champ change avec elle.
+const CHAMPS_DE_COULEUR: readonly ChampDePalette[] = ['reference', 'base', 'parts', 'derive', 'crans'];
 
 export function natureDeLEcart(ecart: EcartDImport): NatureDeLEcart {
   const palettesColorees = Object.values(ecart.champs).some((champs) => champs.some((champ) => CHAMPS_DE_COULEUR.includes(champ)));

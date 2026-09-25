@@ -8,15 +8,17 @@
  */
 import { lireHexa } from './conversions';
 import { CRANS_DES_EMPLOIS } from './emplois';
+import { PREREGLAGES } from './nuances';
 import { DERIVE_MAXIMALE, type Profil } from './rampe';
 import { RELEVE_TAILWIND, type PaireDeDerive } from './tailwind';
 
 /**
  * La version de la forme de la recette que ce paquet écrit. La version 2
- * ajoute `base` à une palette : un plugin qui lit la version 1 classe donc la
- * recette « future » au lieu de refuser une clé inconnue.
+ * ajoute `base` à une palette ; la version 3, `crans` et `originale`. Un
+ * plugin qui lit une version antérieure classe donc la recette « future » au
+ * lieu de refuser une clé inconnue.
  */
-export const FORMAT_RECETTE = 2;
+export const FORMAT_RECETTE = 3;
 
 export type OrigineDerive = 'tailwind' | 'constante' | 'libre';
 
@@ -46,6 +48,10 @@ export interface Palette {
   readonly parts?: PartsPropres;
   /** La palette de base ([ENT-11]) : le profil porteur forcé. Absente, le classement automatique décide. */
   readonly base?: Profil;
+  /** La liste d'une palette libre (W6) : ses numéros, qui suivent les courbes communes. Absente, la liste commune. */
+  readonly crans?: readonly number[];
+  /** La référence d'avant le premier ajustement (W7), en majuscules. Absente, aucun ajustement. */
+  readonly originale?: string;
 }
 
 export interface Seuils {
@@ -72,11 +78,8 @@ export interface Recette {
 export function recetteParDefaut(): Recette {
   return {
     formatVersion: FORMAT_RECETTE,
-    crans: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950],
-    courbes: {
-      light: [0.975, 0.95, 0.905, 0.845, 0.76, 0.67, 0.585, 0.5, 0.42, 0.34, 0.27],
-      dark: [0.18, 0.225, 0.275, 0.33, 0.4, 0.49, 0.58, 0.67, 0.76, 0.85, 0.93],
-    },
+    crans: [...PREREGLAGES[11].crans],
+    courbes: { light: [...PREREGLAGES[11].courbes.light], dark: [...PREREGLAGES[11].courbes.dark] },
     profils: { soft: { part: 0.45 }, vivid: { part: 0.95 } },
     gamut: 'srgb',
     fonds: { light: '#F7F7F7', dark: '#121212' },
@@ -110,7 +113,11 @@ export type RegleRecette =
   | 'identifiant-forme'
   | 'identifiants-uniques'
   | 'crans-emplois'
-  | 'base-inconnue';
+  | 'base-inconnue'
+  | 'crans-libres-nombre'
+  | 'crans-libres-numeros'
+  | 'base-libre'
+  | 'originale-identique';
 
 /** Un refus : la règle, le chemin du champ fautif, et la valeur lue quand elle se montre. */
 export interface Refus {
@@ -235,6 +242,19 @@ function validerDerives(releve: Releve, derives: unknown): void {
   });
 }
 
+/** Les bornes d'une liste libre (W6) : 4 à 13 numéros, multiples de 50, de 50 à 1050. */
+export const BORNES_DES_CRANS_LIBRES = { nombre: [4, 13], pas: 50, premier: 50, dernier: 1050 } as const;
+
+function validerCransLibres(releve: Releve, crans: unknown, chemin: string): void {
+  if (!releve.nombres(crans, chemin)) return;
+  const { nombre, pas, premier, dernier } = BORNES_DES_CRANS_LIBRES;
+  if (crans.length < nombre[0] || crans.length > nombre[1]) releve.refuser('crans-libres-nombre', chemin, crans.length);
+  crans.forEach((cran, rang) => {
+    const horsPas = !Number.isInteger(cran) || cran % pas !== 0 || cran < premier || cran > dernier;
+    if (horsPas || (rang > 0 && cran <= crans[rang - 1])) releve.refuser('crans-libres-numeros', `${chemin}[${rang}]`, cran);
+  });
+}
+
 const ORIGINES_DERIVE: readonly string[] = ['tailwind', 'constante', 'libre'];
 const ORIGINES_PARTS: readonly string[] = ['designer', 'grise'];
 
@@ -252,13 +272,23 @@ function validerDerivePalette(releve: Releve, derive: unknown, chemin: string): 
 }
 
 function validerPalette(releve: Releve, palette: unknown, chemin: string): void {
-  if (!releve.objet(palette, chemin, ['id', 'reference', 'derive'], ['nom', 'parts', 'base'])) return;
+  if (!releve.objet(palette, chemin, ['id', 'reference', 'derive'], ['nom', 'parts', 'base', 'crans', 'originale'])) return;
   if (typeof palette.id !== 'string' || !MOTIF_IDENTIFIANT.test(palette.id)) {
     releve.refuser('identifiant-forme', `${chemin}.id`, palette.id);
   }
   if ('nom' in palette && typeof palette.nom !== 'string') releve.refuser('forme', `${chemin}.nom`);
   if ('base' in palette && palette.base !== 'soft' && palette.base !== 'vivid') releve.refuser('base-inconnue', `${chemin}.base`, palette.base);
   releve.hexa(palette.reference, `${chemin}.reference`);
+  if ('crans' in palette) {
+    validerCransLibres(releve, palette.crans, `${chemin}.crans`);
+    if ('base' in palette) releve.refuser('base-libre', `${chemin}.base`, palette.base as string);
+  }
+  if ('originale' in palette) {
+    releve.hexa(palette.originale, `${chemin}.originale`);
+    const identique = typeof palette.originale === 'string' && typeof palette.reference === 'string'
+      && palette.originale.toUpperCase() === palette.reference.toUpperCase();
+    if (identique) releve.refuser('originale-identique', `${chemin}.originale`, palette.originale as string);
+  }
 
   const derive = palette.derive;
   if (releve.objet(derive, `${chemin}.derive`, ['lien', 'soft', 'vivid'])) {
@@ -353,9 +383,15 @@ export function validerRecette(entree: unknown): { recette: Recette } | { refus:
 /** Une migration fait passer un objet de la version `n` à la version `n + 1`. */
 export type Migrations = Readonly<Record<number, (ancienne: Objet) => Objet>>;
 
-/** Les migrations connues. De 1 à 2 : `base` est facultatif, rien d'autre ne change. */
+/**
+ * Les migrations connues. De 1 à 2, `base`, et de 2 à 3, `crans` et
+ * `originale`, sont facultatifs : rien d'autre ne change dans le texte. Les
+ * couleurs d'une liste importée qui ne porte pas 50 ou 950 changent pourtant,
+ * les bouts de la dérive se lisant désormais à ces numéros.
+ */
 export const MIGRATIONS: Migrations = {
   1: (ancienne) => ({ ...ancienne, formatVersion: 2 }),
+  2: (ancienne) => ({ ...ancienne, formatVersion: 3 }),
 };
 
 /** Ce que la lecture conclut d'une recette rangée ([REC-03]). */

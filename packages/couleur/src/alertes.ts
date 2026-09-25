@@ -8,8 +8,9 @@ import { lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
 import { distanceOk, partDeChroma } from './contraste';
 import { EMPLOIS, TABLE_DES_EMPLOIS } from './emplois';
 import { estPresqueGrise, partsDe, rampesDe, referenceDe } from './palette';
+import { estLibre, etendueDe, grilleDe } from './nuances';
 import { decalagesDeLEmploi } from './promesses';
-import { arrondir, boutsDe, MODES, type Mode } from './rampe';
+import { arrondir, MODES, type Mode } from './rampe';
 import type { Palette, Recette } from './recette';
 
 /** Un cran où `soft` et `vivid` se confondent. */
@@ -51,17 +52,27 @@ export function rangsDesEmplois(recette: Recette): number[] {
   return [...rangs].sort((a, b) => a - b);
 }
 
-function profilsConfondus(recette: Recette, palette: Palette): Alerte | null {
-  // Des parts `grise` rendent les deux profils égaux par construction ([ENT-09]).
-  if (palette.parts?.origine === 'grise') return null;
+/**
+ * Les nuances d'une palette où `soft` et `vivid` se confondent, sur toute sa
+ * liste : le repère ≈ de l'aperçu et de la planche ([PLA-15]). Des parts
+ * `grise` rendent les deux profils égaux par construction : rien ne se
+ * signale ([ENT-09]).
+ */
+export function confusionsDe(recette: Recette, palette: Palette): Confusion[] {
+  if (palette.parts?.origine === 'grise') return [];
   const rampes = rampesDe(recette, palette);
-  const crans: Confusion[] = [];
-  for (const mode of MODES) {
-    for (const rang of rangsDesEmplois(recette)) {
-      const distance = distanceOk(rampes.soft[mode][rang].couleur, rampes.vivid[mode][rang].couleur);
-      if (distance < recette.seuils.profilsConfondus) crans.push({ mode, cran: recette.crans[rang], distance });
-    }
-  }
+  const { crans } = grilleDe(recette, palette);
+  return MODES.flatMap((mode) => crans.flatMap((cran, rang) => {
+    const distance = distanceOk(rampes.soft[mode][rang].couleur, rampes.vivid[mode][rang].couleur);
+    return distance < recette.seuils.profilsConfondus ? [{ mode, cran, distance }] : [];
+  }));
+}
+
+/** L'alerte ne vise que les nuances des emplois ([VER-11]) : une palette libre n'en a pas. */
+function profilsConfondus(recette: Recette, palette: Palette): Alerte | null {
+  if (estLibre(palette)) return null;
+  const emplois = new Set(rangsDesEmplois(recette).map((rang) => recette.crans[rang]));
+  const crans = confusionsDe(recette, palette).filter(({ cran }) => emplois.has(cran));
   return crans.length > 0
     ? { code: 'profils-confondus', palette: palette.id, crans, seuil: recette.seuils.profilsConfondus }
     : null;
@@ -75,7 +86,8 @@ export function alertesDePalette(recette: Recette, palette: Palette): Alerte[] {
   const parts = partsDe(recette, palette);
   // La part se compare au millième, la précision à laquelle une part se range ([MOT-27]).
   const part = arrondir(partDeChroma(reference, recette.gamut), 3);
-  const bouts = boutsDe(recette.courbes);
+  // « Hors de la rampe » se juge sur l'étendue de la liste de la palette, et non sur les bouts de la dérive.
+  const bouts = etendueDe(grilleDe(recette, palette));
 
   const confondus = profilsConfondus(recette, palette);
   if (confondus) alertes.push(confondus);
@@ -90,14 +102,22 @@ export function alertesDePalette(recette: Recette, palette: Palette): Alerte[] {
   return alertes;
 }
 
-/** La distance moyenne de deux palettes sur les crans 500, 600 et 700 de `vivid`, en clair ; `null` si un cran manque. */
+/**
+ * La distance moyenne de deux palettes sur les crans 500, 600 et 700 de
+ * `vivid`, en clair, chacune lue sur sa liste ; `null` si l'une manque d'un de
+ * ces crans. Deux palettes libres se comparent donc dès qu'elles les portent.
+ */
 export function distanceDePalettes(recette: Recette, a: Palette, b: Palette): number | null {
-  const rangs = CRANS_PALETTES_PROCHES.map((cran) => recette.crans.indexOf(cran));
-  if (rangs.some((rang) => rang < 0)) return null;
-  const rampesA = rampesDe(recette, a).vivid.light;
-  const rampesB = rampesDe(recette, b).vivid.light;
-  const somme = rangs.reduce((total, rang) => total + distanceOk(rampesA[rang].couleur, rampesB[rang].couleur), 0);
-  return somme / rangs.length;
+  const lire = (palette: Palette) => {
+    const { crans } = grilleDe(recette, palette);
+    const rangs = CRANS_PALETTES_PROCHES.map((cran) => crans.indexOf(cran));
+    return rangs.some((rang) => rang < 0) ? null : rangs.map((rang) => rampesDe(recette, palette).vivid.light[rang].couleur);
+  };
+  const nuancesA = lire(a);
+  const nuancesB = lire(b);
+  if (!nuancesA || !nuancesB) return null;
+  const somme = nuancesA.reduce((total, couleur, rang) => total + distanceOk(couleur, nuancesB[rang]), 0);
+  return somme / nuancesA.length;
 }
 
 /** Un fond plus sombre que le cran 50 clair, ou plus clair que le cran 50 sombre, à 0,005 près ([ENT-06]). */

@@ -7,7 +7,7 @@ import { arrondir, boutsDe, lireHexa, partDeChroma, partsDe, prereglageTailwind,
 import { changerReference, choisirLaBase, poserPart, remplacerPalette, renommer, reprendreLesParts } from '../src/edition';
 
 const RECETTE = recetteParDefaut();
-const prereglage = (hexa: string) => prereglageTailwind(rgb8VersOklch(lireHexa(hexa)!), boutsDe(RECETTE.courbes));
+const prereglage = (hexa: string) => prereglageTailwind(rgb8VersOklch(lireHexa(hexa)!), boutsDe(RECETTE));
 
 const PALETTE: Palette = {
   id: 'p-0000000a',

@@ -11,7 +11,7 @@ import {
 
 /** Une palette au préréglage Tailwind, les deux profils liés. */
 export function paletteTailwind(id: string, reference: string, autres: Partial<Palette> = {}): Palette {
-  const derive = prereglageTailwind(rgb8VersOklch(lireHexa(reference)!), boutsDe(recetteParDefaut().courbes));
+  const derive = prereglageTailwind(rgb8VersOklch(lireHexa(reference)!), boutsDe(recetteParDefaut()));
   return {
     id,
     reference,

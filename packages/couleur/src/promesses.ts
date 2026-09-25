@@ -192,6 +192,8 @@ function contexteDe(recette: Recette, palette: Palette): Contexte {
  * rangées par mode, puis par profil, puis dans l'ordre des paires.
  */
 export function verifierPromesses(recette: Recette, palette: Palette): Promesse[] {
+  // Une palette libre sort du modèle : elle n'a ni emplois ni promesses (W6).
+  if (palette.crans !== undefined) return [];
   const contexte = contexteDe(recette, palette);
   return MODES.flatMap((mode) =>
     PROFILS.flatMap((profil) => PAIRES.map((paire) => juger(paire, mode, profil, contexte))));

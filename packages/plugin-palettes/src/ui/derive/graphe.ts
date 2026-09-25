@@ -129,7 +129,7 @@ export function createGraphe(): GrapheUi {
       const { recette, palette, profil, rampe, ancrage } = entrees;
       const courbe = recette.courbes.light;
       const total = courbe.length;
-      const bouts = boutsDe(recette.courbes);
+      const bouts = boutsDe(recette);
       const reference = rgb8VersOklch(referenceDe(palette));
       const lie = palette.derive.lien;
       echelle = entrees.echelle;

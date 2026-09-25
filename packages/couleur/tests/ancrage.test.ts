@@ -10,6 +10,7 @@ import {
   PROFILS,
   ajusterPartsGrises,
   ancrageDe,
+  boutsDe,
   fabriquerPalette,
   lireHexa,
   partDeChroma,
@@ -133,6 +134,7 @@ test('[MOT-17] sur deux mille références, le profil porteur contient les octet
     const communes = fabriquerPalette({
       reference: lireHexa(hexa)!,
       courbes: r.courbes,
+      bouts: boutsDe(r),
       parts: partsDe(r, palette),
       derives: { soft: palette.derive.soft, vivid: palette.derive.vivid },
       gamut: r.gamut,

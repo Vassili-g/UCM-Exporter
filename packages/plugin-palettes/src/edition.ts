@@ -36,7 +36,7 @@ export function changerReference(recette: Recette, palette: Palette, saisie: str
   if (!couleur) return null;
   const prereglage = prereglageTailwind(
     rgb8VersOklch(couleur),
-    boutsDe(recette.courbes),
+    boutsDe(recette),
     recette.derives,
     recette.seuils.chromaGrise,
   );
@@ -114,7 +114,7 @@ export function supprimer(recette: Recette, id: string): Recette {
 export function prereglageDe(recette: Recette, palette: Palette): Derive {
   const couleur = lireHexa(palette.reference);
   if (!couleur) return { clair: 0, sombre: 0 };
-  return prereglageTailwind(rgb8VersOklch(couleur), boutsDe(recette.courbes), recette.derives, recette.seuils.chromaGrise);
+  return prereglageTailwind(rgb8VersOklch(couleur), boutsDe(recette), recette.derives, recette.seuils.chromaGrise);
 }
 
 /**
