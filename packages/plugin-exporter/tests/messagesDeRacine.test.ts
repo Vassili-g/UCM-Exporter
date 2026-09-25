@@ -8,6 +8,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractLayout } from '../src/contract/extractLayout';
+import { extractVariantTokens } from '../src/contract/extractVariantTokens';
 import {
   declarerLesRacinesDeVariants,
   estUneRacineDeVariant,
@@ -195,6 +196,61 @@ test('un gap sans variable sur les racines donne une ligne, sans nom de calque',
     localisationsDe(canal).get(phrase(attendu)),
     racines.map((noeud) => noeud.id),
   );
+});
+
+/** Une racine au contour relié à une couleur, d'épaisseur 1 sans variable. */
+function racineAuContour(nom: string): ComponentNode {
+  const contour = { type: 'SOLID', boundVariables: { color: alias('encre') } };
+  return racine(nom, {
+    strokes: [contour],
+    strokeWeight: 1,
+    strokeAlign: 'INSIDE',
+    boundVariables: { strokes: [alias('encre')] },
+  });
+}
+
+/** Relève les couleurs de chaque racine comme le fait l'export d'un set. */
+async function releverLesCouleurs(racines: ComponentNode[], canal: string[]): Promise<void> {
+  await extractVariantTokens(
+    {
+      axes: ['state'],
+      variants: racines.map((component) => ({ values: { state: component.name }, component })),
+    },
+    resolverFor({ encre: 'color.border' }),
+    canal,
+  );
+}
+
+const EPAISSEUR = {
+  titre: "stroke weight : aucun token n'est relié à cette propriété.",
+  impact: "Le contrat n'exportera pas cette propriété.",
+  action: 'Reliez-la à un token, puis réexportez.',
+};
+
+test('trois racines au stroke weight sans variable donnent une ligne à trois cibles', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map(racineAuContour);
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  await releverLesCouleurs(racines, canal);
+
+  const lignes = [...new Set(canal.filter((message) => message.includes('stroke weight')))];
+  assert.deepEqual(lignes, [phrase(EPAISSEUR)]);
+  assert.deepEqual(
+    localisationsDe(canal).get(phrase(EPAISSEUR)),
+    racines.map((noeud) => noeud.id),
+  );
+});
+
+test('un composant seul garde le nom de son calque sur le stroke weight', async () => {
+  const seul = racineAuContour('Wide');
+  const canal: string[] = [];
+
+  await releverLesCouleurs([seul], canal);
+
+  const lignes = canal.filter((message) => message.includes('stroke weight'));
+  assert.equal(lignes.length, 1);
+  assert.ok(lignes[0].startsWith('Layer « Wide », stroke weight :'), lignes[0]);
 });
 
 test('un gap relié à une variable ne produit rien sur les racines', async () => {

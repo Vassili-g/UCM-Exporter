@@ -306,7 +306,10 @@ une racine se répètent une fois par variant. Sur un set de plusieurs variants,
 `extractStructure` déclare ces racines à `estUneRacineDeVariant`, et trois
 messages s'écrivent une fois, sans nom de calque : une borne sans variable, une
 propriété sans champ et un champ sans variable. Leur carte garde chaque racine
-pour cible. Pour la propriété sans champ, seul `effect` a un texte de groupe ;
+pour cible. `extractVariantTokens` relève les couleurs de chaque variant dans un
+canal à part, qui reprend les racines déclarées : un stroke weight sans variable
+sur les racines s'écrit donc lui aussi une fois. Pour la propriété sans champ,
+seul `effect` a un texte de groupe ;
 les autres propriétés gardent une ligne par racine tant que le leur n'est pas
 validé. Les représentants de tailles d'un wrapper ne sont pas des racines du
 set exporté et gardent le nom de leur variant.

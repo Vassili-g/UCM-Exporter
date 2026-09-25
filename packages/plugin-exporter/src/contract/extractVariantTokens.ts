@@ -19,7 +19,13 @@ import { getSlotTokens } from './extractSlotTokens';
 import type { TokenResolver, VariantColor, VariantStrokeColor } from './extractSlotTokens';
 import { toRef } from '@ucm-kit/core/format';
 import type { SlotStrokes, SlotTokens, VariantStrokes, VariantTokens } from '@ucm-kit/core/format';
-import { pousserLocalise, pousserSansNode, reporterLocalisations } from './localisation';
+import {
+  declarerLesRacinesDeVariants,
+  estUneRacineDeVariant,
+  pousserLocalise,
+  pousserSansNode,
+  reporterLocalisations,
+} from './localisation';
 export { getSlotTokens } from './extractSlotTokens';
 export type { VariantTokenLeaves } from './extractSlotTokens';
 
@@ -157,9 +163,16 @@ export async function extractVariantTokens(
   // promesses se règlent ne doit décider ni de l'ordre des clés, ni de quel
   // variant gagne un conflit : sinon deux exports d'un design inchangé
   // donneraient des JSON différents, donc une pull request pour rien.
+  // Chaque canal de variant reprend les racines que `warnings` a déclarées :
+  // une seconde règle de déclaration pourrait regrouper ce que la première
+  // laisse au nom de son calque.
+  const racines = matrix.variants
+    .map(({ component }) => component)
+    .filter((component) => estUneRacineDeVariant(warnings, component));
   const collected = await Promise.all(
     matrix.variants.map(async (entry: VariantEntry) => {
       const variantWarnings: string[] = [];
+      declarerLesRacinesDeVariants(variantWarnings, racines);
       const leaf = await getSlotTokens(
         entry.component,
         resolver,

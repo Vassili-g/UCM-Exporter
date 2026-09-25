@@ -2,9 +2,9 @@
 
 ## État
 
-- Lot courant : E5
+- Lot courant : porte H (H0, H1 et H2), qui attend le mainteneur
 - Branche et `HEAD` de départ : `main`, `92e7cff`
-- Dernière porte franchie : aucune. La porte H (H0, H1 et H2) suit E5.
+- Dernière porte franchie : aucune
 
 La copie de travail partagée porte le travail non commité d'autres sessions
 (`docs/notes/Recherches/Optimisation Tokens`, `Plugin Palettes`,
@@ -51,4 +51,26 @@ copiés ; le build y tourne étape par étape.
     « opaciteDuCalqueAbsolu » ne sort pas ». Restauré par copie : vert.
   - la racine `Disabled` perd son opacité : « la famille « opaciteDeRacine »
     ne sort pas ». Restauré par copie : vert.
+- Écart ou réserve : aucun.
+
+### E5 : les peintures d'une racine se regroupent
+
+- Commit : ce commit, précédé de `40ab8b3`.
+- Changement : chaque canal de variant d'`extractVariantTokens` déclare les
+  racines que `warnings` a déclarées. La condition d'`extractStructure`, plus
+  d'un variant, reste la seule règle de déclaration.
+- Tests : dans `messagesDeRacine.test.ts`, trois racines au stroke weight sans
+  variable donnent une ligne à trois cibles, rouge avant le changement (trois
+  lignes nommées) ; un composant seul garde « Layer « Wide », stroke weight ».
+- Commandes, worktree à `40ab8b3` avec les fichiers du lot : `npm test` : 0,
+  suite du plugin de 929 à 931 tests. `npm run typecheck` : 0. Build étape par
+  étape : 0 à chaque étape.
+- Mutations, dans le worktree :
+  - retirer `declarerLesRacinesDeVariants(variantWarnings, racines)` : « trois
+    racines au stroke weight… » échoue sur trois lignes nommées. Restauré par
+    copie : vert.
+  - déclarer toutes les racines sans consulter `warnings` : « un composant
+    seul garde le nom de son calque… » échoue. Restauré par copie : vert.
+- `SPEC.md`, « Racine de variant » : le canal des couleurs reprend les racines
+  déclarées.
 - Écart ou réserve : aucun.
