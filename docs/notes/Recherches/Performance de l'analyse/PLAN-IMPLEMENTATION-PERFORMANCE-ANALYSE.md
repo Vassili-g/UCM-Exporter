@@ -73,6 +73,20 @@ Avant de toucher à un message destiné au designer, charger aussi
 
 L4 ne dépend que de L1 et peut passer avant L2.
 
+## État au 2026-09-25
+
+L0, L1, L2 et L4 sont faits et poussés sur `main`, avec L7.1 à L7.3. Le
+plugin de la copie de travail est reconstruit. Le reste attend le
+mainteneur :
+
+1. M0, la mesure de départ, sur le commit `97095bb` (L0 seul, voir M0.2) ;
+2. S6, qui décide L2.8 ;
+3. le choix d'une des deux rédactions de L2.9 ;
+4. S2 (L3.0), qui ouvre ou retire L3 ;
+5. M1, qui décide chaque tâche de L5.
+
+L7.4 se fait en fin de plan.
+
 ## Lot L0 : trace de mesure et sondes
 
 - [x] **L0.1** Créer `packages/plugin-exporter/src/contract/mesure.ts` :
@@ -132,8 +146,14 @@ L4 ne dépend que de L1 et peut passer avant L2.
   froid, à chaud et après retouche, cinq fois chacune. Consigner médiane et
   maximum par étape et par compteur dans `MESURES-PERFORMANCE-ANALYSE.md`, dans
   ce dossier, avec la version de Figma et les empreintes.
+  *L1, L2 et L4 sont déjà sur `main` : le départ se mesure sur `97095bb`,
+  qui ne porte que la trace. Extraire ce commit dans un worktree, y lancer
+  `npm ci`, puis dans `packages/plugin-exporter` `npm run build:code:mesure`,
+  `npm run build:ui` et `npm run build:manifest`, et importer ce manifeste
+  dans Figma. M1 se mesure ensuite sur `main`.*
 - [ ] **M0.3** **[mainteneur]** Lancer S1, S5 et S6, et consigner les constats
   dans le même fichier. S2 se lance après L2.
+  *Les scripts sont dans `sondes/`, chacun avec son déroulé en tête.*
 
 ## Lot L1 : portée d'analyse, maîtres et banc de parité
 
@@ -329,6 +349,8 @@ L4 ne dépend que de L1 et peut passer avant L2.
   100 ms, ou si le canevas s'arrête pendant le défilement, écrire « L3 retiré »
   sous cette tâche. L'agent coche alors L3.1 à L3.3 avec la mention « non
   réalisée ».
+  *L2 existe : S2 peut se lancer (`sondes/S2-prechauffage.js`). L3.1 à L3.3
+  attendent son constat.*
 - [ ] **L3.1** Dans `reportSelectionState`, lancer `indexContractedNames` en
   priorité `fond` quand la cible est exportable
   et qu'un variant satisfait `contientUneInstanceRendue`. Passer
@@ -357,6 +379,8 @@ L4 ne dépend que de L1 et peut passer avant L2.
 Chaque tâche commence par relire M1. Si son seuil n'est pas atteint, l'agent
 coche la tâche avec la mention « non réalisée », les chiffres de M1 et le
 seuil.
+
+*En attente de M1.*
 
 - [ ] **L5.1** Relevé par variant, selon la conception, section 5.7. Test : sur
   chaque sous-arbre des mocks, la tranche égale `findAll(() => true)` ; le banc
@@ -393,3 +417,5 @@ Chaque tâche se fait dans le commit du lot qu'elle suit.
 - [ ] **L7.4** En fin de plan : ajouter en tête du [plan de
   recherche](./PLAN-RECHERCHE-PERFORMANCE-ANALYSE.md) un renvoi vers la
   conception et les mesures. Lancer `npm test` à la racine.
+  *En attente : L3 et L5 restent ouverts, et `MESURES-PERFORMANCE-ANALYSE.md`
+  n'existe pas encore.*
