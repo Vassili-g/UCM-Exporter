@@ -304,34 +304,59 @@ function sectionSeuils() {
 </section>`;
 }
 
-/* W3.4 : planche */
+/* W3.4 : planche, second tour */
 
 let calques = 0;
 /** Un cadre de la planche : il compte pour un calque, comme dans le modèle. */
 const F = (style, ...enfants) => { calques += 1; return `<div class="c" style="${style}">${enfants.join('')}</div>`; };
 const T = (style, texte) => { calques += 1; return `<span class="t" style="${style}">${esc(texte)}</span>`; };
+/** Compte les calques d'un morceau de planche, sans toucher au compte en cours. */
+function mesurer(construire) {
+  const avant = calques;
+  calques = 0;
+  const html = construire();
+  const n = calques;
+  calques = avant + n;
+  return { html, n };
+}
 
 const ROLES = [
-  { emploi: 'surface', titre: 'Fonds légers', fr: 'fond d’un bloc, d’une ligne survolée' },
+  { emploi: 'surface', titre: 'Fonds légers', fr: 'fond d’un bloc, d’un bouton soft' },
   { emploi: 'text', titre: 'Textes colorés', fr: 'lien, texte d’accent' },
   { emploi: 'solid', titre: 'Fonds pleins', fr: 'bouton principal, badge plein' },
   { emploi: 'border-control', titre: 'Bordures de champ', fr: 'champ de saisie, case' },
   { emploi: 'focus', titre: 'Anneau de focus', fr: 'focus clavier' },
-  { emploi: 'border-decorative', titre: 'Séparateurs', fr: 'filet, bordure décorative' },
+  { emploi: 'border-decorative', titre: 'Séparateurs', fr: 'filet, bordure de carte' },
 ];
-const ETATS = ['repos', 'survol', 'appui'];
+/** Le vocabulaire des états, celui des composants : `focus` est l'état que porte son propre emploi. */
+const ETATS = ['default', 'hover', 'active'];
+const MONO = "'IBM Plex Mono',monospace";
+const PAS = 56;
+const ECART = 4;
+const LIBELLE = 48;
+
+function encresDe(mode) {
+  return mode === 'light'
+    ? { encre: '#1E1E1E', seconde: 'rgba(30,30,30,.62)', filet: 'rgba(30,30,30,.14)', neutre: 'rgba(30,30,30,.06)' }
+    : { encre: '#F5F5F5', seconde: 'rgba(245,245,245,.62)', filet: 'rgba(245,245,245,.16)', neutre: 'rgba(245,245,245,.06)' };
+}
+
+/** Les nuances d'un profil et d'un thème, par numéro. */
+function nuances(palette, profil, mode) {
+  const rampe = palette.rampe(profil, mode);
+  return (numero) => rampe.find((c) => c.numero === numero).hexa;
+}
 
 /** Le spécimen d'un rôle, peint des nuances de la rampe. */
-function specimen(emploi, hexa, rampe, fond) {
-  const surface = rampe.find((c) => c.numero === 100).hexa;
-  const text = rampe.find((c) => c.numero === 700).hexa;
+function specimen(emploi, hexa, n, fond, encres) {
+  const boite = 'border-radius:6px;padding:0 10px;height:30px;width:96px;display:flex;align-items:center';
   switch (emploi) {
-    case 'surface': return F(`background:${hexa};border-radius:4px;padding:6px 8px;width:92px`, T(`color:${text};font-size:11px;font-weight:600`, 'Bloc'));
-    case 'text': return F(`background:${surface};border-radius:4px;padding:6px 8px;width:92px`, T(`color:${hexa};font-size:11px;font-weight:600`, 'Lien coloré'));
-    case 'solid': return F(`background:${hexa};border-radius:4px;padding:6px 8px;width:92px;text-align:center`, T(`color:${fond};font-size:11px;font-weight:600`, 'Bouton'));
-    case 'border-control': return F(`background:${surface};border:1.5px solid ${hexa};border-radius:4px;padding:6px 8px;width:92px`, T('color:#6B6B6B;font-size:11px', 'Champ'));
-    case 'focus': return F(`background:${fond};border-radius:4px;padding:6px 8px;width:92px;outline:2px solid ${hexa};outline-offset:2px`, T('color:#6B6B6B;font-size:11px', 'Focus'));
-    default: return F(`height:12px;width:92px;border-bottom:1px solid ${hexa}`);
+    case 'surface': return F(`${boite};background:${hexa}`, T(`color:${n(700)};font-size:11px;font-weight:600`, 'Soft'));
+    case 'text': return F(`${boite};padding:0`, T(`color:${hexa};font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px`, 'Lien coloré'));
+    case 'solid': return F(`${boite};background:${hexa};justify-content:center`, T(`color:${fond};font-size:11px;font-weight:600`, 'Bouton'));
+    case 'border-control': return F(`${boite};background:${fond};box-shadow:inset 0 0 0 1px ${hexa}`, T(`color:${encres.seconde};font-size:11px`, 'Champ'));
+    case 'focus': return F(`${boite};background:${fond};box-shadow:inset 0 0 0 1px ${n(600)},0 0 0 2px ${fond},0 0 0 4px ${hexa}`, T(`color:${encres.encre};font-size:11px`, 'Champ'));
+    default: return F(`${boite};padding:0`, F(`height:1px;width:96px;background:${hexa}`));
   }
 }
 
@@ -342,116 +367,238 @@ function garantieDe(palette, emploi, decalage, profil, mode) {
   return ici.find((p) => est(p.paire.premier)) ?? ici.find((p) => est(p.paire.second)) ?? null;
 }
 
-function sectionDesRoles(palette, mode, profil, encres) {
+function sectionDesUsages(palette, mode, encres) {
+  const profil = palette.profil;
   const rampe = palette.rampe(profil, mode);
+  const n = nuances(palette, profil, mode);
   const fond = FONDS[mode];
+  const colonne = 'width:112px;flex:none';
+  const entete = F(`display:flex;gap:12px;padding-bottom:6px`,
+    F('width:176px;flex:none'),
+    ...ETATS.map((etat) => T(`${colonne};font:600 10px/12px ${MONO};color:${encres.seconde};letter-spacing:.04em`, etat)));
   const lignes = ROLES.map(({ emploi, titre, fr }) => {
     const depart = rampe.findIndex((c) => c.numero === TABLE_DES_EMPLOIS[emploi]);
-    const etats = decalagesDeLEmploi(emploi).map((decalage) => {
+    const cellules = decalagesDeLEmploi(emploi).map((decalage) => {
       const cran = rampe[depart + decalage];
       const garantie = garantieDe(palette, emploi, decalage, profil, mode);
-      const mesure = garantie ? `${garantie.verdict === 'tenue' ? '✓' : '✗'} ${ecrireContraste(garantie.contraste)}:1` : 'sans minimum';
-      const couleurMesure = garantie?.verdict === 'manquee' ? '#C7321B' : encres.seconde;
-      return F('display:flex;flex-direction:column;gap:4px;width:100px',
-        specimen(emploi, cran.hexa, rampe, fond),
-        T(`font:600 11px/14px 'IBM Plex Mono',monospace;color:${encres.encre}`, `${cran.numero} · ${cran.hexa}`),
-        T(`font-size:10px;line-height:13px;color:${couleurMesure}${garantie?.verdict === 'manquee' ? ';font-weight:600' : ''}`, `${decalagesDeLEmploi(emploi).length > 1 ? `${ETATS[decalage]} · ` : ''}${mesure}`));
+      const manquee = garantie?.verdict === 'manquee';
+      const mesure = garantie ? `${manquee ? '✗' : '✓'} ${ecrireContraste(garantie.contraste)}:1` : '';
+      return F(`display:flex;flex-direction:column;gap:6px;${colonne}`,
+        specimen(emploi, cran.hexa, n, fond, encres),
+        F('display:flex;gap:6px;align-items:baseline',
+          T(`font:600 10px/12px ${MONO};color:${encres.encre}`, String(cran.numero)),
+          ...(mesure ? [T(`font:${manquee ? 600 : 400} 10px/12px ${MONO};color:${manquee ? '#C7321B' : encres.seconde}`, mesure)] : [])));
     });
-    return F(`display:flex;gap:16px;padding:12px 0;border-top:1px solid ${encres.filet};align-items:flex-start`,
-      F('display:flex;flex-direction:column;gap:2px;width:170px',
-        T(`font-size:13px;font-weight:600;color:${encres.encre}`, titre),
-        T(`font:500 11px/14px 'IBM Plex Mono',monospace;color:${encres.encre}`, emploi),
-        T(`font-size:10px;color:${encres.seconde}`, fr)),
-      ...etats);
+    return F(`display:flex;gap:12px;padding:12px 0;border-top:1px solid ${encres.filet};align-items:flex-start`,
+      F('display:flex;flex-direction:column;gap:2px;width:176px;flex:none',
+        T(`font-size:12px;font-weight:600;color:${encres.encre}`, titre),
+        T(`font:500 10px/13px ${MONO};color:${encres.seconde}`, `${emploi}${emploi === 'focus' ? ' · état focus' : ''}`),
+        T(`font-size:10px;line-height:13px;color:${encres.seconde}`, fr)),
+      ...cellules);
   });
-  return F('display:flex;flex-direction:column', T(`font-size:15px;font-weight:600;color:${encres.encre};padding-bottom:8px`, `Quelle nuance pour quel usage · ${NOMS_DE_PROFIL[profil]}`), ...lignes);
+  return F('display:flex;flex-direction:column',
+    T(`font-size:15px;font-weight:600;color:${encres.encre};padding-bottom:10px`, `Quelle nuance pour quel usage · ${NOMS_DE_PROFIL[profil]}`),
+    entete, ...lignes);
 }
 
-function rampesDeLaPlanche(palette, mode, encres) {
-  const rangee = (profil) => F('display:flex;gap:4px;align-items:flex-start',
-    T(`width:44px;font-size:11px;font-weight:600;color:${encres.encre};padding-top:10px`, NOMS_DE_PROFIL[profil]),
-    ...palette.rampe(profil, mode).map((cran) => F('display:flex;flex-direction:column;gap:2px;width:56px',
-      F(`height:34px;border-radius:4px;background:${cran.hexa};display:flex;align-items:center;justify-content:center`,
+/** Une rampe en rangée de pastilles, colonnes de PAS pixels : la grille des contrastes s'aligne dessous. */
+function rangeeDeRampe(palette, profil, mode, encres, { codes = true } = {}) {
+  return F(`display:flex;gap:${ECART}px;align-items:flex-start`,
+    T(`width:${LIBELLE - ECART}px;font-size:11px;font-weight:600;color:${encres.encre};padding-top:9px`, NOMS_DE_PROFIL[profil]),
+    ...palette.rampe(profil, mode).map((cran) => F(`display:flex;flex-direction:column;gap:3px;width:${PAS}px`,
+      F(`height:32px;border-radius:6px;background:${cran.hexa};display:flex;align-items:center;justify-content:center`,
         ...(palette.profil === profil && palette.reperes[mode] === cran.numero ? [T(`color:${encre(cran.couleur)};font-size:11px`, '◆')] : [])),
-      T(`font:500 9.5px/12px 'IBM Plex Mono',monospace;color:${encres.seconde}`, cran.hexa))));
-  return F('display:flex;flex-direction:column;gap:6px',
-    T(`font-size:13px;font-weight:600;color:${encres.encre}`, 'Les deux rampes'),
-    F('display:flex;gap:4px', T('width:44px', ''), ...palette.rampe('vivid', mode).map(({ numero }) => T(`width:56px;font:500 10px/12px 'IBM Plex Mono',monospace;color:${encres.seconde}`, String(numero)))),
-    rangee('soft'), rangee('vivid'));
+      ...(codes ? [T(`font:500 9.5px/12px ${MONO};color:${encres.seconde}`, cran.hexa.slice(1))] : []))));
 }
 
-function interfaceDExemple(palette, mode, encres) {
-  const rampe = palette.rampe(palette.profil, mode);
-  const n = (numero) => rampe.find((c) => c.numero === numero).hexa;
-  const fond = FONDS[mode];
+function numeros(palette, mode, encres) {
+  return F(`display:flex;gap:${ECART}px`, F(`width:${LIBELLE - ECART}px`),
+    ...palette.rampe('vivid', mode).map(({ numero }) => T(`width:${PAS}px;font:600 10px/12px ${MONO};color:${encres.seconde}`, String(numero))));
+}
+
+function sectionDesRampes(palette, mode, encres) {
   return F('display:flex;flex-direction:column;gap:8px',
-    T(`font-size:13px;font-weight:600;color:${encres.encre}`, `Interface d’exemple · ${NOMS_DE_PROFIL[palette.profil]}`),
-    F(`display:flex;gap:16px;align-items:center;padding:16px;border-radius:8px;background:${n(100)};border:1px solid ${n(300)}`,
-      F('display:flex;flex-direction:column;gap:4px;flex:1',
-        T(`font-size:14px;font-weight:600;color:${n(900)}`, 'Votre commande est prête'),
-        T(`font-size:11px;color:${n(700)}`, 'Suivre la livraison')),
-      F(`border:1.5px solid ${n(600)};border-radius:4px;padding:6px 10px;background:${fond};width:120px`, T('font-size:11px;color:#6B6B6B', 'Code promo')),
-      F(`background:${n(700)};border-radius:4px;padding:8px 14px`, T(`color:${fond};font-size:11px;font-weight:600`, 'Payer'))));
+    T(`font-size:15px;font-weight:600;color:${encres.encre}`, 'Les deux rampes'),
+    numeros(palette, mode, encres), rangeeDeRampe(palette, 'soft', mode, encres), rangeeDeRampe(palette, 'vivid', mode, encres));
 }
 
-function grilleEnNote(encres) {
-  return F(`display:flex;gap:12px;align-items:center;padding-top:10px;border-top:1px solid ${encres.filet}`,
-    T(`font-size:11px;color:${encres.seconde}`, `Grilles des contrastes, Soft et Vivid : reprises de la planche actuelle, ${CALQUES_DE_LA_GRILLE} calques pour les deux thèmes, repliées en bas du cadre.`));
+/**
+ * La grille des contrastes d'un profil, alignée sur les rampes : la ligne dit le fond, la colonne le texte.
+ * Une case qui tient 3:1 se peint de sa vraie paire ; en dessous, elle s'efface.
+ */
+function grilleDesContrastes(palette, profil, mode, encres) {
+  const rampe = palette.rampe(profil, mode);
+  const { texte, nonTexte } = DEFAUT.seuils;
+  const lignes = rampe.map((fond) => F(`display:flex;gap:${ECART}px;align-items:center`,
+    F(`width:${LIBELLE - ECART}px;display:flex;align-items:center;gap:4px`,
+      F(`width:12px;height:12px;border-radius:3px;background:${fond.hexa}`),
+      T(`font:600 9.5px/12px ${MONO};color:${encres.seconde}`, String(fond.numero))),
+    ...rampe.map((lettre) => {
+      const valeur = contraste(fond.couleur, lettre.couleur);
+      if (fond.numero === lettre.numero) return F(`width:${PAS}px;height:24px`);
+      if (valeur < nonTexte) return F(`width:${PAS}px;height:24px;border-radius:4px;background:${encres.neutre};display:flex;align-items:center;justify-content:center`, T(`font:400 9.5px/12px ${MONO};color:${encres.seconde};opacity:.7`, ecrireContraste(valeur)));
+      return F(`width:${PAS}px;height:24px;border-radius:4px;background:${fond.hexa};display:flex;align-items:center;justify-content:center`,
+        T(`font:${valeur >= texte ? 700 : 400} 10.5px/12px ${MONO};color:${lettre.hexa}`, ecrireContraste(valeur)));
+    })));
+  return F('display:flex;flex-direction:column;gap:4px',
+    rangeeDeRampe(palette, profil, mode, encres, { codes: false }), ...lignes);
 }
 
-/** Un thème du cadre : en-tête, rôles, rampes, interface d'exemple si demandée, grille en note. */
-function themeDuCadre(palette, mode, { exemple }) {
-  const encres = mode === 'light'
-    ? { encre: '#1E1E1E', seconde: 'rgba(30,30,30,.66)', filet: 'rgba(30,30,30,.16)' }
-    : { encre: '#F5F5F5', seconde: 'rgba(245,245,245,.66)', filet: 'rgba(245,245,245,.18)' };
-  const echecs = palette.manquees(mode);
-  return F(`display:flex;flex-direction:column;gap:20px;padding:24px;background:${FONDS[mode]};border-radius:12px`,
+function sectionDesContrastes(palette, mode, encres) {
+  const { texte, nonTexte } = DEFAUT.seuils;
+  return F(`display:flex;flex-direction:column;gap:14px;padding-top:16px;border-top:1px solid ${encres.filet}`,
     F('display:flex;justify-content:space-between;align-items:baseline',
-      T(`font-size:12px;font-weight:600;color:${encres.seconde};text-transform:uppercase;letter-spacing:.06em`, `Thème ${NOMS_DE_MODE[mode]} · fond ${FONDS[mode]}`),
-      T(`font-size:12px;font-weight:600;color:${echecs ? '#C7321B' : encres.encre}`, echecs ? `${echecs} garantie${echecs > 1 ? 's' : ''} manquée${echecs > 1 ? 's' : ''}` : 'Toutes les garanties tenues')),
-    sectionDesRoles(palette, mode, palette.profil, encres),
-    rampesDeLaPlanche(palette, mode, encres),
-    ...(exemple ? [interfaceDExemple(palette, mode, encres)] : []),
-    grilleEnNote(encres));
+      T(`font-size:15px;font-weight:600;color:${encres.encre}`, 'Contrastes, nuance par nuance'),
+      T(`font-size:10px;color:${encres.seconde}`, `Ligne : fond · colonne : texte · gras ≥ ${nombre(texte)}:1 · maigre ≥ ${nombre(nonTexte)}:1 · effacé en dessous`)),
+    grilleDesContrastes(palette, 'soft', mode, encres),
+    grilleDesContrastes(palette, 'vivid', mode, encres));
 }
 
-function cadre(palette, { exemple }) {
+/* Interfaces d'exemple, à la manière de Radix Themes : le profil porteur, ses emplois et leurs états. */
+
+const bouton = (style, texte, couleur) => F(`height:30px;padding:0 12px;border-radius:6px;display:flex;align-items:center;${style}`, T(`font-size:11px;font-weight:600;color:${couleur}`, texte));
+
+/** Les variantes d'un bouton : l'état avance d'une nuance, fond et texte ensemble. */
+function variantesDeBouton(n, fond, etat) {
+  const d = [0, 100, 200][etat];
+  return [
+    ['solid', `background:${n(700 + d)}`, fond],
+    ['soft', `background:${n(100 + d)}`, n(700)],
+    ['outline', `box-shadow:inset 0 0 0 1px ${n(600 + d)};background:${etat ? n(etat === 1 ? 100 : 200) : 'transparent'}`, n(700)],
+    ['ghost', `background:${etat ? n(etat === 1 ? 100 : 200) : 'transparent'}`, n(700)],
+  ];
+}
+
+/** E1 : les composants par variante et par état, comme la page de thème de Radix. */
+function exempleComposants(palette, mode, encres) {
+  const n = nuances(palette, palette.profil, mode);
+  const fond = FONDS[mode];
+  const colonne = 'width:96px;flex:none';
+  const entete = F('display:flex;gap:12px', F('width:64px;flex:none'), ...ETATS.map((etat) => T(`${colonne};font:600 10px/12px ${MONO};color:${encres.seconde}`, etat)));
+  const lignes = ['solid', 'soft', 'outline', 'ghost'].map((variante, rang) => F('display:flex;gap:12px;align-items:center',
+    T(`width:64px;flex:none;font:500 10px/12px ${MONO};color:${encres.seconde}`, variante),
+    ...ETATS.map((_, etat) => { const [, style, couleur] = variantesDeBouton(n, fond, etat)[rang]; return F(colonne, bouton(style, 'Bouton', couleur)); })));
+  const badges = F('display:flex;gap:8px;align-items:center',
+    T(`width:64px;flex:none;font:500 10px/12px ${MONO};color:${encres.seconde}`, 'badge'),
+    F(`padding:2px 8px;border-radius:999px;background:${n(700)}`, T(`font-size:10px;font-weight:600;color:${fond}`, 'Solid')),
+    F(`padding:2px 8px;border-radius:999px;background:${n(100)}`, T(`font-size:10px;font-weight:600;color:${n(700)}`, 'Soft')),
+    F(`padding:2px 8px;border-radius:999px;box-shadow:inset 0 0 0 1px ${n(300)}`, T(`font-size:10px;font-weight:600;color:${n(700)}`, 'Outline')));
+  const champs = F('display:flex;gap:12px;align-items:center',
+    T(`width:64px;flex:none;font:500 10px/12px ${MONO};color:${encres.seconde}`, 'champ'),
+    ...[['default', n(600), ''], ['hover', n(700), ''], ['focus', n(600), `,0 0 0 2px ${fond},0 0 0 4px ${n(600)}`]].map(([etat, bord, anneau]) => F(`${colonne};height:30px;border-radius:6px;background:${fond};box-shadow:inset 0 0 0 1px ${bord}${anneau};display:flex;align-items:center;padding:0 10px`, T(`font-size:11px;color:${encres.seconde}`, etat))));
+  const controles = F('display:flex;gap:12px;align-items:center',
+    T(`width:64px;flex:none;font:500 10px/12px ${MONO};color:${encres.seconde}`, 'contrôles'),
+    F(`width:16px;height:16px;border-radius:4px;background:${n(700)};display:flex;align-items:center;justify-content:center`, T(`font-size:11px;color:${fond};font-weight:700`, '✓')),
+    F(`width:16px;height:16px;border-radius:4px;box-shadow:inset 0 0 0 1px ${n(600)}`),
+    F(`width:32px;height:18px;border-radius:9px;background:${n(700)};display:flex;align-items:center;justify-content:flex-end;padding:2px`, F(`width:14px;height:14px;border-radius:50%;background:${fond}`)),
+    F(`width:120px;height:6px;border-radius:3px;background:${n(200)};display:flex`, F(`width:72px;height:6px;border-radius:3px;background:${n(700)}`)));
+  return F('display:flex;flex-direction:column;gap:10px', entete, ...lignes, badges, champs, controles);
+}
+
+/** E2 : un écran composé, une carte de réglages où chaque emploi a sa place. */
+function exempleEcran(palette, mode, encres) {
+  const n = nuances(palette, palette.profil, mode);
+  const fond = FONDS[mode];
+  return F(`display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:12px;background:${fond};box-shadow:inset 0 0 0 1px ${n(300)};width:420px`,
+    F('display:flex;justify-content:space-between;align-items:center',
+      T(`font-size:15px;font-weight:600;color:${encres.encre}`, 'Paramètres de l’équipe'),
+      F(`padding:2px 8px;border-radius:999px;background:${n(100)}`, T(`font-size:10px;font-weight:600;color:${n(700)}`, 'Nouveau'))),
+    F(`display:flex;gap:16px;box-shadow:inset 0 -1px 0 ${n(300)}`,
+      F(`padding:0 0 8px;box-shadow:inset 0 -2px 0 ${n(700)}`, T(`font-size:11px;font-weight:600;color:${encres.encre}`, 'Général')),
+      F('padding:0 0 8px', T(`font-size:11px;color:${encres.seconde}`, 'Membres')),
+      F('padding:0 0 8px', T(`font-size:11px;color:${encres.seconde}`, 'Facturation'))),
+    F('display:flex;flex-direction:column;gap:6px',
+      T(`font-size:11px;font-weight:500;color:${encres.encre}`, 'Nom de l’équipe'),
+      F(`height:30px;border-radius:6px;background:${fond};box-shadow:inset 0 0 0 1px ${n(600)},0 0 0 2px ${fond},0 0 0 4px ${n(600)};display:flex;align-items:center;padding:0 10px`, T(`font-size:11px;color:${encres.encre}`, 'Studio Nord'))),
+    F('display:flex;gap:16px;align-items:center',
+      F('display:flex;gap:8px;align-items:center',
+        F(`width:16px;height:16px;border-radius:4px;background:${n(700)};display:flex;align-items:center;justify-content:center`, T(`font-size:11px;color:${fond};font-weight:700`, '✓')),
+        T(`font-size:11px;color:${encres.encre}`, 'Notifier les membres')),
+      F('display:flex;gap:8px;align-items:center',
+        F(`width:32px;height:18px;border-radius:9px;background:${n(700)};display:flex;align-items:center;justify-content:flex-end;padding:2px`, F(`width:14px;height:14px;border-radius:50%;background:${fond}`)),
+        T(`font-size:11px;color:${encres.encre}`, 'Accès invité'))),
+    F(`display:flex;gap:8px;padding:10px 12px;border-radius:8px;background:${n(100)};box-shadow:inset 0 0 0 1px ${n(300)}`,
+      T(`font-size:11px;font-weight:700;color:${n(700)}`, 'ⓘ'),
+      T(`font-size:11px;line-height:15px;color:${n(700)}`, 'Les membres invités reçoivent un e-mail. En savoir plus')),
+    F('display:flex;gap:8px;justify-content:flex-end',
+      bouton('background:transparent', 'Annuler', n(700)),
+      bouton(`background:${n(100)}`, 'Brouillon', n(700)),
+      bouton(`background:${n(700)}`, 'Enregistrer', fond)));
+}
+
+const EXEMPLES = { E1: { titre: 'Composants par variante', faire: exempleComposants }, E2: { titre: 'Écran composé', faire: exempleEcran } };
+
+function sectionDExemple(palette, mode, encres, cle) {
+  return F(`display:flex;flex-direction:column;gap:12px;padding-top:16px;border-top:1px solid ${encres.filet}`,
+    T(`font-size:15px;font-weight:600;color:${encres.encre}`, `Interface d’exemple · ${NOMS_DE_PROFIL[palette.profil]}`),
+    EXEMPLES[cle].faire(palette, mode, encres));
+}
+
+/** Un thème du cadre : en-tête et verdict, usages, rampes, interface d'exemple, contrastes. */
+function themeDuCadre(palette, mode, { exemple, grilles }) {
+  const encres = encresDe(mode);
+  const echecs = palette.manquees(mode);
+  return F(`display:flex;flex-direction:column;gap:24px;padding:24px;background:${FONDS[mode]};border-radius:12px`,
+    F('display:flex;justify-content:space-between;align-items:baseline',
+      T(`font:600 11px/14px ${MONO};color:${encres.seconde};letter-spacing:.06em;text-transform:uppercase`, `Thème ${NOMS_DE_MODE[mode]} · fond ${FONDS[mode]}`),
+      F(`padding:3px 10px;border-radius:999px;background:${echecs ? 'rgba(199,50,27,.12)' : encres.neutre}`,
+        T(`font-size:11px;font-weight:600;color:${echecs ? '#C7321B' : encres.encre}`, echecs ? `${echecs} garantie${echecs > 1 ? 's' : ''} manquée${echecs > 1 ? 's' : ''}` : '✓ Toutes les garanties tenues'))),
+    sectionDesUsages(palette, mode, encres),
+    sectionDesRampes(palette, mode, encres),
+    ...(exemple ? [sectionDExemple(palette, mode, encres, exemple)] : []),
+    ...(grilles ? [sectionDesContrastes(palette, mode, encres)] : []));
+}
+
+function cadre(palette, { exemple = null, grilles = true } = {}) {
   calques = 0;
-  const html = F('display:flex;flex-direction:column;gap:16px;padding:24px;background:#FFFFFF;border-radius:4px;width:760px',
-    F('display:flex;flex-direction:column;gap:4px',
-      T('font-size:26px;font-weight:600;color:#1E1E1E', palette.nom),
+  const largeur = 2 * 24 + 2 * 24 + LIBELLE + palette.rampe('vivid', 'light').length * (PAS + ECART);
+  const html = F(`display:flex;flex-direction:column;gap:16px;padding:24px;background:#FFFFFF;border-radius:4px;width:${largeur}px`,
+    F('display:flex;flex-direction:column;gap:4px;padding-bottom:4px',
+      T('font-size:28px;font-weight:600;color:#1E1E1E;letter-spacing:-.01em', palette.nom),
       T('font-size:12px;color:#555', `Couleur de référence ${palette.reference} · ${NOMS_DE_PROFIL[palette.profil]} · nuance ${palette.reperes.light} en Thème Light, ${palette.reperes.dark} en Thème Dark`)),
-    themeDuCadre(palette, 'light', { exemple }),
-    themeDuCadre(palette, 'dark', { exemple }),
-    T('font-size:10px;line-height:14px;color:#555', 'Chaque ligne donne un usage, les nuances de ses trois états et leur garantie. Le profil montré est celui qui porte la référence ; l’autre profil se lit dans les rampes.'));
-  return { html, calques, avecGrille: calques + CALQUES_DE_LA_GRILLE };
+    themeDuCadre(palette, 'light', { exemple, grilles }),
+    themeDuCadre(palette, 'dark', { exemple, grilles }));
+  return { html, calques };
 }
 
 function sectionPlanche() {
-  const recits = [
-    { id: 'R1', titre: 'Quelle nuance pour quel usage', question: 'Je pose un bouton, un lien, un champ : quelle nuance prendre, et est-elle lisible ?', ordre: 'En-tête · usages, du fond léger au séparateur, chacun avec ses trois états · les deux rampes · interface d’exemple · grilles en note', gros: 'Les usages : spécimen, numéro et code de chaque état', note: 'La garantie de chaque état, sous son spécimen ; les grilles', reco: true },
-    { id: 'R2', titre: 'Ma palette tient-elle ses promesses', question: 'Puis-je livrer cette palette, et sinon, qu’est-ce qui manque ?', ordre: 'Verdict par thème et par profil · garanties manquées en tête · garanties tenues · rampes · grilles', gros: 'Le verdict et les garanties manquées', note: 'Les rampes et les usages', reco: false },
-    { id: 'R3', titre: 'Fiche de référence', question: 'Quels sont les codes de cette palette, nuance par nuance ?', ordre: 'Rampes en grand avec code et luminosité · table nuance par usage · garanties en résumé · grilles', gros: 'Les rampes et leurs codes, à la manière de Radix', note: 'Usages et garanties', reco: false },
-  ];
-  const cartes = recits.map((r) => `<div class="option${r.reco ? ' reco' : ''}"><h3><span>${r.id} · ${esc(r.titre)}</span>${r.reco ? '<span class="chip-reco">Recommandé</span>' : ''}</h3><p><b>Question :</b> ${esc(r.question)}</p><p><b>Ordre :</b> ${esc(r.ordre)}</p><p class="pour">En grand : ${esc(r.gros)}</p><p class="contre">En note : ${esc(r.note)}</p></div>`).join('');
-  const variantes = [[BLEU, false], [BLEU, true], [VERT, false]].map(([palette, exemple]) => ({ palette, exemple, ...cadre(palette, { exemple }) }));
-  const scenes = variantes.map(({ palette, exemple, html, calques: n, avecGrille }) => `<div class="planche-scene"><div class="planche-cadre">${html}</div><p class="legende"><b>${esc(palette.nom)}, ${exemple ? 'avec' : 'sans'} interface d’exemple.</b> ${n} calques, ${avecGrille} avec les grilles.</p></div>`).join('');
-  const lignes = variantes.map(({ palette, exemple, calques: n, avecGrille }) => `<tr><td>R1, ${esc(palette.nom)}, ${exemple ? 'avec' : 'sans'} interface d’exemple</td><td>${n}</td><td>${avecGrille}</td></tr>`).join('');
+  const sans = cadre(BLEU, { grilles: false });
+  const avec = cadre(BLEU);
+  const e1 = cadre(BLEU, { exemple: 'E1' });
+  const e2 = cadre(BLEU, { exemple: 'E2' });
+  const vert = cadre(VERT, { exemple: 'E2' });
+  const apercus = ['light', 'dark'].flatMap((mode) => Object.keys(EXEMPLES).map((cle) => {
+    const { html } = mesurer(() => F(`padding:20px;background:${FONDS[mode]};border-radius:12px;width:max-content`, EXEMPLES[cle].faire(BLEU, mode, encresDe(mode))));
+    return `<div class="planche-scene"><div class="planche-cadre">${html}</div><p class="legende"><b>${cle} · ${EXEMPLES[cle].titre}</b>, Thème ${NOMS_DE_MODE[mode]}.</p></div>`;
+  }));
+  const coutExemple = (cle) => (cle === 'E1' ? e1 : e2).calques - avec.calques;
+  const coutGrilles = avec.calques - sans.calques;
   return `<section class="bloc" id="w3-4">
-  <div class="tete"><span class="sur">W3.4 · Planche générée</span><h2>Une planche qui répond à une question</h2></div>
-  <p>La planche actuelle montre tout au même rang : rampes, cartes de nuance, garanties, grilles. Chaque récit ci-dessous choisit une question, et en déduit l’ordre des sections, ce qui est gros et ce qui passe en note.</p>
-  <div class="options">${cartes}</div>
-  <p>Le récit R1 recommandé, en planche complète : un cadre par palette, les deux thèmes l’un sous l’autre, peints de leur fond. Le vert montre la même planche avec deux garanties manquées au Thème Light.</p>
-  <div class="scene">${scenes}</div>
-  <div class="recap"><table><thead><tr><th>Cadre</th><th>Calques sans grilles</th><th>Avec grilles</th></tr></thead><tbody>
-    <tr><td>Planche actuelle</td><td>${CALQUES_ACTUELS.sansGrille}</td><td>${CALQUES_ACTUELS.avecGrille}</td></tr>${lignes}
+  <div class="tete"><span class="sur">W3.4 · Planche générée, second tour</span><h2>Quelle nuance pour quel usage, du spécimen à la grille</h2></div>
+  <p>Récit R1 retenu. Trois changements depuis le premier tour. Les états portent le vocabulaire des composants : <code>default</code>, <code>hover</code>, <code>active</code>, et <code>focus</code> pour l’anneau, qui est son propre emploi. Deux interfaces d’exemple, prises sur Radix Themes, sont proposées. Les grilles des contrastes passent dans chaque thème, alignées colonne par colonne sur les rampes, et peintes de leurs vraies couleurs.</p>
+  <div class="faits">
+    <div><b>Les états</b><span>Une en-tête de colonnes <code>default · hover · active</code> par section d’usages, au lieu d’une étiquette par case. Un emploi à un seul état n’occupe que la première colonne ; l’anneau se lit <code>focus</code>.</span></div>
+    <div><b>Les grilles</b><span>Une ligne par nuance de fond, une colonne par nuance de texte, sous les pastilles de la rampe. Une paire à 3:1 ou plus se peint telle qu’elle se lira : le fond de la ligne, le ratio écrit dans la couleur de la colonne. En dessous, la case s’efface. Même nombre de cases qu’aujourd’hui.</span></div>
+    <div><b>Les interfaces d’exemple</b><span>E1 reprend la page de thème de Radix : chaque variante de bouton dans ses trois états, badges, champ, contrôles. E2 compose un écran de réglages où chaque emploi a sa place : onglet, champ au focus, case, interrupteur, encart, trois boutons.</span></div>
+  </div>
+  <div class="scene"><div class="scene-rangee">${apercus.join('')}</div></div>
+  <p>Le cadre complet de Bleu avec E2, puis celui de Vert, qui manque deux garanties au Thème Light.</p>
+  <div class="scene"><div class="scene-rangee">
+    <div class="planche-scene"><div class="planche-cadre">${e2.html}</div><p class="legende"><b>Bleu, avec E2.</b> ${e2.calques} calques.</p></div>
+    <div class="planche-scene"><div class="planche-cadre">${vert.html}</div><p class="legende"><b>Vert, avec E2.</b> ${vert.calques} calques.</p></div>
+  </div></div>
+  <div class="recap"><table><thead><tr><th>Cadre de Bleu</th><th>Calques</th></tr></thead><tbody>
+    <tr><td>Planche actuelle, sans grilles · avec grilles</td><td>${CALQUES_ACTUELS.sansGrille} · ${CALQUES_ACTUELS.avecGrille}</td></tr>
+    <tr><td>R1, sans interface d’exemple ni grilles</td><td>${sans.calques}</td></tr>
+    <tr><td>R1, avec grilles</td><td>${avec.calques}</td></tr>
+    <tr><td>R1, avec grilles et E1</td><td>${e1.calques}</td></tr>
+    <tr><td>R1, avec grilles et E2</td><td>${e2.calques}</td></tr>
   </tbody></table></div>
-  <p class="note">Les calques se comptent sur l’arbre de la maquette, un cadre ou un texte pour un calque, comme <code>compterCalques</code>. Les grilles des contrastes sont reprises telles quelles : ${CALQUES_DE_LA_GRILLE} calques, la différence entre les deux comptes de la planche actuelle.</p>
+  <p class="note">Les calques se comptent sur l’arbre de la maquette, un cadre ou un texte pour un calque, comme <code>compterCalques</code>. Les grilles coûtent ${coutGrilles} calques pour les deux thèmes, E1 ${coutExemple('E1')} et E2 ${coutExemple('E2')}.</p>
   <div class="questions"><h3>Questions</h3><ol>
-    <li><b>Le récit.</b> <span class="reco">Recommandé : R1</span>, qui répond à la question du designer au moment de poser un composant. R2 sert plutôt la revue d’une palette ; ses verdicts restent en tête de chaque thème dans R1.</li>
-    <li><b>L’interface d’exemple.</b> Elle coûte ${variantes[1].calques - variantes[0].calques} calques par cadre et montre les rôles ensemble. <span class="reco">Recommandé : la garder</span>, en fin de thème, dans le profil porteur.</li>
-    <li><b>L’autre profil.</b> Les usages ne montrent que le profil porteur ; l’autre se lit dans les rampes. <span class="reco">Recommandé.</span> Autre choix : deux colonnes d’usages, Soft et Vivid, qui doublent la section.</li>
-    <li><b>Les grilles.</b> Toujours dessinées aujourd’hui. <span class="reco">Recommandé : les garder, en bas du cadre.</span></li>
+    <li><b>L’interface d’exemple.</b> <span class="reco">Recommandé : E2</span>, qui montre les emplois ensemble, là où la section des usages les montre déjà un par un avec leurs états. E1 double cette section, mais se compare directement à Radix.</li>
+    <li><b>Les grilles.</b> Peintes de la paire réelle, effacées sous 3:1. <span class="reco">Recommandé.</span> Autre choix : garder les trois teintes de verdict actuelles dans le même alignement.</li>
+    <li><b>Le vocabulaire dans le plugin.</b> La carte des garanties dit encore « repos · survol · appui ». <span class="reco">Recommandé : passer aussi à default · hover · active</span>, pour que la planche et le plugin disent la même chose.</li>
   </ol></div>
 </section>`;
 }
@@ -461,7 +608,7 @@ function sectionPlanche() {
 function sectionPaletteLibre() {
   const choisis = [100, 200, 400, 600, 800, 900];
   const puces = [];
-  for (let n = 50; n <= 950; n += 50) puces.push(`<span class="puce${choisis.includes(n) ? ' on' : ''}">${n}</span>`);
+  for (let n = 50; n <= 1050; n += 50) puces.push(`<span class="puce${choisis.includes(n) ? ' on' : ''}">${n}</span>`);
   const libre = { ...BLEU, nom: 'Bleu illustration' };
   const configuration = panneau('Palettes', `${barreDuSelecteur(libre)}
     <div class="carte-f"><div class="carte-titre">Configuration de la palette</div>
@@ -482,10 +629,10 @@ function sectionPaletteLibre() {
     <div>${configuration}<p class="legende">Six nuances choisies : 100, 200, 400, 600, 800, 900. La référence garde ses octets exacts, à la nuance la plus proche de sa luminosité.</p></div>
     <div>${fiche}<p class="legende">Sa fiche dans l’onglet Planches : « Palette libre · 6 nuances » à la place des résultats Soft et Vivid.</p></div>
   </div></div>
-  <div class="questions"><h3>Questions</h3><ol>
-    <li><b>La place du choix.</b> Dans la troisième colonne, à la place de la palette de base. <span class="reco">Recommandé.</span> Autre choix : une ligne sous les trois colonnes, qui garde la palette de base visible et désactivée.</li>
-    <li><b>Le choix des numéros.</b> Des puces de 50 à 950, cliquables, 4 à 13 allumées. <span class="reco">Recommandé.</span> Autre choix : une liste saisie, « 100, 200, 400 », plus rapide au clavier.</li>
-    <li><b>Au-delà de 950.</b> Les puces s’arrêtent au dernier numéro de la liste commune. Avec le préréglage de 13 nuances après 950, elles iraient jusqu’à 1050.</li>
+  <div class="questions"><h3>Décisions du mainteneur</h3><ol>
+    <li><b>La place du choix.</b> Dans la troisième colonne, à la place de la palette de base.</li>
+    <li><b>Le choix des numéros.</b> Des puces cliquables, 4 à 13 allumées.</li>
+    <li><b>Au-delà de 950.</b> Les puces vont jusqu’à 1050, quel que soit le préréglage commun : 1000 et 1050 prennent la luminosité du préréglage de treize nuances. La palette neutre de la bibliothèque, <code>titanium</code>, descend à 0,213 au 1000 et 0,182 au 1100 ; 1050 descend à 0,165.</li>
   </ol></div>
 </section>`;
 }
@@ -515,8 +662,8 @@ function sectionTreize() {
     <div><b>B, en Dark, éclaircit</b><span>En Dark, un numéro plus grand est plus clair : 1000 et 1050 approchent le blanc. Les nuances plus foncées n’existent qu’en Light.</span></div>
     <div><b>B ne corrige pas le vert</b><span>Le vert reste à la 600, avec ses deux garanties manquées à 2,92:1 ; l’ajustement de la référence (W7) les corrige.</span></div>
   </div>
-  <div class="questions"><h3>Question</h3><ol>
-    <li><b>Le candidat.</b> <span class="reco">Recommandé : B, 1000 et 1050</span>, qui répond au besoin exprimé, des nuances plus foncées, et laisse la référence à son numéro. À décider avec lui : calculer le préréglage Tailwind sur les bouts 50 et 950, pour qu’ajouter 1000 et 1050 ne déplace pas les nuances existantes. A convient si le besoin est plutôt la finesse autour des couleurs de marque.</li>
+  <div class="questions"><h3>Décision du mainteneur</h3><ol>
+    <li><b>Le candidat.</b> B, 1000 et 1050 : un pas de 50 aux extrémités se comprend mieux. Le préréglage Tailwind de la dérive se calcule sur les bouts 50 et 950, pour qu’ajouter 1000 et 1050 ne déplace aucune nuance existante.</li>
   </ol></div>
 </section>`;
 }

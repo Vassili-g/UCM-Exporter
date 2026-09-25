@@ -49,6 +49,7 @@ Relevés dans le code.
 | La courbe Light descend de 0,975 à 0,27 ; la courbe Dark monte de 0,18 à 0,93 | `RECETTE_PAR_DEFAUT` | Une nuance après 950 est plus foncée en Light, mais plus claire en Dark, entre 0,93 et 1 |
 | Une nuance insérée entre 100 et 300, ou entre 600 et 900, décale les états des rôles | [Instruction](./INSTRUCTION-NOMBRE-DE-NUANCES.md#résumé) | Un préréglage de 13 nuances n’ajoute qu’entre 300 et 600, ou après 900 |
 | `#16A34A` rate `border-control` et `focus` sur `surface`, 600 / 100, à 2,92:1 pour 3:1, en Vivid Light. Un pas de 0,01 de luminosité plus sombre donne `#0DA047`, qui tient tout au 600 | [Maquettes de la référence](./MAQUETTES-PLANCHE-ET-REFERENCE.html) | Le cas réel de W7 |
+| La palette neutre de la bibliothèque, `titanium`, numérote 900, 1000, 1100, sans 950, et descend à 0,280, 0,213 puis 0,182 de luminosité OKLCH. Le plugin ne fabrique pas de rampe neutre (D8), et l’architecture cible donne au neutre onze crans | `intencial-library/src/tokens/tokens.json`, relevé du 2026-09-25 | Le 1050 du préréglage de 13, à 0,165, descend plus bas que le neutre. Aller au-delà de 950 ne pose pas de problème ; seul le pas diffère, 50 ici et 100 dans `titanium` |
 | À luminosité OKLCH égale, changer la chroma déplace peu le contraste ; l’intensité d’un profil se règle déjà dans « Intensités » | `[ENT-09]`, carte Intensités | L’ajustement de la référence n’agit que sur la luminosité |
 
 ## Décisions
@@ -61,13 +62,16 @@ Relevés dans le code.
 | Onglets de thème | Tout à gauche de l’en-tête de la carte d’aperçu. L’onglet actif prend un fond plus foncé. Le titre « Aperçu » disparaît |
 | Fond du thème | La pastille du fond s’ouvre au clic sur le sélecteur de couleur ; « Modifier » disparaît. Le sélecteur dit que le fond vaut pour toutes les palettes |
 | Ligne de la référence | « ◆ Référence : Vivid · nuance 400 » passe sous le nuancier. V3.1 est inversé |
-| Sélecteur de couleur | Embarqué, dans le style de Figma, hexadécimal par défaut, sans requête externe. Maquette avant le code |
+| Sélecteur de couleur | Embarqué, dans le style de Figma, hexadécimal par défaut, sans requête externe. Maquette W3.1 validée : 232 px sous le contrôle, Hex à chaque ouverture ; pastilles des onze nuances Vivid sur la référence, fonds par défaut, blanc et deux nuances claires sur un fond |
+| Luminosité des nuances | Disposition A : tracé pleine largeur, table dessous, une colonne par nuance alignée sur son point. Flèches : 0,005, et 0,05 avec Maj |
+| Minimums et détection | Disposition A : une ligne par seuil, libellé et aide à gauche, champ et unité alignés à droite. L’unité ΔEok reste |
+| États d’un emploi | Sur la planche : `default`, `hover`, `active`, et `focus` pour l’anneau. Le plugin suit si W3.6 le confirme |
 | Onglet Planches | Renommé « Planches » |
 | Palette supprimée | Une carte par palette, teinte orange discrète, texte court, « Afficher dans Figma » et « Supprimer définitivement ». Ce dernier retire le cadre de Figma et oublie son suivi, sans confirmation : le Ctrl+Z de Figma rend les deux |
 | Réglages communs | « Luminosité des nuances », « Minimums des promesses » et « Détection des couleurs proches » suivent des maquettes validées |
-| Planche générée | Refaite entièrement d’après une maquette validée, qui choisit d’abord ce que la planche raconte. L’interface d’exemple (V10.11, Q1) y est une option |
-| Nombre de nuances, mode standard | Préréglages de 9, 11 et 13 nuances, communs au fichier. 9 retire 400 et 950. 13 ajoute 450 et 550, ou deux nuances après 950 : choix sur rampes calculées (W6.1). L’architecture multi-marques admet ces trois préréglages |
-| Nombre de nuances, palette libre | Par palette : 4 à 13 nuances, numéros choisis parmi les multiples de 50. Une palette libre ne montre ni rôles, ni accolades, ni `on-solid`, ni garanties |
+| Planche générée | Récit R1, « quelle nuance pour quel usage » : usages du profil porteur avec leurs états, puis les deux rampes, l’interface d’exemple et les grilles des contrastes, dans chaque thème. L’autre profil se lit dans les rampes. Interface d’exemple et forme des grilles : second tour de maquette (W3.6) |
+| Nombre de nuances, mode standard | Préréglages de 9, 11 et 13 nuances, communs au fichier. 9 retire 400 et 950. 13 ajoute 1000 et 1050 (W6.1) : 0,215 et 0,165 en Light, 0,96 et 0,98 en Dark. Le préréglage Tailwind de la dérive se calcule sur les bouts 50 et 950, si bien qu’ajouter 1000 et 1050 ne déplace aucune nuance existante. L’architecture multi-marques admet ces trois préréglages |
+| Nombre de nuances, palette libre | Par palette : 4 à 13 nuances, numéros choisis parmi les multiples de 50, de 50 à 1050 quel que soit le préréglage commun ; 1000 et 1050 prennent la luminosité du préréglage de 13. Choix du modèle à la place de la palette de base, numéros en puces. Une palette libre ne montre ni rôles, ni accolades, ni `on-solid`, ni garanties |
 | Ajuster la référence | Pas de 0,01 de luminosité OKLCH, luminosité seule, originale gardée dans la palette |
 | Format de la recette | Palette libre et originale de la référence sont deux champs nouveaux d’une palette. Ils se conçoivent ensemble et entrent dans un seul format 3 |
 | Textes N043 à N074 | Relecture reportée par le mainteneur. Ce plan n’attend pas leur validation |
@@ -102,8 +106,8 @@ contrôles créés une fois et non à chaque rendu.
 | Onglet Palettes, corrections directes | W1 | W0 |
 | Onglet Planches, palettes supprimées | W2 | W0 |
 | Maquettes à valider | W3 | W0 ; se fait en parallèle de W1 et W2 |
-| Sélecteur de couleur et cartes des Réglages communs | W4 | W3 validé |
-| Planche générée | W5 | W3 validé |
+| Sélecteur de couleur et cartes des Réglages communs | W4 | W3.1 à W3.3, validés le 2026-09-25 |
+| Planche générée | W5 | W3.6 validé |
 | Nombre de nuances | W6 | Choix du 13 sur rampes (W6.1), conception du format 3, revue indépendante |
 | Ajuster la référence | W7 | Conception du format 3 commune avec W6 |
 | Recette et clôture | W8 | Parcours finis |
@@ -247,6 +251,15 @@ se termine par ses questions, avec une recommandation.
   le choix du mode, la liste des numéros, et l’aperçu sans rôles ni
   garanties ; sa fiche dans l’onglet Planches.
 
+- [x] **W3.6** Planche, second tour, sur le récit R1 retenu : états nommés
+  `default`, `hover`, `active` et `focus` ; deux interfaces d’exemple prises
+  sur Radix Themes, E1 (composants par variante et par état) et E2 (écran de
+  réglages composé) ; grilles des contrastes dans chaque thème, alignées
+  colonne par colonne sur les rampes, une paire à 3:1 ou plus peinte de ses
+  vraies couleurs, effacée en dessous. Cadre de Bleu : 1 636 calques avec
+  grilles, 1 790 avec E1, 1 710 avec E2, contre 1 898 aujourd’hui. À valider :
+  E1 ou E2, la forme des grilles, le vocabulaire des états dans le plugin.
+
 Critère : le mainteneur valide ou corrige chaque maquette sans avoir à
 imaginer une interaction.
 
@@ -298,11 +311,13 @@ Le mode standard garde le modèle du design system ; la palette libre en sort.
   450 et 550, ou deux nuances après 950. Pour le second, proposer les numéros
   et une méthode de luminosité au-delà de la courbe : en Light sous 0,27, en
   Dark au-dessus de 0,93, où il reste peu d’écart avant le blanc. Présenter
-  `#1E6FD9` et `#16A34A` aux deux thèmes ; le mainteneur choisit.
+  `#1E6FD9` et `#16A34A` aux deux thèmes ; le mainteneur choisit. Choisi :
+  1000 et 1050.
 - [ ] **W6.2** Écrire la conception : champ de la palette libre (nom décidé
-  ici), bornes des numéros (multiples de 50, de 50 au dernier numéro de la
-  liste commune ; 4 à 13 nuances), luminosité d’une nuance libre par
-  interpolation des courbes communes à son numéro, préréglages et leurs
+  ici), bornes des numéros (multiples de 50, de 50 à 1050 ; 4 à 13
+  nuances), luminosité d’une nuance libre par interpolation des courbes
+  communes à son numéro, et au-delà de 950 par celles du préréglage de 13
+  quand la liste commune s’arrête à 950, préréglages et leurs
   courbes par défaut, « Rétablir » par préréglage. Reprendre le tableau de
   l’[instruction](./INSTRUCTION-NOMBRE-DE-NUANCES.md#v71-ce-qui-suppose-onze-nuances-ou-un-numéro-précis)
   et dire, pour chaque ligne, ce que devient une palette libre : alertes de
@@ -417,6 +432,53 @@ plusieurs garanties en échec.
 | Mode libre | Par palette |
 | Architecture multi-marques | Admet 9, 11 et 13 nuances |
 | « Supprimer définitivement » | Retire le cadre de Figma et oublie son suivi ; Ctrl+Z de Figma autorisé, sans confirmation |
+
+### Réponses aux maquettes W3, le 2026-09-25
+
+| Question | Réponse |
+|---|---|
+| W3.1, pastilles, format, place | Les trois recommandations |
+| W3.2, disposition et pas des flèches | A ; 0,005 et 0,05 avec Maj |
+| W3.3, disposition et unité ΔEok | A ; l’unité reste |
+| W3.4.1, récit | R1, avec le vocabulaire des composants : `default`, `hover`, `focus`, `active` |
+| W3.4.2, interface d’exemple | Gardée, avec d’autres propositions prises sur Radix : W3.6 |
+| W3.4.3, l’autre profil | Dans les rampes seulement |
+| W3.4.4, grilles | Gardées, alignées sur le design de la planche, plus jolies, peintes des couleurs réelles : W3.6 |
+| W3.5.1 et W3.5.2, place du choix et numéros | Les recommandations |
+| W3.5.3, au-delà de 950 | Aller plus loin, comme le neutre de la bibliothèque. Relevé : le 1050 descend plus bas que `titanium.1100`, sans problème pour le moteur |
+| W6.1, préréglage de 13 | 1000 et 1050 : un pas de 50 aux extrémités se comprend mieux |
+
+Texte d’origine :
+
+```text
+W3.1 · Sélecteur de couleur
+1. ok pour reco
+2. ok
+3. ok
+
+W3.2 · Luminosité des nuances
+1. ok reco
+2. ok reco
+
+W3.3 · Minimums des promesses et détection des couleurs proches
+1. ok reco A
+2. OK
+
+W3.4 · Planche générée
+1. ok pour R1
+cependant utiliser le vocabulaire universel : default, hover, focus, active etc
+2. ok reco mais proposer d'autres interfaces d'exemple, prendre radix comme référence
+3. ok reco
+4. ok garder, mais il faut qu'elles soient alignées au design proposé, plus jolies et qu'elles utilisent les couleurs réelles des palettes
+
+W3.5 · Palette libre
+1. ok reco
+2. ok reco
+3. il faut aller un peu plus loin que 950 car même actuellement on a la palette neutral qui va plus loin pour chercher des valeurs plus sombre, c'est problématique ?
+
+W6.1 · Préréglage de treize nuances
+c'est mieux d'avoir 1000 et 1050 car c'est plus compréhensible d'avoir des incréments de 50 sur des extrémités
+```
 
 ## Retours du mainteneur, round 3
 
