@@ -175,7 +175,7 @@ test('un texte sans style et une liaison incomplète avertissent sans valeur bru
   assert.deepEqual(result.textStyles['body.small'].tokens, {
     fontSize: '{typography.body.small.fontsize}',
   });
-  assert.ok(warnings.some((warning) => warning.includes('aucun text style unique')));
+  assert.ok(warnings.some((warning) => warning.includes('aucun style de texte unique')));
   assert.ok(warnings.some((warning) => warning.includes('letter spacing')));
 });
 
@@ -237,7 +237,7 @@ function variantAUnTexte(id: string, calque: string, extra: object = {}) {
   ], { layoutMode: 'HORIZONTAL' }) as ComponentNode;
 }
 
-test('un text style sans variable est publié avec ses literals et sans tokens', async () => {
+test('un style de texte sans variable est publié avec ses literals et sans tokens', async () => {
   const component = variantAUnTexte('default', 'Label', {
     textCase: 'UPPER',
     textAlignHorizontal: 'CENTER',
@@ -276,7 +276,7 @@ test('un text style sans variable est publié avec ses literals et sans tokens',
   assert.ok(warnings.every((warning) => !warning.includes('letter case')));
 });
 
-test('un calque dont textCase diffère de son text style avertit, même quand le style vient du cache', async () => {
+test('un calque dont textCase diffère de son style de texte avertit, même quand le style vient du cache', async () => {
   // `loadTextStyle` ne lit le style qu'une fois : un contrôle placé là ne verrait
   // que « Label », le premier calque rencontré.
   const conforme = variantAUnTexte('default', 'Label', { textCase: 'UPPER' });
@@ -313,10 +313,10 @@ test('un calque dont textCase diffère de son text style avertit, même quand le
   const surcharges = warnings.filter((warning) => warning.includes('letter case'));
   assert.equal(surcharges.length, 2);
   assert.ok(surcharges[0].includes('« Libellé »'));
-  assert.ok(surcharges[0].includes('text style « Overline »'));
+  assert.ok(surcharges[0].includes('style de texte « Overline »'));
   assert.ok(surcharges[1].includes('« Intitulé »'));
   assert.ok(surcharges[1].includes('plusieurs valeurs'));
-  assert.ok(surcharges.every((surcharge) => surcharge.includes('valeur du text style')));
+  assert.ok(surcharges.every((surcharge) => surcharge.includes('valeur du style de texte')));
 });
 
 test('paragraphSpacing et paragraphIndent ne réclament une variable que si leur valeur n’est pas zéro', async () => {
@@ -397,7 +397,7 @@ const styleOverline = async () => ({
   type: 'TEXT', name: 'Overline', boundVariables: { fontSize: alias('size') },
 } as unknown as BaseStyle);
 
-test('du gras ou de l’italique ajouté par-dessus le text style avertit, une fois par type', async () => {
+test('du gras ou de l’italique ajouté par-dessus le style de texte avertit, une fois par type', async () => {
   // Figma garde alors le `textStyleId` : sans ce relevé, le calque serait publié
   // dans le style de police du text style, sans un mot.
   const component = variantAUnTexte('default', 'Label', {

@@ -119,7 +119,7 @@ test('extractContractProps ne laisse pas le nom sémantique voler la clé d’un
     size: { type: 'string', default: 'texte libre' },
   });
   assert.deepEqual(warnings, [
-    'Variant property « Taille » : ses valeurs sont des tailles, mais une autre component property porte déjà le nom « size ». Elle reste exportée sous « taille ». Renommez l\'une des deux si vous voulez « size », puis réexportez.',
+    'Propriété de variante « Taille » : ses valeurs sont des tailles, mais une autre propriété de composant porte déjà le nom « size ». Elle reste exportée sous « taille ». Renommez l\'une des deux si vous voulez « size », puis réexportez.',
   ]);
 });
 
@@ -146,7 +146,7 @@ test('extractContractProps conserve la première prop quand deux écritures donn
     iconLeft: { type: 'boolean', default: true },
   });
   assert.deepEqual(warnings, [
-    'Component properties « Icon Left » et « icon-left » : leurs noms donnent le même nom « iconLeft » dans le contrat. Le contrat ne publie que la première : la seconde manquera au développeur. Renommez l’une des deux, puis réexportez.',
+    'Propriétés de composant « Icon Left » et « icon-left » : leurs noms donnent le même nom « iconLeft » dans le contrat. Le contrat ne publie que la première : la seconde manquera au développeur. Renommez l’une des deux, puis réexportez.',
   ]);
 });
 
@@ -163,10 +163,10 @@ test('extractContractProps priorise State sur un BOOLEAN Disabled dans les deux 
   assert.deepEqual(extractContractProps({ Disabled: boolean, State: state } as ComponentPropertyDefinitions, secondWarnings), expected);
   assert.deepEqual(firstWarnings, secondWarnings);
   assert.deepEqual(firstWarnings, [
-    'Component property « Disabled » : la variant property « State » a déjà la valeur « Disable », que le ' +
-      'contrat publie sous le nom « disabled ». Le contrat ne publie pas cette boolean property : sa valeur par ' +
+    'Propriété de composant « Disabled » : la propriété de variante « State » a déjà la valeur « Disable », que le ' +
+      'contrat publie sous le nom « disabled ». Le contrat ne publie pas cette propriété booléenne : sa valeur par ' +
       'défaut manquera au développeur. Supprimez-la si elle pilote le même état, sinon renommez-la d’après le ' +
-      'layer qu’elle pilote, puis réexportez.',
+      'calque qu’elle pilote, puis réexportez.',
   ]);
 });
 
@@ -230,7 +230,7 @@ test('extractContractPropertyModel conserve INSTANCE_SWAP, SLOT et leurs noms te
   assert.equal(model.publicPropertyKeyByFigmaName.get('Content#12:4'), 'content');
 });
 
-test('une component property nommée « __proto__ » ne disparaît pas dans le prototype', () => {
+test('une propriété de composant nommée « __proto__ » ne disparaît pas dans le prototype', () => {
   // Le seul canal par lequel un nom Figma arrive jusqu'à une écriture d'objet.
   // `props[key] = prop` aurait fixé le prototype au lieu d'occuper une clé : la
   // prop quittait le contrat sans un mot, et `propByName` continuait de répondre

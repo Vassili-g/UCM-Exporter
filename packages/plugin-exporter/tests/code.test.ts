@@ -1042,7 +1042,7 @@ test('une liste de dépôts illisible dit son constat et son geste, et la réini
   assert.equal(pastillesDe(h).at(-1), 'Réglages illisibles');
   const constat = h.messages.find((message) => message.type === 'depots-illisibles');
   assert.ok(constat?.type === 'depots-illisibles');
-  assert.equal(constat.texte, 'La liste des dépôts enregistrés sur ce poste est illisible.');
+  assert.equal(constat.texte, 'Les dépôts enregistrés ne peuvent pas être lus. Réinitialisez leur liste dans la configuration.');
   assert.ok(constat.geste.includes('Réinitialisez la liste'));
   assert.equal(statuts(h).length, 0, 'aucun statut générique ne recouvre le constat');
 

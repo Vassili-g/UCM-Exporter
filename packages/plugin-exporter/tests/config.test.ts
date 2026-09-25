@@ -183,7 +183,7 @@ test('une modification garde l’adresse de l’entrée, et un champ vide conser
 test('une entrée retirée entre-temps ne se modifie pas', async () => {
   stockageFigma({ depots: [] });
   const { validation } = await enregistrerDepot(GITHUB, ID_GITHUB);
-  assert.equal(validation.errors.general, 'Ce dépôt n’est plus dans la liste.');
+  assert.equal(validation.errors.general, 'Ce dépôt n’est plus enregistré. Ajoutez-le de nouveau dans la configuration.');
 });
 
 test('un projet s’enregistre une fois, quelle que soit la casse de son adresse', async () => {
@@ -229,8 +229,8 @@ test('un dépôt actif qui désigne une entrée absente se lit comme aucun dép�
 
 test('une liste de dépôts illisible lève, et la reprise ne l’écrase pas', async () => {
   const { valeurs } = stockageFigma({ depots: 'abîmée', repoUrl: GITHUB.repoUrl, github_pat: 'ghp_ancien' });
-  await assert.rejects(lireInstantane(), /illisible/);
-  await assert.rejects(reprendreLAncienneConfiguration(), /illisible/);
+  await assert.rejects(lireInstantane(), /ne peuvent pas être lus/);
+  await assert.rejects(reprendreLAncienneConfiguration(), /ne peuvent pas être lus/);
   assert.equal(valeurs.get('depots'), 'abîmée');
 });
 

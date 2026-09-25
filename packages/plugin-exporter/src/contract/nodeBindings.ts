@@ -347,7 +347,7 @@ const TEXTES_SANS_VARIABLE: Readonly<Record<string, {
     calque: {
       champ: 'opacity',
       manque: 'aucune variable associée.',
-      impact: "Le contrat ne transmettra pas l'opacité de ce layer.",
+      impact: "Le contrat ne transmettra pas l'opacité de ce calque.",
       action: 'Reliez opacity à une variable, puis réexportez.',
     },
     variants: {
@@ -363,9 +363,9 @@ function signalerSansVariable(node: SceneNode, label: string, warnings: string[]
   const propre = TEXTES_SANS_VARIABLE[label];
   if (estUneRacineDeVariant(warnings, node)) {
     pousserPourLesVariants(warnings, node, propre?.variants ?? {
-      titre: `${label} : aucun token n'est relié à cette propriété.`,
+      titre: `${label} : aucune variable Figma n’est reliée à cette propriété.`,
       impact: `Le contrat n'exportera pas cette propriété.`,
-      action: `Reliez-la à un token, puis réexportez.`,
+      action: `Reliez cette propriété à une variable Figma, puis réexportez.`,
     });
     return;
   }
@@ -438,8 +438,8 @@ async function resolveGroup<K extends string>(
     }
     pousserLocalise(warnings, 'Layer', node, {
       manque: `il n'utilise pas d'auto layout, donc Figma ne lui applique ni gap ni padding.`,
-      impact: `Le contrat ne publie aucun espacement pour ce layer, ce qui ne veut pas dire zéro.`,
-      action: `Appliquez un auto layout au layer si son espacement doit être contractuel, `
+      impact: `Le contrat ne précisera pas les espacements de ce calque.`,
+      action: `Appliquez un auto layout au calque si son espacement doit être transmis au développeur, `
         + `puis réexportez.`,
     });
     return null;
@@ -473,9 +473,8 @@ async function resolveGroup<K extends string>(
     pousserLocalise(warnings, 'Layer', node, {
       manque: `son vertical gap est réglé sur « Auto », donc Figma répartit lui-même `
         + `l'espace entre ses lignes.`,
-      impact: `Le contrat ne publie aucun espacement entre ses lignes, ce qui ne veut pas dire `
-        + `zéro.`,
-      action: `Si cet espacement doit être contractuel, donnez au vertical gap une valeur `
+      impact: `Le contrat ne précisera pas l’espacement entre ses lignes.`,
+      action: `Si cet espacement doit être transmis au développeur, donnez au vertical gap une valeur `
         + `reliée à une variable, puis réexportez.`,
     });
     return null;
@@ -621,7 +620,7 @@ async function resolveGroup<K extends string>(
         pousserLocalise(warnings, 'Layer', node, {
           champ: label,
           manque: `certains côtés n'ont pas de variable exploitable (${details.join(' ; ')}).`,
-          impact: `Ces côtés manqueront au développeur.`,
+          impact: `Les valeurs de ces côtés seront absentes du contrat.`,
           action: `Reliez ces côtés à des variables, puis réexportez.`,
         });
       }
@@ -941,16 +940,15 @@ export async function resolveSizeBounds(
       ? `un ${enGras[0]}`
       : `${enGras.slice(0, -1).join(', ')} et ${enGras[enGras.length - 1]}`;
     pousserPourLesVariants(warnings, node, {
-      titre: `Propriété sans token associé.`,
-      impact: `Des variants déclarent ${declarees} sans token. `
-        + `Le contrat ne publiera que les paramètres reliés à un token.`,
+      titre: `Dimensions minimales ou maximales sans variable associée.`,
+      impact: `Ces variants définissent ${declarees} sans variable. Ces valeurs ne seront pas exportées.`,
       action: `Reliez ces paramètres à une variable dans chaque variant concerné, puis réexportez.`,
     });
   } else if (unbound.length > 0) {
     pousserLocalise(warnings, 'Layer', node, {
       manque: `il fixe ${unbound.map(fieldLabel).join(', ')} sans variable Figma.`,
       impact: `Le contrat ne publie que les bornes reliées à une variable : le développeur `
-        + `rendra ce layer sans elles.`,
+        + `rendra ce calque sans elles.`,
       action: `Reliez ces bornes à une variable, puis réexportez.`,
     });
   }

@@ -64,9 +64,10 @@ export function insertVariantLeaf<T>(
           {
             manque: `deux variants portent les mêmes valeurs une fois normalisées `
               + `(majuscules et espaces ignorés).`,
-            impact: `Les deux restent dans la liste exacte « variants », mais l'arbre `
-              + `historique ne peut en indexer qu'un et garde le premier.`,
-            action: `Renommez l'un des deux pour rendre aussi cet index non ambigu.`,
+            impact: `Les deux variants sont exportés, mais une partie du contrat ne permet `
+              + `pas de les distinguer.`,
+            action: `Donnez-leur des valeurs qui diffèrent autrement que par les majuscules `
+              + `ou les espaces, puis réexportez.`,
           },
         );
         return;

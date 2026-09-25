@@ -584,7 +584,7 @@ test('une graisse reste une chaîne, inchangée, dès qu’un mode n’est pas u
   assert.equal(tokens['brand-tokens'].typography.family.$type, 'fontFamily');
 });
 
-test('une famille prouvée par un text style type toute sa composante d’alias', async () => {
+test('une famille prouvée par un style de texte type toute sa composante d’alias', async () => {
   const { tokens } = await documentExporte();
 
   // Un seul text style relie `fontfamily/base` ; `typography/family` l'alias

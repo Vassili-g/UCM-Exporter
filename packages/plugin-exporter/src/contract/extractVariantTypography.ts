@@ -134,9 +134,9 @@ async function loadTextStyle(
   const styleId = textNode.textStyleId;
   if (typeof styleId !== 'string' || !styleId) {
     pousserLocalise(warnings, 'Layer', textNode, {
-      manque: `aucun text style unique n'est appliqué.`,
+      manque: `aucun style de texte unique n'est appliqué.`,
       impact: `Sa typographie manquera au développeur.`,
-      action: `Appliquez un text style au layer entier, puis réexportez.`,
+      action: `Appliquez un style de texte au calque entier, puis réexportez.`,
     });
     return null;
   }
@@ -144,9 +144,9 @@ async function loadTextStyle(
   const style = await loadStyle(styleId).catch(() => null);
   if (!style || style.type !== 'TEXT') {
     pousserLocalise(warnings, 'Layer', textNode, {
-      manque: `le text style appliqué est introuvable.`,
+      manque: `le style de texte appliqué est introuvable.`,
       impact: `Sa typographie manquera au développeur.`,
-      action: `Appliquez de nouveau un text style publié, puis réexportez.`,
+      action: `Appliquez de nouveau un style de texte publié, puis réexportez.`,
     });
     return null;
   }
@@ -155,7 +155,7 @@ async function loadTextStyle(
   if (!key) {
     pousserSansNode(
       warnings,
-      `Text style « ${style.name} » sur le layer « ${textNode.name} »`,
+      `Style de texte « ${style.name} » sur le calque « ${textNode.name} »`,
       {
         manque: `son nom ne contient que des espaces ou des « / ».`,
         impact: `Sa typographie manquera au développeur.`,
@@ -186,11 +186,11 @@ async function loadTextStyle(
     if (valeurFigma && !(typeof style[valeurFigma] === 'number' && style[valeurFigma] !== 0)) {
       continue;
     }
-    pousserSansNode(warnings, `Text style « ${style.name} »`, {
+    pousserSansNode(warnings, `Style de texte « ${style.name} »`, {
       champ: label,
       manque: `aucune variable Figma n'est reliée.`,
       impact: `Cette propriété typographique manquera au développeur.`,
-      action: `Reliez-la à une variable dans le text style, puis réexportez.`,
+      action: `Reliez-la à une variable dans le style de texte, puis réexportez.`,
     });
   }
 
@@ -232,10 +232,10 @@ function signalerSurcharges(textNode: TextNode, style: TextStyle, warnings: stri
     pousserLocalise(warnings, 'Layer', textNode, {
       champ: libelle,
       manque: estMixed(valeur)
-        ? `ce layer porte plusieurs valeurs.`
-        : `sa valeur diffère de celle du text style « ${style.name} ».`,
-      impact: `Le développeur rendra la valeur du text style.`,
-      action: `Appliquez au layer entier un text style qui porte ce réglage, puis réexportez.`,
+        ? `ce calque porte plusieurs valeurs.`
+        : `sa valeur diffère de celle du style de texte « ${style.name} ».`,
+      impact: `Le développeur rendra la valeur du style de texte.`,
+      action: `Appliquez au calque entier un style de texte qui porte ce réglage, puis réexportez.`,
     });
   }
 
@@ -245,9 +245,9 @@ function signalerSurcharges(textNode: TextNode, style: TextStyle, warnings: stri
     if (!types.has(type)) continue;
     pousserLocalise(warnings, 'Layer', textNode, {
       champ: libelle,
-      manque: `le layer ajoute ${ajout} au text style « ${style.name} ».`,
-      impact: `Le développeur rendra le style de police du text style.`,
-      action: `Appliquez au layer un text style qui porte ce style de police, puis réexportez.`,
+      manque: `le calque ajoute ${ajout} au style de texte « ${style.name} ».`,
+      impact: `Le développeur rendra le style de police du style de texte.`,
+      action: `Appliquez au calque un style de texte qui porte ce style de police, puis réexportez.`,
     });
   }
 }
@@ -294,10 +294,10 @@ export async function extractVariantTypography(
     for (const { slotPath, textNode } of textSlots(layoutNode, iconNames, composed)) {
       if (allowedSlotPaths && !allowedSlotPaths.has(JSON.stringify(slotPath))) {
         pousserLocalise(pathNotices, 'Variant', entry.component, {
-          champ: `layer « ${textNode.name} »`,
+          champ: `calque « ${textNode.name} »`,
           manque: `il n'occupe pas la même place que dans le variant par défaut.`,
-          impact: `Le développeur ne saura pas quel text style lui appliquer dans ce variant.`,
-          action: `Rangez ce layer dans les mêmes frames que dans le variant par défaut, puis `
+          impact: `Le développeur ne saura pas quel style de texte lui appliquer dans ce variant.`,
+          action: `Rangez ce calque dans les mêmes cadres que dans le variant par défaut, puis `
             + `réexportez.`,
         });
         continue;
@@ -313,10 +313,10 @@ export async function extractVariantTypography(
 
       const existingId = styleIdByKey.get(loaded.key);
       if (existingId && existingId !== loaded.id) {
-        pousserSansNode(warnings, `Text style « ${loaded.definition.figmaName} »`, {
-          manque: `son nom et celui d'un autre text style donnent le même nom `
+        pousserSansNode(warnings, `Style de texte « ${loaded.definition.figmaName} »`, {
+          manque: `son nom et celui d'un autre style de texte donnent le même nom `
             + `« ${loaded.key} » dans le contrat.`,
-          impact: `Le développeur n'aura pas la typographie du layer « ${textNode.name} ».`,
+          impact: `Le développeur n'aura pas la typographie du calque « ${textNode.name} ».`,
           action: `Renommez l'un des deux styles, puis réexportez.`,
         });
         continue;
@@ -330,7 +330,7 @@ export async function extractVariantTypography(
           champ: 'truncate text',
           manque: `le texte est coupé à la taille de sa boîte, sans « Max lines ».`,
           impact: `Le développeur affichera le texte en entier.`,
-          action: `Réglez « Max lines » si la coupure doit être contractuelle, puis réexportez.`,
+          action: `Réglez « Max lines » si la coupure doit être transmise au développeur, puis réexportez.`,
         });
       }
     }

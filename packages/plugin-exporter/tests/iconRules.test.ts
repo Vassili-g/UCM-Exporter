@@ -123,7 +123,7 @@ test('mergeIconRules avertit au lieu de deviner un calque graphique', () => {
 
   assert.deepEqual(icons, {});
   assert.deepEqual(warnings, [
-    'Règle @icons « arrow-right-long » : aucun layer de ce nom dans le composant. La règle est ignorée, et cette icône ne sera pas décrite. Vérifiez l’orthographe dans le layer « icon » de la règle, puis réexportez.',
+    'Règle @icons « arrow-right-long » : aucun calque de ce nom dans le composant. Cette icône ne sera pas décrite dans le contrat. Vérifiez l’orthographe dans le calque « icon » de la règle, puis réexportez.',
   ]);
 });
 
@@ -476,7 +476,7 @@ test('mergeIconRules refuse une visibilité incohérente entre variants', () => 
     },
   });
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /sa visibilité dépend d’une component property/);
+  assert.match(warnings[0], /sa visibilité dépend d’une propriété de composant/);
 });
 
 test('mergeIconRules refuse une taille absente d’une partie de la matrice', () => {

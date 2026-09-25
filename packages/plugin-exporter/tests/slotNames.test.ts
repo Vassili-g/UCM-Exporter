@@ -130,7 +130,7 @@ test('une icône hors du conteneur de dimensions n’obtient aucun slot', async 
   assertSlotsExist(structure, icons);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /badge-icon/);
-  assert.match(warnings[0], /placé directement dans l’auto layout frame/);
+  assert.match(warnings[0], /placé directement dans le cadre en auto layout/);
 });
 
 test('deux icônes dans un même enfant direct partagent son slot', async () => {

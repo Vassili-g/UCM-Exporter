@@ -64,7 +64,7 @@ test('mergePropDescriptions avertit sur un état que le composant n’a pas', ()
   mergePropDescriptions({}, stateModel, { state: { hovers: 'Faute de frappe.' } }, warnings);
 
   assert.deepEqual(warnings, [
-    'Règle @prop « state.hovers » : la variant property « state » n’a pas de valeur « hovers ». La documentation de cette valeur n’entre pas dans le contrat. Vérifiez l’orthographe dans le layer « prop », puis réexportez.',
+    'Règle @prop « state.hovers » : la propriété de variante « state » n’a pas de valeur « hovers ». La documentation de cette valeur n’entre pas dans le contrat. Dans le calque « prop », reprenez le nom et la valeur définis sur le composant, puis réexportez.',
   ]);
 });
 
@@ -78,7 +78,7 @@ test('mergePropDescriptions avertit sur une prop absente', () => {
   mergePropDescriptions({}, null, { state: { hover: 'Survol.' } }, warnings);
 
   assert.deepEqual(warnings, [
-    'Règle @prop « state » : le composant n’a aucune variant property portant ce nom. La documentation de cette règle n’entre pas dans le contrat. Vérifiez l’orthographe dans le layer « prop », puis réexportez.',
+    'Règle @prop « state » : le composant n’a aucune propriété de variante portant ce nom. La documentation de cette règle n’entre pas dans le contrat. Dans le calque « prop », reprenez le nom et la valeur définis sur le composant, puis réexportez.',
   ]);
 });
 
@@ -89,6 +89,6 @@ test('mergePropDescriptions ne prend pas une prop héritée pour une prop du com
   mergePropDescriptions({}, null, { constructor: { primary: 'Rien à documenter.' } }, warnings);
 
   assert.deepEqual(warnings, [
-    'Règle @prop « constructor » : le composant n’a aucune variant property portant ce nom. La documentation de cette règle n’entre pas dans le contrat. Vérifiez l’orthographe dans le layer « prop », puis réexportez.',
+    'Règle @prop « constructor » : le composant n’a aucune propriété de variante portant ce nom. La documentation de cette règle n’entre pas dans le contrat. Dans le calque « prop », reprenez le nom et la valeur définis sur le composant, puis réexportez.',
   ]);
 });

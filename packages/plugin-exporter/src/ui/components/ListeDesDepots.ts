@@ -42,7 +42,7 @@ export function createListeDesDepots(): ListeDesDepotsUi {
 
   const vide = document.createElement('p');
   vide.className = 'subtitle';
-  vide.textContent = 'Veuillez ajouter un dépôt.';
+  vide.textContent = 'Ajoutez un dépôt pour publier vos exports.';
 
   const liste = document.createElement('div');
   liste.className = 'page-stack';

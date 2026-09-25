@@ -593,7 +593,7 @@ export function flexContainerProperties(
   if (estUneRacineDeVariant(warnings, node)) {
     pousserPourLesVariants(warnings, node, {
       titre: "auto layout : l'alignement ne peut pas être lu.",
-      impact: "Le contrat ne transmettra pas l'alignement des layers dans les variants concernés.",
+      impact: "Le contrat ne transmettra pas l'alignement des calques dans les variants concernés.",
       action: "Définissez de nouveau l'alignement sur les deux axes dans chaque variant "
         + 'concerné, puis réexportez.',
     });
@@ -601,7 +601,7 @@ export function flexContainerProperties(
   }
   pousserLocalise(warnings, 'Layer', node, {
     manque: `son alignement d'auto layout est illisible.`,
-    impact: `Le développeur ne saura pas comment aligner ses enfants.`,
+    impact: `Le contrat ne précisera pas comment aligner les calques qu’il contient.`,
     action: `Réglez l'alignement principal et secondaire dans Figma, puis réexportez.`,
   });
   return wrap;
@@ -655,7 +655,7 @@ export function flexItemProperties(
       // cite pas, pour que les enfants de tous les variants partagent sa phrase.
       pousserLocalise(warnings, 'Layer', child, {
         manque: "son alignement dans l'auto layout ne peut pas être lu.",
-        impact: 'Le contrat ne précisera pas comment aligner ce layer dans les variants '
+        impact: 'Le contrat ne précisera pas comment aligner ce calque dans les variants '
           + 'concernés.',
         action: "Définissez de nouveau son alignement dans l'auto layout de chaque variant "
           + 'concerné, puis réexportez.',
@@ -684,7 +684,7 @@ export function flexItemProperties(
   if (estUneRacineDeVariant(warnings, parent)) {
     pousserLocalise(warnings, 'Layer', child, {
       manque: "son réglage d'étirement n'est pas pris en charge.",
-      impact: "Le contrat ne précisera pas si ce layer doit occuper l'espace disponible.",
+      impact: "Le contrat ne précisera pas si ce calque doit occuper l'espace disponible.",
       action: 'Choisissez Fill ou Fixed pour sa largeur dans un auto layout horizontal, ou pour '
         + 'sa hauteur dans un auto layout vertical, puis réexportez.',
     });
@@ -693,7 +693,7 @@ export function flexItemProperties(
   pousserLocalise(warnings, 'Layer', child, {
     manque: `son layout grow vaut « ${String(rawGrow)} » dans l'auto layout `
       + `« ${parent.name} », une valeur que le menu Fill de Figma ne produit pas.`,
-    impact: `Le développeur ne saura pas si ce layer s'étire.`,
+    impact: `Le développeur ne saura pas si ce calque s'étire.`,
     action: `Choisissez Fill ou Fixed pour sa dimension dans le sens de cet auto layout, puis `
       + `réexportez.`,
   });

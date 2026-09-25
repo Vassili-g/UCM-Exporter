@@ -91,7 +91,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
     // cible est son contenu utile, et exiger un texte le rendrait bavard.
     if (!content && entry.tag !== 'icons' && entry.tag !== 'default') {
       pousserSansNode(warnings, `Règle @${entry.tag}`, {
-        manque: 'le layer « content » est vide.',
+        manque: 'le calque « content » est vide.',
         impact: 'La règle n’est pas exportée.',
         action: 'Écrivez-y le texte de la règle, puis réexportez.',
       });
@@ -119,9 +119,9 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const propName = normalizePropKey(entry.prop?.trim() ?? '');
       if (!propName) {
         pousserSansNode(warnings, 'Règle @boolean', {
-          manque: 'le layer « prop » est vide.',
+          manque: 'le calque « prop » est vide.',
           impact: 'La règle n’est pas exportée.',
-          action: 'Écrivez-y le nom de la boolean property du composant, par exemple '
+          action: 'Écrivez-y le nom de la propriété booléenne du composant, par exemple '
             + '« icon-left », puis réexportez.',
         });
       } else if (booleanDescriptions.has(propName)) {
@@ -138,10 +138,10 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const separator = cible.indexOf('.');
       if (separator <= 0 || separator === cible.length - 1) {
         pousserSansNode(warnings, 'Règle @default', {
-          manque: `le layer « prop » contient « ${cible || 'rien'} », alors qu’il faut `
+          manque: `le calque « prop » contient « ${cible || 'rien'} », alors qu’il faut `
             + `« propriété.valeur », par exemple « color.secondary ».`,
           impact: 'La règle n’est pas exportée.',
-          action: 'Corrigez ce layer, puis réexportez.',
+          action: 'Dans « prop », écrivez le nom de la propriété, un point, puis sa valeur. Réexportez ensuite.',
         });
         continue;
       }
@@ -163,16 +163,16 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const iconName = entry.iconName?.trim() ?? '';
       if (!iconName) {
         pousserSansNode(warnings, 'Règle @icons', {
-          manque: 'le layer « icon » est vide.',
-          impact: 'La règle n’est pas exportée, et l’icône ne sera pas décrite.',
-          action: 'Écrivez-y le nom exact du layer d’icône, tel qu’il apparaît dans le '
+          manque: 'le calque « icon » est vide.',
+          impact: 'Cette icône ne sera pas décrite dans le contrat.',
+          action: 'Écrivez-y le nom exact du calque d’icône, tel qu’il apparaît dans le '
             + 'composant, puis réexportez.',
         });
       } else if (!entry.iconPolicy) {
         pousserSansNode(warnings, `Règle @icons « ${iconName} »`, {
-          manque: 'ni le layer « modifiable » ni le layer « strict » n’est visible seul.',
-          impact: 'La règle n’est pas exportée, et l’icône ne sera pas décrite.',
-          action: 'Rendez visible exactement un des deux layers « modifiable » ou « strict », '
+          manque: 'les calques « modifiable » et « strict » sont tous les deux visibles ou tous les deux masqués.',
+          impact: 'Cette icône ne sera pas décrite dans le contrat.',
+          action: 'Rendez visible exactement un des deux calques « modifiable » ou « strict », '
             + 'puis réexportez.',
         });
       } else if (iconRules.some((rule) => (
@@ -191,10 +191,10 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const separator = key.indexOf('.');
       if (separator <= 0 || separator === key.length - 1) {
         pousserSansNode(warnings, 'Règle @prop', {
-          manque: `le layer « prop » contient « ${key || 'rien'} », alors qu’il faut `
+          manque: `le calque « prop » contient « ${key || 'rien'} », alors qu’il faut `
             + `« propriété.valeur », par exemple « variant.contained ».`,
           impact: 'La règle n’est pas exportée.',
-          action: 'Corrigez ce layer, puis réexportez.',
+          action: 'Dans « prop », écrivez le nom de la propriété, un point, puis sa valeur. Réexportez ensuite.',
         });
         continue;
       }

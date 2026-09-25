@@ -252,7 +252,7 @@ function warnPeinturesLibres(
   pousserLocalise(warnings, 'Layer', node, {
     manque: `${plusieurs ? `${libres} ${nom} ne sont reliés` : `son ${nom} n’est relié`} `
       + `à aucune variable Figma.`,
-    impact: `Le contrat ne publie que les couleurs liées : le développeur rendra ce layer `
+    impact: `Le contrat ne publie que les couleurs liées : le développeur rendra ce calque `
       + `sans ${stroke ? 'ce contour' : 'cette couleur'}.`,
     action: `Reliez ${plusieurs ? 'ces' : 'ce'} ${nom} à une variable, puis réexportez.`,
   });
@@ -365,7 +365,7 @@ export async function getSlotTokens(
             + `différentes (${toRef(dessous)} et ${toRef(binding.token)}).`,
           impact: `Le développeur recevra les deux couleurs sans savoir laquelle passe `
             + `au-dessus.`,
-          action: `Ne gardez qu'un ${isStroke ? 'stroke' : 'fill'} lié sur ce layer, `
+          action: `Ne gardez qu'un ${isStroke ? 'stroke' : 'fill'} lié sur ce calque, `
             + `puis réexportez.`,
         });
       }
@@ -389,7 +389,7 @@ export async function getSlotTokens(
       if (known.value.role !== value.role) {
         pousserLocalise(warnings, 'Layer', binding.node, {
           manque: `le stroke ${toRef(binding.token)} peint ici le rôle « ${value.role} », `
-            + `mais le layer « ${known.node.name} » lui donne déjà le rôle `
+            + `mais le calque « ${known.node.name} » lui donne déjà le rôle `
             + `« ${known.value.role} ».`,
           impact: `Le développeur rendra ce stroke comme sur « ${known.node.name} ».`,
           action: 'Reliez ces usages à deux variables distinctes, puis réexportez.',
@@ -404,10 +404,10 @@ export async function getSlotTokens(
         continue;
       }
       pousserLocalise(warnings, 'Layer', binding.node, {
-        manque: `son stroke ${toRef(binding.token)} est déjà posé par le layer `
+        manque: `son stroke ${toRef(binding.token)} est déjà posé par le calque `
           + `« ${known.node.name} », avec une stroke weight ou un alignement différents.`,
         impact: `Le contrat ne garde que celui de « ${known.node.name} » : la stroke weight et `
-          + `l'alignement de ce layer manqueront au développeur.`,
+          + `l'alignement de ce calque manqueront au développeur.`,
         action: `Réglez les deux strokes de la même façon, ou reliez-les à deux variables `
           + `différentes, puis réexportez.`,
       });
@@ -419,7 +419,7 @@ export async function getSlotTokens(
       if (known.role !== role) {
         pousserLocalise(warnings, 'Layer', binding.node, {
           manque: `la couleur ${toRef(binding.token)} peint ici le rôle « ${role} », mais le `
-            + `layer « ${known.node.name} » lui donne déjà le rôle « ${known.role} ».`,
+            + `calque « ${known.node.name} » lui donne déjà le rôle « ${known.role} ».`,
           impact: `Le développeur rendra cette couleur comme sur « ${known.node.name} ».`,
           action: 'Reliez ces usages à deux variables distinctes, puis réexportez.',
         });

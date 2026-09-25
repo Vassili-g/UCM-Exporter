@@ -128,7 +128,7 @@ test('getSlotTokens publie une largeur de stroke partiellement liée', async () 
 
   assert.deepEqual(tokens.strokes[0]?.width, { top: '{layouts.stroke.ring}' });
   assert.ok(warnings.some((warning) => warning.includes('right stroke weight')));
-  assert.ok(warnings.some((warning) => warning.includes('Ces côtés manqueront au développeur')));
+  assert.ok(warnings.some((warning) => warning.includes('Les valeurs de ces côtés seront absentes du contrat')));
 });
 
 test('getSlotTokens ignore un ancien fond statiquement masqué au profit du fond visible', async () => {

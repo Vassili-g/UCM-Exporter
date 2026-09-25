@@ -98,8 +98,8 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
     if (peintures === null) {
       relevees.push({
         champ: libelle,
-        manque: `les différents ${libelle}s de ce layer, dont le contrat ne décrit qu’un jeu par layer`,
-        geste: `N’appliquez qu’un seul jeu de ${libelle}s au layer entier`,
+        manque: `les différents ${libelle}s de ce calque, dont le contrat ne décrit qu’un jeu par calque`,
+        geste: `N’appliquez qu’un seul jeu de ${libelle}s au calque entier`,
       });
       continue;
     }
@@ -107,8 +107,8 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
     if (nonSolides.length === 0) continue;
     relevees.push({
       champ: libelle,
-      manque: `le ${libelle} de ce layer : le contrat ne cite qu’une couleur unie reliée à une variable, jamais un dégradé ni une image`,
-      geste: `Remplacez ce ${libelle} par une couleur unie reliée à une variable si sa couleur doit être contractuelle, ou signalez cette limite au mainteneur du plugin`,
+      manque: `le ${libelle} de ce calque : le contrat ne cite qu’une couleur unie reliée à une variable, jamais un dégradé ni une image`,
+      geste: `Remplacez ce ${libelle} par une couleur unie reliée à une variable si sa couleur doit être transmise au développeur, ou signalez cette limite au mainteneur du plugin`,
       pourLesVariants: {
         titre: `${libelle} : dégradé ou image non pris en charge.`,
         impact: `Le contrat ne transmettra pas les ${libelle}s en dégradé ou en image.`,
@@ -122,8 +122,8 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
   if (!FUSIONS_NEUTRES.has(values.blendMode) && values.blendMode !== undefined) {
     relevees.push({
       champ: 'blend mode',
-      manque: 'le mode de fusion de ce layer, qui sera rendu en normal',
-      geste: 'Repassez ce layer en blend mode « Normal » si sa fusion n’est pas nécessaire, ou signalez cette limite au mainteneur du plugin',
+      manque: 'le mode de fusion de ce calque, qui sera rendu en normal',
+      geste: 'Repassez ce calque en blend mode « Normal » si sa fusion n’est pas nécessaire, ou signalez cette limite au mainteneur du plugin',
       pourLesVariants: {
         titre: 'blend mode : ce mode de fusion n’est pas pris en charge.',
         impact: 'Le contrat ne transmettra pas le mode de fusion des variants concernés.',
@@ -141,7 +141,7 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
   if (values.isMask === true) {
     relevees.push({
       champ: 'mask',
-      manque: 'le découpage que ce layer applique : sa surface sera rendue par-dessus les layers qu’il masque',
+      manque: 'le découpage que ce calque applique : sa surface sera rendue par-dessus les calques qu’il masque',
       geste: 'Aplatissez ce mask dans le dessin qu’il découpe si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
       pourLesVariants: {
         titre: 'mask : le masquage n’est pas pris en charge.',
@@ -326,7 +326,7 @@ export function unsupportedPropertyWarnings(
     if (racineDeVariant && pourLesVariants) return pourLesVariants;
     return pointDe(sujet('Layer', node).texte, {
       champ,
-      manque: 'le contrat n’a aucun champ pour cette propriété.',
+      manque: 'ce réglage n’est pas pris en charge par l’export.',
       impact: `Le développeur n’aura pas ${manque}.`,
       action: `${geste}, puis réexportez.`,
     });

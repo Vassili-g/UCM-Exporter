@@ -108,7 +108,7 @@ async function chargerLesPolices(node: SceneNode): Promise<void> {
   for (const texte of textes) {
     if (texte.hasMissingFont) {
       throw new Error(
-        `La police du layer « ${texte.name} » est absente de ce poste. Installez-la, `
+        `La police du calque « ${texte.name} » est absente de ce poste. Installez-la, `
           + 'puis recommencez.',
       );
     }
@@ -147,13 +147,13 @@ async function ecrireDans(
   for (let essai = 0; essai < 2; essai += 1) {
     const calque = calqueTexte(await frais(porteur), nomDuCalque);
     if (!calque) {
-      throw new Error(`« ${porteur.name} » ne porte pas de layer « ${nomDuCalque} ».`);
+      throw new Error(`« ${porteur.name} » ne porte pas de calque « ${nomDuCalque} ».`);
     }
     await chargerLesPolices(calque);
     calque.characters = texte;
     if (calque.characters === texte) return;
   }
-  throw new Error(`Le layer « ${nomDuCalque} » n’a pas gardé le texte écrit.`);
+  throw new Error(`Le calque « ${nomDuCalque} » n’a pas gardé le texte écrit.`);
 }
 
 /** Le maître d'un élément du modèle, ou `null` pour un séparateur sans catalogue. */

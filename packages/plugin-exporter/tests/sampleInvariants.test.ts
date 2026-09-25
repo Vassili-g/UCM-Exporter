@@ -141,7 +141,7 @@ test('args est une projection fermée de la surface publique et des types portab
   const glyph = instance('glyph', 'GlyphB', {}, [], {
     componentPropertyReferences: { mainComponent: 'Glyph#1:3' },
   });
-  const branch = instance('branch', 'Branch layer', {
+  const branch = instance('branch', 'Branch calque', {
     Mode: { type: 'VARIANT', value: 'Loud' },
     'Enabled#1:1': { type: 'BOOLEAN', value: false },
     'Copy#1:2': { type: 'TEXT', value: 'Applied' },
@@ -149,7 +149,7 @@ test('args est une projection fermée de la surface publique et des types portab
     'Content#1:4': { type: 'SLOT', value: ['free'] },
     'Unknown#1:5': { type: 'BOOLEAN', value: true },
   } as unknown as ComponentProperties, [glyph]);
-  const dependency = { component: 'Branch', figmaLayer: 'Branch layer' };
+  const dependency = { component: 'Branch', figmaLayer: 'Branch calque' };
 
   const sample = sampleOf(
     componentRoot([branch]),
@@ -188,14 +188,14 @@ test('le contenu rendu suit la visibilité effective sans effacer les valeurs fa
   });
   const branch = instance(
     'branch',
-    'Branch layer',
+    'Branch calque',
     { 'Enabled#1:1': { type: 'BOOLEAN', value: false } },
     [hidden],
     {
       overrides: [{ id: 'copy', overriddenFields: ['characters', 'visible'] }],
     },
   );
-  const dependency = { component: 'Branch', figmaLayer: 'Branch layer' };
+  const dependency = { component: 'Branch', figmaLayer: 'Branch calque' };
 
   const sample = sampleOf(
     componentRoot([branch]),
@@ -213,7 +213,7 @@ test('le contenu rendu suit la visibilité effective sans effacer les valeurs fa
 
   assert.equal(sample.text, undefined);
   assert.deepEqual(sample.composes, [{
-    figmaLayer: 'Branch layer',
+    figmaLayer: 'Branch calque',
     component: 'Branch',
     args: { enabled: false },
     overrides: [{ figmaPath: ['Hidden group', 'Copy'], visible: true }],
@@ -234,17 +234,17 @@ test('seul le wrapper élu complète la surface, sans collision ni premier arbit
   const unrelatedOwner = owner('unrelated-owner', 'Internal', {
     'Noise#3:1': { type: 'BOOLEAN', defaultValue: false },
   } as ComponentPropertyDefinitions);
-  const elected = instance('wrapper', 'Wrapper layer', {
+  const elected = instance('wrapper', 'Wrapper calque', {
     'Scale#2:1': { type: 'VARIANT', value: 'L' },
     'Mode#2:2': { type: 'BOOLEAN', value: false },
   });
-  const unrelated = instance('internal', 'Internal layer', {
+  const unrelated = instance('internal', 'Internal calque', {
     'Noise#3:1': { type: 'BOOLEAN', value: true },
   });
-  const branch = instance('branch', 'Branch layer', {
+  const branch = instance('branch', 'Branch calque', {
     'Mode#1:1': { type: 'BOOLEAN', value: true },
   }, [], { exposedInstances: [unrelated, elected] });
-  const dependency = { component: 'Branch', figmaLayer: 'Branch layer' };
+  const dependency = { component: 'Branch', figmaLayer: 'Branch calque' };
   const surface: DependencyPropertySurface = {
     ...buildContractPropertySurface(directDefinitions, wrapperDefinitions, []),
     wrapperOwnerId: wrapperOwner.id,
@@ -264,7 +264,7 @@ test('seul le wrapper élu complète la surface, sans collision ni premier arbit
   );
   assert.deepEqual(unique.composes?.[0].args, { mode: true, scale: 'l' });
 
-  const duplicate = instance('wrapper-2', 'Wrapper layer 2', {
+  const duplicate = instance('wrapper-2', 'Wrapper calque 2', {
     'Scale#2:1': { type: 'VARIANT', value: 'S' },
   });
   (duplicate as unknown as { parent: BaseNode }).parent = branch;
@@ -289,12 +289,12 @@ test('un SLOT coupe toute comparaison positionnelle de remplacement', async () =
     getMainComponentAsync: async () => standaloneMaster('glyph-main', 'GlyphA'),
   });
   const slot = node('SLOT', 'slot', 'Content', [nestedGlyph]);
-  const dependency = instance('branch', 'Branch layer', {}, [slot]);
+  const dependency = instance('branch', 'Branch calque', {}, [slot]);
   const propertyOwner = owner('branch-owner', 'Branch');
 
   const sample = sampleOf(
     componentRoot([dependency]),
-    new Map([['branch', { component: 'Branch', figmaLayer: 'Branch layer' }]]),
+    new Map([['branch', { component: 'Branch', figmaLayer: 'Branch calque' }]]),
     new Map([
       ['branch', master('branch-main', 'Branch', propertyOwner)],
       ['glyph', standaloneMaster('glyph-b-main', 'GlyphB')],
@@ -369,7 +369,7 @@ test('un cadre optionnel masqué au-dessus d’une dépendance emporte son conte
     const glyph = instance('glyph', 'GlyphB');
     const branch = instance(
       'branch',
-      'Branch layer',
+      'Branch calque',
       { 'Enabled#1:1': { type: 'BOOLEAN', value: false } },
       [copy, glyph],
       { overrides: [{ id: 'copy', overriddenFields: ['characters'] }] },
@@ -380,7 +380,7 @@ test('un cadre optionnel masqué au-dessus d’une dépendance emporte son conte
     });
     return sampleOf(
       componentRoot([cadre]),
-      new Map([['branch', { component: 'Branch', figmaLayer: 'Branch layer' }]]),
+      new Map([['branch', { component: 'Branch', figmaLayer: 'Branch calque' }]]),
       new Map([
         ['branch', master('branch-main', 'Branch', propertyOwner)],
         ['glyph', standaloneMaster('glyph-main', 'GlyphB')],
@@ -402,7 +402,7 @@ test('un cadre optionnel masqué au-dessus d’une dépendance emporte son conte
   // l'entrée de la dépendance et sa valeur `false` décrivent l'état masqué.
   const masque = construire(false).composes;
   assert.deepEqual(masque, [{
-    figmaLayer: 'Branch layer',
+    figmaLayer: 'Branch calque',
     component: 'Branch',
     args: { enabled: false },
     slotPath: ['branch'],
@@ -423,13 +423,13 @@ test('un SLOT ne coupe pas la résolution NOMINALE d’un remplacement natif', (
     componentPropertyReferences: { mainComponent: 'Glyph#1:3' },
   });
   const slot = node('SLOT', 'slot', 'Contenu', [glyph]);
-  const branch = instance('branch', 'Branch layer', {
+  const branch = instance('branch', 'Branch calque', {
     'Glyph#1:3': { type: 'INSTANCE_SWAP', value: '9:9' },
   } as unknown as ComponentProperties, [slot]);
 
   const sample = sampleOf(
     componentRoot([branch]),
-    new Map([['branch', { component: 'Branch', figmaLayer: 'Branch layer' }]]),
+    new Map([['branch', { component: 'Branch', figmaLayer: 'Branch calque' }]]),
     new Map([
       ['branch', master('branch-main', 'Branch', propertyOwner)],
       ['glyph', standaloneMaster('glyph-main', 'GlyphB')],

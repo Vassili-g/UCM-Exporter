@@ -154,7 +154,7 @@ export async function electVariantLayoutNodes(
       pousserLocalise(warnings, 'Variant', variant, {
         manque: `il ne contient pas l'instance « ${wrapperInstance?.name} », qui porte les `
           + `dimensions des autres variants.`,
-        impact: `Le contrat décrit ce variant d'après un autre layer : le développeur peut le `
+        impact: `Le contrat décrit ce variant d'après un autre calque : le développeur peut le `
           + `rendre autrement que dans Figma.`,
         action: `Ajoutez-y cette instance, puis réexportez.`,
       });

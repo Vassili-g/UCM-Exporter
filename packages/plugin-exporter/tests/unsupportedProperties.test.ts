@@ -70,7 +70,7 @@ const texteParDefaut = (extra: Record<string, unknown> = {}) => ({
   ...extra,
 }) as unknown as SceneNode;
 
-test('un layer aux valeurs par défaut de Figma ne produit aucun avertissement', () => {
+test('un calque aux valeurs par défaut de Figma ne produit aucun avertissement', () => {
   assert.deepEqual(avertissementsDe(frameParDefaut()), []);
   assert.deepEqual(avertissementsDe(texteParDefaut()), []);
 });
@@ -111,10 +111,10 @@ test('un mask est signalé : le contrat ne perd pas sa surface, il l’invente',
   const avertissements = avertissementsDe(masque);
   assert.equal(avertissements.length, 1);
   assert.ok(avertissements[0].includes('Layer « Container », mask'));
-  assert.ok(avertissements[0].includes('par-dessus les layers qu’il masque'));
+  assert.ok(avertissements[0].includes('par-dessus les calques qu’il masque'));
 });
 
-test('une ombre ne relève pas de ce relevé : les effect styles la publient', () => {
+test('une ombre ne relève pas de ce relevé : les styles d’effets la publient', () => {
   // `effectStyles.ts` publie l'effet d'un style et avertit de celui qu'il ne
   // sait pas écrire.
   const avecOmbre = frameParDefaut({
@@ -145,7 +145,7 @@ test('un dégradé est signalé : le relevé des couleurs ne le voit pas', () =>
   assert.ok(avertissementsDe(strokeImage)[0].includes(', stroke'));
 });
 
-test('des fills « mixed » sont signalés : le contrat n’en décrit qu’un jeu par layer', () => {
+test('des fills « mixed » sont signalés : le contrat n’en décrit qu’un jeu par calque', () => {
   const melange = frameParDefaut({ fills: Symbol('figma.mixed') });
   const avertissements = avertissementsDe(melange);
   assert.equal(avertissements.length, 1);
@@ -259,7 +259,7 @@ test('openTypeFeatures avertit dès qu’un réglage diffère de ce que le navig
   });
 });
 
-test('deux propriétés du même layer donnent deux messages : deux gestes différents', () => {
+test('deux propriétés du même calque donnent deux messages : deux gestes différents', () => {
   const cumul = frameParDefaut({
     blendMode: 'MULTIPLY',
     dashPattern: [4, 2],

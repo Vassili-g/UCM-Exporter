@@ -164,7 +164,7 @@ export function validateSettings(
   if (!adresse) errors.repoUrl = ERREUR_D_ADRESSE;
 
   const baseBranch = input.baseBranch.trim();
-  if (!baseBranch) errors.baseBranch = 'La branche de base est obligatoire.';
+  if (!baseBranch) errors.baseBranch = 'Indiquez la branche de base fournie par votre développeur, par exemple main.';
 
   const saisi = input.jeton?.trim() ?? '';
   const stocke = enregistre.jeton.trim();
@@ -182,10 +182,10 @@ export function validateSettings(
     } else if (!saisi && stocke) {
       errors.jeton = `Le jeton enregistré ne sert pas pour ${termes.forge}. Collez un ${termes.nomDuJeton} ${termes.forge}.`;
     } else if (!saisi) {
-      errors.jeton = `Le ${termes.nomDuJeton} est obligatoire pour ouvrir une ${termes.demande}.`;
+      errors.jeton = `Collez un ${termes.nomDuJeton} pour publier une ${termes.demande}.`;
     }
   } else if (!saisi && !stocke) {
-    errors.jeton = 'Le jeton d’accès est obligatoire.';
+    errors.jeton = 'Collez un jeton d’accès pour connecter ce dépôt.';
   }
 
   if (!adresse || !baseBranch || !jeton || errors.jeton) {
@@ -227,7 +227,7 @@ function estUneEntree(valeur: unknown): valeur is DepotEnregistre {
 }
 
 /** Le constat qu'une `depots` illisible produit, à son unique site d'émission. */
-export const DEPOTS_ILLISIBLES = 'La liste des dépôts enregistrés sur ce poste est illisible.';
+export const DEPOTS_ILLISIBLES = 'Les dépôts enregistrés ne peuvent pas être lus. Réinitialisez leur liste dans la configuration.';
 
 /**
  * La liste `depots` de ce poste n'a pas la forme que le plugin écrit.
@@ -430,7 +430,7 @@ export async function enregistrerDepot(input: SettingsInput, id: string | null):
 
   if (id !== null) {
     const rang = depots.findIndex((entree) => identiteDuDepot(adresseDe(entree)) === id);
-    if (rang === -1) return refus({ general: 'Ce dépôt n’est plus dans la liste.' }, id);
+    if (rang === -1) return refus({ general: 'Ce dépôt n’est plus enregistré. Ajoutez-le de nouveau dans la configuration.' }, id);
     if (!adresse || identiteDuDepot(adresse) !== id) {
       return refus({ repoUrl: 'L’adresse d’un dépôt enregistré ne change pas. Pour un autre projet, ajoutez un dépôt.' }, id);
     }

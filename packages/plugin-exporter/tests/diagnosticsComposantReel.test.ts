@@ -314,14 +314,14 @@ function monterLeScenario(leGlyphe: Glyphe) {
  * message. Une famille ne réunit que les messages qu'un même lot fait taire.
  */
 const FAMILLES = {
-  borneSansVariable: /^Propriété sans token associé\. Des variants déclarent un \*\*min width\*\*/,
+  borneSansVariable: /^Dimensions minimales ou maximales sans variable associée\. Ces variants définissent un \*\*min width\*\*/,
   effet: /^Propriété non supportée par le moteur\. Le contrat n’exportera pas l’ombre ou le flou/,
   opaciteDuCalqueAbsolu: /^Layer « Overlay », opacity : le contrat n’a aucun champ/,
   opaciteDeRacine: /^Layer « State=Disabled », opacity : le contrat n’a aucun champ/,
   opaciteSansVariable: /^Layer « Overlay », opacity : aucune variable associée\./,
   opaciteDesVariants: /^opacity : aucune variable associée\. Le contrat ne transmettra pas l'opacité des variants/,
-  couleurDOmbre: /^Effect style « Shadow\/Focus », color : aucune variable associée\./,
-  cadreSansAutoLayout: /^Layer « Overlay » : il range 2 layers mais n'utilise pas d'auto layout\. Les layers ne se déplaceront pas automatiquement/,
+  couleurDOmbre: /^Style d’effets « Shadow\/Focus », color : aucune variable associée\./,
+  cadreSansAutoLayout: /^Layer « Overlay » : il range 2 calques mais n'utilise pas d'auto layout\. Les calques ne se déplaceront pas automatiquement/,
   dimensionSousContrainte: /^Layer « (Mask|Circle) », (width|height) :/,
   resteDuCalqueAbsolu: /^Layer « (Mask », mask|Circle », corner radius|Overlay », width|Overlay », height) :/,
   horsDuNodeElu: /n’est pas à l’intérieur de/,
@@ -405,7 +405,7 @@ test('la borne des racines de variant se regroupe en une ligne', async () => {
   assert.equal(cibles('borneSansVariable')?.length, 4);
 });
 
-test('l’ombre des racines se publie par son effect style, et sa couleur sans variable avertit une fois', async () => {
+test('l’ombre des racines se publie par son style d’effets, et sa couleur sans variable avertit une fois', async () => {
   const { contrat, comptes } = await exporterLeScenario();
 
   assert.equal(comptes.couleurDOmbre, 1);
@@ -419,7 +419,7 @@ test('l’ombre des racines se publie par son effect style, et sa couleur sans v
   assert.deepEqual(usages, [[{ slotPath: [], style: 'shadow.focus' }]]);
 });
 
-test('le cadre sans auto layout place ses layers et avertit toujours, une fois', async () => {
+test('le cadre sans auto layout place ses calques et avertit toujours, une fois', async () => {
   const { contrat, comptes } = await exporterLeScenario();
   const overlay = Object.values(contrat.viewStructures as Record<string, {
     children?: Array<{ figmaLayer?: string; children?: Array<{ position?: string }> }>;

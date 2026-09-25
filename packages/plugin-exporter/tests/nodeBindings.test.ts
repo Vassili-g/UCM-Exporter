@@ -150,11 +150,11 @@ test('sans auto layout, gap et paddings sont dits inapplicables, pas non reliés
   // gardera qu'un, et le geste à faire est le même.
   assert.equal(new Set(warnings).size, 1);
   assert.ok(warnings[0].includes("n'utilise pas d'auto layout"));
-  assert.ok(warnings[0].includes('ce qui ne veut pas dire zéro'));
+  assert.ok(warnings[0].includes('ne précisera pas les espacements'));
   assert.ok(!warnings[0].includes('aucune variable'));
 });
 
-test('un radius reste exporté sur un layer sans auto layout', async () => {
+test('un radius reste exporté sur un calque sans auto layout', async () => {
   const node = {
     type: 'FRAME',
     name: 'Carte',
@@ -348,7 +348,7 @@ test('un padding publie son côté relié et signale seulement le côté fixe no
 
   assert.deepEqual(result, { left: '{sizes.padding-left}' });
   assert.ok(warnings.some((warning) => warning.includes('right padding')));
-  assert.ok(warnings.some((warning) => warning.includes('Ces côtés manqueront au développeur')));
+  assert.ok(warnings.some((warning) => warning.includes('Les valeurs de ces côtés seront absentes du contrat')));
 });
 
 test('quatre coins reliés à quatre variables publient les quatre', async () => {
@@ -489,7 +489,7 @@ const calqueAttenue = (opacity: number | undefined, lie = false) => ({
 }) as unknown as SceneNode;
 
 const OPACITE_DU_CALQUE = 'Layer « Overlay », opacity : aucune variable associée. '
-  + "Le contrat ne transmettra pas l'opacité de ce layer. "
+  + "Le contrat ne transmettra pas l'opacité de ce calque. "
   + 'Reliez opacity à une variable, puis réexportez.';
 
 test('une opacité reliée à une variable publie sa référence, sans un mot', async () => {

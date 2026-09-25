@@ -250,9 +250,9 @@ export function corpsDeLaDemande(path: string, artifact: RepositoryArtifact, for
   const debut = [
     header,
     '',
-    `## ⚠️ L'export n'a pas pu décrire certaines informations (${points})`,
+    `## ⚠️ Points à vérifier avant d’utiliser cet export (${points})`,
     '',
-    'Les informations suivantes sont absentes de l’artefact exporté :',
+    'Chaque point précise ce qui manque ou demande une correction :',
     '',
   ];
   const fin = [
@@ -261,7 +261,7 @@ export function corpsDeLaDemande(path: string, artifact: RepositoryArtifact, for
     '',
     'Corrigez chaque point dans Figma, puis relancez l’export.',
     '',
-    'Ces avertissements ne bloquent pas la fusion.',
+    'Ces avertissements ne bloquent pas automatiquement la fusion. Corrigez-les avant d’utiliser le contrat pour développer le composant.',
   ];
   // La marge garde la place de la ligne qui compte les points omis.
   let reste = forge.termes.limiteDeCorps - 200 - utf8ByteLength([...debut, ...fin].join('\n'));

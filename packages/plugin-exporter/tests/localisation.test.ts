@@ -94,7 +94,7 @@ test('un calque qui produit deux fois le même message n’est inscrit qu’une 
 });
 
 test('un canal sans localisation n’en invente aucune', () => {
-  const canal = ['Text style « Corps » : son nom ne produit aucun identifiant.'];
+  const canal = ['Style de texte « Corps » : son nom ne produit aucun identifiant.'];
   assert.equal(localisationsDe(canal).size, 0);
 });
 

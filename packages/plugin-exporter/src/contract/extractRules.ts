@@ -494,15 +494,15 @@ export async function extractRules(
       const marque = nomOrphelin(orphelin) === 'marque';
       pousserLocalise(absent, 'Layer', orphelin, {
         manque: marque
-          ? `son layer « ${COMPONENT_NAME_LAYER} » contient encore « ${MARQUEUR_A_COMPLETER} », `
+          ? `son calque « ${COMPONENT_NAME_LAYER} » contient encore « ${MARQUEUR_A_COMPLETER} », `
             + 'donc il ne documente aucun composant.'
-          : `son layer « ${COMPONENT_NAME_LAYER} » est vide, donc il ne documente `
+          : `son calque « ${COMPONENT_NAME_LAYER} » est vide, donc il ne documente `
             + 'aucun composant.',
-        impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
-          + 'ni documentation de component properties, ni règle d’icône.',
+        impact: 'Le contrat ne contiendra aucune règle d’usage, '
+          + 'documentation de propriété ou règle d’icône.',
         action: marque
           ? `Remplacez ce texte par « ${componentSet.name} », puis réexportez.`
-          : `Écrivez « ${componentSet.name} » dans ce layer, puis réexportez.`,
+          : `Écrivez « ${componentSet.name} » dans ce calque, puis réexportez.`,
       });
     } else {
       // La cible n'existe pas : son absence est déclarée, pas subie. Le message
@@ -513,11 +513,11 @@ export async function extractRules(
         sujetSansNode('Layer', RULES_CONTAINER_NAME, 'inexistant'),
         {
           manque: `aucune instance de cette page n’écrit « ${componentSet.name} » dans son `
-            + `layer « ${COMPONENT_NAME_LAYER} ».`,
-          impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
-            + 'ni documentation de component properties, ni règle d’icône.',
+            + `calque « ${COMPONENT_NAME_LAYER} ».`,
+          impact: 'Le contrat ne contiendra aucune règle d’usage, '
+            + 'documentation de propriété ou règle d’icône.',
           action: `Posez une instance de « ${RULES_CONTAINER_NAME} » à côté du composant, `
-            + `écrivez « ${componentSet.name} » dans son layer « ${COMPONENT_NAME_LAYER} », `
+            + `écrivez « ${componentSet.name} » dans son calque « ${COMPONENT_NAME_LAYER} », `
             + 'puis réexportez.',
         },
       );
@@ -554,7 +554,7 @@ export async function extractRules(
       warnings,
       pointDe(sujetDuDoublon.texte, {
         manque: `${containers.length} instances écrivent « ${componentSet.name} » dans leur `
-          + `layer « ${COMPONENT_NAME_LAYER} », et l’export n’en lit qu’une.`,
+          + `calque « ${COMPONENT_NAME_LAYER} », et l’export n’en lit qu’une.`,
         impact: ignorees === 1
           ? 'Les règles de l’autre instance manqueront au développeur.'
           : `Les règles des ${ignorees} autres instances manqueront au développeur.`,
@@ -572,7 +572,7 @@ export async function extractRules(
     if (!tag) {
       if (nEcritRien(instance)) continue;
       pousserSansNode(warnings, `Une règle de « ${RULES_CONTAINER_NAME} »`, {
-        manque: 'aucun de ses layers ne porte de tag (@usage, @do, @dont, @pairs, @prop, '
+        manque: 'aucun de ses calques ne porte de tag (@usage, @do, @dont, @pairs, @prop, '
           + '@boolean, @icons, @default).',
         impact: 'Sa documentation manquera au développeur.',
         action: 'Choisissez son variant dans Figma, puis réexportez.',

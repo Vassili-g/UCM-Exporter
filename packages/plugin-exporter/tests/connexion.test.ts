@@ -231,7 +231,7 @@ test('une carte nomme sa cause en statut court, dans les mots de sa forge', () =
   assert.equal(statut('acces-refuse'), 'Accès refusé');
   assert.equal(statut('depot-introuvable'), 'Projet introuvable');
   assert.equal(statut('depot-introuvable', TERMES_GITHUB), 'Repository introuvable');
-  assert.equal(statut('depot-mal-decrit'), 'ucm.config.json fautif');
+  assert.equal(statut('depot-mal-decrit'), 'Configuration du dépôt invalide');
   assert.equal(statut('reseau', TERMES_GITHUB), 'GitHub injoignable');
   assert.equal(etatDeCarte('connecte', { termes: TERMES_GITHUB }).geste, null);
 });
@@ -255,7 +255,7 @@ test('le geste d’une carte désigne son champ, et la correction d’une adress
     etatDeCarte('acces-refuse', { termes: TERMES_GITLAB }).geste,
     'Le jeton est reconnu, mais il n’a pas les droits sur ce projet. Donnez-lui les droits listés sous le champ du jeton, dans la configuration.',
   );
-  assert.match(etatDeCarte('depot-mal-decrit', { termes: TERMES_GITLAB, detail: 'Détail.' }).geste ?? '', /décrit ce projet\. .*Détail\.$/);
+  assert.match(etatDeCarte('depot-mal-decrit', { termes: TERMES_GITLAB, detail: 'Détail.' }).geste ?? '', /configuration de ce projet.*Détail\.$/);
 });
 
 /**
@@ -272,7 +272,7 @@ test('la pastille nomme le dépôt actif dans chaque cause', () => {
   assert.equal(pastille('depot-introuvable'), 'design-system : Projet introuvable');
   assert.equal(pastille('reseau'), 'design-system : GitLab injoignable');
   assert.equal(pastille('forge-indisponible'), 'design-system : GitLab indisponible');
-  assert.equal(pastille('depot-mal-decrit'), 'design-system : ucm.config.json fautif');
+  assert.equal(pastille('depot-mal-decrit'), 'design-system : Configuration du dépôt invalide');
 });
 
 test('sans dépôt visé, la pastille dit s’il n’y en a aucun ou si aucun n’est actif', () => {

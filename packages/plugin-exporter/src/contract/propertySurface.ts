@@ -46,7 +46,7 @@ export function mergeWrapperProps(
   const imbrique = wrapperName ? `« ${wrapperName} »` : 'le composant imbriqué';
   for (const [key, prop] of Object.entries(wrapperProps)) {
     if (Object.prototype.hasOwnProperty.call(props, key)) {
-      pousserSansNode(warnings, `Component property « ${key} »`, {
+      pousserSansNode(warnings, `Propriété de composant « ${key} »`, {
         manque: `${imbrique} et le component set sélectionné la déclarent tous les deux.`,
         impact: `Le contrat ne publie que celle du component set sélectionné : celle de `
           + `${imbrique} manquera au développeur.`,

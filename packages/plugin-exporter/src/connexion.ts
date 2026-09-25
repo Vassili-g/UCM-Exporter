@@ -142,15 +142,15 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
       return {
         state: 'disconnected',
         pastille: nomme(`${termes?.forge ?? 'Forge'} injoignable`),
-        geste: `La requête vers ${forge} n’a pas abouti. Vérifiez votre connexion, puis réessayez.`,
+        geste: `Impossible de joindre ${forge}. Vérifiez votre connexion internet, puis réessayez.`,
       };
     case 'depot-mal-decrit':
       return {
         state: 'disconnected',
-        pastille: nomme(`${NOM_CONFIGURATION} fautif`),
+        pastille: nomme(`Configuration du dépôt invalide`),
         geste:
-          `Un développeur doit corriger le fichier qui décrit ce ${depot}. `
-          + 'Tant qu’il est fautif, aucun export ne peut être publié. '
+          `La configuration de ce ${depot} empêche la publication. `
+          + 'Demandez à un développeur de corriger ucm.config.json. '
           + (precision.detail ?? ''),
       };
     case 'forge-indisponible':
@@ -160,7 +160,7 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
         geste:
           `${termes?.forge ?? 'La forge'} a répondu ${precision.statut ?? 'une erreur'} à la demande du plugin. `
           + 'Réessayez dans un moment. '
-          + 'Si la réponse ne change pas, un mainteneur du plugin doit la regarder.',
+          + 'Si l’erreur persiste, transmettez ce message au mainteneur du plugin.',
       };
     case 'depots-illisibles':
       return {
@@ -177,7 +177,7 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
  */
 export const GESTE_DEPOTS_ILLISIBLES =
   'Réinitialisez la liste, puis saisissez de nouveau chaque dépôt et son jeton. '
-  + 'Le plugin ne sait plus rien lire de ces dépôts.';
+  + 'Le plugin ne peut plus lire leurs réglages.';
 
 /** Ce qu'une carte de la liste des dépôts affiche après le test de son dépôt. */
 export type EtatDeCarte = {
@@ -205,7 +205,7 @@ export function etatDeCarte(cause: CauseConnexion, precision: PrecisionConnexion
     'jeton-refuse': 'Jeton refusé',
     'acces-refuse': 'Accès refusé',
     'depot-introuvable': `${avecMajuscule(depot)} introuvable`,
-    'depot-mal-decrit': `${NOM_CONFIGURATION} fautif`,
+    'depot-mal-decrit': `Configuration du dépôt invalide`,
     reseau: `${termes?.forge ?? 'Forge'} injoignable`,
     'forge-indisponible': `${termes?.forge ?? 'Forge'} indisponible`,
     'depots-illisibles': 'Réglages illisibles',
@@ -235,12 +235,12 @@ export function etatDeCarte(cause: CauseConnexion, precision: PrecisionConnexion
  */
 export function gesteApresEchecDePublication(statut: number | null, termes: TermesDeForge, reponse = ''): string {
   if (statut === null && reponse) {
-    return `${reponse} Corrigez ce point, puis relancez la publication.`;
+    return `${reponse} Si le problème persiste, transmettez ce message au mainteneur du plugin.`;
   }
   if (statut !== null && termes.statutsDeRegle.includes(statut)) {
     return reponse
-      ? `${reponse} Transmettez ce message à un mainteneur du ${termes.depot} : une règle de push du ${termes.depot} ou une branche du même nom produit ce refus.`
-      : `${termes.forge} a refusé l’écriture sans donner de raison. Un mainteneur du ${termes.depot} doit vérifier ses règles de push.`;
+      ? `${reponse} Transmettez ce message à un mainteneur du ${termes.depot} : il doit vérifier les restrictions de publication et les branches existantes.`
+      : `${termes.forge} a refusé l’écriture sans donner de raison. Un mainteneur du ${termes.depot} doit vérifier ses restrictions de publication.`;
   }
   if (statut !== null && termes.statutsDeConflit.includes(statut)) {
     return `Le ${termes.depot} a changé pendant la publication. Relancez l’analyse, puis republiez.`;

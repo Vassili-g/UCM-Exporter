@@ -646,7 +646,7 @@ test('une instance dont le maître est illisible avertit au lieu de disparaître
   assert.match(warnings[0], /réexportez/);
 });
 
-test('le même layer orphelin ne se signale qu’une fois, et le constat mène à chaque instance', async () => {
+test('le même calque orphelin ne se signale qu’une fois, et le constat mène à chaque instance', async () => {
   // Une instance orpheline vit dans tous les variants du set, et chaque scan la
   // relève avec le même texte. Le message porte le nom du layer, jamais celui
   // du variant : un constat par layer, pas un par variant. Ce constat garde
@@ -733,7 +733,7 @@ test('scanComposedMatrix indexe la surface directe et le seul wrapper élu', asy
     name: 'Scale=S',
     parent: wrapperOwner,
   } as unknown as ComponentNode;
-  const wrapperReference = instance('wrapper-reference', 'Wrapper layer', null, {
+  const wrapperReference = instance('wrapper-reference', 'Wrapper calque', null, {
     boundVariables: dimensionsLiees,
     componentProperties: { Scale: { type: 'VARIANT', value: 'S' } },
     getMainComponentAsync: async () => wrapperMain,
@@ -750,10 +750,10 @@ test('scanComposedMatrix indexe la surface directe et le seul wrapper élu', asy
   } as unknown as ComponentSetNode;
   (branchMain as unknown as { parent: BaseNode }).parent = branchOwner;
 
-  const exposedWrapper = instance('wrapper-instance', 'Wrapper layer', null, {
+  const exposedWrapper = instance('wrapper-instance', 'Wrapper calque', null, {
     getMainComponentAsync: async () => wrapperMain,
   });
-  const branch = instance('branch', 'Branch layer', null, {
+  const branch = instance('branch', 'Branch calque', null, {
     children: [exposedWrapper],
     exposedInstances: [exposedWrapper],
     getMainComponentAsync: async () => branchMain,

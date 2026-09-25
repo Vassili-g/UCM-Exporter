@@ -70,9 +70,8 @@ export function createCarteComposant({
   // Le geste vise cette page, et pas une autre : le parcours ne repart pas de
   // lui-même, alors que le relevé de la page active voit une instance collée
   // dès le changement de sélection.
-  sansSource.textContent = 'Aucune instance de « .componentRules » dans ce document. '
-    + 'Collez-en une sur cette page, depuis un fichier qui en porte, pour créer '
-    + 'les règles de ce composant. ';
+  sansSource.textContent = 'Le modèle de règles « .componentRules » est absent du document. '
+    + 'Copiez une instance depuis le kit de règles et collez-la sur cette page. ';
 
   /** Le lien vers le kit, que les deux notes portent. */
   function lienDuKit(): HTMLAnchorElement {

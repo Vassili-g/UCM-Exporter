@@ -185,7 +185,7 @@ export function extractContractPropertyModel(
   const claim = (key: string, figmaName: string, prop: ContractProp): boolean => {
     const owner = owners.get(key);
     if (owner !== undefined) {
-      pousserSansNode(warnings, `Component properties « ${owner} » et « ${figmaName} »`, {
+      pousserSansNode(warnings, `Propriétés de composant « ${owner} » et « ${figmaName} »`, {
         manque: `leurs noms donnent le même nom « ${key} » dans le contrat.`,
         impact: `Le contrat ne publie que la première : la seconde manquera au développeur.`,
         action: `Renommez l’une des deux, puis réexportez.`,
@@ -226,8 +226,8 @@ export function extractContractPropertyModel(
       // aucune clé brute du fichier, pas seulement avec celles déjà traitées.
       const taken = Boolean(semantic) && semantic !== key && rawKeys.has(semantic as string);
       if (taken) {
-        pousserSansNode(warnings, `Variant property « ${rawFigmaName} »`, {
-          manque: `ses valeurs sont des tailles, mais une autre component property porte `
+        pousserSansNode(warnings, `Propriété de variante « ${rawFigmaName} »`, {
+          manque: `ses valeurs sont des tailles, mais une autre propriété de composant porte `
             + `déjà le nom « ${semantic} ».`,
           impact: `Elle reste exportée sous « ${key} ».`,
           action: `Renommez l'une des deux si vous voulez « ${semantic} », puis réexportez.`,
@@ -259,13 +259,13 @@ export function extractContractPropertyModel(
         const disabledStateName = stateDefinition.type === 'VARIANT'
           ? (stateDefinition.variantOptions ?? []).find(isDisabledStateValue) ?? 'Disable'
           : 'Disable';
-        pousserSansNode(warnings, `Component property « ${rawFigmaName} »`, {
-          manque: `la variant property « ${stateFigmaName} » a déjà la valeur `
+        pousserSansNode(warnings, `Propriété de composant « ${rawFigmaName} »`, {
+          manque: `la propriété de variante « ${stateFigmaName} » a déjà la valeur `
             + `« ${disabledStateName} », que le contrat publie sous le nom « disabled ».`,
-          impact: `Le contrat ne publie pas cette boolean property : sa valeur par défaut `
+          impact: `Le contrat ne publie pas cette propriété booléenne : sa valeur par défaut `
             + `manquera au développeur.`,
           action: `Supprimez-la si elle pilote le même état, sinon renommez-la d’après le `
-            + `layer qu’elle pilote, puis réexportez.`,
+            + `calque qu’elle pilote, puis réexportez.`,
         });
         continue;
       }

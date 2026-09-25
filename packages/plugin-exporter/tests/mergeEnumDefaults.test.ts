@@ -59,7 +59,7 @@ test('un @default qui vise un axe inexistant ne pose rien et le dit', () => {
 
   assert.deepEqual(props, { color: { type: 'enum', values: ['primary', 'secondary'] } });
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /aucune variant property portant ce nom/);
+  assert.match(warnings[0], /aucune propriété de variante portant ce nom/);
 });
 
 /**
@@ -74,7 +74,7 @@ test('aucun avertissement de @default n’emploie le vocabulaire du code', () =>
   mergeEnumDefaults(props, { couleur: 'primary' }, warnings);
   mergeEnumDefaults(props, { color: 'tertiary' }, warnings);
 
-  const texte = warnings.join('\n').replace(/layer « prop »/g, '');
+  const texte = warnings.join('\n').replace(/calque « prop »/g, '');
   assert.doesNotMatch(texte, /\bprops?\b/i);
   assert.doesNotMatch(texte, /\benums?\b/i);
 });

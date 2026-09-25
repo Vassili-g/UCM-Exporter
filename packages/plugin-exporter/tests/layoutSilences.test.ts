@@ -261,7 +261,7 @@ test('sous le wrap, le gap principal est nommé comme le panneau Figma', async (
   assert.ok(warnings.some((warning) => warning.includes('horizontal gap')));
 });
 
-test('un layer Absolute est placé même sous un auto layout en grille, et sans un geste à faire', () => {
+test('un calque Absolute est placé même sous un auto layout en grille, et sans un geste à faire', () => {
   const flottant = {
     type: 'FRAME',
     id: 'flottant',
@@ -287,7 +287,7 @@ test('un layer Absolute est placé même sous un auto layout en grille, et sans 
   assert.deepEqual(warnings, []);
 });
 
-test('un layer Absolute dont Figma n’expose pas la géométrie ne publie ni inset ni notice', () => {
+test('un calque Absolute dont Figma n’expose pas la géométrie ne publie ni inset ni notice', () => {
   const flottant = {
     type: 'FRAME', id: 'flottant', name: 'Badge', layoutPositioning: 'ABSOLUTE', boundVariables: {},
   } as unknown as SceneNode;
@@ -485,7 +485,7 @@ test('un calque voisin d’une dépendance dans son cadre est décrit comme un s
     { slot: 'label', figmaLayer: 'Mention légale' },
   ]);
   assert.equal(
-    warnings.some((warning) => warning.includes('partage le layer')),
+    warnings.some((warning) => warning.includes('partage le calque')),
     false,
   );
 });

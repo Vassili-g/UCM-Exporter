@@ -32,7 +32,7 @@ const calque = (extra: Record<string, unknown> = {}) => ({
   ...extra,
 }) as unknown as TextNode;
 
-test('un text style aux valeurs par défaut de Figma ne publie aucune clé de literals', () => {
+test('un style de texte aux valeurs par défaut de Figma ne publie aucune clé de literals', () => {
   assert.deepEqual(litterauxDuStyle(style(), false), {});
 });
 

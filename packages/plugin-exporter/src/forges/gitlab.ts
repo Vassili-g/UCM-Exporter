@@ -150,7 +150,7 @@ export function forgeGitlab(config: ConfigurationDeForge): Forge {
         `${projet}/repository/branches/${encodeURIComponent(ecriture.base)}`,
       );
       startSha = base?.commit?.id;
-      if (!startSha) throw new ErreurDeForge('La branche de base ne renvoie aucun SHA.');
+      if (!startSha) throw new ErreurDeForge('La branche de base ne peut pas être lue. Faites vérifier cette branche par un développeur.');
     }
 
     await gitlabRequest(`${projet}/repository/commits`, {
@@ -191,7 +191,7 @@ export function forgeGitlab(config: ConfigurationDeForge): Forge {
       throw error;
     }
 
-    if (!demande?.web_url) throw new ErreurDeForge('La merge request a été créée sans URL exploitable.');
+    if (!demande?.web_url) throw new ErreurDeForge('GitLab n’a pas fourni de lien vers la merge request créée. Retrouvez-la dans le projet avant de republier.');
     return demande.web_url;
   }
 

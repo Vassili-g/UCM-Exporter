@@ -256,7 +256,7 @@ async function contractedOwner(
   const main = await instance.getMainComponentAsync().catch(() => null);
   if (!main) {
     pousserLocalise(warnings, 'Layer', instance, {
-      manque: `le main component de cette instance est introuvable.`,
+      manque: `le composant principal de cette instance est introuvable.`,
       impact: `Si ce composant a son propre contrat, le développeur recopiera son contenu `
         + `au lieu de réutiliser le composant.`,
       action: `Utilisez « Restore main component » sur cette instance, ou remplacez-la, puis `

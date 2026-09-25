@@ -311,7 +311,7 @@ export function buildLeaf(
         pousserSansNode(warnings, `Variable « ${variable.name} »`, {
           manque: 'elle cite une variable introuvable.',
           impact: 'Le développeur n’aura pas sa valeur.',
-          action: 'Faites-la de nouveau pointer vers une variable existante, puis réexportez.',
+          action: 'Remplacez sa référence par une variable accessible dans Figma, puis réexportez.',
         });
       }
       return target ? `{${target}}` : null;
@@ -744,7 +744,7 @@ export function axesDesCollections(
         manque: seule
           ? 'elle étend une collection d’une bibliothèque.'
           : 'elles étendent une collection d’une bibliothèque.',
-        impact: seule ? 'Le développeur n’aura pas ses surcharges.' : 'Le développeur n’aura pas leurs surcharges.',
+        impact: seule ? 'Les valeurs modifiées dans cette collection étendue ne seront pas exportées.' : 'Les valeurs modifiées dans ces collections étendues ne seront pas exportées.',
         action: seule
           ? 'Créez la collection étendue dans le fichier de la bibliothèque, puis réexportez depuis ce fichier.'
           : 'Créez les collections étendues dans le fichier de la bibliothèque, puis réexportez depuis ce fichier.',
@@ -975,8 +975,8 @@ async function liaisonsDesTextStyles(warnings: string[]): Promise<LiaisonsDeText
     styles = await figma.getLocalTextStylesAsync();
   } catch {
     pousserSansNode(warnings, `Fichier « ${figma.root.name} »`, {
-      manque: 'ses text styles n’ont pas pu être lus.',
-      impact: 'Les familles typographiques resteront sans type dans le fichier de tokens.',
+      manque: 'ses styles de texte n’ont pas pu être lus.',
+      impact: 'Les variables de police risquent de ne pas être reconnues comme des familles typographiques.',
       action: 'Relancez l’analyse ; si l’erreur persiste, signalez-la au mainteneur du '
         + 'plugin.',
     });
@@ -1070,8 +1070,8 @@ function constatsDesFamilles(
     const nom = variableById.get(id)?.name;
     if (!nom) continue;
     pousserSansNode(warnings, `Variable « ${nom} »`, {
-      manque: 'elle sert de famille typographique et d’un autre usage de texte.',
-      impact: 'Le développeur la recevra sans son type de famille.',
+      manque: 'elle sert à définir une famille typographique et un autre réglage de texte.',
+      impact: 'Cette variable sera exportée comme du texte, sans être identifiée comme une famille typographique.',
       action: 'Séparez les deux usages en deux variables dans Figma, puis réexportez.',
     });
   }
@@ -1079,10 +1079,10 @@ function constatsDesFamilles(
     const nom = variableById.get(id)?.name;
     if (!nom) continue;
     pousserSansNode(warnings, `Variable « ${nom} »`, {
-      manque: 'son nom annonce une famille typographique, sans qu’un text style ni un scope '
-        + 'l’établisse.',
-      impact: 'Le développeur la recevra sans son type de famille.',
-      action: 'Reliez-la au champ Font family d’un text style, ou limitez son scope à Font '
+      manque: 'son nom évoque une famille typographique, mais aucun style de texte ni périmètre d’utilisation ne '
+        + 'le confirme.',
+      impact: 'Cette variable sera exportée comme du texte, sans être identifiée comme une famille typographique.',
+      action: 'Reliez-la au champ Font family d’un style de texte, ou limitez son périmètre d’utilisation (scope) à Font '
         + 'family, puis réexportez.',
     });
   }
@@ -1096,7 +1096,7 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
   annoncer('Écriture du fichier de tokens…');
 
   if (variables.length === 0) {
-    throw new TokensExportError('Aucune variable locale à exporter.');
+    throw new TokensExportError('Ce fichier ne contient aucune variable locale. Ouvrez le fichier qui contient vos variables, puis relancez l’analyse.');
   }
 
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));

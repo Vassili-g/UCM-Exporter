@@ -60,9 +60,8 @@ async function extraire(racines: ComponentNode[], canal: string[]): Promise<void
 }
 
 const BORNE = {
-  titre: 'Propriété sans token associé.',
-  impact: 'Des variants déclarent un **min width** sans token. '
-    + 'Le contrat ne publiera que les paramètres reliés à un token.',
+  titre: 'Dimensions minimales ou maximales sans variable associée.',
+  impact: 'Ces variants définissent un **min width** sans variable. Ces valeurs ne seront pas exportées.',
   action: 'Reliez ces paramètres à une variable dans chaque variant concerné, puis réexportez.',
 };
 
@@ -118,8 +117,8 @@ test('deux bornes sans variable s’écrivent dans une seule phrase, en gras', a
 
   await extraire(racines, canal);
 
-  const borne = canal.find((message) => message.includes('sans token'));
-  assert.ok(borne?.includes('déclarent **min width** et **max width** sans token.'), borne);
+  const borne = canal.find((message) => message.includes('sans variable'));
+  assert.ok(borne?.includes('définissent **min width** et **max width** sans variable.'), borne);
 });
 
 test('sans déclaration, chaque racine garde son message et son nom', async () => {
@@ -148,7 +147,7 @@ test('un calque qui n’est pas une racine déclarée garde son message et son n
   assert.ok(lignes.some((ligne) => ligne.startsWith('Layer « Narrow » : il fixe min width')));
 });
 
-test('une ombre sans effect style sur les racines donne une ligne, sans nom de calque', async () => {
+test('une ombre sans style d’effets sur les racines donne une ligne, sans nom de calque', async () => {
   const racines = ['Wide', 'Narrow'].map((nom) => racine(nom, { effects: [ombre] }));
   const canal: string[] = [];
   declarerLesRacinesDeVariants(canal, racines);
@@ -165,9 +164,9 @@ test('une ombre sans effect style sur les racines donne une ligne, sans nom de c
   await extractEffectStyles(porteurs, resolverFor({}), canal, async () => null);
 
   const attendu = {
-    titre: 'effect : aucun effect style appliqué.',
+    titre: 'effect : aucun style d’effets appliqué.',
     impact: 'Le contrat ne transmettra pas les ombres ou les flous des variants concernés.',
-    action: 'Appliquez un effect style à chaque variant concerné, puis réexportez.',
+    action: 'Appliquez un style d’effets à chaque variant concerné, puis réexportez.',
   };
   assert.deepEqual(partiesDe(canal).get(phrase(attendu)), attendu);
   assert.deepEqual(
@@ -272,9 +271,9 @@ test('un gap sans variable sur les racines donne une ligne, sans nom de calque',
   await extraire(racines, canal);
 
   const attendu = {
-    titre: "gap : aucun token n'est relié à cette propriété.",
+    titre: "gap : aucune variable Figma n’est reliée à cette propriété.",
     impact: "Le contrat n'exportera pas cette propriété.",
-    action: 'Reliez-la à un token, puis réexportez.',
+    action: 'Reliez cette propriété à une variable Figma, puis réexportez.',
   };
   assert.deepEqual(partiesDe(canal).get(phrase(attendu)), attendu);
   assert.deepEqual(
@@ -307,9 +306,9 @@ async function releverLesCouleurs(racines: ComponentNode[], canal: string[]): Pr
 }
 
 const EPAISSEUR = {
-  titre: "stroke weight : aucun token n'est relié à cette propriété.",
+  titre: "stroke weight : aucune variable Figma n’est reliée à cette propriété.",
   impact: "Le contrat n'exportera pas cette propriété.",
-  action: 'Reliez-la à un token, puis réexportez.',
+  action: 'Reliez cette propriété à une variable Figma, puis réexportez.',
 };
 
 test('trois racines au stroke weight sans variable donnent une ligne à trois cibles', async () => {
@@ -369,8 +368,8 @@ test('trois racines sans auto layout donnent une ligne à trois cibles, disposit
 
   const disposition = {
     titre: 'Variants sans auto layout.',
-    impact: 'Leurs layers ne se déplaceront pas automatiquement lorsque le contenu '
-      + 'd’un layer voisin grandit.',
+    impact: 'Leurs calques ne se déplaceront pas automatiquement lorsque le contenu '
+      + 'd’un calque voisin grandit.',
     action: 'Si la disposition doit s’adapter au contenu, configurez un auto layout dans '
       + 'chaque variant concerné, puis réexportez.',
   };
@@ -554,7 +553,7 @@ test('trois racines à l’alignement d’auto layout illisible donnent une lign
 
   uneLignePourTrois(canal, racines, {
     titre: "auto layout : l'alignement ne peut pas être lu.",
-    impact: "Le contrat ne transmettra pas l'alignement des layers dans les variants concernés.",
+    impact: "Le contrat ne transmettra pas l'alignement des calques dans les variants concernés.",
     action: "Définissez de nouveau l'alignement sur les deux axes dans chaque variant "
       + 'concerné, puis réexportez.',
   });
@@ -599,7 +598,7 @@ function racineAuLibelle(nom: string, libelle: Record<string, unknown>): Compone
 
 const ALIGNEMENT_DU_LIBELLE = {
   titre: "Layer « Label » : son alignement dans l'auto layout ne peut pas être lu.",
-  impact: 'Le contrat ne précisera pas comment aligner ce layer dans les variants concernés.',
+  impact: 'Le contrat ne précisera pas comment aligner ce calque dans les variants concernés.',
   action: "Définissez de nouveau son alignement dans l'auto layout de chaque variant "
     + 'concerné, puis réexportez.',
 };
@@ -642,7 +641,7 @@ test('un enfant au layout grow hors menu sous trois racines donne une ligne', as
 
   const etirement = {
     titre: "Layer « Label » : son réglage d'étirement n'est pas pris en charge.",
-    impact: "Le contrat ne précisera pas si ce layer doit occuper l'espace disponible.",
+    impact: "Le contrat ne précisera pas si ce calque doit occuper l'espace disponible.",
     action: 'Choisissez Fill ou Fixed pour sa largeur dans un auto layout horizontal, ou pour '
       + 'sa hauteur dans un auto layout vertical, puis réexportez.',
   };

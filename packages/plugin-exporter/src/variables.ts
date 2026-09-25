@@ -315,7 +315,7 @@ export class VariableNameResolver {
   private async loadName(variableId: string, usage?: TokenUsage): Promise<string | null> {
     const { index, warnings } = this.options;
     const location = usage
-      ? ` sur le layer « ${usage.nodeName} » (${usage.field})`
+      ? ` sur le calque « ${usage.nodeName} » (${usage.field})`
       : '';
 
     const ambiguous = index?.ambiguous.get(variableId);
@@ -349,7 +349,7 @@ export class VariableNameResolver {
       // y mène quand l'appelant a passé le node : un style de texte n'en a pas.
       pousserVersLeCalque(
         pointDe(`Variable introuvable${location}`, {
-          manque: `elle a peut-être été supprimée, ou sa bibliothèque n'est plus publiée.`,
+          manque: `le plugin ne peut pas lire la variable liée.`,
           impact: `Le développeur n'aura pas cette valeur.`,
           action: `Reliez de nouveau une variable existante, puis réexportez.`,
         }),

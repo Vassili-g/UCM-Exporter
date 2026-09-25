@@ -181,7 +181,7 @@ export function getAllNodes(
     pousserUneFois(
       warnings,
       pointDe(sujetDuCalque.texte, {
-        manque: `il est masqué, et aucune boolean property ni variable ne pilote sa `
+        manque: `il est masqué, et aucune propriété booléenne ni variable ne pilote sa `
           + `visibilité.`,
         impact: `Le contrat l'exclut avec tout son contenu : le développeur ne le rendra jamais.`,
         action: `Si le composant doit pouvoir l'afficher, reliez sa visibilité à une boolean `

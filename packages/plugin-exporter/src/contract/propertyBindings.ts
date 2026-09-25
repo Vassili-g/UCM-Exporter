@@ -97,12 +97,12 @@ export function extractPropertyBindings(
             // où le designer peut agir. Le clic y mène.
             pousserNote(
               warnings,
-              pointDe(`Component property « ${figmaPropName.replace(/#.*$/, '')} »`, {
-                manque: `le layer « ${node.name} » s'en sert pour ${USAGE_DE_LA_LIAISON[target]}, `
+              pointDe(`Propriété de composant « ${figmaPropName.replace(/#.*$/, '')} »`, {
+                manque: `le calque « ${node.name} » s'en sert pour ${USAGE_DE_LA_LIAISON[target]}, `
                   + `mais le contrat ne la publie pas.`,
                 impact: `Le développeur ne pourra pas piloter ${USAGE_DE_LA_LIAISON[target]} `
-                  + `de ce layer.`,
-                action: `Donnez-lui un nom qu'aucune autre component property ne partage, puis `
+                  + `de ce calque.`,
+                action: `Donnez-lui un nom qu'aucune autre propriété de composant ne partage, puis `
                   + `réexportez.`,
               }),
               sujet('Layer', node),

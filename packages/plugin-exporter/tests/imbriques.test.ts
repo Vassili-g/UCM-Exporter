@@ -70,13 +70,13 @@ test('un imbriqué sans règles donne un point qui nomme les deux composants', (
   assert.deepEqual(point.elements, ['size', 'label']);
   assert.equal(
     point.impact,
-    'Sans les règles de « Button », le contrat de « Exemple » décrit les internes de '
-    + '« Button » au lieu de le réutiliser.',
+    'Le contrat de « Exemple » décrit les calques de « Button » sans indiquer '
+    + 'qu’il faut réutiliser ce composant.',
   );
   assert.equal(
     point.action,
-    'Créez et complétez les règles de « Button », puis relancez l’analyse de « Exemple » '
-    + 'avant de l’exporter.',
+    'Sélectionnez le composant principal « Button », puis créez et complétez ses règles '
+    + 'd’usage. Relancez ensuite l’analyse de « Exemple ».',
   );
   assert.deepEqual(nodeIds, [bouton.id]);
 });
@@ -146,8 +146,8 @@ test('une propriété qu’aucun imbriqué ne revendique donne un point qui cibl
 
   assert.equal(
     point.titre,
-    'Une propriété de « Exemple » n’est pas documentée, et le plugin n’a pas su nommer le '
-    + 'composant imbriqué qui la porte :',
+    'Une propriété de « Exemple » n’est pas documentée. Le composant imbriqué '
+    + 'qui la porte n’a pas pu être identifié :',
   );
   assert.deepEqual(point.elements, ['orpheline']);
   assert.deepEqual(nodeIds, [racine.id]);
@@ -225,8 +225,8 @@ test('un imbriqué venu d’une bibliothèque renvoie au fichier de cette biblio
 
   assert.equal(
     point.action,
-    'Les règles de « Alert » vivent dans le fichier de sa bibliothèque. Créez-les là-bas, '
-    + 'republiez la bibliothèque, puis relancez l’analyse de « Exemple ».',
+    'Dans le fichier de la bibliothèque, créez et complétez les règles de « Alert ». '
+    + 'Republiez la bibliothèque, puis relancez l’analyse de « Exemple ».',
   );
 });
 

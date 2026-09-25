@@ -35,7 +35,7 @@ test('les trois empêchements se distinguent, parce que le geste diffère', () =
 
   assert.equal(raisons.filter((raison) => raison === null).length, 0, 'un empêchement sans raison');
   assert.equal(new Set(raisons).size, 3, 'deux empêchements partagent leur raison');
-  assert.match(raisons[1] ?? '', /2 layers/);
+  assert.match(raisons[1] ?? '', /2 calques/);
   assert.match(raisons[2] ?? '', /« Card »/);
 });
 

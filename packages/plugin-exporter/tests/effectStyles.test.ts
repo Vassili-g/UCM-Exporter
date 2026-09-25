@@ -143,11 +143,11 @@ test('un réglage du style sans variable avertit une fois et manque à l’effet
   assert.deepEqual(effectStyles['shadow.focus'].effects, [
     { type: 'drop-shadow', color: '{shadow.color}', blur: '{shadow.blur}' },
   ]);
-  const lignes = warnings.filter((warning) => warning.startsWith('Effect style'));
+  const lignes = warnings.filter((warning) => warning.startsWith('Style d’effets'));
   assert.deepEqual([...new Set(lignes)], [
-    'Effect style « Shadow/Focus », y : aucune variable associée. '
+    'Style d’effets « Shadow/Focus », y : aucune variable associée. '
       + 'Le contrat ne transmettra pas le décalage vertical de cette ombre. '
-      + 'Dans l’effect style, reliez y à une variable, puis réexportez.',
+      + 'Dans le style d’effets, reliez y à une variable, puis réexportez.',
   ]);
 });
 
@@ -167,13 +167,13 @@ test('une couleur d’ombre sans variable avertit, un décalage nul ne dit rien'
     { type: 'drop-shadow', blur: '{shadow.blur}' },
   ]);
   assert.deepEqual(warnings, [
-    'Effect style « Shadow/Focus », color : aucune variable associée. '
+    'Style d’effets « Shadow/Focus », color : aucune variable associée. '
       + 'Le contrat ne transmettra pas la couleur de cette ombre. '
-      + 'Dans l’effect style, reliez color à une variable, puis réexportez.',
+      + 'Dans le style d’effets, reliez color à une variable, puis réexportez.',
   ]);
 });
 
-test('un calque sans effect style avertit et ne publie aucun usage', async () => {
+test('un calque sans style d’effets avertit et ne publie aucun usage', async () => {
   const warnings: string[] = [];
   const { usages, effectStyles } = await extraire(
     [{ node: calque('Card', [ombre()]), slotPath: ['card'] }],
@@ -184,9 +184,9 @@ test('un calque sans effect style avertit et ne publie aucun usage', async () =>
   assert.deepEqual(usages, []);
   assert.deepEqual(effectStyles, {});
   assert.deepEqual(warnings, [
-    'Layer « Card », effect : aucun effect style appliqué. '
-      + 'Le contrat ne transmettra pas l’ombre ou le flou de ce layer. '
-      + 'Appliquez à ce layer un effect style qui correspond au rendu souhaité, puis réexportez.',
+    'Layer « Card », effect : aucun style d’effets appliqué. '
+      + 'Le contrat ne transmettra pas l’ombre ou le flou de ce calque. '
+      + 'Appliquez à ce calque un style d’effets qui correspond au rendu souhaité, puis réexportez.',
   ]);
 });
 
@@ -201,10 +201,10 @@ test('des effets tous masqués, sans style, ne disent rien', async () => {
   assert.deepEqual(warnings, []);
 });
 
-test('un effect style introuvable, ou qui n’est pas un effect style, avertit', async () => {
-  const INTROUVABLE = 'Layer « Card » : l’effect style appliqué est introuvable. '
-    + 'Le contrat ne transmettra pas l’ombre ou le flou de ce layer. '
-    + 'Appliquez de nouveau un effect style accessible dans Figma, puis réexportez.';
+test('un style d’effets introuvable, ou qui n’est pas un style d’effets, avertit', async () => {
+  const INTROUVABLE = 'Layer « Card » : le style d’effets appliqué est introuvable. '
+    + 'Le contrat ne transmettra pas l’ombre ou le flou de ce calque. '
+    + 'Appliquez de nouveau un style d’effets accessible dans Figma, puis réexportez.';
   for (const loader of [
     chargeur(),
     chargeur({ ...FOCUS, type: 'TEXT' }),
@@ -231,8 +231,8 @@ test('un calque dont les effets s’écartent de son style avertit et publie le 
 
   assert.deepEqual(usages, [{ slotPath: ['card'], style: 'shadow.focus' }]);
   assert.deepEqual(warnings, [
-    'Layer « Card » : ses effects diffèrent du style « Shadow/Focus ». '
-      + 'Le contrat transmettra les réglages du style, sans les modifications propres à ce layer. '
+    'Layer « Card » : ses effets diffèrent du style « Shadow/Focus ». '
+      + 'Le contrat transmettra les réglages du style, sans les modifications propres à ce calque. '
       + 'Réappliquez le style pour retrouver ses réglages, ou créez et appliquez un style '
       + 'correspondant au rendu souhaité, puis réexportez.',
   ]);
@@ -255,7 +255,7 @@ test('un style qui contient un bruit publie ses ombres et avertit du bruit', asy
     { type: 'drop-shadow', color: '{shadow.color}', offsetY: '{shadow.y}', blur: '{shadow.blur}' },
   ]);
   assert.deepEqual(warnings, [
-    'Effect style « Shadow/Noisy » : l’effet Noise n’est pas pris en charge. '
+    'Style d’effets « Shadow/Noisy » : l’effet Noise n’est pas pris en charge. '
       + 'Le contrat transmettra ce style sans l’effet Noise. '
       + 'Si cet effet est nécessaire, signalez cette limite au mainteneur du plugin. '
       + 'Sinon, retirez-le du style, puis réexportez.',
@@ -278,7 +278,7 @@ test('une ombre hors du mode normal, ou visible derrière le calque, n’est pas
   assert.deepEqual(effectStyles, {});
   assert.deepEqual(usages, []);
   assert.deepEqual(warnings.map((warning) => warning.split(' : ')[1]?.split('.')[0]), [
-    'l’effet Drop shadow visible derrière le layer n’est pas pris en charge',
+    'l’effet Drop shadow visible derrière le calque n’est pas pris en charge',
     'l’effet Drop shadow en mode de fusion « Color burn » n’est pas pris en charge',
   ]);
 });

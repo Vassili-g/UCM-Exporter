@@ -784,7 +784,7 @@ async function analyser(
       return;
     }
     if (analyseProduite) postDownload(analyseProduite.filename, analyseProduite.content, provenance);
-    const message = error instanceof Error ? error.message : 'Erreur inconnue pendant l’export.';
+    const message = error instanceof Error ? error.message : 'L’export a échoué sans précision. Relancez l’analyse ; si l’erreur persiste, contactez le mainteneur du plugin.';
     postStatus('error', message, provenance);
     figma.notify(message, { error: true });
   } finally {

@@ -54,10 +54,10 @@ export type EntreeDeVerdict = {
  */
 function ordreDesTokens(tokens: EtatDesTokens | null | undefined, demande: string): string | null {
   if (tokens === 'absents') {
-    return `Ce dépôt n’a pas encore de tokens : publiez-les et faites fusionner leur ${demande} avant celle de ce composant, que le contrôle refusera jusque-là.`;
+    return `Les tokens sont absents du dépôt. Publiez-les, puis demandez à un développeur de fusionner leur ${demande} avant celle du composant. La fusion du composant reste bloquée jusque-là.`;
   }
   if (tokens === 'en-attente') {
-    return `Les tokens attendent la fusion de leur ${demande} : faites-la fusionner avant celle de ce composant, que le contrôle refusera jusque-là.`;
+    return `Les tokens sont en attente de fusion. Demandez à un développeur de fusionner leur ${demande} avant celle du composant. La fusion du composant reste bloquée jusque-là.`;
   }
   return null;
 }

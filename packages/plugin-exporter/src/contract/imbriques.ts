@@ -311,15 +311,15 @@ export function pointsDesImbriques(
           ? `Le composant « ${parent} » intègre « ${nom} », qui n’a pas ses règles d’usage.`
           : `Le composant « ${parent} » intègre « ${nom} », ${compte} :`,
         ...(cles.length > 0 ? { elements: [...cles] } : {}),
-        impact: `Sans les règles de « ${nom} », le contrat de « ${parent} » décrit les internes `
-          + `de « ${nom} » au lieu de le réutiliser.`,
+        impact: `Le contrat de « ${parent} » décrit les calques de « ${nom} » sans indiquer `
+          + `qu’il faut réutiliser ce composant.`,
         // Un composant venu d'une bibliothèque ne peut pas recevoir son conteneur
         // ici : le geste demandé serait impossible à faire dans ce fichier.
         action: distant
-          ? `Les règles de « ${nom} » vivent dans le fichier de sa bibliothèque. Créez-les `
-            + `là-bas, republiez la bibliothèque, puis relancez l’analyse de « ${parent} ».`
-          : `Créez et complétez les règles de « ${nom} », puis relancez l’analyse de `
-            + `« ${parent} » avant de l’exporter.`,
+          ? `Dans le fichier de la bibliothèque, créez et complétez les règles de « ${nom} ». `
+            + `Republiez la bibliothèque, puis relancez l’analyse de « ${parent} ».`
+          : `Sélectionnez le composant principal « ${nom} », puis créez et complétez ses règles `
+            + `d’usage. Relancez ensuite l’analyse de « ${parent} ».`,
       },
       nodeIds,
     };
@@ -335,13 +335,13 @@ export function pointsDesImbriques(
   points.push({
     point: {
       severite: 'danger',
-      titre: `${compte}, et le plugin n’a pas su nommer le composant imbriqué ${porte} :`,
+      titre: `${compte}. Le composant imbriqué ${porte} n’a pas pu être identifié :`,
       elements: [...orphelines],
       impact: uneSeule
         ? `Le contrat de « ${parent} » la publie comme si elle était la sienne.`
         : `Le contrat de « ${parent} » les publie comme si elles étaient les siennes.`,
-      action: `Créez les règles du composant imbriqué ${porte}, puis relancez l’analyse de `
-        + `« ${parent} ».`,
+      action: `Recherchez ces propriétés dans les composants imbriqués de « ${parent} » et `
+        + `complétez leurs règles d’usage. Relancez ensuite l’analyse.`,
     },
     nodeIds: [composant.id],
   });

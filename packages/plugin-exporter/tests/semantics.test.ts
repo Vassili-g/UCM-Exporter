@@ -88,7 +88,7 @@ test('buildStateModel conserve un état inconnu et avertit sans bloquer', () => 
   assert.equal(model?.states.loading.selector, undefined);
   assert.deepEqual(model?.precedence, ['default', 'loading']);
   assert.deepEqual(warnings, [
-    'Variant property « status » : l\'état « loading » n\'est pas reconnu. Le développeur ne saura pas quand afficher ce variant. Renommez cette valeur en default, hover, focus, press ou disable, puis réexportez.',
+    'Propriété de variante « status » : l\'état « loading » n\'est pas reconnu. Le développeur ne saura pas quand afficher ce variant. Renommez cette valeur en default, hover, focus, press ou disable, puis réexportez.',
   ]);
 });
 

@@ -63,29 +63,29 @@ const AVERTISSEMENT_STROKE = { // extractSlotTokens.ts, strokeAlignment
 };
 const AVERTISSEMENT_AUTO_LAYOUT = { // extractLayout.ts, warnMissingDirection
   titre: "Layer « Button / Primary » : il n'utilise pas d'auto layout.",
-  impact: "Le contrat annonce par défaut une disposition horizontale : le développeur placera ses layers autrement que dans Figma.",
-  action: "Appliquez un auto layout à ce layer, puis réexportez.",
+  impact: "Le contrat annonce par défaut une disposition horizontale : le développeur placera ses calques autrement que dans Figma.",
+  action: "Appliquez un auto layout à ce calque, puis réexportez.",
 };
 const AVERTISSEMENT_TEXT_STYLE = { // extractVariantTypography.ts — nomme un style, pas un node
-  titre: "Text style « Body / Regular », line height : aucune variable Figma n'est reliée.",
+  titre: "Style de texte « Body / Regular », line height : aucune variable Figma n'est reliée.",
   impact: "Cette propriété typographique manquera au développeur.",
-  action: "Reliez-la à une variable dans le text style, puis réexportez.",
+  action: "Reliez-la à une variable dans le style de texte, puis réexportez.",
 };
 const AVERTISSEMENT_SANS_TEXT_STYLE = { // extractVariantTypography.ts, loadTextStyle
-  titre: "Layer « text » : aucun text style unique n'est appliqué.",
+  titre: "Layer « text » : aucun style de texte unique n'est appliqué.",
   impact: "Sa typographie manquera au développeur.",
-  action: "Appliquez un text style au layer entier, puis réexportez.",
+  action: "Appliquez un style de texte au calque entier, puis réexportez.",
 };
 // Les trois messages qui visent la racine de chaque variant du set exporté.
 const AVERTISSEMENT_BORNE_DES_VARIANTS = { // nodeBindings.ts, resolveSizeBounds
-  titre: "Propriété sans token associé.",
-  impact: "Des variants déclarent un **min width** sans token. Le contrat ne publiera que les paramètres reliés à un token.",
+  titre: "Dimensions minimales ou maximales sans variable associée.",
+  impact: "Ces variants définissent un **min width** sans variable. Ces valeurs ne seront pas exportées.",
   action: "Reliez ces paramètres à une variable dans chaque variant concerné, puis réexportez.",
 };
 const AVERTISSEMENT_OMBRE_DES_VARIANTS = { // effectStyles.ts, effet sans effect style
-  titre: "effect : aucun effect style appliqué.",
+  titre: "effect : aucun style d’effets appliqué.",
   impact: "Le contrat ne transmettra pas les ombres ou les flous des variants concernés.",
-  action: "Appliquez un effect style à chaque variant concerné, puis réexportez.",
+  action: "Appliquez un style d’effets à chaque variant concerné, puis réexportez.",
 };
 const AVERTISSEMENT_FILL_DES_VARIANTS = { // extractSlotTokens.ts, warnPeinturesLibres
   titre: "fill : couleur sans variable associée.",
@@ -93,14 +93,14 @@ const AVERTISSEMENT_FILL_DES_VARIANTS = { // extractSlotTokens.ts, warnPeintures
   action: "Reliez chaque couleur concernée à une variable dans les variants sélectionnés, puis réexportez.",
 };
 const AVERTISSEMENT_GAP_DES_VARIANTS = { // nodeBindings.ts, resolveGroup
-  titre: "gap : aucun token n'est relié à cette propriété.",
+  titre: "gap : aucune variable Figma n’est reliée à cette propriété.",
   impact: "Le contrat n'exportera pas cette propriété.",
-  action: "Reliez-la à un token, puis réexportez.",
+  action: "Reliez cette propriété à une variable Figma, puis réexportez.",
 };
 const AVERTISSEMENT_COMPOSE = { // exportComponent.ts, dépendance non placée
-  titre: "Layer « Icon slot » : il contient le composant « Icon », mais le contrat ne décrit ce layer nulle part.",
+  titre: "Layer « Icon slot » : il contient le composant « Icon », mais le contrat ne décrit ce calque nulle part.",
   impact: "Le développeur ne rendra pas « Icon » dans ce composant.",
-  action: "Placez ce layer dans l'auto layout frame qui porte le gap et le padding, puis réexportez.",
+  action: "Placez ce calque dans le cadre en auto layout qui porte le gap et le padding, puis réexportez.",
 };
 
 // code.ts, signalerLesImbriques. Sept propriétés : c'est ce volume qui a fait
@@ -109,15 +109,15 @@ const IMBRIQUE_SANS_REGLES_BOUTON = {
   severite: 'danger',
   titre: 'Le composant « Alert » intègre « Button », dont 7 propriétés ne sont pas documentées :',
   elements: ['color', 'variant', 'state', 'size', 'label', 'iconLeft', 'iconRight'],
-  impact: 'Sans les règles de « Button », le contrat de « Alert » décrit les internes de « Button » au lieu de le réutiliser.',
-  action: 'Créez et complétez les règles de « Button », puis relancez l’analyse de « Alert » avant de l’exporter.',
+  impact: 'Le contrat de « Alert » décrit les calques de « Button » sans indiquer qu’il faut réutiliser ce composant.',
+  action: 'Sélectionnez le composant principal « Button », puis créez et complétez ses règles d’usage. Relancez ensuite l’analyse de « Alert ».',
 };
 const IMBRIQUE_SANS_REGLES_ICONE = {
   severite: 'danger',
   titre: 'Le composant « Alert » intègre « Icon », dont une propriété n’est pas documentée :',
   elements: ['iconName'],
-  impact: 'Sans les règles de « Icon », le contrat de « Alert » décrit les internes de « Icon » au lieu de le réutiliser.',
-  action: 'Créez et complétez les règles de « Icon », puis relancez l’analyse de « Alert » avant de l’exporter.',
+  impact: 'Le contrat de « Alert » décrit les calques de « Icon » sans indiquer qu’il faut réutiliser ce composant.',
+  action: 'Sélectionnez le composant principal « Icon », puis créez et complétez ses règles d’usage. Relancez ensuite l’analyse de « Alert ».',
 };
 /** Un imbriqué qui ne déclare rien : le point n'a aucune liste à poser. */
 const IMBRIQUE_SANS_REGLES_NU = {
@@ -260,7 +260,7 @@ const CLIC_CREATION = '.carte-composant .btn-secondary';
  * création a laissé dans le document : chacun demande sa capture.
  */
 const CREATION_FAITE = '22 règles posées. Rédigez-les dans Figma, puis relancez l’analyse.';
-const CREATION_CAUSE = 'Le layer « content » n’a pas gardé le texte écrit.';
+const CREATION_CAUSE = 'Le calque « content » n’a pas gardé le texte écrit.';
 const CREATION_ECHEC_RETIRE = `${CREATION_CAUSE} Rien n’a été laissé dans le document.`;
 const CREATION_ECHEC_RESTE = `${CREATION_CAUSE} Le conteneur à moitié créé n’a pas pu être `
   + 'supprimé : supprimez-le, puis recommencez.';
@@ -436,7 +436,7 @@ const ETATS = [
     id: 'selection-non-exportable',
     titre: 'Sélection non exportable',
     quand:
-      'Deux layers sélectionnés, dont un qui n’est pas un composant. L’écran distingue ce cas de « aucune sélection ».',
+      'Deux calques sélectionnés, dont un qui n’est pas un composant. L’écran distingue ce cas de « aucune sélection ».',
     regarder:
       'La raison nomme ce qui empêche, et elle diffère de celle d’une sélection vide : le geste n’est pas le même.',
     existe: true,
@@ -720,7 +720,7 @@ const ETATS = [
     id: 'resultat-avertissement-regroupe',
     titre: 'Des avertissements regroupés sur les variants',
     quand:
-      "Un component set de cent quarante variants dont chaque racine fixe un min width sans variable, porte une ombre sans effect style, laisse son gap sans variable et peint son fill sans variable. Le moteur écrit une phrase par sujet, sans nom de calque, et la carte réunit toutes les racines.",
+      "Un component set de cent quarante variants dont chaque racine fixe un min width sans variable, porte une ombre sans style d’effets, laisse son gap sans variable et peint son fill sans variable. Le moteur écrit une phrase par sujet, sans nom de calque, et la carte réunit toutes les racines.",
     regarder:
       "Quatre cartes, et non quatre cent quarante-huit : aucune ne nomme un calque, et le bouton dit « Sélectionner les 140 calques » sur la première, la troisième et la quatrième, « Sélectionner les 28 calques » sur la deuxième. Le nom de la propriété est en gras dans l'impact de la première.",
     existe: true,
@@ -1109,7 +1109,7 @@ const ETATS = [
     forge: 'aucune',
     titre: 'Onglet Dépôts, aucun dépôt enregistré',
     quand: "Premier lancement : la pastille mène à l'onglet Dépôts, vide.",
-    regarder: "Le bouton « Ajouter un dépôt », puis la phrase « Veuillez ajouter un dépôt. » : rien d'autre ne demande un geste.",
+    regarder: "Le bouton « Ajouter un dépôt », puis la phrase « Ajoutez un dépôt pour publier vos exports. » : rien d'autre ne demande un geste.",
     existe: true,
     atteinte: [...ouverture('non-configure'), ...OUVRIR_DEPOTS],
   },

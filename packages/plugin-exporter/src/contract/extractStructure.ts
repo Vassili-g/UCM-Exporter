@@ -239,7 +239,7 @@ export async function extractStructure(
 
   if (!referenceLayout) {
     pousserSansNode(warnings, 'Composant exporté', {
-      manque: 'aucun auto layout frame n’y a été trouvé.',
+      manque: 'aucun cadre en auto layout n’y a été trouvé.',
       impact: 'Ni gap, ni padding, ni corner radius ne sont exportés.',
       action: 'Appliquez un auto layout au composant ou à son cadre, puis réexportez.',
     });

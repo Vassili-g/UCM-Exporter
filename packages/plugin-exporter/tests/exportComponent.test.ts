@@ -296,7 +296,7 @@ test('l’échantillon reste hors du contrat normatif : ni token, ni couverture,
   }
 });
 
-test('un text style en capitales et un calque centré et coupé passent les lois et le schéma publiés', async () => {
+test('un style de texte en capitales et un calque centré et coupé passent les lois et le schéma publiés', async () => {
   // `lois.ts` ne juge que ce que le moteur fabrique : sans ce montage, `literals`
   // et les champs d'usage n'y passeraient jamais.
   const reglagesPartages = {
@@ -387,7 +387,7 @@ test('handleExportComponent refuse une sélection qui n’est pas un seul compos
   try {
     await assert.rejects(
       handleExportComponent(),
-      /Sélectionnez un seul Component ou Component Set/,
+      /Sélectionnez un seul composant principal ou ensemble de variantes/,
     );
   } finally {
     figmaFaux.restaurer();
@@ -692,7 +692,7 @@ test('un Component Set clairsemé exporte uniquement les combinaisons existantes
     ]);
     assert.ok(
       messagesDe(contrat).some((warning: string) => (
-        warning.includes('combinaisons de valeurs de ses variant properties n\'ont pas de variant')
+        warning.includes('combinaisons de valeurs de ses propriétés de variante n\'ont pas de variant')
       )),
     );
   } finally {
@@ -959,7 +959,7 @@ test('une variable introuvable est rangée comme une perte de portabilité', asy
   }
 });
 
-test('une règle @icons sans layer est rangée comme une perte de portabilité', async () => {
+test('une règle @icons sans calque est rangée comme une perte de portabilité', async () => {
   // La fusion des règles d'icônes a sa propre fenêtre, la dernière des cinq.
   const figmaFaux = monterFigma();
   // La politique se lit sur la visibilité exclusive de deux layers : les deux
@@ -978,7 +978,7 @@ test('une règle @icons sans layer est rangée comme une perte de portabilité',
     const contrat = JSON.parse((await handleExportComponent()).content);
 
     assert.equal(
-      diagnosticPour(contrat, 'aucun layer de ce nom').code,
+      diagnosticPour(contrat, 'aucun calque de ce nom').code,
       'UCM_PORTABLE_PROJECTION_WARNING',
     );
   } finally {
@@ -1225,9 +1225,9 @@ test('deux axes dont les noms se confondent refusent l’export', async () => {
     await assert.rejects(
       handleExportComponent(),
       (erreur: Error) => {
-        assert.match(erreur.message, /Variant properties « Kind » et « kind »/);
-        assert.match(erreur.message, /aucun fichier n’est écrit/);
-        assert.match(erreur.message, /Renommez l’une des deux dans Figma/);
+        assert.match(erreur.message, /Les propriétés de variante « Kind » et « kind »/);
+        assert.match(erreur.message, /L’export est bloqué/);
+        assert.match(erreur.message, /Donnez-leur des noms/);
         return true;
       },
     );

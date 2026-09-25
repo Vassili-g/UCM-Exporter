@@ -134,7 +134,7 @@ test('une extension d’une collection de bibliothèque est nommée une fois par
 
   assert.deepEqual(warnings, [
     'Collections « Marque B » et « Sous Marque » : elles étendent une collection d’une bibliothèque. '
-      + 'Le développeur n’aura pas leurs surcharges. Créez les collections étendues dans le fichier de la '
+      + 'Les valeurs modifiées dans ces collections étendues ne seront pas exportées. Créez les collections étendues dans le fichier de la '
       + 'bibliothèque, puis réexportez depuis ce fichier.',
   ]);
   assert.deepEqual(tokens.$extensions['com.ucm.axes'], { color: { modes: ['light', 'dark'], default: 'light' } });

@@ -131,7 +131,7 @@ export function forgeGithub(config: ConfigurationDeForge): Forge {
     }
     if (file?.type !== 'file') return null;
     if (file.encoding === 'none' || typeof file.content !== 'string') {
-      throw new ErreurDeForge(`GitHub ne rend pas le contenu de ${chemin}.`);
+      throw new ErreurDeForge(`Impossible de lire le fichier ${chemin} sur GitHub.`);
     }
     return { contenu: decodeBase64(file.content), version: { sha: file.sha } };
   }
@@ -159,7 +159,7 @@ export function forgeGithub(config: ConfigurationDeForge): Forge {
     const baseRef = await githubRequest<{ object: { sha: string } }>(
       `/repos/${repository}/git/ref/heads/${encodePath(ecriture.base)}`,
     );
-    if (!baseRef) throw new ErreurDeForge('La branche de base ne renvoie aucun SHA.');
+    if (!baseRef) throw new ErreurDeForge('La branche de base ne peut pas être lue. Faites vérifier cette branche par un développeur.');
 
     await githubRequest(`/repos/${repository}/git/refs`, {
       method: 'POST',
@@ -195,7 +195,7 @@ export function forgeGithub(config: ConfigurationDeForge): Forge {
 
     // Hors du try : une PR bel et bien créée ne doit pas voir sa branche
     // supprimée sous elle, cela la refermerait aussitôt.
-    if (!pullRequest?.html_url) throw new ErreurDeForge('La pull request a été créée sans URL exploitable.');
+    if (!pullRequest?.html_url) throw new ErreurDeForge('GitHub n’a pas fourni de lien vers la pull request créée. Retrouvez-la dans le dépôt avant de republier.');
     return pullRequest.html_url;
   }
 

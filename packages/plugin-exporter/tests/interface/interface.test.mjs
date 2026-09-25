@@ -161,7 +161,7 @@ test('un passage entre ** se lit en gras, et jamais comme du HTML', async () => 
     await page.getByRole('button', { name: 'Analyser le composant', exact: true }).click();
     await envoyer({
       type: 'diagnostic',
-      titre: 'Propriété sans token associé.',
+      titre: 'Dimensions minimales ou maximales sans variable associée.',
       impact: 'Des variants déclarent un **min width** sans token. <b>Impact</b>.',
       action: 'Reliez ces paramètres à un **token de départ, puis réexportez.',
       nodeIds: ['1:1', '1:2', '1:3'],
@@ -509,7 +509,7 @@ test('deux cartes nouvelles reçoivent chacune leur réponse, sans carte en doub
   const { page, envoyer } = await ouvrir();
   try {
     await ouvrirDepots(page, envoyer, reglages(JSON.stringify(['aucune', true]), true, []));
-    assert.equal(await page.getByText('Veuillez ajouter un dépôt.').isVisible(), true);
+    assert.equal(await page.getByText('Ajoutez un dépôt pour publier vos exports.').isVisible(), true);
     const ajouter = page.getByRole('button', { name: 'Ajouter un dépôt', exact: true });
     await ajouter.click();
     await ajouter.click();

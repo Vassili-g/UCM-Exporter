@@ -86,7 +86,7 @@ test('buildRules garde la première @boolean et signale cible absente et doublon
   assert.deepEqual(booleanDescriptions, { iconLeft: 'Première description' });
   assert.deepEqual(warnings, [
     'Règle @boolean « iconLeft » : elle apparaît deux fois. Seule la première est exportée. Supprimez la seconde, puis réexportez.',
-    'Règle @boolean : le layer « prop » est vide. La règle n’est pas exportée. Écrivez-y le nom de la boolean property du composant, par exemple « icon-left », puis réexportez.',
+    'Règle @boolean : le calque « prop » est vide. La règle n’est pas exportée. Écrivez-y le nom de la propriété booléenne du composant, par exemple « icon-left », puis réexportez.',
   ]);
 });
 
@@ -131,7 +131,7 @@ test('buildRules avertit quand une règle @icons n a pas de politique visible', 
 
   assert.deepEqual(result.iconRules, []);
   assert.deepEqual(result.warnings, [
-    'Règle @icons « fa-warning » : ni le layer « modifiable » ni le layer « strict » n’est visible seul. La règle n’est pas exportée, et l’icône ne sera pas décrite. Rendez visible exactement un des deux layers « modifiable » ou « strict », puis réexportez.',
+    'Règle @icons « fa-warning » : les calques « modifiable » et « strict » sont tous les deux visibles ou tous les deux masqués. Cette icône ne sera pas décrite dans le contrat. Rendez visible exactement un des deux calques « modifiable » ou « strict », puis réexportez.',
   ]);
 });
 
@@ -287,10 +287,10 @@ test('un conteneur au calque vide ne documente personne, et le constat le situe'
 
   assert.equal(rules.sectionFound, false);
   assert.deepEqual(rules.warnings, [
-    'Layer « .componentRules » : son layer « component-name » est vide, donc il ne documente '
-    + 'aucun composant. Le contrat dira comment utiliser le composant, mais pas quand : ni '
-    + 'intention, ni documentation de component properties, ni règle d’icône. Écrivez '
-    + '« Button » dans ce layer, puis réexportez.',
+    'Layer « .componentRules » : son calque « component-name » est vide, donc il ne documente '
+    + 'aucun composant. Le contrat ne contiendra aucune règle d’usage, '
+    + 'documentation de propriété ou règle d’icône. Écrivez '
+    + '« Button » dans ce calque, puis réexportez.',
   ]);
 });
 
@@ -306,7 +306,7 @@ test('deux conteneurs au même nom : le constat nomme le composant et le geste',
   const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
 
   assert.deepEqual(rules.warnings, [
-    'Layer « .componentRules » : 2 instances écrivent « Root » dans leur layer '
+    'Layer « .componentRules » : 2 instances écrivent « Root » dans leur calque '
     + '« component-name », et l’export n’en lit qu’une. Les règles de l’autre instance '
     + 'manqueront au développeur. Ne laissez « Root » que dans une instance : écrivez dans '
     + 'les autres le nom du composant qu’elles documentent, puis réexportez.',
@@ -392,7 +392,7 @@ test('le calque « prop » n’est pas lu comme le tag @prop', async (t) => {
 
   assert.deepEqual(rules.propDescriptions, {});
   assert.deepEqual(rules.warnings, [
-    'Une règle de « .componentRules » : aucun de ses layers ne porte de tag (@usage, @do, '
+    'Une règle de « .componentRules » : aucun de ses calques ne porte de tag (@usage, @do, '
     + '@dont, @pairs, @prop, @boolean, @icons, @default). Sa documentation manquera au '
     + 'développeur. Choisissez son variant dans Figma, puis réexportez.',
     // La seule règle du conteneur ayant été écartée, il n'en reste aucune :
@@ -636,9 +636,9 @@ test('un conteneur au nom marqué ne documente personne, et rejoint le constat d
   assert.deepEqual([...indexContractedNames(page as unknown as PageNode)], []);
   assert.equal(rules.sectionFound, false);
   assert.deepEqual(rules.warnings, [
-    'Layer « .componentRules » : son layer « component-name » contient encore '
-    + '« [À compléter] », donc il ne documente aucun composant. Le contrat dira comment '
-    + 'utiliser le composant, mais pas quand : ni intention, ni documentation de component '
-    + 'properties, ni règle d’icône. Remplacez ce texte par « Root », puis réexportez.',
+    'Layer « .componentRules » : son calque « component-name » contient encore '
+    + '« [À compléter] », donc il ne documente aucun composant. Le contrat ne contiendra '
+    + 'aucune règle d’usage, documentation de propriété ou règle d’icône. '
+    + 'Remplacez ce texte par « Root », puis réexportez.',
   ]);
 });

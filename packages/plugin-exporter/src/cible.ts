@@ -37,13 +37,13 @@ export type EtatDeCible = {
  */
 export function etatDeCible(selection: LayerSelectionne[]): EtatDeCible {
   if (selection.length === 0) {
-    return { cible: null, raison: 'Sélectionnez un component ou un component set dans Figma.' };
+    return { cible: null, raison: 'Sélectionnez un composant principal ou un ensemble de variantes dans Figma.' };
   }
 
   if (selection.length > 1) {
     return {
       cible: null,
-      raison: `Sélectionnez un seul layer. L’export porte sur un composant à la fois, et ${selection.length} layers sont sélectionnés.`,
+      raison: `${selection.length} calques sont sélectionnés. Sélectionnez un seul composant principal ou ensemble de variantes.`,
     };
   }
 
@@ -57,7 +57,7 @@ export function etatDeCible(selection: LayerSelectionne[]): EtatDeCible {
 
   return {
     cible: null,
-    raison: `« ${layer.name} » n’est ni un component ni un component set. Sélectionnez le composant à exporter.`,
+    raison: `« ${layer.name} » n’est pas un composant principal ni un ensemble de variantes. Sélectionnez le composant principal à exporter.`,
   };
 }
 

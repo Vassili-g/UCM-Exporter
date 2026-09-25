@@ -122,7 +122,7 @@ function effetNonPris(effet: EffetFigma): string | null {
     if (effet.blendMode !== undefined && effet.blendMode !== 'NORMAL') {
       return `${ombre.nom} en mode de fusion « ${libelleDeFusion(effet.blendMode)} »`;
     }
-    if (effet.showShadowBehindNode === true) return `${ombre.nom} visible derrière le layer`;
+    if (effet.showShadowBehindNode === true) return `${ombre.nom} visible derrière le calque`;
     return null;
   }
   if (FLOUS[String(effet.type)]) {
@@ -170,11 +170,11 @@ async function traduire(
     if (alias) continue;
     const lue = valeur(effet);
     if (cle !== 'color' && (lue === undefined || lue === 0)) continue;
-    pousserSansNode(warnings, `Effect style « ${style.name} »`, {
+    pousserSansNode(warnings, `Style d’effets « ${style.name} »`, {
       champ: libelle,
       manque: 'aucune variable associée.',
       impact: `Le contrat ne transmettra pas ${decrit}.`,
-      action: `Dans l’effect style, reliez ${libelle} à une variable, puis réexportez.`,
+      action: `Dans le style d’effets, reliez ${libelle} à une variable, puis réexportez.`,
     });
   }
   return traduit as ShadowEffect | BlurEffect;
@@ -194,7 +194,7 @@ async function chargerLeStyle(
   for (const effet of ordreCss(effetsVisibles(style.effects))) {
     const nom = effetNonPris(effet);
     if (nom) {
-      pousserSansNode(warnings, `Effect style « ${style.name} »`, {
+      pousserSansNode(warnings, `Style d’effets « ${style.name} »`, {
         manque: `l’effet ${nom} n’est pas pris en charge.`,
         impact: `Le contrat transmettra ce style sans l’effet ${nom}.`,
         action: 'Si cet effet est nécessaire, signalez cette limite au mainteneur du plugin. '
@@ -220,17 +220,17 @@ function signature(valeur: unknown): string {
 function signalerSansStyle(node: SceneNode, warnings: string[]): void {
   if (estUneRacineDeVariant(warnings, node)) {
     pousserPourLesVariants(warnings, node, {
-      titre: 'effect : aucun effect style appliqué.',
+      titre: 'effect : aucun style d’effets appliqué.',
       impact: 'Le contrat ne transmettra pas les ombres ou les flous des variants concernés.',
-      action: 'Appliquez un effect style à chaque variant concerné, puis réexportez.',
+      action: 'Appliquez un style d’effets à chaque variant concerné, puis réexportez.',
     });
     return;
   }
   pousserLocalise(warnings, 'Layer', node, {
     champ: 'effect',
-    manque: 'aucun effect style appliqué.',
-    impact: 'Le contrat ne transmettra pas l’ombre ou le flou de ce layer.',
-    action: 'Appliquez à ce layer un effect style qui correspond au rendu souhaité, puis '
+    manque: 'aucun style d’effets appliqué.',
+    impact: 'Le contrat ne transmettra pas l’ombre ou le flou de ce calque.',
+    action: 'Appliquez à ce calque un style d’effets qui correspond au rendu souhaité, puis '
       + 'réexportez.',
   });
 }
@@ -292,18 +292,18 @@ export async function extractEffectStyles(
       const charge = await charger(id);
       if (!charge) {
         pousserLocalise(warnings, 'Layer', node, {
-          manque: 'l’effect style appliqué est introuvable.',
-          impact: 'Le contrat ne transmettra pas l’ombre ou le flou de ce layer.',
-          action: 'Appliquez de nouveau un effect style accessible dans Figma, puis réexportez.',
+          manque: 'le style d’effets appliqué est introuvable.',
+          impact: 'Le contrat ne transmettra pas l’ombre ou le flou de ce calque.',
+          action: 'Appliquez de nouveau un style d’effets accessible dans Figma, puis réexportez.',
         });
         continue;
       }
       const effetsDuCalque = (node as unknown as { effects?: unknown }).effects;
       if (signature(effetsDuCalque) !== signature(charge.style.effects)) {
         pousserLocalise(warnings, 'Layer', node, {
-          manque: `ses effects diffèrent du style « ${charge.style.name} ».`,
+          manque: `ses effets diffèrent du style « ${charge.style.name} ».`,
           impact: 'Le contrat transmettra les réglages du style, sans les modifications propres '
-            + 'à ce layer.',
+            + 'à ce calque.',
           action: 'Réappliquez le style pour retrouver ses réglages, ou créez et appliquez un '
             + 'style correspondant au rendu souhaité, puis réexportez.',
         });

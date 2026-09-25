@@ -158,7 +158,7 @@ export function groupComponentsByVariant(
   if (components.length === 0) {
     pousserSansNode(warnings, 'Component Set sélectionné', {
       manque: 'il ne contient aucun variant.',
-      impact: 'Le contrat ne décrira ni ses variant properties, ni ses variants.',
+      impact: 'Le contrat ne décrira ni ses propriétés de variante, ni ses variants.',
       action: 'Ajoutez au moins un variant dans Figma, puis réexportez.',
     });
   }

@@ -186,7 +186,7 @@ test('un fichier GitHub dont le contenu reste inconnu lève au lieu de passer po
       () => new Response(JSON.stringify({ type: 'file', sha: 's', encoding: 'none' }), { status: 200 }),
       () => forge.lireFichier('ucm.config.json'),
     ),
-    /GitHub ne rend pas le contenu de ucm\.config\.json/,
+    /Impossible de lire le fichier ucm\.config\.json sur GitHub/,
   );
 });
 
@@ -848,11 +848,11 @@ test('le corps de la pull request porte les avertissements de l’export', () =>
       'Calque « row », espacement : aucune variable Figma n’est reliée.',
     ]),
   );
-  assert.match(signale, /## ⚠️ L'export n'a pas pu décrire certaines informations \(2 points\)/);
+  assert.match(signale, /## ⚠️ Points à vérifier avant d’utiliser cet export \(2 points\)/);
   assert.match(signale, /- Icône « triangle-exclamation » /);
   assert.match(signale, /- Calque « row », espacement /);
   assert.match(signale, /### Action/);
-  assert.match(signale, /Ces avertissements ne bloquent pas la fusion/);
+  assert.match(signale, /Ces avertissements ne bloquent pas automatiquement la fusion/);
   assert.doesNotMatch(signale, /—|\w+\(s\)/);
 });
 
@@ -982,7 +982,7 @@ test('un avertissement n’ouvre aucun lien depuis le corps de la pull request',
     'src/components/StressTest/StressTest.contract.json',
     artefactPourPr('component', contratEn('12.0'), [
       'Layer « skull » : aucune règle @icons n’indique quelle icône il dessine. Ajoutez une '
-        + 'règle @icons dont le layer « icon » porte ce nom, puis réexportez.',
+        + 'règle @icons dont le calque « icon » porte ce nom, puis réexportez.',
       'Layer « #12 », espacement : aucune variable Figma n’est reliée.',
     ]),
   );
