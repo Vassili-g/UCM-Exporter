@@ -236,20 +236,6 @@ const ETATS = [
     ],
   },
   {
-    id: 'creee-depuis-la-selection',
-    titre: 'Palette créée depuis la sélection',
-    quand: 'Dans un document Display P3, la couleur sélectionnée sort de sRGB : elle est ramenée.',
-    regarder: 'La nouvelle palette ouverte, et la notice de couleur ramenée sous la barre.',
-    existe: true,
-    atteinte: [
-      etatDuFichier(rangee([BLEU]), 'DISPLAY_P3'),
-      { clic: '.bouton-de-barre' },
-      { clic: '[data-geste="selection"]' },
-      { message: { type: 'selection', demande: 2, lecture: { hexa: '#FF2D1F', ramenee: true } } },
-      { message: { type: 'rangement', demande: 3, issue: { issue: 'rangee', empreinte: '9b41d0e2' } } },
-    ],
-  },
-  {
     id: 'configuration-de-la-recette',
     titre: 'Configuration de la recette',
     quand: 'Le designer ouvre l’engrenage sur un fichier de trois palettes, dont une aux parts propres et une grise.',

@@ -41,7 +41,7 @@ import {
   revenirAuModele,
   supprimer,
 } from '../edition';
-import { PLANCHE_SANS_CADRE, type EtatDeLaPlanche, type LectureDeSelection, type ProfilDuDocument } from '../lecture';
+import { PLANCHE_SANS_CADRE, type EtatDeLaPlanche, type ProfilDuDocument } from '../lecture';
 import { fraicheurDUnePalette } from '../planche/fraicheur';
 import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction } from '../presentation';
 import { blocDeConstat, listeDesMessages, type Message } from './constats';
@@ -72,7 +72,6 @@ import {
   TEXTES_DE_L_ONGLET,
   TEXTES_DU_SELECTEUR,
   confirmationDeSuppression,
-  couleurRamenee,
   hexaInvalide,
   ligneDeLaReference,
   nomDeLaCopie,
@@ -91,7 +90,6 @@ import {
 /** Ce que l'onglet demande au sandbox, par la frontière, et au reste de l'interface. */
 export interface DemandesDeLOnglet {
   ranger(recette: Recette): void;
-  lireLaSelection(): void;
   recharger(): void;
   /** Exporte la recette que l'onglet montre, brouillon compris : le geste de sortie d'un conflit (V12.1). */
   exporterLeBrouillon(): void;
@@ -110,7 +108,6 @@ export interface DemandesDeLOnglet {
 export interface OngletPalettesUi {
   element: HTMLDivElement;
   afficher(classement: Classement, profil: ProfilDuDocument, planche: EtatDeLaPlanche): void;
-  recevoirSelection(lecture: LectureDeSelection): void;
   poserStatut(statut: StatutDuRangement, refus: readonly Refus[]): void;
   /** La recette affichée, `null` quand elle ne se lit pas. */
   recette(): Recette | null;
@@ -158,7 +155,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     recalculerLeCadre();
     rendre();
   });
-  const plus = createButton({ label: TEXTES.nouvellePalette, variant: 'secondary', onClick: () => ouvrirLaCreation() });
+  // L'action principale de l'onglet : créer une palette. La génération, au titre, est secondaire (X2.4).
+  const plus = createButton({ label: TEXTES.nouvellePalette, onClick: () => ouvrirLaCreation() });
   plus.classList.add('bouton-de-barre');
   plus.setAttribute('aria-expanded', 'false');
   const menu = createMenuPalette(agir);
@@ -167,8 +165,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   barre.append(selecteur.element, plus, menu.element);
 
   const creation = createCreation({
-    onCreer: (saisie, nom, base) => creer(saisie, nom, base, null),
-    onSelection: () => demandes.lireLaSelection(),
+    onCreer: (saisie, nom, base) => creer(saisie, nom, base),
     onAnnuler: () => {
       creationOuverte = false;
       rendre();
@@ -358,6 +355,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       if (recette) valider(remplacerPalette(recette, suivante));
     },
     voirLesGaranties: () => {
+      garanties.ouvrir();
       garanties.element.scrollIntoView({ block: 'start' });
       garanties.element.querySelector<HTMLElement>('.carte-bascule')?.focus({ preventScroll: true });
     },
@@ -469,7 +467,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     creation.focaliser();
   }
 
-  function creer(saisie: string, nomSaisi: string, base: ChoixDeBase, notice: Constat | null): void {
+  function creer(saisie: string, nomSaisi: string, base: ChoixDeBase): void {
     if (!recette) return;
     const id = nouvelIdentifiant(recette, demandes.tirer);
     const palette = nouvellePalette(recette, id, saisie);
@@ -479,7 +477,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     }
     idOuvert = id;
     creationOuverte = false;
-    note = notice;
+    note = null;
     valider(ajouter(recette, choisirLaBase(renommer(palette, nomSaisi), base)));
     nom.focus();
   }
@@ -711,13 +709,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       refus = null;
       recalculerLeCadre();
       rendre();
-    },
-    recevoirSelection(lecture) {
-      if ('raison' in lecture) {
-        creation.signaler(lecture.raison === 'vide' ? TEXTES.selectionVide : TEXTES.selectionSansRemplissage);
-        return;
-      }
-      creer(lecture.hexa, creation.nom(), creation.base(), lecture.ramenee ? couleurRamenee(lecture.hexa) : null);
     },
     recette: () => recette,
     ouverte() {

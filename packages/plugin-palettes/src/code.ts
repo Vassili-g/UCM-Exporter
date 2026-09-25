@@ -8,7 +8,7 @@
 import { dessinerLaRecetteRangee, retirerLeCadre } from './ecriture/planche';
 import { rangerRecette } from './ecriture/recette';
 import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
-import { couleurDeLaSelection, lireEtat, lireLaPlanche } from './lecture';
+import { lireEtat, lireLaPlanche } from './lecture';
 import type { PluginMessage, UiRequest } from './messages';
 import { voirSurLaPlanche } from './navigation';
 
@@ -35,12 +35,6 @@ async function envoyerEtat(demande: number, toutesLesPages: boolean): Promise<vo
 async function traiterMessage(message: UiRequest): Promise<void> {
   if (message.type === 'lire-etat') {
     await envoyerEtat(message.demande, message.recherche === 'fichier');
-    return;
-  }
-
-  if (message.type === 'lire-selection') {
-    const lecture = couleurDeLaSelection(figma.currentPage.selection, figma.root.documentColorProfile);
-    versUi({ type: 'selection', demande: message.demande, lecture });
     return;
   }
 

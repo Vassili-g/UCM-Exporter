@@ -26,7 +26,7 @@ function banc() {
 test('[UI-08] un seul compteur numérote les demandes, et un état plus ancien que la dernière est écarté', () => {
   const { frontiere, envoyees, etat } = banc();
   frontiere.lireLEtat();
-  frontiere.lireLaSelection();
+  frontiere.lireLEtat();
   assert.deepEqual(envoyees.map((demande) => 'demande' in demande && demande.demande), [1, 2]);
   assert.equal(etat(1), false);
   assert.equal(etat(2), true);
@@ -81,15 +81,6 @@ test('[UI-08] un état demandé avant un rangement n’écrase pas la recette ra
   frontiere.lireLEtat();
   frontiere.ranger(RECETTE);
   assert.equal(etat(1), false);
-});
-
-test('une couleur de sélection ne compte que pour la dernière lecture de la sélection', () => {
-  const { frontiere } = banc();
-  frontiere.lireLaSelection();
-  frontiere.lireLaSelection();
-  const lecture = { hexa: '#FF0000', ramenee: false };
-  assert.equal(frontiere.accepterSelection({ type: 'selection', demande: 1, lecture }), false);
-  assert.equal(frontiere.accepterSelection({ type: 'selection', demande: 2, lecture }), true);
 });
 
 test('E13 : un dessin demandé pendant un rangement part après lui, sur l’empreinte qu’il rend', () => {

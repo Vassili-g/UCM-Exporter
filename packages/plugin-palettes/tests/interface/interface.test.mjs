@@ -18,7 +18,7 @@ const RELEVE = `<script>
   window.demandes = [];
   window.addEventListener('message', (event) => {
     const type = event.data.pluginMessage && event.data.pluginMessage.type;
-    if (['lire-etat', 'lire-selection', 'ranger-recette', 'dessiner', 'voir-sur-la-planche', 'retirer-cadre'].includes(type)) window.demandes.push(event.data.pluginMessage);
+    if (['lire-etat', 'ranger-recette', 'dessiner', 'voir-sur-la-planche', 'retirer-cadre'].includes(type)) window.demandes.push(event.data.pluginMessage);
   });
 </script>`;
 
@@ -392,27 +392,6 @@ test('E13 : la fenêtre relit l’état quand elle reprend le focus', async () =
       window.dispatchEvent(new Event('focus'));
     });
     assert.equal((await prochaine(page, avant)).type, 'lire-etat');
-  } finally {
-    await page.close();
-  }
-});
-
-test('[ENT-04] une palette se crée depuis la couleur de la sélection', async () => {
-  const page = await ouvrirSur('alertes-seules');
-  try {
-    let avant = await compte(page);
-    await page.getByRole('button', { name: 'Nouvelle palette', exact: true }).click();
-    await page.getByRole('button', { name: 'Utiliser la couleur sélectionnée dans Figma' }).click();
-    const demande = await prochaine(page, avant);
-    assert.equal(demande.type, 'lire-selection');
-    await envoyer(page, { type: 'selection', demande: demande.demande, lecture: { raison: 'sans-remplissage-uni' } });
-    assert.match(await page.locator('[aria-label="Nouvelle palette"] .field-error').textContent(), /remplissage uni/);
-    avant = await compte(page);
-    await envoyer(page, { type: 'selection', demande: demande.demande, lecture: { hexa: '#16A34A', ramenee: false } });
-    const rangement = await prochaine(page, avant);
-    assert.equal(rangement.type, 'ranger-recette');
-    assert.equal(rangement.recette.palettes.at(-1).reference, '#16A34A');
-    assert.equal(await page.locator('#panneau-palettes .champ-hexa').inputValue(), '#16A34A');
   } finally {
     await page.close();
   }

@@ -1,4 +1,4 @@
-/** La lecture de la recette rangée, du profil du document et de la sélection ([REC-01], [REC-03], [ENT-04]). */
+/** La lecture de la recette rangée, du profil du document et de la peinture d'un calque ([REC-01], [REC-03], [ENT-04]). */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 

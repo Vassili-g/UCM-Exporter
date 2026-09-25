@@ -99,6 +99,15 @@
   --texte-avertissement: var(--figma-color-text-warning, #a55b00);
   --texte-sur-marque: var(--figma-color-text-onbrand, #ffffff);
   --texte-sur-danger: var(--figma-color-text-ondanger, #ffffff);
+  /*
+   * Le badge d'un niveau WCAG d'UCM Palettes : une pastille pleine, verte ou
+   * rouge, adoucie. Même valeur dans les deux thèmes : la pastille porte son
+   * propre fond, et se pose aussi sur les fonds peints des palettes.
+   */
+  --fond-niveau-atteint: #CDEFD9;
+  --texte-niveau-atteint: #14532D;
+  --fond-niveau-manque: #F9D8D1;
+  --texte-niveau-manque: #8A2A1B;
 }
 
 .figma-dark {
@@ -125,6 +134,11 @@
   --texte-avertissement: var(--figma-color-text-warning, #ffc470);
   --texte-sur-marque: var(--figma-color-text-onbrand, #ffffff);
   --texte-sur-danger: var(--figma-color-text-ondanger, #ffffff);
+  /* Redéclarés à l'identique, comme --bordure-visee. */
+  --fond-niveau-atteint: #CDEFD9;
+  --texte-niveau-atteint: #14532D;
+  --fond-niveau-manque: #F9D8D1;
+  --texte-niveau-manque: #8A2A1B;
 }
 
 * {

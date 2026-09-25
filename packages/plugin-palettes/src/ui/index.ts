@@ -123,7 +123,6 @@ const AVEC_LA_GRILLE = true;
 
 const ongletPalettes = createOngletPalettes({
   ranger: (recette) => frontiere.ranger(recette),
-  lireLaSelection: () => frontiere.lireLaSelection(),
   recharger: () => frontiere.lireLEtat(),
   exporterLeBrouillon: () => demandesDeLaRecette.exporter(),
   tirer: () => crypto.getRandomValues(new Uint32Array(1))[0],
@@ -272,8 +271,6 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
     panneauDeConfiguration.afficher();
     dernierEtat = message;
     afficherLaPlanche();
-  } else if (message.type === 'selection' && frontiere.accepterSelection(message)) {
-    ongletPalettes.recevoirSelection(message.lecture);
   } else if (message.type === 'rangement') {
     frontiere.recevoirRangement(message);
   } else if (message.type === 'progression' || message.type === 'dessin') {

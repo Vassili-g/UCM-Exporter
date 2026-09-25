@@ -60,7 +60,6 @@ export const TEXTES = {
   nouvellePalette: 'Nouvelle palette',
   titreDeLaCreation: 'Nouvelle palette',
   creer: 'Créer la palette',
-  depuisLaSelection: 'Utiliser la couleur sélectionnée dans Figma',
   annuler: 'Annuler',
   gestesDeLaPalette: 'Actions sur la palette',
   dupliquer: 'Dupliquer la palette',
@@ -71,8 +70,6 @@ export const TEXTES = {
   // N070, N071 : la sortie d'un conflit d'enregistrement (V12.1).
   exporterLeBrouillon: 'Exporter mes modifications',
   conflitEnCours: 'Exportez vos modifications ou rechargez les palettes avant d’enregistrer, d’importer ou de générer.',
-  selectionVide: 'Sélectionnez un calque dans Figma pour récupérer sa couleur.',
-  selectionSansRemplissage: 'Sélectionnez un calque avec une couleur de remplissage unie, visible et sans transparence.',
   detailTechnique: 'Détail technique',
   ouvrirLesReglages: 'Ouvrir les réglages communs',
   reglagesCommuns: 'Réglages communs',
@@ -386,15 +383,6 @@ export function rangementInvalide(refus: readonly Refus[]): Constat {
       ? `Le plugin n’a pas pu enregistrer votre modification. Détail : ${texteDuRefus(refus[0])}`
       : 'Le plugin n’a pas pu enregistrer votre modification.',
     geste: 'Rechargez les palettes, puis refaites votre modification.',
-  };
-}
-
-/** La couleur d'une sélection ramenée dans le gamut sRGB (E10). */
-export function couleurRamenee(hexa: string): Constat {
-  return {
-    ou: `Couleur de référence convertie : ${hexa}`,
-    quoi: 'Cette couleur Display P3 dépasse les couleurs disponibles en sRGB. Le plugin l’a ajustée pour créer une palette en sRGB.',
-    geste: 'Vérifiez la couleur obtenue. Si elle ne convient pas, choisissez une autre couleur de référence.',
   };
 }
 

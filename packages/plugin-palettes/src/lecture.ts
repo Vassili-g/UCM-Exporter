@@ -305,7 +305,7 @@ export function empreinteDuTexte(texte: string): string | null {
   return texte === '' ? null : fnv1a(octetsUtf8(texte));
 }
 
-/** La couleur proposée par la sélection, ou la raison de son absence ([ENT-04]). */
+/** La couleur d'un calque, relue après le dessin, ou la raison de son absence ([ENT-04]). */
 export type LectureDeSelection =
   | { readonly hexa: string; readonly ramenee: boolean }
   | { readonly raison: 'vide' | 'sans-remplissage-uni' };

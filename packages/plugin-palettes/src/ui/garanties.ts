@@ -66,6 +66,8 @@ export interface GarantiesUi {
   afficher(entrees: EntreesDesGaranties): void;
   /** Choisit une garantie, depuis le détail d'une nuance : la carte s'ouvre et la montre. */
   choisir(association: Association): void;
+  /** Déplie la carte, repliée à l'ouverture ([UI-09]). */
+  ouvrir(): void;
 }
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -111,7 +113,7 @@ function specimenDeLaPromesse(promesse: Promesse, fond: Rgb8): HTMLElement {
 }
 
 export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
-  const carte = createCarte({ titre: TEXTES_DE_L_ONGLET.garanties, repliable: { ouverte: true } });
+  const carte = createCarte({ titre: TEXTES_DE_L_ONGLET.garanties, repliable: { ouverte: false } });
   const bascule = document.createElement('div');
   bascule.className = 'bascule bascule-des-profils';
   bascule.setAttribute('role', 'group');
@@ -352,6 +354,10 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
         choisie = enEchec ? cleDeLAssociation(associationDe(enEchec.paire)) : 'text/surface';
       }
       entrees = suivantes;
+      rendre();
+    },
+    ouvrir() {
+      carte.ouvrir();
       rendre();
     },
     choisir(association) {

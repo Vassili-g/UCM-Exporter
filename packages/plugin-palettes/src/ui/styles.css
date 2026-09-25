@@ -977,8 +977,11 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Un filet sépare le choix et la création d'une palette de la palette ouverte, que le titre ouvre. */
 .choix-de-palette {
   gap: var(--espace-controle);
+  padding-bottom: var(--espace-bloc);
+  border-bottom: 1px solid var(--bordure);
 }
 
 /*
@@ -1448,25 +1451,28 @@
 }
 
 /*
- * Le badge d'un niveau WCAG ([VER-13]) : un cartouche de la couleur du texte
- * qui l'entoure, peint ou non. Sous AA, son trait se tirette.
+ * Le badge d'un niveau WCAG ([VER-13]) : une pastille pleine, verte quand le
+ * niveau est atteint, rouge sinon, en teintes adoucies. Le ✗ d'un niveau
+ * manqué le dit sans la couleur.
  */
 .badge-de-niveau {
   display: inline-block;
   margin-left: var(--espace-serre);
-  padding: 0 3px;
-  border: 1px solid currentColor;
+  padding: 0 4px;
   border-radius: 3px;
+  background: var(--fond-niveau-atteint);
+  color: var(--texte-niveau-atteint);
   font-size: 9px;
   font-weight: 600;
-  line-height: 12px;
+  line-height: 13px;
   text-decoration: none;
   vertical-align: 1px;
   white-space: nowrap;
 }
 
 .badge-de-niveau[data-atteint='false'] {
-  border-style: dashed;
+  background: var(--fond-niveau-manque);
+  color: var(--texte-niveau-manque);
 }
 
 /* Les contrastes d'une nuance, en table : le partenaire, le ratio, le badge. */

@@ -27,7 +27,6 @@ export interface DemandeDeDessin {
 export interface Frontiere {
   /** Relit l'état ; `'fichier'` cherche les cadres sur toutes les pages, au geste du designer (V8.6). */
   lireLEtat(recherche?: 'fichier'): void;
-  lireLaSelection(): void;
   ranger(recette: Recette): void;
   /**
    * Dessine les palettes nommées, dès que la recette affichée est rangée. Un
@@ -51,8 +50,6 @@ export interface Frontiere {
   accepterDessin(message: Extract<PluginMessage, { type: 'progression' | 'dessin' }>): boolean;
   /** Vrai quand l'état répond à la dernière demande : l'interface l'affiche. */
   accepterEtat(message: Extract<PluginMessage, { type: 'etat' }>): boolean;
-  /** Vrai quand la couleur répond à la dernière lecture de la sélection. */
-  accepterSelection(message: Extract<PluginMessage, { type: 'selection' }>): boolean;
   recevoirRangement(message: Extract<PluginMessage, { type: 'rangement' }>): void;
   /** L'empreinte de la recette rangée, telle que la dernière réponse l'a apportée. */
   empreinte(): string | null;
@@ -67,7 +64,6 @@ export function createFrontiere(
 ): Frontiere {
   let compteur = 0;
   let derniereDemande = 0;
-  let derniereSelection = 0;
   let dernierRangement = 0;
   let empreinte: string | null = null;
   let enVol = false;
@@ -111,10 +107,6 @@ export function createFrontiere(
     lireLEtat(recherche) {
       envoyer(recherche ? { type: 'lire-etat', demande: numeroter(), recherche } : { type: 'lire-etat', demande: numeroter() });
     },
-    lireLaSelection() {
-      derniereSelection = numeroter();
-      envoyer({ type: 'lire-selection', demande: derniereSelection });
-    },
     ranger(recette) {
       if (courant === 'refuse') return;
       if (enVol) enAttente = recette;
@@ -151,9 +143,6 @@ export function createFrontiere(
       enAttente = null;
       poser('lu');
       return true;
-    },
-    accepterSelection(message) {
-      return message.demande === derniereSelection;
     },
     recevoirRangement(message) {
       if (message.demande !== dernierRangement) return;

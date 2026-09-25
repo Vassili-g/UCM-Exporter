@@ -14,7 +14,7 @@ import type { DemandeDeTaille } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 
 import type { IssueDuRetrait, ResultatDuDessin } from './ecriture/planche';
 import type { IssueDuRangement } from './ecriture/recette';
-import type { EtatDeLaPlanche, LectureDeSelection, ProfilDuDocument } from './lecture';
+import type { EtatDeLaPlanche, ProfilDuDocument } from './lecture';
 
 /** Ce que l'interface demande au sandbox. */
 export type UiRequest =
@@ -23,7 +23,6 @@ export type UiRequest =
    * au geste explicite du designer (V8.6) ; sinon, la seule page de la planche.
    */
   | { type: 'lire-etat'; demande: number; recherche?: 'fichier' }
-  | { type: 'lire-selection'; demande: number }
   /**
    * Première écriture : la recette, sous la clé partagée, après validation et
    * contrôle de l'empreinte lue ([REC-10]).
@@ -52,8 +51,6 @@ export type PluginMessage =
    * de couleur du document et les cadres de la planche.
    */
   | { type: 'etat'; demande: number; classement: Classement; texte: string; empreinte: string | null; profil: ProfilDuDocument; planche: EtatDeLaPlanche }
-  /** La couleur que la sélection propose, en réponse à `lire-selection` ([ENT-04]). */
-  | { type: 'selection'; demande: number; lecture: LectureDeSelection }
   /** L'issue d'un rangement : la nouvelle empreinte, ou le refus ([REC-10]). */
   | { type: 'rangement'; demande: number; issue: IssueDuRangement }
   /** Le cadre en cours de dessin ([PLA-24]). */

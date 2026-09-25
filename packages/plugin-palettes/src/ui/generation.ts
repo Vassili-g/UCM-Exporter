@@ -43,7 +43,7 @@ function etatSousLeTitre(etat: EtatDuCadre): string {
 }
 
 export function createGeneration(gestes: GestesDeLaGeneration): GenerationUi {
-  const bouton = createButton({ label: TEXTES_DU_DESSIN.dessiner, onClick: () => gestes.generer() });
+  const bouton = createButton({ label: TEXTES_DU_DESSIN.dessiner, variant: 'secondary', onClick: () => gestes.generer() });
   bouton.classList.add('bouton-du-titre');
   const ligne = document.createElement('div');
   ligne.className = 'generation-ligne';

@@ -1,9 +1,9 @@
 /**
- * La création d'une palette, sous le sélecteur ([UI-06], [ENT-03], [ENT-04]) :
+ * La création d'une palette, sous le sélecteur ([UI-06], [ENT-03]) :
  * une carte sur le modèle de « Configuration de la palette », en trois
  * colonnes (nom, couleur de référence, palette de base), puis ses gestes sur
  * une ligne. Une palette n'a pas de référence par défaut : la créer demande
- * un code saisi ou la couleur de la sélection Figma.
+ * un code saisi, au clavier ou par le sélecteur de couleur.
  */
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
@@ -18,17 +18,12 @@ export interface CreationUi {
   /** Montre la carte vide, en Auto ; `annulable` montre « Annuler », absent quand aucune palette n'existe. */
   ouvrir(annulable: boolean): void;
   signaler(erreur: string | null): void;
-  /** Le nom saisi, que la couleur de la sélection reprend aussi. */
-  nom(): string;
-  /** La palette de base choisie, que la couleur de la sélection reprend aussi. */
-  base(): ChoixDeBase;
   /** Donne le focus au code de la couleur de référence. */
   focaliser(): void;
 }
 
 export function createCreation(gestes: {
   onCreer: (saisie: string, nom: string, base: ChoixDeBase) => void;
-  onSelection: () => void;
   onAnnuler: () => void;
 }): CreationUi {
   const carte = createCarte({ titre: TEXTES.titreDeLaCreation });
@@ -69,8 +64,6 @@ export function createCreation(gestes: {
 
   const creer = () => gestes.onCreer(saisie.value, champDuNom.value, base);
   const boutonCreer = createButton({ label: TEXTES.creer, onClick: creer });
-  const depuisLaSelection = createButton({ label: TEXTES.depuisLaSelection, variant: 'secondary', onClick: gestes.onSelection });
-  depuisLaSelection.dataset.geste = 'selection';
   const annuler = createButton({ label: TEXTES.annuler, variant: 'secondary', onClick: gestes.onAnnuler });
   for (const champ of [saisie, champDuNom]) {
     champ.addEventListener('keydown', (evenement) => {
@@ -81,7 +74,7 @@ export function createCreation(gestes: {
 
   const gestesDeCreation = document.createElement('div');
   gestesDeCreation.className = 'creation-ligne';
-  gestesDeCreation.append(boutonCreer, depuisLaSelection, annuler);
+  gestesDeCreation.append(boutonCreer, annuler);
 
   const erreur = document.createElement('p');
   erreur.className = 'field-error';
@@ -107,8 +100,6 @@ export function createCreation(gestes: {
       signaler(null);
     },
     signaler,
-    nom: () => champDuNom.value,
-    base: () => base,
     focaliser: () => saisie.focus(),
   };
 }
