@@ -550,27 +550,240 @@ test('[UI-04] la carte d’aperçu n’a pas de titre : les onglets de thème à
   }
 });
 
-test('[UI-04] la pastille du fond nomme le thème et la valeur ; le fond saisi se range et les Réglages communs le montrent', async () => {
+test('[UI-04] W4.1 la pastille du fond ouvre le sélecteur en Hex avec la mention du fond commun ; une frappe prévisualise, Entrée range, et les Réglages communs le montrent', async () => {
   const page = await ouvrirSur('alertes-seules');
   try {
-    const pastille = page.getByRole('button', { name: 'Modifier le fond du thème Light, actuellement #F7F7F7' });
-    await pastille.click();
-    assert.equal(await page.locator('.mention-du-fond').isVisible(), true);
-    assert.equal(await page.locator('.mention-du-fond').textContent(), 'Ce fond s’applique à toutes les palettes.');
+    await page.getByRole('button', { name: 'Modifier le fond du thème Light, actuellement #F7F7F7' }).click();
+    // L'étiquette suit la valeur : la pastille se retrouve ensuite par sa classe.
+    const pastille = page.locator('.pastille-du-fond');
+    const selecteur = page.getByRole('dialog', { name: 'Fond du thème Light' });
+    assert.equal(await selecteur.isVisible(), true);
+    assert.equal(await pastille.getAttribute('aria-expanded'), 'true');
+    assert.equal(await selecteur.getByRole('combobox', { name: 'Format du code' }).inputValue(), 'hex');
+    const code = selecteur.getByRole('textbox', { name: 'Code hexadécimal' });
+    assert.equal(await code.evaluate((champ) => champ === document.activeElement), true, 'le code a le focus à l’ouverture');
+    assert.equal(await code.inputValue(), 'F7F7F7');
+    assert.equal(await selecteur.locator('.selecteur-mention').textContent(), 'Ce fond s’applique à toutes les palettes.');
+    assert.equal(await selecteur.locator('.selecteur-titre').textContent(), 'Fonds par défaut et premières nuances');
+    const noms = await selecteur.locator('.selecteur-pastille').evaluateAll((boutons) => boutons.map((bouton) => bouton.getAttribute('aria-label')));
+    assert.deepEqual(noms.slice(0, 3), ['Fond Light par défaut, #F7F7F7', 'Fond Dark par défaut, #121212', 'Blanc, #FFFFFF']);
+    assert.match(noms[3], /^Vivid 50, #[0-9A-F]{6}$/);
+    assert.equal(noms.length, 5);
+
     const avant = await compte(page);
-    await page.locator('.selecteur-du-fond').evaluate((selecteur) => {
-      selecteur.value = '#ffd84d';
-      selecteur.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+    await code.fill('ffd84d');
     assert.equal(await page.locator('.nuancier-surface').evaluate((surface) => surface.style.background), 'rgb(255, 216, 77)');
-    assert.equal(await compte(page), avant, 'la saisie ne range rien');
-    await page.locator('.selecteur-du-fond').evaluate((selecteur) => selecteur.dispatchEvent(new Event('change', { bubbles: true })));
+    assert.equal(await compte(page), avant, 'la frappe ne range rien');
+    await code.press('Enter');
     const demande = await prochaine(page, avant);
     assert.equal(demande.type, 'ranger-recette');
     assert.equal(demande.recette.fonds.light, '#FFD84D');
+    assert.equal(await code.inputValue(), 'FFD84D');
     assert.equal(await page.getByRole('button', { name: 'Modifier le fond du thème Light, actuellement #FFD84D' }).count(), 1);
+
+    await page.keyboard.press('Escape');
+    assert.equal(await selecteur.isVisible(), false);
+    assert.equal(await pastille.evaluate((bouton) => bouton === document.activeElement), true, 'Échap rend le focus à la pastille');
+    assert.equal(await pastille.getAttribute('aria-expanded'), 'false');
     await page.getByRole('button', { name: 'Ouvrir les réglages communs' }).click();
     assert.equal(await page.locator('.champ-hexa[aria-label="Fond du thème Light"]').inputValue(), '#FFD84D');
+  } finally {
+    await page.close();
+  }
+});
+
+test('W4.1 un glisser dans la zone prévisualise sans ranger, et le relâcher range une seule fois', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    await page.getByRole('button', { name: /^Modifier le fond du thème Light/ }).click();
+    const zone = page.getByRole('slider', { name: 'Saturation et luminosité' });
+    const boite = await zone.boundingBox();
+    const avant = await compte(page);
+    await page.mouse.move(boite.x + boite.width * 0.9, boite.y + boite.height * 0.1);
+    await page.mouse.down();
+    await page.mouse.move(boite.x + boite.width * 0.5, boite.y + boite.height * 0.3, { steps: 5 });
+    const pendant = await page.locator('.nuancier-surface').evaluate((surface) => surface.style.background);
+    assert.notEqual(pendant, 'rgb(247, 247, 247)', 'l’aperçu suit le glisser');
+    assert.equal(await compte(page), avant, 'le glisser ne range rien');
+    await page.mouse.up();
+    const demande = await prochaine(page, avant);
+    assert.equal(demande.type, 'ranger-recette');
+    assert.notEqual(demande.recette.fonds.light, '#F7F7F7');
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    assert.equal(await compte(page), avant + 1);
+    const code = await page.getByRole('textbox', { name: 'Code hexadécimal' }).inputValue();
+    assert.equal(`#${code}`, demande.recette.fonds.light);
+  } finally {
+    await page.close();
+  }
+});
+
+test('W4.2 le sélecteur de la référence : nuances Vivid, formats, code invalide gardé, clavier, focus rendu, Hex à chaque ouverture', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const configuration = page.locator('[aria-label="Configuration de la palette"]');
+    const pipette = configuration.getByRole('button', { name: 'Couleur de référence' });
+    const reference = await configuration.locator('.champ-hexa').inputValue();
+    await pipette.click();
+    const selecteur = page.getByRole('dialog', { name: 'Couleur de référence' });
+    assert.equal(await selecteur.getByRole('textbox', { name: 'Code hexadécimal' }).inputValue(), reference.slice(1));
+    assert.equal(await selecteur.locator('.selecteur-mention').isVisible(), false);
+    assert.equal(await selecteur.locator('.selecteur-titre').textContent(), 'Nuances de la palette ouverte');
+    const noms = await selecteur.locator('.selecteur-pastille').evaluateAll((boutons) => boutons.map((bouton) => bouton.getAttribute('aria-label')));
+    assert.equal(noms.length, 11);
+    assert.match(noms[0], /^Vivid 50, #/);
+    assert.match(noms[10], /^Vivid 950, #/);
+
+    // RGB : trois champs ; un canal hors bornes reste dans son champ, marqué, et rien ne se range.
+    await selecteur.getByRole('combobox', { name: 'Format du code' }).selectOption('rgb');
+    const rouge = selecteur.getByRole('textbox', { name: 'Rouge, de 0 à 255' });
+    assert.equal(await selecteur.locator('.selecteur-champ').count(), 3);
+    const avant = await compte(page);
+    await rouge.fill('300');
+    await rouge.press('Tab');
+    assert.equal(await rouge.inputValue(), '300');
+    assert.equal(await rouge.getAttribute('aria-invalid'), 'true');
+    assert.equal(await compte(page), avant, 'un code invalide ne se range pas');
+    assert.equal(await configuration.locator('.champ-hexa').inputValue(), reference);
+
+    // HSL : la teinte au clavier, un degré puis dix avec Maj ; chaque pression range.
+    await selecteur.getByRole('combobox', { name: 'Format du code' }).selectOption('hsl');
+    const teinte = selecteur.getByRole('slider', { name: 'Teinte' });
+    const depart = Number(await teinte.getAttribute('aria-valuenow'));
+    await teinte.focus();
+    await page.keyboard.press('ArrowRight');
+    assert.equal(Number(await teinte.getAttribute('aria-valuenow')), (depart + 1) % 360);
+    await page.keyboard.press('Shift+ArrowRight');
+    assert.equal(Number(await teinte.getAttribute('aria-valuenow')), (depart + 11) % 360);
+    assert.equal(await selecteur.getByRole('textbox', { name: 'Teinte, en degrés' }).inputValue(), String((depart + 11) % 360));
+    // Un rangement à la fois : le second attend la réponse au premier.
+    for (const rang of [avant, avant + 1]) {
+      const rangement = await prochaine(page, rang);
+      assert.equal(rangement.type, 'ranger-recette');
+      await envoyer(page, rangee(rangement.demande));
+    }
+    const zone = selecteur.getByRole('slider', { name: 'Saturation et luminosité' });
+    const valeur = await zone.getAttribute('aria-valuetext');
+    await zone.focus();
+    await page.keyboard.press('ArrowDown');
+    assert.notEqual(await zone.getAttribute('aria-valuetext'), valeur);
+    await envoyer(page, rangee((await prochaine(page, avant + 2)).demande));
+
+    // Échap rend le focus à la pastille ; la réouverture revient à Hex.
+    await page.keyboard.press('Escape');
+    assert.equal(await pipette.evaluate((bouton) => bouton === document.activeElement), true);
+    await pipette.click();
+    assert.equal(await selecteur.getByRole('combobox', { name: 'Format du code' }).inputValue(), 'hex');
+
+    // Une pastille proposée devient la référence, d'un clic.
+    const vivid500 = selecteur.getByRole('button', { name: /^Vivid 500, / });
+    const hexa = (await vivid500.getAttribute('aria-label')).split(', ')[1];
+    const rang = await compte(page);
+    await vivid500.click();
+    const rangement = await prochaine(page, rang);
+    assert.ok(rangement.recette.palettes.some((palette) => palette.reference === hexa));
+    assert.equal(await configuration.locator('.champ-hexa').inputValue(), hexa);
+    assert.equal(await vivid500.getAttribute('aria-pressed'), 'true');
+
+    // Un clic hors du sélecteur le referme.
+    await page.locator('.titre-de-premier-rang').click();
+    assert.equal(await selecteur.isVisible(), false);
+  } finally {
+    await page.close();
+  }
+});
+
+test('W4.1 la création ouvre le sélecteur sans pastille, et la couleur choisie remplit le code', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    await page.getByRole('button', { name: '+ Nouvelle palette' }).click();
+    const creation = page.locator('[aria-label="Nouvelle palette"]');
+    await creation.getByRole('button', { name: 'Couleur de référence' }).click();
+    const selecteur = page.getByRole('dialog', { name: 'Couleur de référence' });
+    assert.equal(await selecteur.locator('.selecteur-pastilles').isVisible(), false);
+    const code = selecteur.getByRole('textbox', { name: 'Code hexadécimal' });
+    assert.equal(await code.inputValue(), '1E6FD9', 'le sélecteur part de l’exemple du champ vide');
+    await code.fill('16a34a');
+    await code.press('Enter');
+    assert.equal(await creation.getByRole('textbox', { name: 'Couleur de référence' }).inputValue(), '#16A34A');
+  } finally {
+    await page.close();
+  }
+});
+
+test('W4.3 Luminosité des nuances : chaque champ sous son point du tracé, flèches à 0,005 et 0,05 avec Maj, puis « Rétablir »', async () => {
+  const page = await ouvrirSur('configuration-de-la-recette', MINIMALE);
+  try {
+    await page.getByRole('button', { name: 'Ouvrir les réglages communs' }).click();
+    const carte = page.locator('[aria-label="Luminosité des nuances"]');
+    for (const mode of ['light', 'dark']) {
+      const points = await carte.locator(`.trace-point[data-mode="${mode}"]`).evaluateAll((cercles) => cercles.map((cercle) => {
+        const boite = cercle.getBoundingClientRect();
+        return boite.x + boite.width / 2;
+      }));
+      const champs = await carte.locator(`.champ-de-courbe[data-mode="${mode}"]`).evaluateAll((saisies) => saisies.map((saisie) => {
+        const boite = saisie.getBoundingClientRect();
+        return { centre: boite.x + boite.width / 2, droite: boite.right, deborde: saisie.scrollWidth > saisie.clientWidth };
+      }));
+      assert.equal(champs.length, 11);
+      champs.forEach(({ centre, deborde }, rang) => {
+        assert.ok(Math.abs(centre - points[rang]) <= 2, `${mode} ${rang} : champ à ${centre}, point à ${points[rang]}`);
+        assert.equal(deborde, false, `${mode} ${rang} : la valeur est rognée`);
+      });
+      assert.ok(champs[10].droite <= 500, 'la table tient dans la fenêtre');
+    }
+
+    const champ = page.getByRole('textbox', { name: 'Thème Light 700' });
+    assert.equal(await champ.inputValue(), '0,5');
+    const avant = await compte(page);
+    await champ.focus();
+    await page.keyboard.press('ArrowUp');
+    assert.equal(await champ.inputValue(), '0,505');
+    const premier = await prochaine(page, avant);
+    assert.equal(premier.recette.courbes.light[7], 0.505);
+    await envoyer(page, rangee(premier.demande));
+    await page.keyboard.press('Shift+ArrowDown');
+    assert.equal(await champ.inputValue(), '0,455');
+    const second = await prochaine(page, avant + 1);
+    assert.equal(second.recette.courbes.light[7], 0.455);
+    await envoyer(page, rangee(second.demande));
+
+    const retablir = carte.getByRole('button', { name: /^Rétablir/ });
+    assert.equal(await retablir.isDisabled(), false);
+    await retablir.click();
+    const retour = await prochaine(page, avant + 2);
+    assert.equal(retour.recette.courbes.light[7], 0.5);
+    assert.equal(await champ.inputValue(), '0,5');
+  } finally {
+    await page.close();
+  }
+});
+
+test('W4.4 Minimums et détection : une ligne par seuil, l’aide lisible sans survol, champs et unités alignés', async () => {
+  const page = await ouvrirSur('configuration-de-la-recette', MINIMALE);
+  try {
+    await page.getByRole('button', { name: 'Ouvrir les réglages communs' }).click();
+    for (const [titre, lignes] of [['Minimums des promesses', 2], ['Détection des couleurs proches', 3]]) {
+      const carte = page.locator(`[aria-label="${titre}"]`);
+      await carte.locator('.carte-bascule').click();
+      const mesures = await carte.locator('.ligne-de-seuil').evaluateAll((elements) => elements.map((ligne) => ({
+        champ: ligne.querySelector('.champ-nombre').getBoundingClientRect().x,
+        unite: ligne.querySelector('.unite').getBoundingClientRect().x,
+        aide: ligne.querySelector('.ligne-de-seuil-textes .ligne-secondaire').textContent,
+      })));
+      assert.equal(mesures.length, lignes);
+      for (const mesure of mesures) {
+        assert.equal(Math.round(mesure.champ), Math.round(mesures[0].champ), `${titre} : champs alignés`);
+        assert.equal(Math.round(mesure.unite), Math.round(mesures[0].unite), `${titre} : unités alignées`);
+        assert.ok(mesure.aide.length > 0);
+      }
+    }
+    assert.deepEqual(await page.locator('.ligne-de-seuil .unite').allTextContents(), [':1', ':1', 'ΔEok', 'ΔEok', 'chroma']);
+    const texte = page.getByRole('textbox', { name: 'Texte', exact: true });
+    const avant = await compte(page);
+    await texte.fill('7');
+    await texte.press('Tab');
+    assert.equal((await prochaine(page, avant)).recette.seuils.texte, 7);
   } finally {
     await page.close();
   }

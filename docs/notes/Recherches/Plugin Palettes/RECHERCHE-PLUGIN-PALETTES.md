@@ -527,7 +527,7 @@ dix-sept paires.
 
 | Entrée | Forme | Défaut |
 |---|---|---|
-| Couleur de référence | Hexa, avec un sélecteur de couleur | aucun |
+| Couleur de référence | Hexa, avec le sélecteur de couleur embarqué (`[UI-13]`) | aucun |
 | Nom | Texte libre, facultatif | l'hexa de référence |
 | Dérive de teinte | Deux angles par profil, dans l'éditeur de la [section 12](#12-léditeur-de-dérive) | préréglage Tailwind |
 | Part de chroma par profil | Nombre dans `[0, 1]`, facultatif, dans la carte « Intensités » | celle de la recette |
@@ -600,7 +600,14 @@ composant du socle la porte (`[UI-02]`).
   ouverte, dans le thème de son aperçu, donne le résultat Soft et Vivid de ses
   garanties ; sans palette, rien n'est montré à sa place. Le tracé des deux
   courbes précède leur table, et marque d'un ◆ la référence de la palette
-  ouverte à la nuance où elle est insérée, à sa propre luminosité.
+  ouverte à la nuance où elle est insérée, à sa propre luminosité. La table
+  donne une colonne par nuance, sous son point du tracé, et une ligne par
+  thème, Light puis Dark, en champs à la taille du corps de l'interface. Les
+  flèches haut et bas d'un champ changent sa valeur de 0,005, de 0,05 avec
+  Maj, et chaque pression enregistre. Minimums des promesses et Détection des
+  couleurs proches donnent une ligne par seuil : le libellé et son aide à
+  gauche, lisibles sans survol, le champ et son unité dans deux colonnes
+  alignées d'une ligne à l'autre.
 - `[ENT-08]` La liste des crans ne se modifie pas dans l'interface : elle
   passe par un import de recette.
 - `[ENT-10]` La configuration mesure la garantie des courbes : le cran 600
@@ -1338,6 +1345,24 @@ palette » gardent leurs libellés au-dessus des champs.
   une carte annonce dans son résumé le point à vérifier qui la concerne, des
   profils confondus par exemple. Un lien de message qui vise un réglage déplie
   sa carte avant de focaliser le contrôle.
+- `[UI-13]` Aucune couleur ne se choisit dans le sélecteur du navigateur, qui
+  s'ouvre en RGB dans Figma. La pastille de la couleur de référence, celle
+  de la création, celles des deux fonds des Réglages communs et celle du
+  fond de l'aperçu ouvrent le sélecteur embarqué : 232 px sous le contrôle,
+  par-dessus le contenu, aligné sur son bord. Il porte une zone de saturation
+  et de luminosité, un curseur de teinte, un menu de format et le code, en
+  Hex à chaque ouverture ; RGB et HSL donnent trois champs. Aucune opacité.
+  Le code a le focus à l'ouverture. Un glisser prévisualise et son relâcher
+  enregistre ; un code s'enregistre à Entrée ou à la sortie du champ, et un
+  code invalide reste dans son champ, marqué, sans rien enregistrer. Les
+  flèches déplacent la zone de 1 % et la teinte de 1°, dix fois plus avec
+  Maj, et chaque pression enregistre. Échap referme et rend le focus au
+  contrôle ; un clic ou une tabulation hors du sélecteur le referme. Sur la
+  référence, le sélecteur propose les nuances Vivid du thème de l'aperçu ;
+  sur un fond, les deux fonds par défaut, le blanc et les deux premières
+  nuances Vivid du thème, et une ligne dit que le fond vaut pour toutes les
+  palettes. La création ne propose aucune pastille. Tout se calcule dans
+  l'interface, sans requête.
 - `[UI-06]` Le sélecteur de palette liste chaque palette par son nom ou son
   hexa, avec une pastille de sa référence. Sa liste déroulante prend toute la
   largeur libre de sa ligne, et un nom long s'y coupe par des points de
@@ -1387,7 +1412,7 @@ Réglages communs, derrière l'engrenage :
 │ │ Intensité Soft  [───●──────] 0,45                           │ │
 │ │ Intensité Vivid [────────●─] 0,95                           │ │
 │ ┌ Luminosité des nuances ───── 3 palettes concernées  Rétablir ┐ │
-│ │ tracé des deux courbes et ◆, puis la table des onze nuances │ │
+│ │ tracé des deux courbes et ◆, une colonne par nuance dessous │ │
 │ ┌ › Minimums des promesses  Texte 4,5:1 · Éléments graphiques 3:1 ┐ │
 │ ┌ › Détection des couleurs proches   Soft et Vivid 0,02 · …   ┐ │
 └──────────────────────────────────────────────────────────────┘
@@ -1418,6 +1443,7 @@ qui le créera.
 | Cartes repliées | « Intensités » et « Dérive de teinte » repliées, leur résumé, un point à vérifier annoncé |
 | Fond personnalisé | Un fond saturé peint sous le nuancier, textes et focus lisibles dessus |
 | Fond dans le sélecteur de couleur | La pastille du fond ouverte, la mention du fond commun à toutes les palettes |
+| Référence dans le sélecteur de couleur | La pastille de la référence ouverte, les nuances Vivid de la palette proposées |
 | Réglages communs | Fonds, intensités, luminosité et groupes repliés, avec le nombre de palettes concernées |
 | Réglages communs sans palette | Aucun aperçu en tête, tracé sans ◆, aucune palette concernée |
 | Courbe hors garantie | Alerte sous la courbe : cran, mode, profil, teinte du pire cas et contraste |

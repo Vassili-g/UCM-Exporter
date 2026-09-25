@@ -43,6 +43,8 @@ import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction
 import { blocDeConstat, listeDesMessages, type Message } from './constats';
 import { createCarte } from './carte';
 import { champEnColonne, createChoixDeBase, type ChoixDeBase } from './champs';
+import { nuancesProposees } from './couleur/propositions';
+import { createPipette } from './couleur/selecteur';
 import { createCreation } from './creation';
 import { createEditeur } from './derive/editeur';
 import type { EtatDuDessin, GestesDuResultat } from './dessin';
@@ -61,6 +63,7 @@ import {
   TEXTES_DE_LA_BASE,
   TEXTES_DE_LA_DERIVE,
   TEXTES_DE_L_ONGLET,
+  TEXTES_DU_SELECTEUR,
   confirmationDeSuppression,
   couleurRamenee,
   hexaInvalide,
@@ -202,10 +205,17 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   teteDeConfiguration.append(titreDeConfiguration, indication);
 
   // Carte Configuration de la palette ([UI-11]).
-  const pipette = document.createElement('input');
-  pipette.type = 'color';
-  pipette.className = 'pipette';
-  pipette.setAttribute('aria-label', TEXTES.reference);
+  // La pastille ouvre le sélecteur de couleur, qui propose les nuances Vivid du thème montré (W4.1).
+  const pipette = createPipette(TEXTES.reference, () => {
+    const courante = ouverte();
+    if (!recette || !courante) return null;
+    return {
+      hexa: courante.reference,
+      titreDesPastilles: TEXTES_DU_SELECTEUR.nuancesDeLaPalette,
+      pastilles: nuancesProposees(recette, analyserPalette(recette, courante).rampes, nuancier.mode()),
+      saisir: (saisie, fin) => saisirReference(saisie, fin),
+    };
+  });
   const hexa = document.createElement('input');
   hexa.type = 'text';
   hexa.className = 'input champ-hexa';
@@ -217,7 +227,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const nom = document.createElement('input');
   nom.type = 'text';
   nom.className = 'input';
-  const colonneDeLaReference = champEnColonne(TEXTES.reference, pipette, hexa);
+  const colonneDeLaReference = champEnColonne(TEXTES.reference, pipette.bouton, hexa);
   colonneDeLaReference.append(erreurHexa);
   // La palette de base : Auto, Soft ou Vivid ([UI-11], [ENT-11]).
   const choixDeBase = createChoixDeBase((valeur) => {
@@ -453,8 +463,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
 
   hexa.addEventListener('input', () => saisirReference(hexa.value, false));
   hexa.addEventListener('change', () => saisirReference(hexa.value, true));
-  pipette.addEventListener('input', () => saisirReference(pipette.value, false));
-  pipette.addEventListener('change', () => saisirReference(pipette.value, true));
   nom.addEventListener('input', () => {
     const courante = ouverte();
     if (courante) modifier(renommer(courante, nom.value));
@@ -521,7 +529,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     zoneDeLaNote.hidden = !note;
 
     poser(hexa, courante.reference);
-    poser(pipette, courante.reference.toLowerCase());
+    pipette.poser(courante.reference);
     poser(nom, courante.nom ?? '');
     nom.placeholder = courante.reference;
     titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre(nomDeLaPalette(courante));

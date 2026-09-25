@@ -135,6 +135,13 @@ export const TEXTES_DE_CONFIGURATION = {
   garantieCommune: 'Cette vérification porte sur les courbes communes, pour toutes les teintes. Les garanties d’une palette se lisent dans sa carte « Garanties de contraste ».',
   // N060 : « Rétablir » des courbes, quand la liste des nuances a changé par import.
   courbesSansDefaut: 'Ces réglages n’ont pas les onze nuances par défaut : les courbes par défaut ne s’y appliquent pas.',
+  // N091 : le titre de chaque ligne de la table des courbes (W4.3).
+  courbeDuMode: { light: 'Light', dark: 'Dark' },
+  // N092 : l'aide de chaque seuil, sous son libellé (W4.4).
+  aideSeuilTexte: 'Pour text sur surface, on-solid sur solid et text sur le fond.',
+  aideSeuilNonTexte: 'Pour la bordure de champ, l’anneau de focus et le fond plein au survol.',
+  aideProfilsConfondus: 'Mesuré entre les deux profils d’une même nuance.',
+  aidePalettesProches: 'Mesuré sur les nuances 500, 600 et 700 de Vivid, en Thème Light.',
   // N061 : les unités des mesures avancées (V9.8).
   uniteDeContraste: ':1',
   uniteDEcart: 'ΔEok',
@@ -471,6 +478,31 @@ export const TEXTES_DU_DETAIL = {
   garantie: (tenue: boolean, sens: string, contraste: number) => `${tenue ? '✓' : '✗'} ${sens} : ${contrasteEcrit(contraste)}`,
   sur: (partenaire: string) => `sur ${partenaire}`,
   dessus: (partenaire: string) => `${partenaire} dessus`,
+} as const;
+
+/** Les textes du sélecteur de couleur embarqué (W4.1) ; N087 à N090. */
+export const TEXTES_DU_SELECTEUR = {
+  // N087 : les deux commandes graphiques, et leur valeur lue.
+  zone: 'Saturation et luminosité',
+  valeurDeLaZone: (saturation: number, luminosite: number) => `Saturation ${saturation} %, luminosité ${luminosite} %`,
+  teinte: 'Teinte',
+  valeurDeLaTeinte: (degres: number) => `${degres}°`,
+  // N088 : le menu de format et les champs du code.
+  format: 'Format du code',
+  formats: { hex: 'Hex', rgb: 'RGB', hsl: 'HSL' },
+  champs: {
+    hex: ['Code hexadécimal'],
+    rgb: ['Rouge, de 0 à 255', 'Vert, de 0 à 255', 'Bleu, de 0 à 255'],
+    hsl: ['Teinte, en degrés', 'Saturation, en %', 'Luminosité, en %'],
+  },
+  // N089 : le titre des pastilles proposées.
+  nuancesDeLaPalette: 'Nuances de la palette ouverte',
+  fondsProposes: 'Fonds par défaut et premières nuances',
+  // N090 : le nom de chaque pastille proposée.
+  fondParDefaut: (mode: Mode) => `Fond ${NOM_DU_MODE[mode]} par défaut`,
+  blanc: 'Blanc',
+  nuance: (profil: string, numero: number) => `${profil} ${numero}`,
+  pastille: (titre: string, hexa: string) => `${titre}, ${hexa}`,
 } as const;
 
 /** Les textes du nuancier et de son détail ([UI-04]). */

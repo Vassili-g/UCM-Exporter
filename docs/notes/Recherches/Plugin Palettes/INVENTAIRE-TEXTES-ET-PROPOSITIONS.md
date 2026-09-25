@@ -696,6 +696,12 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N084 | Infobulle de « Supprimer définitivement » inactif pendant un conflit | Exportez vos modifications ou rechargez les palettes avant de supprimer un cadre. | À valider |
 | N085 | Suppression refusée par le sandbox | Cadre non supprimé : {nom} · Le fichier a changé depuis la dernière lecture : ce cadre n’est plus celui d’une palette supprimée. · Actualisez l’onglet Planches. | À valider |
 | N086 | Titre de la carte de création | Nouvelle palette | À valider |
+| N087 | Sélecteur de couleur, nom et valeur lue des deux commandes | Saturation et luminosité · Saturation {s} %, luminosité {v} % · Teinte · {h}° | À valider |
+| N088 | Sélecteur de couleur, menu de format et champs du code | Format du code · Hex · RGB · HSL · Code hexadécimal · Rouge, de 0 à 255 · Vert, de 0 à 255 · Bleu, de 0 à 255 · Teinte, en degrés · Saturation, en % · Luminosité, en % | À valider |
+| N089 | Sélecteur de couleur, titre des pastilles proposées | Nuances de la palette ouverte · Fonds par défaut et premières nuances | À valider |
+| N090 | Sélecteur de couleur, nom d'une pastille proposée | Fond {Light ou Dark} par défaut · Blanc · Vivid {numéro} · {nom}, {hexa} | À valider |
+| N091 | Luminosité des nuances, titre de chaque ligne de la table | Light · Dark | À valider |
+| N092 | Minimums et détection, aide sous chaque libellé | Pour text sur surface, on-solid sur solid et text sur le fond. · Pour la bordure de champ, l’anneau de focus et le fond plein au survol. · Mesuré entre les deux profils d’une même nuance. · Mesuré sur les nuances 500, 600 et 700 de Vivid, en Thème Light. | À valider |
 
 ## Points à conserver lors de l’application
 

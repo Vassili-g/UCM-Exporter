@@ -16,6 +16,7 @@ import {
   MODES,
   PROFILS,
   garantieDesCourbes,
+  rampesDe,
   rgb8VersOklch,
   referenceDe,
   validerRecette,
@@ -41,11 +42,14 @@ import {
 import { apercuCompact, resultatsDesGaranties } from './apercuCompact';
 import { createCarte, type CarteUi } from './carte';
 import { champEnColonne } from './champs';
+import { fondsProposes } from './couleur/propositions';
+import { createPipette } from './couleur/selecteur';
 import { blocDeConstat } from './constats';
 import {
   NOM_DU_PROFIL,
   TEXTES_DE_CONFIGURATION,
   TEXTES_DES_INTENSITES,
+  TEXTES_DU_SELECTEUR,
   constatDeGarantie,
   hexaInvalide,
   legendeDesCourbes,
@@ -161,6 +165,17 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     if ('courbe' in champ) {
       saisie.dataset.mode = champ.courbe;
       saisie.dataset.rang = String(champ.rang);
+      saisie.classList.add('champ-de-courbe');
+      // Flèches : 0,005, et 0,05 avec Maj (W3.2) ; chaque pression est un geste fini.
+      saisie.addEventListener('keydown', (evenement) => {
+        if (evenement.key !== 'ArrowUp' && evenement.key !== 'ArrowDown') return;
+        const valeur = lireNombre(saisie.value);
+        if (valeur === null) return;
+        evenement.preventDefault();
+        const pas = (evenement.shiftKey ? 0.05 : 0.005) * (evenement.key === 'ArrowUp' ? 1 : -1);
+        saisie.value = nombreEcrit(Math.min(1, Math.max(0, Math.round((valeur + pas) * 1000) / 1000)));
+        saisir(champ, saisie.value, carte, true);
+      });
     }
     saisie.addEventListener('input', () => saisir(champ, saisie.value, carte, false));
     saisie.addEventListener('change', () => saisir(champ, saisie.value, carte, true));
@@ -177,21 +192,27 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
   const colonnesDesFonds = document.createElement('div');
   colonnesDesFonds.className = 'colonnes-de-reglage';
   const saisiesDesFonds = MODES.map((mode) => {
-    const pipette = document.createElement('input');
-    pipette.type = 'color';
-    pipette.className = 'pipette';
-    pipette.setAttribute('aria-label', TEXTES_DE_CONFIGURATION.fondDuMode[mode]);
+    const pipette = createPipette(TEXTES_DE_CONFIGURATION.fondDuMode[mode], () => {
+      const lue = recette.lire();
+      if (!lue) return null;
+      const ouverte = recette.ouverte();
+      const palette = ouverte ? lue.palettes.find((candidate) => candidate.id === ouverte.id) : undefined;
+      return {
+        hexa: lue.fonds[mode],
+        titreDesPastilles: TEXTES_DU_SELECTEUR.fondsProposes,
+        pastilles: fondsProposes(lue, palette ? rampesDe(lue, palette) : null, mode),
+        saisir: (hexa, fin) => saisirFond(mode, hexa, fin),
+      };
+    });
     const saisie = document.createElement('input');
     saisie.type = 'text';
     saisie.className = 'input champ-hexa';
     saisie.spellcheck = false;
     saisie.maxLength = 7;
     saisie.setAttribute('aria-label', TEXTES_DE_CONFIGURATION.fondDuMode[mode]);
-    for (const source of [pipette, saisie]) {
-      source.addEventListener('input', () => saisirFond(mode, source.value, false));
-      source.addEventListener('change', () => saisirFond(mode, source.value, true));
-    }
-    colonnesDesFonds.append(champEnColonne(TEXTES_DE_CONFIGURATION.fondDuMode[mode], pipette, saisie));
+    saisie.addEventListener('input', () => saisirFond(mode, saisie.value, false));
+    saisie.addEventListener('change', () => saisirFond(mode, saisie.value, true));
+    colonnesDesFonds.append(champEnColonne(TEXTES_DE_CONFIGURATION.fondDuMode[mode], pipette.bouton, saisie));
     return { mode, pipette, saisie };
   });
   cartes.fonds.ui.corps.prepend(colonnesDesFonds);
@@ -225,75 +246,100 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
   cartes.parts.ui.corps.prepend(reglagesDesParts, paragraphe(TEXTES_DE_CONFIGURATION.aideParts, 'ligne-secondaire'));
   groupeDeCarte('parts', 'parts', reglagesDesParts);
 
-  // Luminosité des nuances : le tracé au-dessus de la table (V9.4).
+  /*
+   * Luminosité des nuances (W3.2, disposition A) : le tracé prend la largeur
+   * des colonnes, et chaque nuance a sa colonne sous son point, Light puis Dark.
+   */
   const trace = document.createElement('div');
   trace.className = 'trace-des-courbes';
   const legende = paragraphe('', 'ligne-secondaire');
-  const table = document.createElement('table');
+  const table = document.createElement('div');
   table.className = 'table-courbes';
+  table.setAttribute('role', 'group');
+  table.setAttribute('aria-label', TEXTES_DE_CONFIGURATION.courbes);
   const garantie = document.createElement('div');
   garantie.className = 'constats';
   const noteDeGarantie = paragraphe(TEXTES_DE_CONFIGURATION.garantieCommune, 'ligne-secondaire');
-  cartes.courbes.ui.corps.prepend(trace, legende, paragraphe(TEXTES_DE_CONFIGURATION.aideCourbes, 'ligne-secondaire'), table, garantie, noteDeGarantie);
+  cartes.courbes.ui.corps.prepend(table, legende, paragraphe(TEXTES_DE_CONFIGURATION.aideCourbes, 'ligne-secondaire'), garantie, noteDeGarantie);
   groupeDeCarte('courbes', 'courbes', table);
 
-  // Minimums des promesses, repliée : un compte pour les deux seuils.
-  const compteDesMinimums = paragraphe('', 'ligne-secondaire');
-  const colonnesDesMinimums = document.createElement('div');
-  colonnesDesMinimums.className = 'colonnes-de-reglage';
-  for (const [seuil, etiquette] of [['texte', TEXTES_DE_CONFIGURATION.seuilTexte], ['nonTexte', TEXTES_DE_CONFIGURATION.seuilNonTexte]] as const) {
-    colonnesDesMinimums.append(champEnColonne(etiquette, champDeSaisie({ seuil }, 'minimums', etiquette), unite(TEXTES_DE_CONFIGURATION.uniteDeContraste)));
+  /** Une ligne de seuil (W3.3, disposition A) : libellé et aide à gauche, champ et unité alignés à droite. */
+  function ligneDeSeuil(etiquette: string, saisie: HTMLInputElement, texteDUnite: string, ...notes: HTMLElement[]): HTMLDivElement {
+    const ligne = document.createElement('div');
+    ligne.className = 'ligne-de-seuil';
+    const textes = document.createElement('div');
+    textes.className = 'ligne-de-seuil-textes';
+    const libelle = document.createElement('span');
+    libelle.className = 'libelle-de-champ';
+    libelle.textContent = etiquette;
+    textes.append(libelle, ...notes);
+    ligne.append(textes, saisie, unite(texteDUnite));
+    return ligne;
   }
-  cartes.minimums.ui.corps.prepend(compteDesMinimums, colonnesDesMinimums, paragraphe(TEXTES_DE_CONFIGURATION.aideMinimums, 'ligne-secondaire'));
-  groupes.contraste = { carte: 'minimums', element: colonnesDesMinimums, compter: (texte) => { compteDesMinimums.textContent = texte; } };
 
-  // Détection des couleurs proches, repliée : un compte par seuil, chacun sous son aide.
+  // Minimums des promesses, repliée : un compte pour les deux seuils, puis une ligne par seuil.
+  const compteDesMinimums = paragraphe('', 'ligne-secondaire');
+  const lignesDesMinimums = document.createElement('div');
+  lignesDesMinimums.className = 'lignes-de-seuil';
+  for (const [seuil, etiquette, aide] of [
+    ['texte', TEXTES_DE_CONFIGURATION.seuilTexte, TEXTES_DE_CONFIGURATION.aideSeuilTexte],
+    ['nonTexte', TEXTES_DE_CONFIGURATION.seuilNonTexte, TEXTES_DE_CONFIGURATION.aideSeuilNonTexte],
+  ] as const) {
+    lignesDesMinimums.append(ligneDeSeuil(etiquette, champDeSaisie({ seuil }, 'minimums', etiquette), TEXTES_DE_CONFIGURATION.uniteDeContraste, paragraphe(aide, 'ligne-secondaire')));
+  }
+  cartes.minimums.ui.corps.prepend(compteDesMinimums, lignesDesMinimums, paragraphe(TEXTES_DE_CONFIGURATION.aideMinimums, 'ligne-secondaire'));
+  groupes.contraste = { carte: 'minimums', element: lignesDesMinimums, compter: (texte) => { compteDesMinimums.textContent = texte; } };
+
+  // Détection des couleurs proches, repliée : une ligne par seuil, son aide et son compte sous le libellé.
   const seuilsProches = [
-    { seuil: 'profilsConfondus', etiquette: TEXTES_DE_CONFIGURATION.seuilProfilsConfondus, unite: TEXTES_DE_CONFIGURATION.uniteDEcart, aide: null },
-    { seuil: 'palettesProches', etiquette: TEXTES_DE_CONFIGURATION.seuilPalettesProches, unite: TEXTES_DE_CONFIGURATION.uniteDEcart, aide: TEXTES_DE_CONFIGURATION.aideEcarts },
+    { seuil: 'profilsConfondus', etiquette: TEXTES_DE_CONFIGURATION.seuilProfilsConfondus, unite: TEXTES_DE_CONFIGURATION.uniteDEcart, aide: TEXTES_DE_CONFIGURATION.aideProfilsConfondus },
+    { seuil: 'palettesProches', etiquette: TEXTES_DE_CONFIGURATION.seuilPalettesProches, unite: TEXTES_DE_CONFIGURATION.uniteDEcart, aide: TEXTES_DE_CONFIGURATION.aidePalettesProches },
     { seuil: 'chromaGrise', etiquette: TEXTES_DE_CONFIGURATION.seuilChromaGrise, unite: TEXTES_DE_CONFIGURATION.uniteDeChroma, aide: TEXTES_DE_CONFIGURATION.aideGris },
   ] as const;
-  const lignesProches = seuilsProches.map(({ seuil, etiquette, unite: texteDUnite, aide }) => {
-    const ligne = document.createElement('div');
-    ligne.className = 'seuil-de-reglage';
+  const lignesProches = document.createElement('div');
+  lignesProches.className = 'lignes-de-seuil';
+  for (const { seuil, etiquette, unite: texteDUnite, aide } of seuilsProches) {
     const compte = paragraphe('', 'ligne-secondaire');
-    ligne.append(champEnColonne(etiquette, champDeSaisie({ seuil }, 'proches', etiquette), unite(texteDUnite)), compte);
-    if (aide) ligne.append(paragraphe(aide, 'ligne-secondaire'));
+    const ligne = ligneDeSeuil(etiquette, champDeSaisie({ seuil }, 'proches', etiquette), texteDUnite, paragraphe(aide, 'ligne-secondaire'), compte);
     groupes[seuil] = { carte: 'proches', element: ligne, compter: (texte) => { compte.textContent = texte; } };
-    return ligne;
-  });
-  cartes.proches.ui.corps.prepend(...lignesProches);
+    lignesProches.append(ligne);
+  }
+  // L'unité ΔEok reste (W3.3) : l'aide de la carte dit ce qu'elle compare.
+  cartes.proches.ui.corps.prepend(lignesProches, paragraphe(TEXTES_DE_CONFIGURATION.aideEcarts, 'ligne-secondaire'));
 
   const vue = document.createElement('div');
   vue.className = 'page-stack colonne';
   vue.append(apercu, ...Object.values(cartes).map(({ ui }) => ui.element));
   element.append(sansRecette, vue);
 
-  /** La table n'est bâtie qu'une fois par liste de crans : un champ retiré perdrait son focus. */
+  /**
+   * La table n'est bâtie qu'une fois par liste de crans : un champ retiré
+   * perdrait son focus. Le tracé en occupe la première ligne, au-dessus des
+   * colonnes : le point d'une nuance tombe au milieu de sa colonne.
+   */
   let cransBatis = '';
   function batirLaTable(crans: readonly number[]): void {
     if (cransBatis === crans.join(',')) return;
     cransBatis = crans.join(',');
     for (let rang = champs.length - 1; rang >= 0; rang -= 1) if ('courbe' in champs[rang].champ) champs.splice(rang, 1);
-    const entete = document.createElement('tr');
-    for (const titre of [TEXTES_DE_CONFIGURATION.cran, TEXTES_DE_CONFIGURATION.clair, TEXTES_DE_CONFIGURATION.sombre]) {
-      const cellule = document.createElement('th');
-      cellule.textContent = titre;
-      entete.append(cellule);
-    }
-    const lignes = crans.map((cran, rang) => {
-      const ligne = document.createElement('tr');
-      const titre = document.createElement('th');
-      titre.textContent = String(cran);
-      ligne.append(titre);
-      for (const mode of MODES) {
-        const cellule = document.createElement('td');
-        cellule.append(champDeSaisie({ courbe: mode, rang }, 'courbes', `${nomDuMode[mode]} ${cran}`));
-        ligne.append(cellule);
-      }
-      return ligne;
+    table.style.setProperty('--colonnes', String(crans.length));
+    const titreDeLigne = (texte: string): HTMLSpanElement => {
+      const titre = document.createElement('span');
+      titre.className = 'titre-de-courbe';
+      titre.textContent = texte;
+      return titre;
+    };
+    const numeros = crans.map((cran) => {
+      const numero = document.createElement('span');
+      numero.className = 'numero-de-courbe';
+      numero.textContent = String(cran);
+      return numero;
     });
-    table.replaceChildren(entete, ...lignes);
+    const lignes = MODES.flatMap((mode) => [
+      titreDeLigne(TEXTES_DE_CONFIGURATION.courbeDuMode[mode]),
+      ...crans.map((cran, rang) => champDeSaisie({ courbe: mode, rang }, 'courbes', `${nomDuMode[mode]} ${cran}`)),
+    ]);
+    table.replaceChildren(trace, titreDeLigne(''), ...numeros, ...lignes);
   }
 
   function signaler(carte: CarteDesReglages, texte: string | null): void {
@@ -406,7 +452,7 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     }
     for (const { mode, pipette, saisie } of saisiesDesFonds) {
       if (document.activeElement !== saisie) saisie.value = lue.fonds[mode];
-      if (document.activeElement !== pipette) pipette.value = lue.fonds[mode].toLowerCase();
+      pipette.poser(lue.fonds[mode]);
     }
     for (const { profil, curseur } of curseurs) {
       if (document.activeElement !== curseur) curseur.value = String(lue.profils[profil].part);

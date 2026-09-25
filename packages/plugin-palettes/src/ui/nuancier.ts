@@ -34,14 +34,18 @@ import {
 
 import type { AnalyseDePalette } from '../analyse';
 import { accoladesDe } from '../presentation';
+import { fondsProposes } from './couleur/propositions';
+import { ouvrirLeSelecteur, suivreLaCouleur } from './couleur/selecteur';
 import { specimenDuRole } from './specimens';
 import {
   NOM_DE_L_ETAT,
   NOM_DU_PROFIL,
   NOM_DU_ROLE,
   TEXTES,
+  TEXTES_DE_CONFIGURATION,
   TEXTES_DU_DETAIL,
   TEXTES_DU_NUANCIER,
+  TEXTES_DU_SELECTEUR,
   contrasteEcrit,
   niveauxEcrits,
 } from './textes';
@@ -60,7 +64,7 @@ export interface GestesDuNuancier {
   surMode(): void;
   /**
    * Un fond saisi dans le sélecteur de couleur de la pastille ([UI-04]) :
-   * `fin` à la fermeture du sélecteur, qui enregistre.
+   * `fin` à la fin du geste, qui enregistre.
    */
   saisirFond(mode: Mode, hexa: string, fin: boolean): void;
   /** Une garantie du détail se choisit dans la carte des garanties ([UI-10]). */
@@ -155,13 +159,12 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   const libelleDuFond = document.createElement('span');
   libelleDuFond.className = 'libelle-de-champ';
   libelleDuFond.textContent = TEXTES_DU_NUANCIER.fond;
-  /*
-   * La pastille ouvre le sélecteur de couleur du navigateur, caché derrière
-   * elle. La mention du fond commun se montre tant que ce sélecteur a le focus.
-   */
+  // La pastille ouvre le sélecteur de couleur sur le fond du thème montré, avec la mention du fond commun.
   const pastilleDuFond = document.createElement('button');
   pastilleDuFond.type = 'button';
   pastilleDuFond.className = 'pastille-du-fond';
+  pastilleDuFond.setAttribute('aria-haspopup', 'dialog');
+  pastilleDuFond.setAttribute('aria-expanded', 'false');
   const teinteDuFond = document.createElement('span');
   teinteDuFond.className = 'pastille-du-fond-teinte';
   teinteDuFond.setAttribute('aria-hidden', 'true');
@@ -169,37 +172,25 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   hexaDuFond.className = 'ligne-secondaire';
   hexaDuFond.setAttribute('aria-hidden', 'true');
   pastilleDuFond.append(teinteDuFond, hexaDuFond);
-  const selecteurDuFond = document.createElement('input');
-  selecteurDuFond.type = 'color';
-  selecteurDuFond.className = 'selecteur-du-fond';
-  selecteurDuFond.tabIndex = -1;
-  selecteurDuFond.setAttribute('aria-hidden', 'true');
-  const mentionDuFond = paragraphe(TEXTES_DU_NUANCIER.fondCommun, 'ligne-secondaire');
-  mentionDuFond.classList.add('mention-du-fond');
-  mentionDuFond.hidden = true;
-  fond.append(libelleDuFond, pastilleDuFond, selecteurDuFond);
-  tete.append(bascule, retour, fond, mentionDuFond);
+  fond.append(libelleDuFond, pastilleDuFond);
+  tete.append(bascule, retour, fond);
 
-  /** Le thème dont le sélecteur est ouvert : un changement de thème pendant la saisie ne détourne pas la valeur. */
+  /** Le thème fixé à l'ouverture du sélecteur : changer de thème pendant la saisie ne détourne pas la valeur. */
   let modeDuSelecteur: Mode = 'light';
   pastilleDuFond.addEventListener('click', () => {
     if (!donnees) return;
     modeDuSelecteur = mode;
-    selecteurDuFond.value = donnees.recette.fonds[mode].toLowerCase();
-    mentionDuFond.hidden = false;
-    selecteurDuFond.focus({ preventScroll: true });
-    try {
-      selecteurDuFond.showPicker();
-    } catch {
-      selecteurDuFond.click();
-    }
+    const { recette, analyse } = donnees;
+    ouvrirLeSelecteur({
+      ancre: pastilleDuFond,
+      hexa: recette.fonds[modeDuSelecteur],
+      etiquette: TEXTES_DE_CONFIGURATION.fondDuMode[modeDuSelecteur],
+      mention: TEXTES_DU_NUANCIER.fondCommun,
+      titreDesPastilles: TEXTES_DU_SELECTEUR.fondsProposes,
+      pastilles: fondsProposes(recette, analyse.rampes, modeDuSelecteur),
+      saisir: (hexa, fin) => gestes.saisirFond(modeDuSelecteur, hexa, fin),
+    });
   });
-  selecteurDuFond.addEventListener('input', () => gestes.saisirFond(modeDuSelecteur, selecteurDuFond.value, false));
-  selecteurDuFond.addEventListener('change', () => {
-    gestes.saisirFond(modeDuSelecteur, selecteurDuFond.value, true);
-    pastilleDuFond.focus({ preventScroll: true });
-  });
-  selecteurDuFond.addEventListener('blur', () => { mentionDuFond.hidden = true; });
 
   const surface = document.createElement('div');
   surface.className = 'nuancier-surface';
@@ -477,6 +468,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     teinteDuFond.style.background = recette.fonds[mode];
     hexaDuFond.textContent = recette.fonds[mode];
     pastilleDuFond.setAttribute('aria-label', TEXTES_DU_NUANCIER.modifierLeFond(mode, recette.fonds[mode]));
+    suivreLaCouleur(pastilleDuFond, recette.fonds[modeDuSelecteur]);
 
     const numeros = document.createElement('div');
     numeros.className = 'nuancier-rangee';

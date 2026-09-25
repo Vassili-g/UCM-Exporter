@@ -268,17 +268,33 @@ imaginer une interaction.
 
 Après validation de W3.1 à W3.3.
 
-- [ ] **W4.1** Réaliser le sélecteur de couleur dans le socle commun s’il sert
+- [x] **W4.1** Réaliser le sélecteur de couleur dans le socle commun s’il sert
   à UCM Exporter, sinon dans `src/ui/` d’UCM Palettes. Sans dépendance
   externe ni requête. Il remplace le sélecteur natif aux quatre endroits :
   référence, création, fonds des Réglages communs, fond de l’aperçu. Un
   glisser prévisualise, sa fin enregistre, comme les curseurs (V9.9).
-- [ ] **W4.2** Tests : conversions entre formats, code saisi invalide gardé
+  Fait dans `src/ui/couleur/` d’UCM Palettes : UCM Exporter ne choisit
+  aucune couleur. Exigence `[UI-13]` de la spécification. La création ne
+  propose aucune pastille : la palette n’existe pas encore, et W3.1 ne
+  dessinait que la référence et le fond. La pipette de l’écran n’est pas
+  ajoutée ; `EyeDropper` se vérifie dans Figma en W8.2. Galerie : « Fond
+  dans le sélecteur de couleur » et « Référence dans le sélecteur de
+  couleur ». Textes N087 à N090, à valider.
+- [x] **W4.2** Tests : conversions entre formats, code saisi invalide gardé
   dans son champ, clavier, focus rendu à la fermeture.
-- [ ] **W4.3** Refaire « Luminosité des nuances » selon W3.2, sans perdre la
-  validation par champ ni « Rétablir ».
-- [ ] **W4.4** Refaire « Minimums des promesses » et « Détection des couleurs
-  proches » selon W3.3, avec leurs résumés repliés.
+  `tests/formatsDeCouleur.test.ts` pour les conversions ; quatre tests
+  d’interface pour le reste. Vus rouges sur deux mutations : Échap qui ne
+  rend pas le focus, un glisser qui enregistre en cours de mouvement.
+- [x] **W4.3** Refaire « Luminosité des nuances » selon W3.2, sans perdre la
+  validation par champ ni « Rétablir ». Le tracé occupe la première ligne
+  de la table, au-dessus des colonnes : chaque champ tombe à 2 px de son
+  point. Titres de ligne « Light » et « Dark » (N091, à valider). Vu rouge
+  sur deux mutations : le pas des flèches, le tracé étendu à la colonne des
+  titres.
+- [x] **W4.4** Refaire « Minimums des promesses » et « Détection des couleurs
+  proches » selon W3.3, avec leurs résumés repliés. Les libellés validés
+  restent ; chaque ligne reçoit une aide courte (N092, à valider), et
+  l’aide des écarts, qui dit ce que mesure ΔEok, passe au pied de sa carte.
 
 Critère : aucune couleur ne se choisit plus dans le sélecteur natif, et les
 Réglages communs ont la même échelle typographique que l’onglet Palettes.
@@ -395,6 +411,11 @@ d’origine, et le plugin ne change jamais la couleur à sa place.
 
 Critère de clôture : contrôles du dépôt, typecheck, build, tests d’interface
 de Palettes et recette Figma terminés.
+
+Après W4, 36 des 83 tests d’interface échouent, tous écrits avant W1 : ils
+visent des classes et des structures que les lots V et W ont remplacées
+(`.config-groupe`, `.bouton-deplier`, `.ligne-reference`). Les 47 autres
+passent, dont les six de W4. W8 récrit ou retire les 36 avant la clôture.
 
 ## Recette mainteneur
 

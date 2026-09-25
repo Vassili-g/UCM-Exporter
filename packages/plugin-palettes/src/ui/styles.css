@@ -229,6 +229,145 @@
   cursor: pointer;
 }
 
+.pipette-teinte {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.pipette[aria-expanded='true'],
+.pastille-du-fond[aria-expanded='true'] {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 1px;
+}
+
+/*
+ * Le sélecteur de couleur (W4.1, maquette W3.1) : 232 px, par-dessus le
+ * contenu, sous le contrôle qui l'ouvre. Ses repères sont blancs sur toute
+ * couleur, quel que soit le thème de Figma : ils portent la couleur choisie,
+ * pas un rôle.
+ */
+.selecteur-de-couleur {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  width: 232px;
+  gap: var(--espace-controle);
+  padding: 10px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--fond);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.selecteur-de-couleur[hidden] {
+  display: none;
+}
+
+.selecteur-zone {
+  position: relative;
+  height: 150px;
+  border-radius: var(--rayon);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.selecteur-teinte {
+  position: relative;
+  height: 10px;
+  margin: 0 6px;
+  border-radius: 5px;
+  background: linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.selecteur-repere {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.selecteur-zone:focus-visible,
+.selecteur-teinte:focus-visible,
+.selecteur-pastille:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.selecteur-ligne {
+  display: flex;
+  gap: var(--espace-serre);
+}
+
+.selecteur-format {
+  height: var(--hauteur-secondaire);
+  flex-shrink: 0;
+  padding: 0 var(--espace-serre);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+  color: var(--texte);
+}
+
+.selecteur-code {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: var(--espace-serre);
+}
+
+.selecteur-code .selecteur-champ {
+  min-width: 0;
+  height: var(--hauteur-secondaire);
+  flex: 1 1 0;
+  padding: 0 var(--espace-serre);
+  font-variant-numeric: tabular-nums;
+}
+
+.selecteur-champ[aria-invalid='true'] {
+  border-color: var(--texte-danger);
+}
+
+.selecteur-mention,
+.selecteur-titre {
+  margin: 0;
+}
+
+.selecteur-separation {
+  height: 1px;
+  margin: 0 -10px;
+  background: var(--bordure);
+}
+
+/* Onze pastilles de 16 px tiennent sur une ligne à 3 px d'écart. */
+.selecteur-pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.selecteur-pastille {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--bordure);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.selecteur-pastille[aria-pressed='true'] {
+  outline: 2px solid var(--texte);
+  outline-offset: 1px;
+}
+
 /* Deux segments, comme les onglets : le mode pressé porte le fond des blocs. */
 .bascule {
   display: flex;
@@ -400,9 +539,43 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.seuil-de-reglage {
+/*
+ * Une ligne par seuil (W3.3, disposition A) : le libellé et son aide à gauche,
+ * le champ et l'unité dans deux colonnes fixes, alignées d'une ligne à l'autre.
+ */
+.lignes-de-seuil {
   display: grid;
-  gap: var(--espace-serre);
+}
+
+.ligne-de-seuil {
+  display: grid;
+  align-items: start;
+  padding: var(--espace-controle) 0;
+  border-top: 1px solid var(--bordure);
+  gap: var(--espace-controle);
+  grid-template-columns: minmax(0, 1fr) 56px 44px;
+}
+
+.ligne-de-seuil:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.ligne-de-seuil-textes {
+  display: grid;
+  gap: 2px;
+}
+
+.ligne-de-seuil-textes .ligne-secondaire {
+  margin: 0;
+}
+
+.ligne-de-seuil .champ-nombre {
+  width: 56px;
+}
+
+.ligne-de-seuil .unite {
+  line-height: var(--hauteur-secondaire);
 }
 
 /* L'unité d'une mesure avancée, après son champ : « :1 », « ΔEok », « chroma » (V9.8). */
@@ -417,9 +590,13 @@
   gap: var(--espace-serre);
 }
 
-/* Le tracé des deux courbes, au-dessus de leur table (V9.4) : plein en Light, tireté en Dark. */
+/*
+ * Le tracé des deux courbes (V9.4, W3.2) : plein en Light, tireté en Dark. Il
+ * occupe la première ligne de la table, au-dessus des colonnes des nuances.
+ */
 .trace-des-courbes {
   padding: var(--espace-serre) 0;
+  grid-column: 2 / -1;
 }
 
 .trace-courbes {
@@ -458,21 +635,36 @@
   text-anchor: middle;
 }
 
-/* Les deux courbes côte à côte, un cran par ligne : onze lignes tiennent en largeur minimale. */
+/*
+ * Une colonne par nuance, sous son point du tracé, et une ligne par thème
+ * (W3.2, disposition A). Les champs prennent la taille du corps : onze
+ * tiennent à 500 px.
+ */
 .table-courbes {
-  border-collapse: collapse;
+  display: grid;
+  align-items: center;
+  gap: 2px;
   font-variant-numeric: tabular-nums;
+  grid-template-columns: 28px repeat(var(--colonnes), minmax(0, 1fr));
 }
 
-.table-courbes th {
-  padding: var(--espace-serre) var(--espace-controle) var(--espace-serre) 0;
+.titre-de-courbe {
   color: var(--texte-second);
-  font-weight: 400;
-  text-align: left;
 }
 
-.table-courbes td {
-  padding: 2px var(--espace-controle) 2px 0;
+.numero-de-courbe {
+  color: var(--texte-second);
+  font-size: 10px;
+  text-align: center;
+}
+
+.table-courbes .champ-de-courbe {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  font-size: var(--corps);
+  font-weight: 400;
+  text-align: center;
 }
 
 .champ-nombre {
@@ -975,25 +1167,6 @@
   height: 16px;
   border: 1px solid var(--bordure);
   border-radius: 4px;
-}
-
-/* Le sélecteur du navigateur reste sous la pastille, invisible : il ne sert qu'à s'ouvrir là. */
-.selecteur-du-fond {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  border: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.mention-du-fond {
-  flex-basis: 100%;
-  margin: 0;
-  text-align: right;
 }
 
 .nuancier-surface {

@@ -7,8 +7,10 @@
  */
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
+import { MOTIF_HEXA } from '../edition';
 import { createCarte } from './carte';
 import { champEnColonne, createChoixDeBase, type ChoixDeBase } from './champs';
+import { createPipette } from './couleur/selecteur';
 import { TEXTES } from './textes';
 
 export interface CreationUi {
@@ -35,10 +37,6 @@ export function createCreation(gestes: {
   champDuNom.type = 'text';
   champDuNom.className = 'input';
 
-  const pipette = document.createElement('input');
-  pipette.type = 'color';
-  pipette.className = 'pipette';
-  pipette.setAttribute('aria-label', TEXTES.reference);
   const saisie = document.createElement('input');
   saisie.type = 'text';
   saisie.className = 'input champ-creation';
@@ -47,7 +45,16 @@ export function createCreation(gestes: {
   saisie.maxLength = 7;
   // Le libellé de la colonne nomme la pastille, premier champ qu'il contient : le code a le sien.
   saisie.setAttribute('aria-label', TEXTES.reference);
-  pipette.addEventListener('input', () => { saisie.value = pipette.value.toUpperCase(); });
+  // Le sélecteur part du code saisi, ou de l'exemple du champ vide ; il ne propose aucune pastille (W4.1).
+  const pipette = createPipette(TEXTES.reference, () => ({
+    hexa: MOTIF_HEXA.test(saisie.value.trim()) ? saisie.value : saisie.placeholder,
+    saisir: (hexa) => {
+      saisie.value = hexa;
+      pipette.poser(hexa);
+      signaler(null);
+    },
+  }));
+  saisie.addEventListener('input', () => pipette.poser(saisie.value));
 
   let base: ChoixDeBase = 'auto';
   const choixDeBase = createChoixDeBase((choix) => {
@@ -58,7 +65,7 @@ export function createCreation(gestes: {
 
   const colonnes = document.createElement('div');
   colonnes.className = 'colonnes-de-base';
-  colonnes.append(champEnColonne(TEXTES.nom, champDuNom), champEnColonne(TEXTES.reference, pipette, saisie), choixDeBase.element);
+  colonnes.append(champEnColonne(TEXTES.nom, champDuNom), champEnColonne(TEXTES.reference, pipette.bouton, saisie), choixDeBase.element);
 
   const creer = () => gestes.onCreer(saisie.value, champDuNom.value, base);
   const boutonCreer = createButton({ label: TEXTES.creer, onClick: creer });
@@ -92,6 +99,7 @@ export function createCreation(gestes: {
     element: carte.element,
     ouvrir(annulable) {
       saisie.value = '';
+      pipette.poser('');
       champDuNom.value = '';
       base = 'auto';
       choixDeBase.poser(base);
