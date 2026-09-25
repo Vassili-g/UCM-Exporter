@@ -26,7 +26,7 @@ test('[VER-01] chaque palette donne, par mode et par profil, chaque cran avec so
 
 test('[VER-01] chaque promesse porte sa paire, son contraste et son verdict ; chaque alerte, sa mesure', () => {
   const [bleu, jaune] = rapportDeLaRecette(RECETTE, null, 'SRGB', null).palettes;
-  assert.equal(bleu.promesses.length, 56);
+  assert.equal(bleu.promesses.length, 64);
   assert.ok(bleu.promesses.every((promesse) => typeof promesse.contraste === 'number' && ['tenue', 'manquee'].includes(promesse.verdict)), JSON.stringify(bleu.promesses[0]));
   const vive = jaune.alertes.find((alerte) => alerte.code === 'reference-plus-vive');
   assert.ok(vive && vive.code === 'reference-plus-vive' && vive.part > vive.partVivid, JSON.stringify(jaune.alertes));

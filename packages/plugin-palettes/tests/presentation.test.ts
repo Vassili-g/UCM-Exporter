@@ -69,6 +69,7 @@ test('[UI-04] les accolades se déduisent de la table des emplois : deux lignes,
   const decrire = accoladesDe(DEFAUT.crans).map((ligne) => ligne.map((accolade) => `${accolade.emplois.join('·')} ${accolade.debut}-${accolade.fin} [${accolade.libelle.debut}-${accolade.libelle.fin} ${accolade.libelle.alignement}]`));
   assert.deepEqual(decrire, [
     ['on-solid -1--1 [-2-0 center]', 'surface 1-3 [1-6 start]', 'solid·text 7-9 [7-10 start]'],
-    ['border-decorative 3-3 [1-5 center]', 'border-control·focus 6-8 [6-10 start]'],
+    // surface-card, une colonne entre on-solid et surface, passe sur la seconde ligne : son libellé s'y centre.
+    ['surface-card 0-0 [-2-2 center]', 'border-decorative 3-3 [3-5 start]', 'border-control·focus 6-8 [6-10 start]'],
   ]);
 });

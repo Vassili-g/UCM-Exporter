@@ -175,7 +175,8 @@ export function accoladesDe(crans: readonly number[]): Accolade[][] {
   }
   const lignes: { emplois: Emploi[]; debut: number; fin: number }[][] = [];
   for (const groupe of groupes) {
-    const libre = lignes.find((ligne) => ligne.every((autre) => groupe.fin < autre.debut || groupe.debut > autre.fin));
+    // Une colonne libre de chaque côté : le libellé d'une accolade d'une colonne a la place de se centrer.
+    const libre = lignes.find((ligne) => ligne.every((autre) => groupe.fin < autre.debut - 1 || groupe.debut > autre.fin + 1));
     if (libre) libre.push(groupe);
     else lignes.push([groupe]);
   }

@@ -450,6 +450,7 @@ export const NOM_DU_ROLE: Record<Emploi, string> = {
   'on-solid': 'texte sur fond plein',
   text: 'texte coloré',
   surface: 'fond léger',
+  'surface-card': 'fond de carte',
   'border-control': 'bordure de champ',
   'border-decorative': 'séparateur',
   focus: 'anneau de focus',
@@ -1184,7 +1185,8 @@ export const TEXTES_DE_LA_PLANCHE = {
   contrastes: 'Contrastes, nuance par nuance',
   // N094 : chaque usage, son nom et ce qu'il habille ; l'anneau porte l'état focus.
   usages: {
-    surface: { titre: 'Fonds légers', exemples: 'fond d’un bloc, d’un bouton soft' },
+    'surface-card': { titre: 'Fonds de carte', exemples: 'carte, panneau, en-tête de tableau' },
+    surface: { titre: 'Fonds légers', exemples: 'bouton soft, badge, encart' },
     text: { titre: 'Textes colorés', exemples: 'lien, texte d’accent' },
     solid: { titre: 'Fonds pleins', exemples: 'bouton principal, badge plein' },
     'border-control': { titre: 'Bordures de champ', exemples: 'champ de saisie, case' },
@@ -1193,7 +1195,7 @@ export const TEXTES_DE_LA_PLANCHE = {
   },
   etatFocus: 'focus · état focus',
   // N095 : les libellés des spécimens.
-  specimens: { soft: 'Soft', lien: 'Lien coloré', bouton: 'Bouton', champ: 'Champ' },
+  specimens: { soft: 'Soft', lien: 'Lien coloré', bouton: 'Bouton', champ: 'Champ', carte: 'Carte' },
   // N096 : les repères dans une pastille, et la note des profils confondus.
   reperage: '◆',
   confondu: '≈',
@@ -1238,6 +1240,7 @@ export const TEXTES_DE_L_INTERFACE_DE_TEST = {
   },
   composants: {
     etats: ['default', 'hover', 'active', 'focus'],
+    carte: 'Carte',
     plein: 'Bouton plein',
     soft: 'Bouton soft',
     contour: 'Bouton contour',

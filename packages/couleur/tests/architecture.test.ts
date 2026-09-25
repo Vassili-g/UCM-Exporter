@@ -48,6 +48,8 @@ const PROMESSES: [string, number, Membre, Membre, number][] = [
   ['focus sur fond de page', 3, 600, 'fond', 3.63],
   ['focus sur surface au repos', 3, 600, 100, 3.46],
   ['solid survolé sur fond de page', 3, 800, 'fond', 7.45],
+  ['text sur surface-card', 4.5, 700, 50, 5.3],
+  ['border-control sur surface-card', 3, 600, 50, 3.68],
 ];
 
 /** Clarté, teinte et part d'un membre : le fond est gris, sa teinte ne compte pas. */
@@ -85,7 +87,7 @@ for (const [nom, , a, b, releve] of PROMESSES) {
   });
 }
 
-test('vecteur : à dérive nulle, les quatorze promesses tiennent après arrondi à 8 bits', () => {
+test('vecteur : à dérive nulle, les seize promesses tiennent après arrondi à 8 bits', () => {
   const manquees = PROMESSES
     .map(([nom, seuil, a, b]) => ({ nom, seuil, obtenu: minimum(a, b, aHuitBits) }))
     .filter(({ seuil, obtenu }) => !atteintLeSeuil(obtenu, seuil))

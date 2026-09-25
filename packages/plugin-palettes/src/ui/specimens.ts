@@ -3,7 +3,7 @@
  * une interface, peinte avec les couleurs mesurées. Un fond plein porte un
  * bouton et son texte `on-solid`, un texte coloré un mot, une bordure de champ
  * un cadre, un anneau de focus un contour décalé, un séparateur un trait, un
- * fond léger un aplat.
+ * fond léger un aplat, un fond de carte un aplat plus grand, bordé.
  */
 import type { Emploi } from 'ucm-couleur';
 
@@ -36,7 +36,7 @@ export function specimenDuRole(emploi: Emploi, couleur: readonly number[], fond:
     forme.textContent = TEXTES_DES_GARANTIES.specimenTexte;
   } else if (emploi === 'focus') {
     forme.style.outlineColor = rgb(couleur);
-  } else if (emploi === 'surface') {
+  } else if (emploi === 'surface' || emploi === 'surface-card') {
     forme.style.background = rgb(couleur);
   } else {
     forme.style.borderColor = rgb(couleur);

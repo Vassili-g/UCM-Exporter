@@ -7,7 +7,7 @@
  * dessin.
  */
 import { atteintLeSeuil, contraste } from './contraste';
-import { TABLE_DES_EMPLOIS } from './emplois';
+import { TABLE_DES_EMPLOIS, rangDuCranLeger } from './emplois';
 import { fabriquerCran, MODES, PROFILS, type Mode, type Profil } from './rampe';
 import type { Recette } from './recette';
 
@@ -38,7 +38,7 @@ export function garantieDesCourbes(recette: Recette): ManqueDeGarantie[] {
   const manques: ManqueDeGarantie[] = [];
   for (const mode of MODES) {
     const courbe = recette.courbes[mode];
-    const fond = fabriquerCran(courbe[0], 0, 0, recette.gamut).couleur;
+    const fond = fabriquerCran(courbe[rangDuCranLeger(recette.crans)], 0, 0, recette.gamut).couleur;
     for (const { cran, seuil } of cransGarantis(recette)) {
       const L = courbe[recette.crans.indexOf(cran)];
       for (const profil of PROFILS) {

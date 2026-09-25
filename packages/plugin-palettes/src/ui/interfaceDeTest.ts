@@ -34,7 +34,8 @@ export interface CouleursDeLInterface {
 
 /**
  * Les couleurs de l'écran pour une palette et un thème. `on-solid` est le
- * fond du thème. Un état au-delà de la dernière nuance garde la dernière.
+ * fond du thème. Un état au-delà de la dernière nuance garde la dernière ;
+ * `surface-card`, dans une liste sans 50, prend le fond du thème.
  */
 export function couleursDeLInterface(recette: Recette, analyse: AnalyseDePalette, mode: Mode): CouleursDeLInterface {
   const fond = recette.fonds[mode];
@@ -46,6 +47,8 @@ export function couleursDeLInterface(recette: Recette, analyse: AnalyseDePalette
     encreSeconde: encres.seconde,
     emploi(emploi, etat) {
       const depart = analyse.grille.crans.indexOf(TABLE_DES_EMPLOIS[emploi]);
+      // Une liste sans 50 n'a pas de fond de carte : la carte prend le fond du thème.
+      if (depart < 0) return fond;
       return rampe[Math.min(rampe.length - 1, depart + etat)].hexa;
     },
   };
@@ -156,6 +159,7 @@ function ecranDeLEquipe(couleurs: CouleursDeLInterface): HTMLDivElement {
   // Le tableau : une ligne se survole en surface, et se choisit au clic.
   const tableau = noeud('div');
   tableau.className = 'essai-tableau';
+  tableau.style.background = c('surface-card');
   tableau.setAttribute('role', 'listbox');
   tableau.setAttribute('aria-label', e.titre);
   const lignes = e.membres.map(({ nom, role, plein }, rang) => {
@@ -290,6 +294,7 @@ function composantsParEtat(couleurs: CouleursDeLInterface): HTMLDivElement {
       return lien;
     }],
     [t.badge, (etat) => (etat === 0 ? specimen(t.nouveau, c('surface'), c('text')) : null)],
+    [t.carte, (etat) => (etat === 0 ? specimen(t.carte, c('surface-card'), c('text'), c('border-decorative')) : null)],
   ];
 
   const entete = noeud('div');

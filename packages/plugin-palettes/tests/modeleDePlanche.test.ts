@@ -125,20 +125,30 @@ test('[PLA-14] quarante-quatre pastilles nommées profil/mode/cran, chacune une 
   assert.equal(AVEC_GRILLE.peints.find(({ nom }) => nom === 'vivid/light/700')?.hexa, '#0E5DC6');
 });
 
-test('W3.6 : les usages suivent le profil porteur, un état par colonne, default, hover et active ; l’anneau et le séparateur n’en ont qu’un', () => {
+test('W3.6 X6 : les usages suivent le profil porteur, un état par colonne, default, hover et active ; la carte, l’anneau et le séparateur n’en ont qu’un', () => {
   const usages = trouver(trouver(MODELE.racine, 'thème light'), 'quelle nuance pour quel usage');
   assert.equal((usages.enfants[0] as NoeudTexte).contenu, 'Quelle nuance pour quel usage · Vivid');
   assert.deepEqual(textes(trouver(usages, 'états')).map((noeud) => noeud.contenu), ['default', 'hover', 'active']);
   const lignes = usages.enfants.filter((noeud) => noeud.nom.startsWith('usage '));
   assert.deepEqual(lignes.map((noeud) => [noeud.nom, (noeud as NoeudCadre).enfants.length - 1]), [
-    ['usage surface', 3], ['usage text', 3], ['usage solid', 3], ['usage border-control', 3], ['usage focus', 1], ['usage border-decorative', 1],
+    ['usage surface-card', 1], ['usage surface', 3], ['usage text', 3], ['usage solid', 3], ['usage border-control', 3], ['usage focus', 1], ['usage border-decorative', 1],
   ]);
   const numero = (nom: string) => textes(trouver(usages, nom)).find((noeud) => noeud.nom === 'numéro')!.contenu;
   assert.deepEqual(['text default', 'text hover', 'text active'].map(numero), ['700', '800', '900']);
   assert.equal(numero('focus default'), '600');
+  assert.equal(numero('surface-card default'), '50');
+  assert.equal(trouver(trouver(usages, 'surface-card default'), 'spécimen').fond?.hexa, MODELE.peints.find(({ nom }) => nom === 'vivid/light/50')?.hexa);
   const fondDuSpecimen = trouver(trouver(usages, 'surface default'), 'spécimen').fond?.hexa;
   assert.equal(fondDuSpecimen, MODELE.peints.find(({ nom }) => nom === 'vivid/light/100')?.hexa);
   assert.equal(trouver(trouver(usages, 'border-control hover'), 'spécimen').trait?.couleur.hexa, MODELE.peints.find(({ nom }) => nom === 'vivid/light/700')?.hexa);
+});
+
+test('X6 [VER-05] : une liste sans 50 n’a ni la ligne « Fonds de carte » ni ses garanties, et la planche se construit', () => {
+  const sans50: Recette = { ...RECETTE, crans: RECETTE.crans.slice(1), courbes: { light: RECETTE.courbes.light.slice(1), dark: RECETTE.courbes.dark.slice(1) } };
+  const usages = trouver(trouver(modeleDeCadre(sans50, BLEU, 'SRGB').racine, 'thème light'), 'quelle nuance pour quel usage');
+  const lignes = usages.enfants.filter((noeud) => noeud.nom.startsWith('usage ')).map((noeud) => noeud.nom);
+  assert.equal(lignes.includes('usage surface-card'), false);
+  assert.equal(textes(usages).some((noeud) => noeud.nom === 'garantie 15' || noeud.nom === 'garantie 16'), false);
 });
 
 test('W5.5 [VER-13] : chaque paire du moteur se lit dans les usages de chaque thème, avec son sens, son résultat, son ratio et son niveau WCAG', () => {
@@ -148,7 +158,7 @@ test('W5.5 [VER-13] : chaque paire du moteur se lit dans les usages de chaque th
     assert.deepEqual([...lues].sort((a, b) => a - b), PAIRES.map(({ numero }) => numero), mode);
   }
   const lignes = (nom: string) => textes(trouver(MODELE.racine, nom)).filter((noeud) => noeud.nom.startsWith('garantie ')).map((noeud) => noeud.contenu);
-  assert.deepEqual(lignes('text default'), ['✓ sur fond : 5,76:1 · AA', '✓ sur surface 100 : 5,34:1 · AA']);
+  assert.deepEqual(lignes('text default'), ['✓ sur fond : 5,76:1 · AA', '✓ sur surface 100 : 5,34:1 · AA', '✓ sur surface-card 50 : 5,76:1 · AA']);
   // Un élément graphique n'a que AA : 4,19:1 ne se juge pas en texte courant.
   assert.deepEqual(lignes('surface default'), ['✓ text 700 dessus : 5,34:1 · AA', '✓ border-control 600 dessus : 4,19:1 · AA', '✓ focus 600 dessus : 4,19:1 · AA']);
   assert.deepEqual(lignes('solid default'), ['✓ on-solid dessus : 5,76:1 · AA']);

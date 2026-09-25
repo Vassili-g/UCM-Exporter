@@ -48,6 +48,7 @@ const EMPLOIS_11_2 = {
   'on-solid': 'fond',
   text: 700,
   surface: 100,
+  'surface-card': 50,
   'border-control': 600,
   'border-decorative': 300,
   focus: 600,
@@ -69,6 +70,8 @@ const TABLE_11_2: [number, string, string, 'texte' | 'nonTexte', number | 'fond'
   [12, 'focus', 'fond', 'nonTexte', 600, 'fond'],
   [13, 'focus', 'surface', 'nonTexte', 600, 100],
   [14, 'solid+1', 'fond', 'nonTexte', 800, 'fond'],
+  [15, 'text', 'surface-card', 'texte', 700, 50],
+  [16, 'border-control', 'surface-card', 'nonTexte', 600, 50],
 ];
 
 const ecrire = (membre: MembrePaire) =>
@@ -78,16 +81,17 @@ test('[VER-03] la table des emplois est celle de la section 11.2', () => {
   assert.deepEqual(TABLE_DES_EMPLOIS, EMPLOIS_11_2);
 });
 
-test('[VER-03] le moteur porte les quatorze paires de la section 11.2, dans leur ordre', () => {
+test('[VER-03] le moteur porte les seize paires de la section 11.2, dans leur ordre', () => {
   assert.deepEqual(
     PAIRES.map((p) => [p.numero, ecrire(p.premier), ecrire(p.second), p.seuil]),
     TABLE_11_2.map(([numero, premier, second, seuil]) => [numero, premier, second, seuil]),
   );
 });
 
-test('[VER-05] les paires visent, sur les crans par défaut, exactement les crans que la validation exige', () => {
+test('[VER-05] les paires visent, sur les crans par défaut, les crans que la validation exige, et la 50 facultative', () => {
   const vises = new Set(TABLE_11_2.flatMap(([, , , , a, b]) => [a, b]).filter((c) => c !== 'fond'));
-  assert.deepEqual([...vises].sort((a, b) => (a as number) - (b as number)), [...CRANS_DES_EMPLOIS]);
+  assert.deepEqual([...vises].sort((a, b) => (a as number) - (b as number)), [50, ...CRANS_DES_EMPLOIS]);
+  assert.equal(CRANS_DES_EMPLOIS.includes(50), false, 'une liste sans 50 reste lisible');
 });
 
 const nature = (couleur: 'fond' | number) => couleur === 'fond' ? 'fond' : 'cran';
@@ -135,9 +139,9 @@ for (const [numero, , , , cranPremier, cranSecond] of TABLE_11_2) {
   }
 }
 
-test('[VER-03] une palette compte cinquante-six promesses, par mode, puis par profil, puis par paire', () => {
+test('[VER-03] une palette compte soixante-quatre promesses, par mode, puis par profil, puis par paire', () => {
   const promesses = verifierPromesses(recette, BLEU);
-  assert.equal(promesses.length, 56);
+  assert.equal(promesses.length, 64);
   const attendu = ['light', 'dark'].flatMap((mode) =>
     ['soft', 'vivid'].flatMap((profil) => PAIRES.map((paire) => `${mode} ${profil} ${paire.numero}`)));
   assert.deepEqual(promesses.map((p) => `${p.mode} ${p.profil} ${p.paire.numero}`), attendu);
@@ -177,6 +181,14 @@ test('[VER-03] un cran reçoit ses contrastes contre le fond, le blanc et le noi
   assert.equal(mesurerCran(lireHexa('#4596FA')!, fond, seuils).seuilTenu, null);
 });
 
+test('[VER-05] une liste sans 50 n’a ni surface-card ni ses deux paires, et garde les quatorze autres', () => {
+  const sans50 = { ...recette, crans: recette.crans.slice(1), courbes: { light: recette.courbes.light.slice(1), dark: recette.courbes.dark.slice(1) } };
+  const promesses = verifierPromesses(sans50, BLEU);
+  assert.equal(promesses.length, 56);
+  assert.deepEqual([...new Set(promesses.map((p) => p.paire.numero))], PAIRES.filter((paire) => paire.numero <= 14).map((paire) => paire.numero));
+  assert.deepEqual(emploisDuCran(sans50.crans, 0).map(({ emploi }) => emploi), ['surface']);
+});
+
 test('[VER-04] un cran n’a pas de verdict', () => {
   const mesure = mesurerCran(lireHexa('#0E5DC6')!, lireHexa('#F7F7F7')!, recetteParDefaut().seuils);
   assert.deepEqual(Object.keys(mesure).sort(), ['blanc', 'fond', 'noir', 'seuilTenu']);
@@ -187,7 +199,7 @@ test('section 9.3 : chaque cran porte les emplois que la table lui confie, état
     .map(({ emploi, decalage }) => `${emploi}${decalage ? `+${decalage}` : ''}`);
   const parCran = Object.fromEntries(recette.crans.map((cran, rang) => [cran, nommer(rang)]));
   assert.deepEqual(parCran, {
-    50: [],
+    50: ['surface-card'],
     100: ['surface'],
     200: ['surface+1'],
     300: ['surface+2', 'border-decorative'],
@@ -201,7 +213,7 @@ test('section 9.3 : chaque cran porte les emplois que la table lui confie, état
   });
 });
 
-test('section 9.4 : les quatorze paires forment huit associations, avec leurs états', () => {
+test('section 9.4 : les seize paires forment dix associations, avec leurs états', () => {
   const decrites = ASSOCIATIONS.map((association) => {
     const paires = PAIRES.filter((paire) => cleDeLAssociation(associationDe(paire)) === cleDeLAssociation(association));
     return `${cleDeLAssociation(association)} ${paires.map((paire) => `${paire.numero}:${etatDeLaPaire(paire)}`).join(',')}`;
@@ -215,5 +227,7 @@ test('section 9.4 : les quatorze paires forment huit associations, avec leurs é
     'focus/fond 12:0',
     'focus/surface 13:0',
     'solid/fond 14:1',
+    'text/surface-card 15:0',
+    'border-control/surface-card 16:0',
   ]);
 });

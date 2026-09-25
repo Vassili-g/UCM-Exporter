@@ -20,6 +20,7 @@ import {
   contraste,
   decalagesDeLEmploi,
   ecrireContraste,
+  emploiPresent,
   ecrireHexa,
   empreinte,
   lireHexa,
@@ -159,8 +160,12 @@ const USAGE = { libelle: 176, etat: 168 } as const;
 /** Un spécimen d'usage. */
 const SPECIMEN = { largeur: 96, hauteur: 32 } as const;
 
-/** Les usages, dans l'ordre du récit : du fond léger au séparateur. `on-solid` se lit sur `solid`. */
-const USAGES: readonly Emploi[] = ['surface', 'text', 'solid', 'border-control', 'focus', 'border-decorative'];
+/**
+ * Les usages, dans l'ordre du récit : du fond de carte au séparateur.
+ * `on-solid` se lit sur `solid`. `surface-card` n'a sa ligne que dans une
+ * liste qui porte la 50.
+ */
+const USAGES: readonly Emploi[] = ['surface-card', 'surface', 'text', 'solid', 'border-control', 'focus', 'border-decorative'];
 
 /** Les états d'un emploi, dans le vocabulaire des composants (W3.6), rangés par décalage. */
 export const ETATS = ['default', 'hover', 'active'] as const;
@@ -330,6 +335,13 @@ function specimen(contexte: Contexte, emploi: Emploi, couleur: Rgb8, mode: Mode,
   switch (emploi) {
     case 'surface':
       return cadre('spécimen', 'HORIZONTAL', [texte('libellé', a.soft, 'role', texteColore)], { ...boite, fond: peint, margeLaterale: TRAME, alignement: A_GAUCHE });
+    case 'surface-card': {
+      // Une carte a la clarté du fond : le filet de `border-decorative` la borde.
+      const filetDeCarte = peinture(nuance(contexte, porteur, mode, TABLE_DES_EMPLOIS['border-decorative']).couleur, contexte.profil);
+      return cadre('spécimen', 'HORIZONTAL', [texte('libellé', a.carte, 'role', texteColore)], {
+        ...boite, fond: peint, trait: { couleur: filetDeCarte, epaisseur: 1, tirets: false }, margeLaterale: TRAME, alignement: A_GAUCHE,
+      });
+    }
     case 'text':
       return cadre('spécimen', 'HORIZONTAL', [texte('libellé', a.lien, 'role', peint)], { ...boite, alignement: A_GAUCHE });
     case 'solid':
@@ -415,7 +427,7 @@ function sectionDesUsages(contexte: Contexte, mode: Mode, encres: Encres, largeu
   return cadre('quelle nuance pour quel usage', 'VERTICAL', [
     texte('titre', TEXTES_DE_LA_PLANCHE.titreDesUsages(NOM_DU_PROFIL[contexte.analyse.ancrage.profil]), 'theme', encres.encre),
     entete,
-    ...USAGES.flatMap((emploi) => [filet(encres.filet), ligneDUsage(contexte, emploi, mode, encres)]),
+    ...USAGES.filter((emploi) => emploiPresent(emploi, contexte.analyse.grille.crans)).flatMap((emploi) => [filet(encres.filet), ligneDUsage(contexte, emploi, mode, encres)]),
   ], { espacement: 2 * TRAME, largeur });
 }
 

@@ -1557,6 +1557,14 @@
   border-radius: 3px;
 }
 
+/* Une carte : plus grande qu'un fond léger, et bordée, puisqu'elle a la clarté du fond. */
+.specimen-forme[data-role='surface-card'] {
+  width: 52px;
+  height: 20px;
+  border: 1px solid var(--bordure-surface);
+  border-radius: 4px;
+}
+
 .specimen-forme[data-role='border-control'],
 .specimen-forme[data-role='border-decorative'] {
   width: 40px;

@@ -6,7 +6,7 @@
  */
 import { lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
 import { distanceOk, partDeChroma } from './contraste';
-import { EMPLOIS, TABLE_DES_EMPLOIS } from './emplois';
+import { EMPLOIS, EMPLOIS_FACULTATIFS, TABLE_DES_EMPLOIS, rangDuCranLeger } from './emplois';
 import { estPresqueGrise, partsDe, rampesDe, referenceDe } from './palette';
 import { estLibre, etendueDe, grilleDe } from './nuances';
 import { decalagesDeLEmploi } from './promesses';
@@ -37,13 +37,15 @@ export const CRANS_PALETTES_PROCHES: readonly number[] = [500, 600, 700];
 
 /**
  * Les rangs des crans que la table des emplois vise dans `crans`, états `+1`
- * et `+2` compris quand l'emploi les prend dans une paire ([VER-11]).
+ * et `+2` compris quand l'emploi les prend dans une paire ([VER-11]). La 50
+ * de `surface-card` n'en est pas : les deux profils s'y confondent sur la
+ * plupart des teintes claires, et aucun réglage ne les sépare.
  */
 export function rangsDesEmplois(recette: Recette): number[] {
   const rangs = new Set<number>();
   for (const nom of EMPLOIS) {
     const cible = TABLE_DES_EMPLOIS[nom];
-    if (cible === 'fond') continue;
+    if (cible === 'fond' || EMPLOIS_FACULTATIFS.includes(nom)) continue;
     const rang = recette.crans.indexOf(cible);
     for (const decalage of decalagesDeLEmploi(nom)) {
       if (rang >= 0 && rang + decalage < recette.crans.length) rangs.add(rang + decalage);
@@ -127,7 +129,7 @@ export function alertesDesFonds(recette: Recette): Alerte[] {
     const fond = lireHexa(recette.fonds[mode]);
     if (!fond) continue;
     const clarte = rgb8VersOklch(fond).L;
-    const cran = recette.courbes[mode][0];
+    const cran = recette.courbes[mode][rangDuCranLeger(recette.crans)];
     const hors = mode === 'light' ? clarte < cran - TOLERANCE_FOND : clarte > cran + TOLERANCE_FOND;
     if (hors) alertes.push({ code: 'fond-hors-courbe', mode, clarte, cran });
   }

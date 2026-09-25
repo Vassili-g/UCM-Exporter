@@ -1,11 +1,12 @@
 /**
- * Les promesses des emplois : quatorze paires par palette, par mode et par
+ * Les promesses des emplois : seize paires par palette, par mode et par
  * profil, jugées sur la table fixe des emplois ([VER-03] à [VER-07], section
- * 11.2 de la spécification).
+ * 11.2 de la spécification). Les paires d'un emploi facultatif ne se jugent
+ * que dans une liste qui porte son cran.
  */
 import { lireHexa, type Rgb8 } from './conversions';
 import { atteintLeSeuil, contraste } from './contraste';
-import { EMPLOIS, TABLE_DES_EMPLOIS, type Emploi } from './emplois';
+import { EMPLOIS, EMPLOIS_FACULTATIFS, TABLE_DES_EMPLOIS, emploiPresent, type Emploi } from './emplois';
 import { rampesDe } from './palette';
 import { MODES, PROFILS, type Mode, type Profil, type Rampes } from './rampe';
 import type { Palette, Recette, Seuils } from './recette';
@@ -23,7 +24,7 @@ export interface Paire {
 const emploi = (nom: Emploi, decalage: 0 | 1 | 2 = 0): MembrePaire => ({ emploi: nom, decalage });
 const FOND: MembrePaire = { fond: true };
 
-/** Les quatorze paires de la section 11.2, dans leur ordre. */
+/** Les seize paires de la section 11.2, dans leur ordre ; 15 et 16 jugent ce qu'une carte porte. */
 export const PAIRES: readonly Paire[] = [
   { numero: 1, premier: emploi('text'), second: FOND, seuil: 'texte' },
   { numero: 2, premier: emploi('text'), second: emploi('surface'), seuil: 'texte' },
@@ -39,6 +40,8 @@ export const PAIRES: readonly Paire[] = [
   { numero: 12, premier: emploi('focus'), second: FOND, seuil: 'nonTexte' },
   { numero: 13, premier: emploi('focus'), second: emploi('surface'), seuil: 'nonTexte' },
   { numero: 14, premier: emploi('solid', 1), second: FOND, seuil: 'nonTexte' },
+  { numero: 15, premier: emploi('text'), second: emploi('surface-card'), seuil: 'texte' },
+  { numero: 16, premier: emploi('border-control'), second: emploi('surface-card'), seuil: 'nonTexte' },
 ];
 
 /**
@@ -71,7 +74,7 @@ export function etatDeLaPaire(paire: Paire): EtatDePaire {
 /** La clé d'une association, `text/surface` ou `border-control/fond`, pour grouper et comparer. */
 export const cleDeLAssociation = (association: Association): string => `${association.premier}/${association.second}`;
 
-/** Les huit associations, dans l'ordre de leur première paire. */
+/** Les dix associations, dans l'ordre de leur première paire. */
 export const ASSOCIATIONS: readonly Association[] = PAIRES
   .map(associationDe)
   .filter((association, rang, toutes) => toutes.findIndex((autre) => cleDeLAssociation(autre) === cleDeLAssociation(association)) === rang);
@@ -187,16 +190,24 @@ function contexteDe(recette: Recette, palette: Palette): Contexte {
   };
 }
 
+/** Vrai quand chaque membre de la paire a son cran dans la liste : un emploi facultatif peut manquer. */
+export function paireJugeable(paire: Paire, crans: readonly number[]): boolean {
+  return [paire.premier, paire.second].every((membre) =>
+    'fond' in membre || !EMPLOIS_FACULTATIFS.includes(membre.emploi) || emploiPresent(membre.emploi, crans));
+}
+
 /**
- * Les cinquante-six promesses d'une palette, quatorze par mode et par profil,
- * rangées par mode, puis par profil, puis dans l'ordre des paires.
+ * Les promesses d'une palette : soixante-quatre, seize par mode et par profil,
+ * ou cinquante-six dans une liste sans 50, rangées par mode, puis par profil,
+ * puis dans l'ordre des paires.
  */
 export function verifierPromesses(recette: Recette, palette: Palette): Promesse[] {
   // Une palette libre sort du modèle : elle n'a ni emplois ni promesses (W6).
   if (palette.crans !== undefined) return [];
   const contexte = contexteDe(recette, palette);
+  const paires = PAIRES.filter((paire) => paireJugeable(paire, recette.crans));
   return MODES.flatMap((mode) =>
-    PROFILS.flatMap((profil) => PAIRES.map((paire) => juger(paire, mode, profil, contexte))));
+    PROFILS.flatMap((profil) => paires.map((paire) => juger(paire, mode, profil, contexte))));
 }
 
 /** Le nombre de promesses manquées, qui fait le verdict de la palette ([VER-07]). */
