@@ -5,9 +5,9 @@
  * L'arbre est synthétique et ses noms sont neutres. Il réunit les structures
  * qui produisaient les messages en trop : une racine de variant à borne brute
  * et à ombre, un wrapper interne exposé, un composant publié sans règles fait
- * d'un tracé, un texte masqué réglé `Fill`, un calque absolu à côté du wrapper
- * et un axe d'état en `-ed`. Chaque lot du plan fait évoluer l'attendu de la
- * famille qu'il corrige.
+ * d'un tracé, un texte masqué réglé `Fill`, un calque absolu à côté du wrapper,
+ * un axe d'état en `-ed` et une racine atténuée sans variable. Chaque lot du
+ * plan fait évoluer l'attendu de la famille qu'il corrige.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -183,7 +183,7 @@ const ombre = {
 function racine(
   etat: string,
   maitre: ReturnType<typeof maitreDuGlyphe>,
-  options: { effet?: boolean; texteVisible?: boolean; absolu?: boolean },
+  options: { effet?: boolean; texteVisible?: boolean; absolu?: boolean; opacite?: number },
 ) {
   return node('COMPONENT', `State=${etat}`, [
     wrapper(options.texteVisible ?? true, maitre),
@@ -205,6 +205,7 @@ function racine(
     width: 80,
     height: 32,
     ...(options.effet ? { effects: [ombre], effectStyleId: 'S:ombre' } : {}),
+    ...(options.opacite !== undefined ? { opacity: options.opacite } : {}),
   });
 }
 
@@ -215,12 +216,14 @@ function monterLeScenario(leGlyphe: Glyphe) {
     parDefaut,
     racine('Focused', maitre, { effet: true }),
     racine('Pressed', maitre, { effet: true, absolu: true }),
+    // Atténué sans variable, comme l'état désactivé du composant réel.
+    racine('Disabled', maitre, { opacite: 0.5 }),
   ], {
     key: 'cle-root',
     componentPropertyDefinitions: {
       State: {
         type: 'VARIANT',
-        variantOptions: ['Default', 'Focused', 'Pressed'],
+        variantOptions: ['Default', 'Focused', 'Pressed', 'Disabled'],
         defaultValue: 'Default',
       },
       'Show label#0:1': { type: 'BOOLEAN', defaultValue: true },
@@ -302,13 +305,17 @@ function monterLeScenario(leGlyphe: Glyphe) {
 }
 
 /**
- * Les familles du tableau de la section 1 du plan dont la cause est le moteur,
- * reconnues à un extrait de leur message.
+ * Les familles dont la cause est le moteur, reconnues à un extrait de leur
+ * message. Une famille ne réunit que les messages qu'un même lot fait taire.
  */
 const FAMILLES = {
   borneSansVariable: /^Propriété sans token associé\. Des variants déclarent un \*\*min width\*\*/,
   effet: /^Propriété non supportée par le moteur\. Le contrat n’exportera pas l’ombre ou le flou/,
-  calqueAbsolu: /^Layer « (Overlay|Mask|Circle) »/,
+  opaciteDuCalqueAbsolu: /^Layer « Overlay », opacity : le contrat n’a aucun champ/,
+  opaciteDeRacine: /^Layer « State=Disabled », opacity : le contrat n’a aucun champ/,
+  cadreSansAutoLayout: /^Layer « Overlay » : il range 2 layers/,
+  dimensionSousContrainte: /^Layer « (Mask|Circle) », (width|height) :/,
+  resteDuCalqueAbsolu: /^Layer « (Mask », mask|Circle », corner radius|Overlay », width|Overlay », height) :/,
   horsDuNodeElu: /n’est pas à l’intérieur de/,
   dessinImbrique: /^Layer « Shape » : il n’est fait que de tracés vectoriels/,
   imbriqueSansRegles: /^Le composant « Root » intègre « Glyph », dont une propriété n’est pas documentée : tone./,
@@ -384,7 +391,7 @@ test('la borne et l’ombre des racines de variant se regroupent en une ligne ch
     [...resultat.localisations].find(([message]) => FAMILLES[famille].test(message))?.[1];
 
   assert.equal(comptes.borneSansVariable, 1);
-  assert.equal(cibles('borneSansVariable')?.length, 3);
+  assert.equal(cibles('borneSansVariable')?.length, 4);
   assert.equal(comptes.effet, 1);
   assert.equal(cibles('effet')?.length, 2);
 });
@@ -398,8 +405,8 @@ test('un imbriqué sans règles donne son point en tête, en perte de portabilit
   assert.equal(contrat.meta.coverage.portable, 'partial');
   assert.equal(comptes.imbriqueSansRegles, 1);
   assert.equal(comptes.dessinImbrique, 0);
-  // Une instance par variant et par place : Leading et Trailing, dans les trois.
-  assert.equal(resultat.localisations.get(diagnostics[0].message)?.length, 6);
+  // Une instance par variant et par place : Leading et Trailing, dans les quatre.
+  assert.equal(resultat.localisations.get(diagnostics[0].message)?.length, 8);
   const point = resultat.parties.get(diagnostics[0].message);
   assert.equal(point?.severite, 'danger');
   assert.deepEqual(point?.elements, ['tone']);
