@@ -409,7 +409,8 @@ plusieurs garanties en échec.
 |---|---|
 | Q1, interface d’exemple sur la planche | Absorbée par la refonte de la planche |
 | Q2, pas de l’ajustement | 0,01 de luminosité |
-| Q3, luminosité seule ou aussi chroma | Question retournée ; décision de ce plan : luminosité seule, parce que la chroma déplace peu le contraste et que l’intensité se règle déjà dans « Intensités » |
+| Ajuster la couleur de référence | Gardé |
+| Q3, luminosité seule ou aussi chroma | Luminosité seule : la chroma déplace peu le contraste, et l’intensité se règle déjà dans « Intensités » |
 | Q4, garder l’originale | Oui |
 | Treize nuances plus foncées | Choix sur rampes calculées, entre 450 et 550 et deux nuances après 950 |
 | Numéros d’une palette libre | Multiples de 50, choisis librement |
