@@ -1,9 +1,9 @@
 # Plan d'évolution du moteur : propriétés visuelles et messages de racine
 
-> Statut : en cours. E0, E5, E1 et E2 sont faits, H0, H1 et H2 franchies ;
-> leurs preuves, décisions et textes retenus sont dans
+> Statut : en cours. E0, E5, E1, E2 et E3 sont faits, H0, H1 et H2
+> franchies ; leurs preuves, décisions et textes retenus sont dans
 > [PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md), qui fait foi
-> sur la section 9. Le prochain lot est E3. Ce plan réunit deux sujets qui
+> sur la section 9. Le prochain lot est E4. Ce plan réunit deux sujets qui
 > touchent les mêmes sites du moteur. Le premier exécute les décisions de H3
 > ([DECISION-PROPRIETES-VISUELLES.md](./DECISION-PROPRIETES-VISUELLES.md)) et
 > fait passer le contrat en 14.0. Le second étend le regroupement des messages
@@ -437,7 +437,7 @@ première action sans preuve.
 ## 7. Lots
 
 Ordre : E0 (fait), E5 (fait), H0 et H2 (franchies), E1 (fait), porte H1
-(franchie), E2 (fait), E3, E4, E6, E7, E8, E9, E10.
+(franchie), E2 (fait), E3 (fait), E4, E6, E7, E8, E9, E10.
 
 E1 n'attend plus rien : il ne dépend d'aucun texte de H1. La porte H1 vient
 après lui ; l'agent y présente la section 9 et s'arrête.
@@ -630,48 +630,48 @@ Faits : F1 à F4, F10 à F12. Attend E1, H0 (M2, M3) et H1 (textes 9.1.2 à
 9.1.5). Tests : un nouveau `effectStyles.test.ts`, `compactVariants.test.ts`,
 `unsupportedProperties.test.ts`, `messagesDeRacine.test.ts`, le scénario.
 
-- [ ] Tests : une racine et un enfant portant le même style donnent une entrée
+- [x] Tests : une racine et un enfant portant le même style donnent une entrée
       de catalogue et deux usages, `[]` et le chemin de l'enfant ; un style
       dont `offsetY` vaut 4 sans variable avertit une fois et publie l'effet
       sans `offsetY` ; un calque sans style avertit et ne publie aucun usage ;
       un style qui contient un bruit publie ses ombres et avertit du bruit ;
       deux vues qui ne diffèrent que par leur ombre partagent leur structure.
-- [ ] Un module `effectStyles.ts`, sur le modèle de
+- [x] Un module `effectStyles.ts`, sur le modèle de
       `extractVariantTypography.ts` : chargeur injectable et mis en cache par
       identifiant, liaisons lues sur `style.effects[i]`, traduction en
       vocabulaire CSS dans l'ordre mesuré à M3, texte de H1 pour un calque sans
       style, un style introuvable, un champ sans variable et un effet que le
       moteur n'écrit pas. Un style chargé dont `type` n'est pas `EFFECT` compte
       comme introuvable.
-- [ ] L'écart entre les effets d'un calque et ceux de son style (9.1.3)
+- [x] L'écart entre les effets d'un calque et ceux de son style (9.1.3)
       s'écrit : M2 montre que le style reste appliqué après la modification
       d'un effet, marqué modifié.
-- [ ] Ordre des ombres : M3 montre que l'ombre ajoutée en dernier peint
+- [x] Ordre des ombres : M3 montre que l'ombre ajoutée en dernier peint
       au-dessus. Son rang dans `effects` se lit par l'API avant d'écrire la
       traduction ; sans cette lecture, E3 s'arrête à cette case.
-- [ ] Scénario : le faux `getStyleByIdAsync` rend aujourd'hui le même text
+- [x] Scénario : le faux `getStyleByIdAsync` rend aujourd'hui le même text
       style pour tout identifiant, `S:ombre` compris. Il répond désormais par
       identifiant, avec un effect style pour `S:ombre`.
-- [ ] `extractLayout.ts` : un collecteur de calques à effets, rempli là où
+- [x] `extractLayout.ts` : un collecteur de calques à effets, rempli là où
       `warnUnsupportedProperties` est appelé, donc sur les seuls calques
       publiés (F12). `extractLayout` sert aussi la projection de référence :
       seuls les appels des vues exactes reçoivent le collecteur, comme
       `exactPaths`. `extractStructure.ts` en tire les usages de chaque vue
       exacte.
-- [ ] `compactVariants.ts` : la partie `effects`, cataloguée en `viewEffects`.
+- [x] `compactVariants.ts` : la partie `effects`, cataloguée en `viewEffects`.
       `packages/plugin-exporter/tests/lois.ts` : chaque usage désigne un calque
       de sa vue et un style du catalogue.
-- [ ] `unsupportedProperties.ts` : `effect` ne relève plus que ce que
+- [x] `unsupportedProperties.ts` : `effect` ne relève plus que ce que
       `effectStyles.ts` ne prend pas en charge ; son `impactDesVariants` suit
       H1.
-- [ ] `FORMAT.md` : une section « Effets » après « 5. Typographie », sans
+- [x] `FORMAT.md` : une section « Effets » après « 5. Typographie », sans
       numéro, pour garder les ancres des sections 6 à 9 que `AGENTS.md` et
       `SPEC.md` citent ; « Sortie » passe à six renvois ; « 8. Rendu
       sémantique » dit la composition avec `border`. `AGENTS.md` : la vue est
       six renvois, et l'invariant des propriétés à effet visuel.
       `docs/guides/POUR-LES-DESIGNERS.md`, glossaire : la vue suit six renvois.
       `SPEC.md` : la lecture d'un effect style.
-- [ ] Mutation : lire les liaisons sur le calque au lieu du style, constater
+- [x] Mutation : lire les liaisons sur le calque au lieu du style, constater
       l'échec du test du champ sans variable.
 
 ### E4 : les enfants d'un cadre libre sont placés
@@ -783,9 +783,11 @@ s'ajoute aux trois, et `regarder` le dit.
       leur rayon sans variable avertissent toujours : H2 garde la règle du
       menu, et aucun lot ne touche au rayon.
 - [ ] Demander au mainteneur de relancer l'analyse du composant réel et de
-      comparer. Consigner son retour.
-- [ ] Rappeler que les trois paquets attendent leur publication, noyau en
-      premier, et que le plugin qui écrit la 14.0 part après eux
+      comparer. Consigner son retour. La recette exporte aussi un style à deux
+      ombres de couleurs opposées et compare leur ordre au rendu de Figma :
+      E3 suppose que le dernier effet de la liste peint au-dessus.
+- [ ] Publier les trois paquets par `publish.yml`, noyau en premier, à la
+      demande du mainteneur ; le plugin qui écrit la 14.0 part après eux
       ([COMPATIBILITE.md](../../../format/COMPATIBILITE.md#qui-publie-qui-migre-qui-peut-fusionner)).
 
 ## 8. Portes humaines

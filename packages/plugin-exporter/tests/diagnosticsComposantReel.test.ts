@@ -278,20 +278,25 @@ function monterLeScenario(leGlyphe: Glyphe) {
     currentPage: Object.assign(page, { selection: [set] }),
     root: { name: 'Fichier de test', children: [page] },
     fileKey: null,
-    getStyleByIdAsync: async () => ({
-      type: 'TEXT',
-      name: 'Label/Medium',
-      boundVariables: {
-        fontFamily: alias('police'),
-        fontSize: alias('taille'),
-        fontWeight: alias('graisse'),
-        lineHeight: alias('interligne'),
-        letterSpacing: alias('approche'),
+    // Un style par identifiant : le text style du libellé, l'effect style de
+    // l'ombre des racines. Un identifiant inconnu n'a pas de style.
+    getStyleByIdAsync: async (id: string) => ({
+      'style-label': {
+        type: 'TEXT',
+        name: 'Label/Medium',
+        boundVariables: {
+          fontFamily: alias('police'),
+          fontSize: alias('taille'),
+          fontWeight: alias('graisse'),
+          lineHeight: alias('interligne'),
+          letterSpacing: alias('approche'),
+        },
+        fontName: { family: 'Inter', style: 'Regular' },
+        textCase: 'ORIGINAL',
+        textDecoration: 'NONE',
       },
-      fontName: { family: 'Inter', style: 'Regular' },
-      textCase: 'ORIGINAL',
-      textDecoration: 'NONE',
-    }),
+      'S:ombre': { type: 'EFFECT', id: 'S:ombre', name: 'Shadow/Focus', effects: [ombre] },
+    } as Record<string, unknown>)[id] ?? null,
     variables: {
       getLocalVariableCollectionsAsync: async () => [collection],
       getLocalVariablesAsync: async () => variables,
@@ -315,6 +320,7 @@ const FAMILLES = {
   opaciteDeRacine: /^Layer « State=Disabled », opacity : le contrat n’a aucun champ/,
   opaciteSansVariable: /^Layer « Overlay », opacity : aucune variable associée\./,
   opaciteDesVariants: /^opacity : aucune variable associée\. Le contrat ne transmettra pas l'opacité des variants/,
+  couleurDOmbre: /^Effect style « Shadow\/Focus », color : aucune variable associée\./,
   cadreSansAutoLayout: /^Layer « Overlay » : il range 2 layers/,
   dimensionSousContrainte: /^Layer « (Mask|Circle) », (width|height) :/,
   resteDuCalqueAbsolu: /^Layer « (Mask », mask|Circle », corner radius|Overlay », width|Overlay », height) :/,
@@ -338,6 +344,7 @@ const CORRIGEES: ReadonlySet<Famille> = new Set<Famille>([
   'dessinImbrique',
   'opaciteDuCalqueAbsolu',
   'opaciteDeRacine',
+  'effet',
 ]);
 
 /** Le nombre de lignes de chaque famille dans une liste de messages. */
@@ -389,15 +396,27 @@ test('le calque que l’élection écarte figure dans la vue exacte, et rien ne 
   assert.ok(vuesQuiLePublient.length > 0, 'aucune vue exacte ne publie le calque absolu');
 });
 
-test('la borne et l’ombre des racines de variant se regroupent en une ligne chacune', async () => {
+test('la borne des racines de variant se regroupe en une ligne', async () => {
   const { resultat, comptes } = await exporterLeScenario();
   const cibles = (famille: Famille) =>
     [...resultat.localisations].find(([message]) => FAMILLES[famille].test(message))?.[1];
 
   assert.equal(comptes.borneSansVariable, 1);
   assert.equal(cibles('borneSansVariable')?.length, 4);
-  assert.equal(comptes.effet, 1);
-  assert.equal(cibles('effet')?.length, 2);
+});
+
+test('l’ombre des racines se publie par son effect style, et sa couleur sans variable avertit une fois', async () => {
+  const { contrat, comptes } = await exporterLeScenario();
+
+  assert.equal(comptes.couleurDOmbre, 1);
+  assert.deepEqual(contrat.effectStyles, {
+    'shadow.focus': {
+      figmaName: 'Shadow/Focus',
+      effects: [{ type: 'drop-shadow', blur: '{tokens.space.x}', spread: '{tokens.space.x}' }],
+    },
+  });
+  const usages = Object.values(contrat.viewEffects as Record<string, unknown[]>);
+  assert.deepEqual(usages, [[{ slotPath: [], style: 'shadow.focus' }]]);
 });
 
 test('l’opacité sans variable dit une ligne pour le calque et une pour les variants', async () => {

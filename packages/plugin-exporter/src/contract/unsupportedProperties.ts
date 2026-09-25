@@ -2,8 +2,8 @@
  * Ce qu'un calque publié porte dans Figma et que le schéma ne sait pas écrire.
  *
  * Le contrat ne prétend pas décrire tout Figma, mais une propriété qui change
- * le rendu et qu'aucun champ ne porte doit être dite : une ombre absente du
- * contrat est une ombre absente de l'écran.
+ * le rendu et qu'aucun champ ne porte doit être dite : un dégradé absent du
+ * contrat est un dégradé absent de l'écran.
  *
  * Deux garde-fous encadrent ce module, et ils comptent autant que la liste
  * elle-même :
@@ -24,9 +24,9 @@
  * design correct, et coûtait un découpage à chaque design qui l'employait pour
  * de bon.
  *
- * Une propriété que le contrat écrit n'entre pas dans ce relevé, `rotation` et
- * `opacity` comprises : `flexLayout.rotationDegrees` et
- * `nodeBindings.resolveOpacity` en sont les autorités.
+ * Une propriété que le contrat écrit n'entre pas dans ce relevé : `rotation`,
+ * `opacity` et les effets ont pour autorités `flexLayout.rotationDegrees`,
+ * `nodeBindings.resolveOpacity` et `effectStyles.ts`.
  */
 import { pointDe, sujet } from './localisation';
 import type { PointACorriger } from './localisation';
@@ -88,21 +88,6 @@ const FUSIONS_NEUTRES: ReadonlySet<unknown> = new Set(['PASS_THROUGH', 'NORMAL']
 function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
   const values = asPropertyBag(node);
   const relevees: ProprieteNonPortee[] = [];
-
-  // Un effet est une décision de design à part entière (une ombre porte la
-  // hiérarchie d'une carte, un flou son arrière-plan) et aucun champ du
-  // contrat ne la porte.
-  const effets = Array.isArray(values.effects)
-    ? (values.effects as Effect[]).filter((effet) => effet && effet.visible !== false)
-    : [];
-  if (effets.length > 0) {
-    relevees.push({
-      champ: 'effect',
-      manque: 'l’ombre ou le flou de ce layer',
-      geste: 'Retirez cet effect si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
-      impactDesVariants: 'Le contrat n’exportera pas l’ombre ou le flou de ces variants.',
-    });
-  }
 
   // Le contrat ne cite que des tokens de couleur : seule une peinture SOLID
   // reliée à une variable y entre. Un dégradé ou une image disparaît donc sans

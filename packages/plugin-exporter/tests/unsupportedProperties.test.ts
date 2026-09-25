@@ -114,20 +114,13 @@ test('un mask est signalé : le contrat ne perd pas sa surface, il l’invente',
   assert.ok(avertissements[0].includes('par-dessus les layers qu’il masque'));
 });
 
-test('une ombre visible est signalée, une ombre masquée ne l’est pas', () => {
+test('une ombre ne relève pas de ce relevé : les effect styles la publient', () => {
+  // `effectStyles.ts` publie l'effet d'un style et avertit de celui qu'il ne
+  // sait pas écrire.
   const avecOmbre = frameParDefaut({
     effects: [{ type: 'DROP_SHADOW', visible: true }],
   });
-  const avertissements = avertissementsDe(avecOmbre);
-  assert.equal(avertissements.length, 1);
-  assert.ok(avertissements[0].includes('Layer « Container », effect'));
-  assert.ok(avertissements[0].includes('l’ombre ou le flou'));
-  assert.ok(avertissements[0].includes('réexportez'));
-
-  const ombreMasquee = frameParDefaut({
-    effects: [{ type: 'DROP_SHADOW', visible: false }],
-  });
-  assert.deepEqual(avertissementsDe(ombreMasquee), []);
+  assert.deepEqual(avertissementsDe(avecOmbre), []);
 });
 
 test('une opacité partielle ne relève pas de ce relevé : le contrat la publie', () => {
@@ -269,7 +262,7 @@ test('openTypeFeatures avertit dès qu’un réglage diffère de ce que le navig
 test('deux propriétés du même layer donnent deux messages : deux gestes différents', () => {
   const cumul = frameParDefaut({
     blendMode: 'MULTIPLY',
-    effects: [{ type: 'LAYER_BLUR', visible: true }],
+    dashPattern: [4, 2],
   });
   const avertissements = avertissementsDe(cumul);
   assert.equal(avertissements.length, 2);

@@ -2,7 +2,7 @@
 
 ## État
 
-- Lot courant : E3
+- Lot courant : E4
 - Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
 - Portes franchies : H0 (reste le rang des ombres dans `effects`), H2 et H1
   (reste la remarque sur les messages 11 à 13, qui rouvre H2 pour E4)
@@ -170,6 +170,60 @@ copiés ; le build y tourne étape par étape.
   l'opacité des propriétés non portables ; `AGENTS.md`, invariant des
   propriétés à effet visuel ; `SPEC.md`, portée du relevé et racine de variant ;
   `TEXTES-A-VALIDER.md`, textes retenus et « Reste à valider ».
+- Écart ou réserve : aucun.
+
+### Décisions après H1
+
+- Rang des ombres : E3 suppose que Figma range ses effets comme ses fills, le
+  dernier de la liste peint au-dessus, et la recette de E10 le vérifie sur un
+  style à deux ombres de couleurs opposées.
+- Messages 11 à 13 : le mainteneur garde la décision H2. Les avertissements
+  d'absence d'auto layout restent, avec ses textes, dont l'action est
+  conditionnelle.
+- Le mainteneur demande de mener le plan jusqu'au bout, de pousser chaque lot
+  et de publier les trois paquets par `publish.yml`.
+
+### E3 : les effect styles se publient
+
+- Commit : ce commit, précédé de `cf4262b`.
+- Changement : `effectStyles.ts` charge chaque effect style une fois, lit ses
+  liaisons sur `style.effects[i]`, traduit ombres et flous en vocabulaire CSS
+  et rend les usages de chaque vue exacte. `extractLayout` collecte les calques
+  publiés qui portent des effets, dans les seules vues exactes ; une dépendance
+  n'est pas collectée. `compactVariants` catalogue `viewEffects`, le contrat
+  publie `effectStyles`. `elideNeutrals.ts` protège `viewEffects.*.slotPath`,
+  dont `[]` désigne la racine. `unsupportedProperties.ts` ne relève plus les
+  effets. Les messages 3 à 8 de H1 sont écrits mot pour mot ; 5 et 6 gardent
+  une ligne par calque sur les racines, faute de texte de groupe retenu.
+- Ordre : `ordreCss` retourne la liste de Figma (hypothèse ci-dessus).
+- Tests : écrits avant le module, mais lancés seulement après lui. Leur rouge
+  n'a donc pas été vu avant le changement ; les mutations ci-dessous le
+  constatent test par test. Le premier lancement a corrigé trois attendus
+  faux (le slot `card`, l'ordre des avertissements, le chemin de token du
+  scénario) et révélé l'élision de `slotPath: []`.
+- Scénario : `getStyleByIdAsync` répond par identifiant, avec l'effect style
+  « Shadow/Focus » pour `S:ombre`. La famille `effet` passe aux corrigées ;
+  `couleurDOmbre` (une ligne) s'ajoute : la couleur de l'ombre n'a pas de
+  variable. Le contrat publie `effectStyles.shadow.focus` et un usage `[]`.
+- `lois.ts` : le renvoi `effects` se résout, chaque usage désigne un calque de
+  sa vue et un style du catalogue.
+- Commandes, worktree à `cf4262b` avec les fichiers du lot : `npm test` : 0,
+  suite du plugin de 943 à 958 tests. `npm run typecheck` : 0. Build étape par
+  étape : 0 à chaque étape.
+- Mutations, dans le worktree, chacune restaurée par copie puis revue verte :
+  - liaisons lues sur le calque au lieu du style : « un réglage du style sans
+    variable… » échoue, avec l'écart au style ;
+  - ordre de Figma gardé : le test de l'ordre CSS échoue ;
+  - écart au style ignoré, type `EFFECT` non vérifié, racine ignorée pour
+    l'effet sans style, calque publié non collecté : chacun fait échouer son
+    test ;
+  - `viewEffects.*.slotPath` non protégé : neuf tests échouent, dont les lois
+    du scénario.
+- Documents : `FORMAT.md` gagne « Effets » après « 5. Typographie », six
+  renvois dans « 6. Structure » et la composition avec `border` en « 8. Rendu
+  sémantique » ; `AGENTS.md`, six renvois, `slotPath` d'effet et l'invariant
+  des effets ; `SPEC.md`, « Effets » et la racine de variant ;
+  `POUR-LES-DESIGNERS.md`, six renvois ; `TEXTES-A-VALIDER.md`, textes 3 à 8.
 - Écart ou réserve : aucun.
 
 ### Porte H : réponses reçues

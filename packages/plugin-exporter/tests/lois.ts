@@ -39,13 +39,15 @@ import { serializeJson } from '../src/contract/serializeJson';
 const CHEMIN_DU_SCHEMA = createRequire(import.meta.url).resolve('@ucm-kit/core/schema');
 
 /** Chaque partie d'une vue, et le catalogue où son renvoi se résout. */
-export type Partie = 'structure' | 'typography' | 'composes' | 'icons' | 'paintPlacements';
+export type Partie =
+  | 'structure' | 'typography' | 'composes' | 'icons' | 'paintPlacements' | 'effects';
 export const CATALOGUE: Record<Partie, string> = {
   structure: 'viewStructures',
   typography: 'viewTypographies',
   composes: 'viewComposes',
   icons: 'viewIcons',
   paintPlacements: 'viewPaintPlacements',
+  effects: 'viewEffects',
 };
 
 type Noeud = {
@@ -72,6 +74,7 @@ export type Contrat = {
   structure?: { view?: string };
   icons?: Record<string, { slot?: string }>;
   textStyles?: Record<string, unknown>;
+  effectStyles?: Record<string, unknown>;
   samples?: Record<string, unknown>;
   composes?: Dependance[];
   viewStructures?: Record<string, Noeud>;
@@ -83,6 +86,7 @@ export type Contrat = {
   }[]>;
   viewComposes?: Record<string, Dependance[]>;
   viewPaintPlacements?: Record<string, Record<string, Record<string, string[][]>>>;
+  viewEffects?: Record<string, { slotPath?: string[]; style?: string }[]>;
 } & Record<string, unknown>;
 
 /** `Object.hasOwn` n'existe pas dans la cible du projet ; la forme longue le fait. */
@@ -174,6 +178,21 @@ function lesAdressesDesignentUnCalqueReel(c: Contrat, ou: string): void {
       assert.ok(
         porte(c.textStyles, usage.style),
         `${ou} : ${vue} — le style « ${usage.style} » est absent de textStyles`,
+      );
+    }
+
+    const effets = renvois.effects === undefined
+      ? []
+      : c.viewEffects?.[renvois.effects] ?? [];
+    for (const usage of effets) {
+      // `[]` désigne la racine, comme pour une peinture.
+      assert.ok(
+        Array.isArray(usage.slotPath) && descendre(arbre, usage.slotPath),
+        `${ou} : ${vue} — l'effet [${usage.slotPath}] de « ${usage.style} » n'est pas dans sa structure`,
+      );
+      assert.ok(
+        porte(c.effectStyles, usage.style),
+        `${ou} : ${vue} — le style « ${usage.style} » est absent de effectStyles`,
       );
     }
 

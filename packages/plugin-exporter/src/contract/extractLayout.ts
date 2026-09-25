@@ -44,6 +44,8 @@ import {
   publishesChildren,
 } from './structureTree';
 import { unsupportedPropertyWarnings } from './unsupportedProperties';
+import { porteDesEffets } from './effectStyles';
+import type { EffectCarrier } from './effectStyles';
 import {
   containerSizing,
   fixedDimensions,
@@ -437,6 +439,9 @@ async function describeNode(
   suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
   path: readonly string[] = [slot],
   publishedNodePaths: PublishedNodePaths = new Map(),
+  // Rempli par les seules vues exactes : les calques publiés qui portent des
+  // effets, et leur chemin. `effectStyles.ts` en tire les usages.
+  effectCarriers?: EffectCarrier[],
 ): Promise<ChildStructure> {
   const entry: ChildStructure = {
     slot,
@@ -452,6 +457,9 @@ async function describeNode(
   // contrat : c'est à lui de s'en plaindre, pas à celui-ci.
   if (!estUneDependance) {
     warnUnsupportedProperties(child, warnings);
+    if (effectCarriers && porteDesEffets(child)) {
+      effectCarriers.push({ node: child, slotPath: [...path] });
+    }
     // Un dessin interne d'un imbriqué sans règles se tait : son point bloquant
     // dit déjà la cause, et le geste qui le corrige.
     if (!sousUnImbriqueSansRegles(warnings, child)) {
@@ -593,6 +601,7 @@ async function describeNode(
           suppressedSizeNodeIds,
           [...path, branchSlot],
           publishedNodePaths,
+          effectCarriers,
         )),
     );
   } else if (dependencies.length === 0 && textNodes(child, warnings, composed).length === 0) {
@@ -684,10 +693,14 @@ export async function extractLayout(
   placed: PlacedDependencies = new Map(),
   suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
   publishedNodePaths: PublishedNodePaths = new Map(),
+  effectCarriers?: EffectCarrier[],
 ): Promise<LayoutStructure> {
   warnIntermediateBounds(component, layoutNode, warnings);
   warnMissingDirection(layoutNode, warnings);
   warnUnsupportedProperties(layoutNode, warnings);
+  if (effectCarriers && porteDesEffets(layoutNode)) {
+    effectCarriers.push({ node: layoutNode, slotPath: [] });
+  }
   publishedNodePaths.set(component.id, []);
   publishedNodePaths.set(layoutNode.id, []);
 
@@ -735,6 +748,7 @@ export async function extractLayout(
         suppressedSizeNodeIds,
         [slot],
         publishedNodePaths,
+        effectCarriers,
       )),
   );
 

@@ -10,6 +10,7 @@ import type {
   ContractSample,
   ContractVariant,
   ContractVariantView,
+  EffectStyleUse,
   ExpandedVariantView,
   ExtractedContractVariant,
   ExtractedPropertyBinding,
@@ -29,6 +30,7 @@ type CompactedVariants = {
   viewComposes: Record<string, ComposedDependency[]>;
   viewIcons: Record<string, Record<string, VariantIconPlacement>>;
   viewPaintPlacements: Record<string, VariantPaintPlacements>;
+  viewEffects: Record<string, EffectStyleUse[]>;
   propertyBindingDefinitions: Record<string, PropertyBindingDefinition>;
   samples: Record<string, ContractSample>;
 };
@@ -135,7 +137,7 @@ function finCommune(nodeIds: readonly string[]): string | undefined {
  *
  * La règle de partage ne change pas (égalité stricte du bloc JSON, aucun
  * merge, aucun défaut, aucun héritage) seule sa granularité change. Résoudre
- * les cinq renvois d'une vue redonne la vue exacte, au bit près ; deux vues qui
+ * les six renvois d'une vue redonne la vue exacte, au bit près ; deux vues qui
  * ne diffèrent que par leurs peintures cessent simplement de republier tout leur
  * arbre de slots, et leur divergence se lit sur le renvoi qui diffère.
  */
@@ -148,6 +150,7 @@ export function compactVariants(
   const composes = catalogue<ComposedDependency[]>('cp', 'viewComposes.*');
   const icons = catalogue<Record<string, VariantIconPlacement>>('ic', 'viewIcons.*');
   const paintPlacements = catalogue<VariantPaintPlacements>('pp', 'viewPaintPlacements.*');
+  const effets = catalogue<EffectStyleUse[]>('ef', 'viewEffects.*');
 
   const variantViews: Record<string, ContractVariantView> = {};
   const propertyBindingDefinitions: Record<string, PropertyBindingDefinition> = {};
@@ -201,17 +204,19 @@ export function compactVariants(
   const variants = expandedVariants.map((variant): ContractVariant => {
     const {
       structure, typography, composes: composed, icons: iconPlacements, paintPlacements: paints,
-      sample, tokens, strokes, ...identity
+      effects, sample, tokens, strokes, ...identity
     } = variant;
     const vue: ContractVariantView = { structure: '' };
     const parts: ExpandedVariantView = {
       structure, typography, composes: composed, icons: iconPlacements, paintPlacements: paints,
+      effects,
     };
     vue.structure = ranger(structures, parts.structure) ?? '';
     vue.typography = ranger(typographies, parts.typography);
     vue.composes = ranger(composes, parts.composes);
     vue.icons = ranger(icons, parts.icons);
     vue.paintPlacements = ranger(paintPlacements, parts.paintPlacements);
+    vue.effects = ranger(effets, parts.effects);
     // La vue reste dédupliquée elle aussi : deux variants qui rendent la même
     // chose partagent un jeu de renvois identique, donc une seule entrée.
     const view = intern(elideNeutrals(vue), 'v', viewIds, variantViews);
@@ -241,6 +246,7 @@ export function compactVariants(
     viewComposes: composes.entries,
     viewIcons: icons.entries,
     viewPaintPlacements: paintPlacements.entries,
+    viewEffects: effets.entries,
     propertyBindingDefinitions,
     samples,
   };

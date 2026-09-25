@@ -406,6 +406,42 @@ l'identique. Sans `maxLines`, Figma coupe le texte à la taille de sa boîte, et
 `text-overflow: ellipsis` ne coupe qu'une ligne. La troncature reste alors
 absente, et un avertissement le dit.
 
+### Effets
+
+Comment un effect style est lu dans Figma est décrit par [Effets](../../packages/plugin-exporter/SPEC.md#effets).
+
+Chaque `variantViews.*.effects` liste `{ slotPath, style }` pour situer un
+effect style sur un calque de cette même vue. `slotPath` suit la règle de la
+typographie, et `[]` désigne la racine du composant. Le catalogue
+`effectStyles` ne contient que les styles réellement utilisés ; `figmaName`
+garde le nom Figma du style.
+
+`effectStyles.<clé>.effects` liste les effets dans l'ordre de CSS : le premier
+peint au-dessus des autres. Chaque champ est une référence de token.
+
+| Effet | `type` | Champs | Propriété CSS |
+|---|---|---|---|
+| Drop shadow | `drop-shadow` | `color`, `offsetX`, `offsetY`, `blur`, `spread` | `box-shadow`, `filter: drop-shadow()` ou `text-shadow` |
+| Inner shadow | `inner-shadow` | `color`, `offsetX`, `offsetY`, `blur`, `spread` | `box-shadow` en `inset` |
+| Layer blur | `layer-blur` | `blur` | `filter: blur()` |
+| Background blur | `backdrop-blur` | `blur` | `backdrop-filter: blur()` |
+
+Un champ absent parmi `offsetX`, `offsetY`, `blur` et `spread` vaut zéro, ou
+manque sous un avertissement quand Figma y porte une valeur sans variable. Une
+ombre sans `color` n'a pas de couleur à rendre : son absence a toujours averti.
+
+`blur` est le rayon de Figma. Une ombre le reçoit tel quel, et `blur()` le
+reçoit divisé par deux, comme Dev Mode l'écrit. Une ombre suit la forme dessinée
+du calque : sa boîte quand il a un fill, son contenu quand il n'en a pas, les
+lettres d'un texte. D'où les trois propriétés CSS d'une ombre portée.
+`filter: drop-shadow()` et `text-shadow` n'écrivent pas `spread`.
+
+Le moteur n'écrit ni le bruit, ni la texture, ni le verre, ni un shader, ni le
+flou progressif, ni une ombre hors du mode de fusion « Normal » ou visible
+derrière un calque transparent. Chacun avertit, et le style se publie sans lui.
+Un calque dont les effets ne viennent d'aucun effect style avertit et ne publie
+aucun usage.
+
 ### 6. Structure
 
 `children` = enfants directs réels du node de layout :
@@ -474,14 +510,14 @@ nommant les variants ; un changement de nom Figma avertit aussi, sauf pour une
 icône reconnue dont le slot stable et la vue exacte portent déjà l'identité.
 L'écart n'est jamais perdu. `variantViews` catalogue chaque vue distincte, et
 chaque entrée de `variants` la référence par `view`, à côté de ses feuilles
-exactes `tokens` et `strokes`. Une vue est faite de **cinq renvois**
-(`structure`, `typography`, `composes`, `icons`, `paintPlacements`) vers cinq
-catalogues séparés (`viewStructures`, `viewTypographies`, `viewComposes`,
-`viewIcons`, `viewPaintPlacements`).
+exactes `tokens` et `strokes`. Une vue est faite de **six renvois**
+(`structure`, `typography`, `composes`, `icons`, `paintPlacements`, `effects`)
+vers six catalogues séparés (`viewStructures`, `viewTypographies`,
+`viewComposes`, `viewIcons`, `viewPaintPlacements`, `viewEffects`).
 
 L'égalité stricte reste l'unique règle de partage, appliquée à chaque partie :
 aucun merge, défaut ou héritage ne peut masquer une divergence, et résoudre les
-cinq renvois redonne la vue exacte, au bit près. Ce qui change est la
+six renvois redonne la vue exacte, au bit près. Ce qui change est la
 granularité, et elle vaut cher : deux vues qui ne diffèrent que par leurs
 peintures republiaient tout leur arbre de slots. Deux réserves closent la règle,
 l'ordre des clés d'un objet ne compte pas dans la signature (deux extractions du
@@ -735,8 +771,8 @@ rien en silence.
 - les bornes d'un calque intermédiaire, entre le composant et ses slots, n'ont
   aucun propriétaire dans le contrat ;
 - sur **chaque calque publié**, et sur lui seul, les propriétés à effet visuel
-  qu'aucun champ ne porte : les **effets** (ombre, flou), un **mask**, une
-  peinture non unie (**dégradé**, image) en `fill` ou en `stroke`, plusieurs peintures « mixed » sur un même
+  qu'aucun champ ne porte : un **mask**, une peinture non unie (**dégradé**,
+  image) en `fill` ou en `stroke`, plusieurs peintures « mixed » sur un même
   calque, un **blend mode** non neutre, un **pointillé**, et pour un texte :
   une liste à puces ou numérotée, `listSpacing` et `hangingList` (le contrat ne
   décrit aucune liste), `hangingPunctuation`, un réglage du soulignement ou
@@ -749,7 +785,8 @@ rien en silence.
 
 Une propriété que le contrat écrit n'entre pas dans ce relevé de ce qui manque,
 `rotation`, `opacity` et `inset` compris : la réclamer enverrait le designer
-redresser un layer que le développeur rend incliné.
+redresser un layer que le développeur rend incliné. Les effets ont leur propre
+relevé, décrit en [Effets](#effets).
 
 Le `mask` est le seul de cette liste dont le contrat ne perd pas la propriété
 mais en **invente** une : la couleur du calque masquant entre normalement dans
@@ -984,6 +1021,10 @@ pour `inside` seulement. Sur un calque qui porte aussi un `border`, le `border`
 garde `box-shadow` et le `ring` garde `outline`. Rendus par `outline` ou par
 `box-shadow`, une largeur uniforme et un même alignement donnent la même
 géométrie.
+
+Une ombre d'effect style et un `border` sur une même cible se composent dans la
+même `box-shadow` : le contour en premier, puisque Figma peint le stroke
+au-dessus des ombres, puis les ombres dans l'ordre de `effects`.
 
 **Aucun rôle de contour ne cite une propriété qui consomme la boîte.** Le rôle
 `border` se rend donc avec `box-shadow`, et `align` en donne la forme, `inside`
@@ -1693,7 +1734,7 @@ La version actuelle du contrat est celle que publie `CONTRACT_VERSION`, dans
 `packages/kit/src/format/version.ts`, l'unique endroit où elle est écrite.
 
 Toute information exacte se lit dans une entrée de `variants`, la vue qu’elle
-référence et ses placements de bindings ; le partage des cinq catalogues de vues
+référence et ses placements de bindings ; le partage des six catalogues de vues
 est réglé en [6. Structure](#6-structure), et `propertyBindingDefinitions` en
 [1. Props](#1-props). La projection de référence `structure` reste disponible
 pour l’entrée générale du composant et les dimensions par taille ; elle ne

@@ -46,6 +46,8 @@ export const ENTREES_PROTEGEES: readonly string[] = [
   // Une clé de peinture sans cible vaudrait `[]` ; la clé nomme la couleur.
   'viewPaintPlacements.*.fills.*',
   'viewPaintPlacements.*.strokes.*',
+  // Le chemin `[]` d'un usage d'effet désigne la racine : c'est une adresse.
+  'viewEffects.*.slotPath',
   // Les sept suivantes ne sont jamais vides en pratique : `compactVariants`
   // ne catalogue pas une partie vide, et un axe sans valeur n'existe pas. Elles
   // sont protégées quand même : leur clé est citée ailleurs, par
@@ -154,6 +156,7 @@ export function elideContract<T extends object>(contract: T, dejaElides: readonl
 /** Les champs que `compactVariants` a déjà élidés, partie par partie. */
 export const CATALOGUES_DE_VUES = [
   'viewStructures', 'viewTypographies', 'viewComposes', 'viewIcons', 'viewPaintPlacements',
+  'viewEffects',
 ] as const;
 
 export default elideNeutrals;

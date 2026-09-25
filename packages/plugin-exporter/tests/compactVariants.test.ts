@@ -81,3 +81,19 @@ test('deux placements de peinture différents produisent deux vues distinctes', 
 
   assert.notEqual(result.variants[0]?.view, result.variants[1]?.view);
 });
+
+test('deux vues qui ne diffèrent que par leur ombre partagent leur structure', () => {
+  const sansOmbre = variant('default', 'default', null);
+  const avecOmbre = {
+    ...variant('focus', 'focus', null),
+    effects: [{ slotPath: [], style: 'shadow.focus' }],
+  };
+
+  const result = compactVariants([sansOmbre, avecOmbre], []);
+
+  const [vueSans, vueAvec] = result.variants.map(({ view }) => result.variantViews[view]);
+  assert.notEqual(result.variants[0].view, result.variants[1].view);
+  assert.equal(vueSans.structure, vueAvec.structure);
+  assert.equal(vueSans.effects, undefined);
+  assert.deepEqual(result.viewEffects[vueAvec.effects as string], avecOmbre.effects);
+});

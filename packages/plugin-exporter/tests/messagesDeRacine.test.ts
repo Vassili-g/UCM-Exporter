@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractLayout } from '../src/contract/extractLayout';
 import { extractVariantTokens } from '../src/contract/extractVariantTokens';
+import { extractEffectStyles } from '../src/contract/effectStyles';
+import type { EffectCarrier } from '../src/contract/effectStyles';
 import {
   declarerLesRacinesDeVariants,
   estUneRacineDeVariant,
@@ -146,25 +148,33 @@ test('un calque qui n’est pas une racine déclarée garde son message et son n
   assert.ok(lignes.some((ligne) => ligne.startsWith('Layer « Narrow » : il fixe min width')));
 });
 
-test('une ombre sur les racines donne une ligne, sans nom de calque', async () => {
+test('une ombre sans effect style sur les racines donne une ligne, sans nom de calque', async () => {
   const racines = ['Wide', 'Narrow'].map((nom) => racine(nom, { effects: [ombre] }));
   const canal: string[] = [];
   declarerLesRacinesDeVariants(canal, racines);
 
-  await extraire(racines, canal);
+  const porteurs = new Map<ComponentNode, EffectCarrier[]>();
+  for (const noeud of racines) {
+    const deLaVue: EffectCarrier[] = [];
+    await extractLayout(
+      noeud, resolverFor({}), canal, new Map(), new Set(), noeud, true,
+      new Map(), new Set(), new Map(), deLaVue,
+    );
+    porteurs.set(noeud, deLaVue);
+  }
+  await extractEffectStyles(porteurs, resolverFor({}), canal, async () => null);
 
   const attendu = {
-    titre: 'Propriété non supportée par le moteur.',
-    impact: 'Le contrat n’exportera pas l’ombre ou le flou de ces variants.',
-    action: 'Retirez cet effect si le rendu peut s’en passer, ou signalez cette limite '
-      + 'au mainteneur du plugin, puis réexportez.',
+    titre: 'effect : aucun effect style appliqué.',
+    impact: 'Le contrat ne transmettra pas les ombres ou les flous des variants concernés.',
+    action: 'Appliquez un effect style à chaque variant concerné, puis réexportez.',
   };
   assert.deepEqual(partiesDe(canal).get(phrase(attendu)), attendu);
   assert.deepEqual(
     localisationsDe(canal).get(phrase(attendu)),
     racines.map((noeud) => noeud.id),
   );
-  assert.equal(canal.filter((message) => message.includes('effect :')).length, 0);
+  assert.equal(canal.filter((message) => message.startsWith('Layer «')).length, 0);
 });
 
 test('une propriété dont le texte n’est pas validé garde une ligne par racine', async () => {

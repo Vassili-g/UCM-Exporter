@@ -305,16 +305,18 @@ La spécification en lien porte le raisonnement.
 - Figma reste traçable après normalisation (`figmaName`, `figmaLayer`).
 - `variants` décrit chaque combinaison réellement présente, `COMPONENT` sans axe
   et matrice clairsemée comprises, et référence une vue de `variantViews`. Une
-  vue est cinq renvois : `structure`, `typography`, `composes`, `icons`,
-  `paintPlacements`, chacun catalogué à part et partagé par égalité stricte de
-  son bloc JSON, à l’ordre des clés près. Ni merge, ni héritage, ni défaut.
+  vue est six renvois : `structure`, `typography`, `composes`, `icons`,
+  `paintPlacements`, `effects`, chacun catalogué à part et partagé par égalité
+  stricte de son bloc JSON, à l’ordre des clés près. Ni merge, ni héritage, ni
+  défaut.
   `structure` est la projection du variant de référence, publiée elle aussi par
   renvoi, inconditionnellement. → [spec](./docs/format/FORMAT.md#sortie)
 - Le contrat n’écrit aucune valeur neutre : une clé qui vaudrait `null`, `{}` ou
   `[]` est absente. Cette borne porte tout : un seul passage, jamais de point
   fixe. Une valeur qui est vide ne s’écrit pas ; une valeur qui contient du vide
   s’écrit sans lui et reste : sous un dictionnaire, la clé est une donnée, et
-  `stateModel.states.default` vaut `{}`. `elideNeutrals.ts` en est l’unique
+  `stateModel.states.default` vaut `{}`. Un `slotPath` d’effet vaut `[]` pour
+  la racine, une adresse et non un vide. `elideNeutrals.ts` en est l’unique
   autorité, et chaque sous-arbre n’y passe qu’une fois.
 - L’artefact s’écrit une entrée par ligne sur deux niveaux (`serializeJson.ts`),
   sans seuil : la forme du fichier ne dépend jamais du nombre de variants.
@@ -647,6 +649,15 @@ La spécification en lien porte le raisonnement.
   déclaration.
   → [spec](./docs/format/FORMAT.md#propriétés-non-portables)
   → [spec](./docs/format/FORMAT.md#opacité)
+- Un effet se publie par son effect style, jamais par le calque : le catalogue
+  `effectStyles` lit les liaisons sur `style.effects[i]`, et la vue exacte situe
+  chaque usage par un chemin de slots, `[]` pour la racine. Seuls les calques
+  publiés d’une vue exacte sont relevés ; une dépendance garde ses effets pour
+  son contrat. Un effet sans style, un style introuvable ou dont le calque
+  s’écarte, un champ sans variable et un effet que le contrat n’écrit pas
+  avertissent. `effects` suit l’ordre de CSS, traduit de celui de Figma par
+  `ordreCss` (`effectStyles.ts`), qui en est l’unique autorité.
+  → [spec](./docs/format/FORMAT.md#effets)
 
 ### Grilles
 

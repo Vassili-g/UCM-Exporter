@@ -237,6 +237,33 @@ documente pas leurs valeurs par défaut : la valeur neutre, qui n'avertit pas,
 est celle que CSS rend sans déclaration. Les cinq réglages du soulignement
 donnent un seul message, leur geste étant le même.
 
+#### Effets
+
+Ce que `effectStyles` et `variantViews.*.effects` contiennent est décrit par
+[Effets](../../docs/format/FORMAT.md#effets).
+
+`extractLayout` relève, dans chaque vue exacte, les calques publiés qui portent
+un effect style ou un effet visible, avec leur chemin. Une dépendance n'est pas
+relevée. `effectStyles.ts` charge chaque style une fois par identifiant, par
+un chargeur injectable, et lit les liaisons de `style.effects[i]`, jamais celles
+du calque. Un style chargé dont le `type` n'est pas `EFFECT` compte comme
+introuvable. Deux styles dont les noms donnent la même clé se départagent par un
+suffixe numéroté.
+
+Après la modification d'un effet dans le panneau, Figma garde le style appliqué
+et le marque modifié (mesuré) : le moteur compare donc les effets du calque à
+ceux de son style, calque par calque, et avertit d'un écart. Le contrat publie
+le style.
+
+L'ordre de CSS se déduit de celui de Figma en retournant la liste. Supposé :
+Figma range ses effets comme ses fills, le dernier peint au-dessus. La recette
+le vérifie sur un style à deux ombres de couleurs opposées.
+
+Un effet sans style avertit sur les racines de variants en une seule ligne,
+comme la borne sans variable. L'effect style introuvable et l'écart au style
+gardent une ligne par calque : le mainteneur n'a pas retenu leur texte de
+groupe.
+
 #### 6. Structure
 
 Ce que `structure` et `children` contiennent (descente, bornes, flux,
@@ -309,16 +336,16 @@ Une instance orpheline compte pour un principal opaque.
 La vue exacte de chaque variant part de sa racine, donc les messages qui visent
 une racine se répètent une fois par variant. Sur un set de plusieurs variants,
 `extractStructure` déclare ces racines à `estUneRacineDeVariant`, et trois
-messages s'écrivent une fois, sans nom de calque : une borne sans variable, une
-propriété sans champ et un champ sans variable. Leur carte garde chaque racine
-pour cible. `extractVariantTokens` relève les couleurs de chaque variant dans un
-canal à part, qui reprend les racines déclarées : un stroke weight sans variable
-sur les racines s'écrit donc lui aussi une fois. L'opacité sans variable a son
-propre texte, sur un calque comme sur les racines (`TEXTES_SANS_VARIABLE`,
-`nodeBindings.ts`). Pour la propriété sans champ, seul `effect` a un texte de
-groupe ; les autres propriétés gardent une ligne par racine tant que le leur
-n'est pas validé. Les représentants de tailles d'un wrapper ne sont pas des racines du
-set exporté et gardent le nom de leur variant.
+messages s'écrivent une fois, sans nom de calque : une borne sans variable, un
+effet sans effect style et un champ sans variable. Leur carte garde chaque
+racine pour cible. `extractVariantTokens` relève les couleurs de chaque variant
+dans un canal à part, qui reprend les racines déclarées : un stroke weight sans
+variable sur les racines s'écrit donc lui aussi une fois. L'opacité sans
+variable a son propre texte, sur un calque comme sur les racines
+(`TEXTES_SANS_VARIABLE`, `nodeBindings.ts`). Une propriété sans champ garde une
+ligne par racine tant que son texte de groupe n'est pas écrit. Les
+représentants de tailles d'un wrapper ne sont pas des racines du set exporté et
+gardent le nom de leur variant.
 
 ##### Passage à la ligne : les mots du message
 

@@ -252,7 +252,7 @@ définition complète est écrite.
 | **État** | Un axe `State`, `States` ou `Status` : hover, focus, disabled. Il est publié à part des props, parce qu'il vient de l'exécution et non d'un choix d'API. [4. Modèle d'interaction](../format/FORMAT.md#4-modèle-dinteraction) |
 | **Slot** | Un emplacement de l'arbre du composant, où se range un texte, une icône ou un composant imbriqué. [6. Structure](../format/FORMAT.md#6-structure) |
 | **Structure** | L'arbre des calques que le contrat publie, avec leur flux et leurs alignements. [6. Structure](../format/FORMAT.md#6-structure) |
-| **Vue** | La description exacte d'une variante, obtenue en suivant cinq renvois vers des catalogues partagés. Deux variantes identiques citent la même vue. [Sortie](../format/FORMAT.md#sortie) |
+| **Vue** | La description exacte d'une variante, obtenue en suivant six renvois vers des catalogues partagés. Deux variantes identiques citent la même vue. [Sortie](../format/FORMAT.md#sortie) |
 | **Composition** | Le fait qu'un composant en réutilise un autre. Le contrat cite la dépendance sans recopier son contenu. [Composition et dépendances](../format/FORMAT.md#composition-et-dépendances) |
 | **Parité** | La comparaison entre les props du contrat et l'API réelle du composant dans le code. [ROADMAP](../../ROADMAP.md) |
 | **Couverture portable** | Le champ qui dit si l'export a tout su décrire. `complete` : rien n'est perdu. `partial` : un message nomme le calque et la propriété concernés. [Métadonnées](../format/FORMAT.md#métadonnées) |

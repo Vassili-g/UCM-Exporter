@@ -181,6 +181,26 @@ entier. Un texte entre ici avec le lot qui l'écrit.
 | Un layer | Layer « Overlay », opacity : aucune variable associée. | Le contrat ne transmettra pas l'opacité de ce layer. | Reliez opacity à une variable, puis réexportez. |
 | Les racines | opacity : aucune variable associée. | Le contrat ne transmettra pas l'opacité des variants concernés. | Reliez opacity à une variable dans chaque variant concerné, puis réexportez. |
 
+### Effets (E3)
+
+Ces textes remplacent celui de la propriété sans champ `effect` retenu pour L6.
+
+| Message | Titre | Impact | Action |
+|---|---|---|---|
+| Effet sans style, un layer | Layer « Card », effect : aucun effect style appliqué. | Le contrat ne transmettra pas l’ombre ou le flou de ce layer. | Appliquez à ce layer un effect style qui correspond au rendu souhaité, puis réexportez. |
+| Effet sans style, les racines | effect : aucun effect style appliqué. | Le contrat ne transmettra pas les ombres ou les flous des variants concernés. | Appliquez un effect style à chaque variant concerné, puis réexportez. |
+| Style introuvable | Layer « Card » : l’effect style appliqué est introuvable. | Le contrat ne transmettra pas l’ombre ou le flou de ce layer. | Appliquez de nouveau un effect style accessible dans Figma, puis réexportez. |
+| Effets modifiés | Layer « Card » : ses effects diffèrent du style « Shadow/Focus ». | Le contrat transmettra les réglages du style, sans les modifications propres à ce layer. | Réappliquez le style pour retrouver ses réglages, ou créez et appliquez un style correspondant au rendu souhaité, puis réexportez. |
+| Réglage sans variable | Effect style « Shadow/Focus », y : aucune variable associée. | Le contrat ne transmettra pas le décalage vertical de cette ombre. | Dans l’effect style, reliez y à une variable, puis réexportez. |
+| Effet non pris en charge | Effect style « Glass/Frost » : l’effet Glass n’est pas pris en charge. | Le contrat transmettra ce style sans l’effet Glass. | Si cet effet est nécessaire, signalez cette limite au mainteneur du plugin. Sinon, retirez-le du style, puis réexportez. |
+
+Le réglage sans variable décrit chaque champ : la couleur, le décalage
+horizontal ou vertical, le flou et l’étendue d’une ombre, le rayon d’un flou.
+Une ombre hors du mode « Normal » se nomme « Drop shadow en mode de fusion
+« Multiply » », une ombre visible derrière le calque « Drop shadow visible
+derrière le layer ». Le style introuvable et l’écart au style n’ont pas de texte
+de groupe : ils gardent une ligne par racine.
+
 ### Ajustements de forme
 
 - Les titres de L6 finissent par un point : la phrase compacte de

@@ -19,6 +19,8 @@ import { extractSizeDimensions, findSizeRepresentatives } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
 import type { VariantPaintNodeIds } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
+import { extractEffectStyles } from './effectStyles';
+import type { EffectCarrier } from './effectStyles';
 import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
 import { declarerLesImbriquesSansRegles } from './imbriques';
 import type { ReleveDesImbriques } from './imbriques';
@@ -27,6 +29,7 @@ import type { DiscoveredRoles } from './semantics';
 import type {
   ComposedDependency,
   ContractStructure,
+  EffectStyleDefinition,
   ExtractedContractVariant,
   SizeDimensions,
   TextStyleDefinition,
@@ -116,6 +119,7 @@ export async function extractStructure(
 ): Promise<{
   structure: ContractStructure;
   textStyles: Record<string, TextStyleDefinition>;
+  effectStyles: Record<string, EffectStyleDefinition>;
   iconLayers: IconLayerSummary[];
   /** Rôle de rendu déduit des clés de couleur qui n'en nomment aucun. */
   discoveredRoles: DiscoveredRoles;
@@ -251,9 +255,13 @@ export async function extractStructure(
     placed: PlacedDependencies;
     paths: PublishedNodePaths;
   }> = [];
+  // Seules les vues exactes collectent les calques à effets : la projection de
+  // référence n'a pas de vue où situer un usage.
+  const effectCarriers = new Map<ComponentNode, EffectCarrier[]>();
   for (const entry of matrix.variants) {
     const exactPlaced: PlacedDependencies = new Map();
     const exactPaths: PublishedNodePaths = new Map();
+    const exactEffects: EffectCarrier[] = [];
     const exactStructure = await extractLayout(
       entry.component,
       resolver,
@@ -265,9 +273,12 @@ export async function extractStructure(
       exactPlaced,
       aUnAxeDeTailles ? new Set([layoutNodeOf(entry.component).id]) : new Set(),
       exactPaths,
+      exactEffects,
     );
     exactLayouts.push({ entry, structure: exactStructure, placed: exactPlaced, paths: exactPaths });
+    effectCarriers.set(entry.component, exactEffects);
   }
+  const effects = await extractEffectStyles(effectCarriers, resolver, warnings);
   const exactPathsByVariant = new Map(
     exactLayouts.map(({ entry, paths }) => [entry.component, paths] as const),
   );
@@ -314,6 +325,7 @@ export async function extractStructure(
         paintNodeIdsByComponent.get(entry.component),
         paths,
       ),
+      effects: effects.usesByComponent.get(entry.component) ?? [],
     }
   ));
 
@@ -363,6 +375,7 @@ export async function extractStructure(
   return {
     structure,
     textStyles: { ...typography.textStyles, ...exactTypography.textStyles },
+    effectStyles: effects.effectStyles,
     iconLayers,
     discoveredRoles,
     placedComposes,
