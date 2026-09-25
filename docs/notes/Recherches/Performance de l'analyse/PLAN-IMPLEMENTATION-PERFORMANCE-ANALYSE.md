@@ -3,9 +3,9 @@
 ## Résultat attendu
 
 L'analyse ne charge plus que les pages qui portent les maîtres des
-dépendances du composant. Elle y cherche les conteneurs de règles sans
-descendre dans les calques masqués d'instance, et complète ce relevé par la
-liste des contrats publiés dans le dépôt actif. Chaque maître d'instance est
+dépendances du composant, sous réserve de la sonde S6. Elle y cherche les
+conteneurs de règles sans descendre dans les calques masqués d'instance. Le
+contrat ne dépend que du fichier Figma. Chaque maître d'instance est
 résolu une fois par analyse. Une retouche ne fait rebalayer que sa page. Un
 changement de sélection arrête l'analyse après au plus 30 ms de calcul, plus
 la durée de l'appel Figma en cours. Si la sonde S2 le permet, l'index est prêt
@@ -65,10 +65,9 @@ Avant de toucher à un message destiné au designer, charger aussi
 | M0 | Mesure de départ et sondes **[mainteneur]** | L0 | |
 | L1 | Portée d'analyse, maîtres, `contientDesInstances`, banc de parité | L0 | |
 | L2 | Index par pages des maîtres (D1, D4) | L1 | S6 pour le repli |
-| L2B | Contrats publiés (D2) | L2 | |
 | L4 | Rendre la main | L1 | |
 | L3 | Préchauffage | L2 | Seuil de S2 atteint |
-| M1 | Mesure après L1 à L4 **[mainteneur]** | L2B, L4 | |
+| M1 | Mesure après L1 à L4 **[mainteneur]** | L2, L4 | |
 | L5 | Accélérations conditionnelles | M1 | Seuils de la conception, section 5.7 |
 | L7 | Documents | chaque lot | |
 
@@ -161,10 +160,10 @@ L4 ne dépend que de L1 et peut passer avant L2.
   `src/contract/composedComponents.ts` ; dans chacun, pose, restauration après
   la pose, aucun `await` entre les deux. La voir rouge en ajoutant un `await`
   dans le bloc du second fichier, puis restaurer.
-- [ ] **L2.3** Écrire `indexContractedNames(variants, publies, options)` selon
-  la conception, section 5.4 : calcul en tours, page de chaque propriétaire
-  local, critère D1 ou D2, résultat en noms compactés. `publies` n'est attendu
-  qu'au premier propriétaire que sa page ne déclare pas. Supprimer
+- [ ] **L2.3** Écrire `indexContractedNames(variants, options)` selon la
+  conception, section 5.4 : calcul en tours, page de chaque propriétaire local
+  par la remontée de ses parents, critère D1, propriétaire distant jamais
+  contracté, résultat en noms compactés. Supprimer
   `indexContractedNamesInDocument`, `ecouterLesChangements` et l'abonnement à
   `documentchange`.
 - [ ] **L2.4** Mémoire par page : entrée, `loadAsync`, abonnement
@@ -174,8 +173,7 @@ L4 ne dépend que de L1 et peut passer avant L2.
   `priorite`. Ajouter `oublierLaPage(page)`, l'appeler dans `creerRegles` à la
   place de `oublierLIndexDuDocument()`, et garder ce dernier pour les tests.
 - [ ] **L2.5** Brancher l'index dans `handleExportComponent` à la place de
-  l'appel actuel, sous la garde `contientUneInstanceRendue`. Tant que L2B n'est
-  pas fait, `publies` est une `Promise` d'ensemble vide. Brancher dans la trace
+  l'appel actuel, sous la garde `contientUneInstanceRendue`. Brancher dans la trace
   `pagesReutilisees`.
 - [ ] **L2.6** Tests dans `composedComponents.test.ts`, qui remplacent les trois
   tests sur `documentchange` : les cas « Index » de la conception, section 7 ;
@@ -197,28 +195,6 @@ L4 ne dépend que de L1 et peut passer avant L2.
   (`extractRules.ts`, `imbriques.ts`, `src/ui/`). Pour chacun que D1 rend
   inexact, proposer au mainteneur deux rédactions sous cette tâche. Ne rien
   modifier avant sa validation.
-
-## Lot L2B : contrats publiés (D2)
-
-- [ ] **L2B.1** Ajouter `listerFichiers(dossier)` au port `Forge`, dans
-  `src/forges/forge.ts`. GitHub : API des arbres Git de la branche par défaut.
-  GitLab : `repository/tree` paginé. Tests dans `github.test.ts` et
-  `gitlab.test.ts`, avec les réponses simulées de chaque API, pagination
-  GitLab comprise.
-- [ ] **L2B.2** Dans `src/depot.ts`, une fonction `contratsPublies(forge)` qui
-  lit le dossier des contrats par `repositoryLayout`, liste ses fichiers et rend
-  l'ensemble des `<Nom>` des fichiers `<Nom>.contract.json`. Sur toute erreur,
-  ou après 5 secondes, elle rend un ensemble vide. Tests : dossier vide, erreur
-  de forge, délai dépassé, fichiers étrangers ignorés.
-- [ ] **L2B.3** Dans `analyser`, `src/code.ts`, lancer `contratsPublies` au
-  début pour un composant, quand la configuration du dépôt est valide, et passer
-  la `Promise` à `handleExportComponent`. Sans configuration valide, passer un
-  ensemble vide. Aucun avertissement dans aucun cas. Brancher le compteur
-  `contratsPublies` et l'étape `depot`.
-- [ ] **L2B.4** Tests : une dépendance de bibliothèque publiée est déclarée dans
-  `composes` ; non publiée, elle est décrite par ses calques ; dépôt en échec,
-  même contrat que sans dépôt ; la lecture du dépôt ne retarde pas une analyse
-  dont aucun propriétaire n'a besoin d'elle.
 
 ## Lot L4 : rendre la main
 
@@ -243,7 +219,7 @@ L4 ne dépend que de L1 et peut passer avant L2.
   sous cette tâche. L'agent coche alors L3.1 à L3.3 avec la mention « non
   réalisée ».
 - [ ] **L3.1** Dans `reportSelectionState`, lancer `indexContractedNames` en
-  priorité `fond`, avec un ensemble publié vide, quand la cible est exportable
+  priorité `fond` quand la cible est exportable
   et qu'un variant satisfait `contientUneInstanceRendue`. Passer
   `laisserPasserLesOperations` comme `avantChaquePage`. Une erreur du
   préchauffage est avalée : l'analyse la retrouvera et la dira.
@@ -259,8 +235,7 @@ L4 ne dépend que de L1 et peut passer avant L2.
 
 - [ ] **M1.1** **[mainteneur]** Refaire M0.2 sur le même corpus. Pour chaque
   composant dont l'empreinte a changé, vérifier par le diff des deux contrats
-  que l'écart vient seulement de la reconnaissance des dépendances (D1, D2,
-  D4).
+  que l'écart vient seulement de la reconnaissance des dépendances (D1, D4).
 - [ ] **M1.2** **[mainteneur]** Sur C3, vérifier que la première analyse ne
   charge que les pages des maîtres. Sur C1, vérifier que
   `appelsGetMainComponentAsync` égale le nombre d'ids d'instance distincts.
@@ -288,14 +263,14 @@ Chaque tâche se fait dans le commit du lot qu'elle suit.
   code d'[AGENTS.md](../../../../AGENTS.md). Retirer de
   [ROADMAP.md](../../../../ROADMAP.md) la fragilité « Le relevé de composition
   résout trois fois le même maître ».
-- [ ] **L7.2** Avec L2 et L2B : réécrire le premier point du groupe
-  « Composition » d'AGENTS.md. Le critère devient : conteneur sur la page du
-  maître, ou contrat publié dans le dépôt actif ; un calque `component-name`
-  masqué dans une instance ne compte pas. Mettre à jour le point du drapeau
-  dans « Écriture dans le document ». Réécrire
+- [ ] **L7.2** Avec L2 : réécrire le premier point du groupe « Composition »
+  d'AGENTS.md. Le critère devient : un conteneur sur la page du maître écrit
+  son nom ; une dépendance de bibliothèque n'est jamais contractée ; un calque
+  `component-name` masqué dans une instance ne compte pas. Mettre à jour le
+  point du drapeau dans « Écriture dans le document ». Réécrire
   [SPEC.md](../../../../packages/plugin-exporter/SPEC.md), section 7, avec les
   deux conséquences de la conception, section 2 : dépendance de bibliothèque,
-  contrat qui dépend du dépôt actif. Réécrire dans ROADMAP.md « Le scan des
+  règles rangées sur une autre page. Réécrire dans ROADMAP.md « Le scan des
   dépendances charge toutes les pages ». Faire suivre
   `tests/inventaireInvariants.test.ts` si ses listes l'exigent.
 - [ ] **L7.3** Avec L4 : mettre à jour le commentaire de l'annulation

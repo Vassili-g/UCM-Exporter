@@ -35,32 +35,32 @@ a fait le même parcours.
 se suspend pendant une opération par `laisserPasserLesOperations`, et un clic
 qui l'attend le réclame. Le préchauffage (section 5.5) reprend ce motif.
 
-**Le port des forges ne liste aucun dossier.** `Forge` lit un fichier par
-`lireFichier`. La décision D2 demande une méthode de plus.
-
 ## 2. Décisions du mainteneur
 
 | Décision | Réponse | Effet sur la conception |
 |---|---|---|
 | D1. Un conteneur de règles ne compte que sur la page du maître qu'il documente | Oui | L'index ne balaye que les pages des maîtres rencontrés |
-| D2. Les contrats publiés dans le dépôt disent aussi quels composants sont contractés | Oui | L'analyse lit la liste des contrats du dépôt actif. Sans dépôt, ou s'il ne répond pas, elle s'en passe, sans avertissement |
+| D2. Les contrats publiés dans le dépôt disent aussi quels composants sont contractés | Non | Le contrat ne dépend que du fichier Figma : ni réseau, ni dépôt actif, ni rapprochement par nom de fichier |
 | D3. Garder l'index d'une session à l'autre | Non | Aucune mémoire hors session |
 | D4. Balayer une page avec `skipInvisibleInstanceChildren` | Oui | Un calque `component-name` masqué dans une instance ne déclare plus de dépendance |
 | D5. Préchauffer l'index à la sélection | Oui, seulement si Figma ne fige pas | Le lot L3 attend la sonde S2 et son seuil (section 6) |
 
 Conséquence de D1 pour une dépendance venue d'une bibliothèque : son maître n'a
 aucune page dans le fichier, et ses règles vivent dans le fichier de la
-bibliothèque. Seul le dépôt (D2) peut donc la déclarer contractée. Une
-dépendance de bibliothèque absente du dépôt est décrite par ses calques, et
-`releverLesImbriques` la signale comme aujourd'hui.
+bibliothèque. Elle n'est donc jamais contractée : le contrat du parent la
+décrit par ses calques, et `releverLesImbriques` la signale comme un imbriqué
+sans règles. Aujourd'hui, un conteneur collé n'importe où dans le fichier
+suffisait à la déclarer.
 
 Conséquence de D1 pour un fichier qui range ses règles sur une page de
 documentation : les dépendances documentées là cessent d'être reconnues. Le
 geste de création pose le conteneur à côté du composant, donc sur la page de
 son maître.
 
-Conséquence de D2 : le même fichier Figma peut produire deux contrats
-différents selon le dépôt actif, ou selon que le dépôt répond.
+Le gain de D1 dépend de la sonde S6 (section 6). Si le maître d'une instance ne
+donne pas sa page sans que cette page soit chargée, l'index charge les pages
+une à une jusqu'à la trouver. Dans le pire cas, il charge alors tout le
+document, comme aujourd'hui.
 
 ## 3. Verdict sur les pistes
 
@@ -76,7 +76,7 @@ différents selon le dépôt actif, ou selon que le dépôt répond.
 | P5.b Pages des maîtres seules | Retenue (D1) | L2 |
 | P5.c Préchauffage | Retenue sous condition (D5) | L3 |
 | P5.d Invalidation par page | Retenue, sur les seules pages balayées | L2 |
-| Liste des contrats du dépôt | Retenue (D2) | L2B |
+| Liste des contrats du dépôt | Écartée (D2) | |
 | P6 `JSON_REST_V1` | Écartée : couverture des champs inconnue, réécriture de tous les `extract*` | |
 | P7 Calcul pur dans l'iframe | Écartée, sauf si M1 lui attribue plus d'un cinquième du temps | |
 | P8 Rendre la main | Retenue, à budget de temps | L4 |
@@ -84,9 +84,9 @@ différents selon le dépôt actif, ou selon que le dépôt répond.
 ## 4. Bornes
 
 - Le contrat reste identique octet pour octet, hors `meta.exportedAt`, pour
-  tout ce qui ne dépend pas de D1, D2 et D4. Les lots L0, L1, L4 et L5 ne
-  changent aucun contrat. Les lots L2 et L2B changent la liste des dépendances
-  reconnues, et seulement elle.
+  tout ce qui ne dépend pas de D1 et D4. Les lots L0, L1, L4 et L5 ne changent
+  aucun contrat. Le lot L2 change la liste des dépendances reconnues, et
+  seulement elle.
 - L'analyse n'écrit rien dans le document.
 - Aucune signature publique de `src/contract/` ne change pour transporter un
   cache. Les caches vivent dans une portée d'analyse (section 5.2).
@@ -105,13 +105,13 @@ différents selon le dépôt actif, ou selon que le dépôt répond.
 Nouveau module `src/contract/mesure.ts`. Il tient, pour une analyse :
 
 - un chronomètre par étape : chaque annonce de `handleExportComponent`, plus
-  `depot`, `index`, `composition`, `wrapper`, `structure`, `echantillons`,
+  `index`, `composition`, `wrapper`, `structure`, `echantillons`,
   `compaction` et `serialisation` ;
 - des compteurs : `pagesChargees`, `pagesBalayees`, `pagesReutilisees`,
   `nodesParcourus` (somme des longueurs rendues par `findAll` dans
   `getAllNodes`), `appelsGetAllNodes`, `appelsFindAllWithCriteria`,
   `appelsGetMainComponentAsync`, `maitresReutilises`, `respirations`,
-  `contratsPublies`, `tailleIndex` ;
+  `tailleIndex` ;
 - une empreinte du contrat : FNV-1a 32 bits de `content`, dont la valeur de
   `exportedAt` est remplacée par une chaîne fixe.
 
@@ -171,14 +171,13 @@ déjà employé ailleurs. Elle rend vrai dès qu'une instance n'a, entre elle et
 racine, aucun calque `isStaticallyHidden`, elle comprise. C'est le résultat de
 `getAllNodes(component).some(…)` sans `composed`.
 
-### 5.4. L'index des composants contractés (L2 et L2B)
+### 5.4. L'index des composants contractés (L2)
 
 `indexContractedNamesInDocument` est remplacée par :
 
 ```ts
 export async function indexContractedNames(
   variants: readonly SceneNode[],
-  publies: Promise<ReadonlySet<string>>,
   options?: { avantChaquePage?: () => Promise<void>; priorite?: 'fond' | 'analyse' },
 ): Promise<Set<string>>;
 ```
@@ -189,18 +188,23 @@ sans changement. La fonction de page actuelle, qui porte déjà ce nom, est
 renommée `nomsDeLaPage`.
 
 **Qui est contracté.** Un propriétaire, component set ou composant seul, est
-contracté si l'une des deux conditions tient :
+contracté s'il est local et qu'un conteneur de sa propre page écrit son nom
+(D1). Un propriétaire distant (`remote === true`) ne l'est jamais.
 
-- il est local, et un conteneur de sa propre page écrit son nom (D1) ;
-- `codeIdentifier(owner.name)` nomme un contrat publié dans le dépôt actif (D2).
+**Trouver la page d'un maître.** Le calcul part des instances, jamais du
+document. `maitreDe(instance)` rend le maître par `getMainComponentAsync`, que
+Figma résout par référence, sans balayage. La remontée de `parent` depuis ce
+maître atteint le node `PAGE` qui le porte. Seule cette page est ensuite
+chargée par `loadAsync`. La sonde S6 vérifie que la remontée fonctionne quand
+la page n'est pas chargée. Sinon, le repli charge les pages une à une, page
+courante en tête, et s'arrête à celle qui contient le maître.
 
 **Quels propriétaires interroger.** Un calcul en tours :
 
 1. Relever les instances rendues de chaque variant par `getAllNodes(variant)`,
    résoudre leur maître par `maitreDe`, en déduire les propriétaires.
-2. Pour chaque propriétaire local nouveau, lire sa page en remontant ses
-   parents jusqu'au `PAGE`. Charger et balayer chaque page nouvelle
-   (ci-dessous). Juger chaque propriétaire nouveau.
+2. Pour chaque propriétaire local nouveau, lire sa page. Charger et balayer
+   chaque page nouvelle (ci-dessous). Juger chaque propriétaire nouveau.
 3. Pour chaque propriétaire contracté nouveau, relever les instances de son
    maître et de son variant représentatif, que `indexMasterInstances` et
    `indexDependencyPropertySurfaces` parcourront, puis reprendre en 1.
@@ -237,28 +241,11 @@ le `nodechange` qu'elle émet arrive par lots, trop tard pour l'analyse qui
 suit. `oublierLIndexDuDocument` vide toutes les entrées ; les tests s'en
 servent.
 
-**Les contrats publiés (L2B).** Nouvelle méthode du port :
-
-```ts
-listerFichiers(dossier: string): Promise<string[]>;
-```
-
-GitHub la sert par l'API des arbres Git de la branche par défaut, GitLab par
-`repository/tree` paginé. Le dossier est celui où `repositoryLayout` et
-`artifactPath` rangent les contrats. `code.ts` lance la lecture au début
-d'`analyser`, en parallèle de l'extraction, et passe la `Promise` à
-`handleExportComponent`. Elle rend l'ensemble des identifiants
-`<Nom>` des fichiers `<Nom>.contract.json`. Sans dépôt valide, sur une erreur
-de forge, ou après 5 secondes, elle rend un ensemble vide, sans avertissement.
-L'index ne l'attend qu'au moment de juger un propriétaire que sa page ne
-déclare pas.
-
 ### 5.5. Le préchauffage (L3, sous condition S2)
 
 `reportSelectionState` lance `indexContractedNames` en priorité `fond` quand la
 cible est exportable et qu'un variant satisfait `contientUneInstanceRendue`.
-Le préchauffage passe un ensemble publié vide : la liste du dépôt se lit à
-l'analyse. Il dure au plus le temps de résoudre les maîtres et de charger les
+Il dure au plus le temps de résoudre les maîtres et de charger les
 pages de ces maîtres.
 
 L'appel de fond passe `avantChaquePage: laisserPasserLesOperations`. L'analyse
@@ -325,9 +312,8 @@ les deux `content` après avoir remplacé `exportedAt`. Il couvre L1, L4 et L5.
 
 **Index.** Tests du critère : dépendance locale avec conteneur sur sa page,
 contractée ; conteneur sur une autre page, non contractée ; dépendance de
-bibliothèque publiée dans le dépôt, contractée ; non publiée, non contractée ;
-calque `component-name` masqué dans une instance, ignoré ; dépôt en échec,
-index du document seul. Tests de mémoire : seules les pages des maîtres sont
+bibliothèque, non contractée même si un conteneur du fichier écrit son nom ;
+calque `component-name` masqué dans une instance, ignoré. Tests de mémoire : seules les pages des maîtres sont
 chargées ; un `nodechange` fait rebalayer sa page seule ; abonnement refusé,
 page rebalayée ; tours successifs pour une dépendance de dépendance.
 
