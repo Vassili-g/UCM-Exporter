@@ -415,20 +415,30 @@ courbe, mais `[ENT-08]` interdit de les modifier dans l’interface, et
 l’architecture fixe onze nuances à toutes les rampes. Ce lot commence donc par
 une instruction.
 
-- [ ] **V7.1** Relever ce qui suppose onze nuances ou un numéro précis :
+- [x] **V7.1** Relever ce qui suppose onze nuances ou un numéro précis :
   `[REC-05]` et `CRANS_DES_EMPLOIS`, la garantie des courbes et l’alerte de
   fond, qui lisent la nuance 50 (`[ENT-06]`, `[ENT-10]`),
   `CRANS_PALETTES_PROCHES`, le préréglage Tailwind, l’abscisse de l’éditeur de
   dérive, la grille de l’aperçu et de la réglette, la planche, la grille des
   contrastes et l’empreinte des cadres.
-- [ ] **V7.2** Proposer au mainteneur, avec des rampes calculées : le geste
+  Fait : [instruction](./INSTRUCTION-NOMBRE-DE-NUANCES.md#v71-ce-qui-suppose-onze-nuances-ou-un-numéro-précis).
+  La première nuance sert de fond de page, l’alerte des palettes proches lit
+  500, et un état avance d’un rang. Les onze colonnes de la fiche de
+  l’onglet Planche sont corrigées.
+- [x] **V7.2** Proposer au mainteneur, avec des rampes calculées : le geste
   (liste de numéros, ou préréglages de nombre), les numéros ajoutés ou
   retirés, la clarté d’une nuance ajoutée (interpolation de la courbe, puis
   réglage) et le nombre maximal qui tient à 500 px. Les sept nuances de la
   table des emplois restent obligatoires.
-- [ ] **V7.3** Présenter l’écart avec l’architecture multi-marques : nombre
+  Fait : rampes à 9, 11 et 13 nuances ; 13 avec 150 et 750 décale le survol
+  de `text` sur `surface` à 750 / 150. Colonne de 25 px à 13 nuances, 21 px à
+  15.
+- [x] **V7.3** Présenter l’écart avec l’architecture multi-marques : nombre
   de variables de `theme`, rampes de marques différentes. Faire trancher par
   le mainteneur avant tout code.
+  Fait : 13 variables `theme` par nuance ; le nombre ne peut être qu’un
+  réglage commun. Les décisions attendues sont listées à la fin de
+  l’instruction.
 - [ ] **V7.4** Après décision, écrire les cases d’implémentation dans ce plan,
   puis passer la conception en revue indépendante : le lot touche le moteur,
   la recette et la planche.

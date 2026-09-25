@@ -18,6 +18,7 @@ export function apercuCompact(recette: Recette, analyse: AnalyseDePalette, mode:
   const encres = encresSur(lireHexa(recette.fonds[mode]) ?? [255, 255, 255]);
   surface.style.setProperty('--encre-surface', encres.encre);
   surface.style.setProperty('--bordure-surface', encres.bordure);
+  surface.style.setProperty('--colonnes', String(recette.crans.length));
   surface.setAttribute('aria-hidden', 'true');
   for (const profil of PROFILS) {
     const rangee = document.createElement('div');

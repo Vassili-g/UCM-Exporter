@@ -672,7 +672,7 @@
   white-space: nowrap;
 }
 
-/* Les deux rampes d'une fiche, peintes du fond du thème : onze pastilles par rangée. */
+/* Les deux rampes d'une fiche, peintes du fond du thème : une pastille par nuance de la recette. */
 .fiche-apercu {
   display: grid;
   gap: var(--espace-serre);
@@ -686,7 +686,7 @@
   display: grid;
   align-items: center;
   gap: 2px;
-  grid-template-columns: 40px repeat(11, minmax(0, 1fr));
+  grid-template-columns: 40px repeat(var(--colonnes), minmax(0, 1fr));
 }
 
 .fiche-profil {

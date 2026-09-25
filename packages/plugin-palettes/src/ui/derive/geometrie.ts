@@ -2,9 +2,10 @@
  * La géométrie du graphe de dérive ([DER-01], [ARC-08]) : où se place un cran,
  * le pivot et un angle, et l'angle qu'une ordonnée désigne. Pure, sans DOM.
  *
- * L'abscisse est le rang du cran de la courbe claire : onze positions
- * régulières, du bout clair à gauche au bout sombre à droite. Le graphe, la
- * bande de teintes et la rampe s'alignent sur ces colonnes. L'ordonnée est la
+ * L'abscisse est le rang du cran de la courbe claire : des positions
+ * régulières, une par nuance, du bout clair à gauche au bout sombre à droite.
+ * Le graphe, la bande de teintes et la rampe s'alignent sur ces colonnes.
+ * L'ordonnée est la
  * dérive par rapport à la teinte de la référence, sur une échelle de ±30° à
  * ±90° que `echelleDe` choisit.
  */
