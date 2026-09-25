@@ -2,7 +2,7 @@
 
 ## État
 
-- Lot courant : E6
+- Lot courant : E7
 - Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
 - Portes franchies : H0, H1 et H2. Le rang des ombres dans `effects` se
   vérifie à la recette de E10.
@@ -262,6 +262,28 @@ copiés ; le build y tourne étape par étape.
   l'exception de « Dimensions et bornes » et la première puce des propriétés
   non portables ; `AGENTS.md`, calque hors du flux et taille de maquette ;
   `SPEC.md`, « 3. Layout » ; `TEXTES-A-VALIDER.md`, messages 9 à 13.
+- Écart ou réserve : aucun.
+
+### E6 : les propriétés sans champ se regroupent sur les racines
+
+- Commit : ce commit, précédé de `7abe51e`.
+- Changement : `pourLesVariants` remplace `impactDesVariants` dans le relevé de
+  `unsupportedProperties.ts` et porte le point entier retenu à H1 (messages 14
+  à 17) : fill et stroke non unis, blend mode, mask, pointillé. Un réglage
+  « mixed » et un réglage de texte gardent une ligne par calque.
+- Tests : dans `messagesDeRacine.test.ts`, pour chaque propriété, trois racines
+  donnent une ligne à trois cibles, et un composant seul garde son nom de
+  calque. Cinq rouges avant le changement, un par propriété ; les cinq tests du
+  composant seul passaient déjà. Le test qui gardait une ligne par racine pour
+  un texte non validé est supprimé, comme le plan le prévoit : plus aucune
+  propriété du relevé n'est sans texte de groupe, hors « mixed » et texte.
+- Scénario : aucune racine n'y porte ces propriétés, rien ne change.
+- Commandes, worktree à `7abe51e` avec les fichiers du lot : `npm test` : 0,
+  suite du plugin de 966 à 975 tests. `npm run typecheck` : 0. Build étape par
+  étape : 0 à chaque étape.
+- Mutation : `racineDeVariant` ignoré au site : les cinq regroupements échouent.
+  Restauré par copie : vert.
+- Documents : `SPEC.md`, racine de variant ; `TEXTES-A-VALIDER.md`.
 - Écart ou réserve : aucun.
 
 ### Porte H : réponses reçues

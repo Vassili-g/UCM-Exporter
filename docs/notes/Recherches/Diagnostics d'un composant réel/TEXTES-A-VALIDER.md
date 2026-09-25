@@ -216,6 +216,17 @@ quand les layers sont placés par leurs contraintes : « Les layers ne se
 déplaceront pas automatiquement pour laisser de la place à un texte plus long ou
 à un layer voisin plus grand. » La largeur s'écrit « width » et « la largeur ».
 
+### Propriétés sans champ, sur les racines (E6)
+
+| Propriété | Titre | Impact | Action |
+|---|---|---|---|
+| Fill non uni | fill : dégradé ou image non pris en charge. | Le contrat ne transmettra pas les fills en dégradé ou en image. | Si ce rendu est nécessaire, signalez cette limite au mainteneur du plugin. Sinon, remplacez les fills concernés par des couleurs unies reliées à des variables, puis réexportez. |
+| Blend mode | blend mode : ce mode de fusion n’est pas pris en charge. | Le contrat ne transmettra pas le mode de fusion des variants concernés. | Si ce mode de fusion est nécessaire, signalez cette limite au mainteneur du plugin. Sinon, choisissez « Normal » dans chaque variant concerné, puis réexportez. |
+| Mask | mask : le masquage n’est pas pris en charge. | Le contrat ne transmettra pas le découpage produit par ces masks. | Si ce découpage est nécessaire, signalez cette limite au mainteneur du plugin. Sinon, désactivez les masks concernés, puis réexportez. |
+| Pointillé | stroke : le pointillé n’est pas pris en charge. | Le contrat ne transmettra pas le motif de pointillé de ces strokes. | Si le pointillé est nécessaire, signalez cette limite au mainteneur du plugin. Sinon, choisissez un trait plein dans chaque variant concerné, puis réexportez. |
+
+Le stroke non uni reprend le texte du fill, « fill » devenant « stroke ».
+
 ### Ajustements de forme
 
 - Les titres de L6 finissent par un point : la phrase compacte de
@@ -230,7 +241,6 @@ L6 n'écrit un texte de groupe que pour ce que le mainteneur a validé. Sur la
 racine d'un variant, ces messages gardent une ligne par variant jusqu'au lot qui
 écrit leur texte retenu :
 
-- `blend mode`, `mask`, `dash`, `fill` et `stroke` de la propriété sans champ ;
 - les autres refus d'un champ : côtés reliés à des variables différentes,
   réglages qui se contredisent, côtés sans variable ;
 - l'alignement d'auto layout illisible.

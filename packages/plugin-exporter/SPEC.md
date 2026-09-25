@@ -352,8 +352,10 @@ racine pour cible. `extractVariantTokens` relève les couleurs de chaque variant
 dans un canal à part, qui reprend les racines déclarées : un stroke weight sans
 variable sur les racines s'écrit donc lui aussi une fois. L'opacité sans
 variable a son propre texte, sur un calque comme sur les racines
-(`TEXTES_SANS_VARIABLE`, `nodeBindings.ts`). Une propriété sans champ garde une
-ligne par racine tant que son texte de groupe n'est pas écrit. Les
+(`TEXTES_SANS_VARIABLE`, `nodeBindings.ts`). Un fill ou un stroke non uni, un
+blend mode, un mask et un pointillé ont leur texte de groupe
+(`pourLesVariants`, `unsupportedProperties.ts`) ; un réglage « mixed » et un
+réglage de texte n'en ont pas, une racine n'étant jamais un texte. Les
 représentants de tailles d'un wrapper ne sont pas des racines du set exporté et
 gardent le nom de leur variant.
 

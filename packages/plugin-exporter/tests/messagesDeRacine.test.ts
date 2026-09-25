@@ -177,17 +177,70 @@ test('une ombre sans effect style sur les racines donne une ligne, sans nom de c
   assert.equal(canal.filter((message) => message.startsWith('Layer «')).length, 0);
 });
 
-test('une propriété dont le texte n’est pas validé garde une ligne par racine', async () => {
-  const racines = ['Wide', 'Narrow'].map((nom) => racine(nom, { blendMode: 'MULTIPLY' }));
-  const canal: string[] = [];
-  declarerLesRacinesDeVariants(canal, racines);
+/** Chaque propriété sans champ, le réglage qui la porte, et son texte retenu pour les racines. */
+const PROPRIETES_SANS_CHAMP: Array<[string, Record<string, unknown>, {
+  titre: string; impact: string; action: string;
+}]> = [
+  ['fill', { fills: [{ type: 'GRADIENT_LINEAR', visible: true }] }, {
+    titre: 'fill : dégradé ou image non pris en charge.',
+    impact: 'Le contrat ne transmettra pas les fills en dégradé ou en image.',
+    action: 'Si ce rendu est nécessaire, signalez cette limite au mainteneur du plugin. '
+      + 'Sinon, remplacez les fills concernés par des couleurs unies reliées à des variables, '
+      + 'puis réexportez.',
+  }],
+  ['stroke', { strokes: [{ type: 'IMAGE', visible: true }] }, {
+    titre: 'stroke : dégradé ou image non pris en charge.',
+    impact: 'Le contrat ne transmettra pas les strokes en dégradé ou en image.',
+    action: 'Si ce rendu est nécessaire, signalez cette limite au mainteneur du plugin. '
+      + 'Sinon, remplacez les strokes concernés par des couleurs unies reliées à des variables, '
+      + 'puis réexportez.',
+  }],
+  ['blend mode', { blendMode: 'MULTIPLY' }, {
+    titre: 'blend mode : ce mode de fusion n’est pas pris en charge.',
+    impact: 'Le contrat ne transmettra pas le mode de fusion des variants concernés.',
+    action: 'Si ce mode de fusion est nécessaire, signalez cette limite au mainteneur du '
+      + 'plugin. Sinon, choisissez « Normal » dans chaque variant concerné, puis réexportez.',
+  }],
+  ['mask', { isMask: true }, {
+    titre: 'mask : le masquage n’est pas pris en charge.',
+    impact: 'Le contrat ne transmettra pas le découpage produit par ces masks.',
+    action: 'Si ce découpage est nécessaire, signalez cette limite au mainteneur du plugin. '
+      + 'Sinon, désactivez les masks concernés, puis réexportez.',
+  }],
+  ['dash', { dashPattern: [4, 2] }, {
+    titre: 'stroke : le pointillé n’est pas pris en charge.',
+    impact: 'Le contrat ne transmettra pas le motif de pointillé de ces strokes.',
+    action: 'Si le pointillé est nécessaire, signalez cette limite au mainteneur du plugin. '
+      + 'Sinon, choisissez un trait plein dans chaque variant concerné, puis réexportez.',
+  }],
+];
 
-  await extraire(racines, canal);
+for (const [nom, reglage, attendu] of PROPRIETES_SANS_CHAMP) {
+  test(`trois racines au ${nom} sans champ donnent une ligne à trois cibles`, async () => {
+    const racines = ['Wide', 'Narrow', 'Tall'].map((noeud) => racine(noeud, reglage));
+    const canal: string[] = [];
+    declarerLesRacinesDeVariants(canal, racines);
 
-  const lignes = [...new Set(canal.filter((message) => message.includes('blend mode')))];
-  assert.equal(lignes.length, 2);
-  assert.ok(lignes[0].startsWith('Layer « Wide », blend mode :'));
-});
+    await extraire(racines, canal);
+
+    assert.deepEqual(partiesDe(canal).get(phrase(attendu)), attendu);
+    assert.deepEqual(
+      localisationsDe(canal).get(phrase(attendu)),
+      racines.map((noeud) => noeud.id),
+    );
+    assert.equal(canal.filter((message) => message.startsWith('Layer «')).length, 0);
+  });
+
+  test(`un calque qui n’est pas une racine garde son message au ${nom}`, async () => {
+    const seule = racine('Wide', reglage);
+    const canal: string[] = [];
+
+    await extraire([seule], canal);
+
+    assert.equal(partiesDe(canal).has(phrase(attendu)), false);
+    assert.ok(canal.some((message) => message.startsWith('Layer « Wide »,')), canal.join('\n'));
+  });
+}
 
 const OPACITE = {
   titre: 'opacity : aucune variable associée.',
