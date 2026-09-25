@@ -377,6 +377,16 @@ function signalerSansVariable(node: SceneNode, label: string, warnings: string[]
   });
 }
 
+/** Les parties d'un groupe latéral, telles qu'un message les nomme : un rayon a des coins. */
+function partiesDuChamp(label: string): string {
+  return label.includes('radius') ? 'coins' : 'côtés';
+}
+
+/** Ce que le contrat ne transmettra pas d'un champ, sur les racines de variants. */
+function objetDuChamp(label: string): string {
+  return label === 'stroke weight' ? "l'épaisseur du stroke" : `le ${label}`;
+}
+
 /** Un groupe résolu : une valeur unique, ou le détail par côté. */
 type GroupResolution<K extends string> = string | Partial<Record<K, string>> | null;
 
@@ -450,6 +460,16 @@ async function resolveGroup<K extends string>(
     return null;
   }
   if (inapplicable === 'rows-space-between') {
+    if (estUneRacineDeVariant(warnings, node)) {
+      pousserPourLesVariants(warnings, node, {
+        titre: "vertical gap : la valeur « Auto » n'est pas exportée.",
+        impact: "Le contrat ne transmettra pas la répartition automatique de l'espace entre les "
+          + 'lignes.',
+        action: 'Pour transmettre un espacement fixe, reliez vertical gap à une variable dans '
+          + 'chaque variant concerné, puis réexportez.',
+      });
+      return null;
+    }
     pousserLocalise(warnings, 'Layer', node, {
       manque: `son vertical gap est réglé sur « Auto », donc Figma répartit lui-même `
         + `l'espace entre ses lignes.`,
@@ -506,6 +526,16 @@ async function resolveGroup<K extends string>(
         });
         return detail;
       }
+      if (estUneRacineDeVariant(warnings, node)) {
+        pousserPourLesVariants(warnings, node, {
+          titre: `${label} : les ${partiesDuChamp(label)} utilisent des variables différentes.`,
+          impact: `Le contrat ne transmettra pas ${objetDuChamp(label)} des variants concernés.`,
+          action: `Dans chaque variant concerné, reliez ${label === 'stroke weight'
+            ? 'les épaisseurs des côtés'
+            : `les ${partiesDuChamp(label)}`} à une même variable, puis réexportez.`,
+        });
+        return null;
+      }
       pousserLocalise(warnings, 'Layer', node, {
         champ: label,
         manque: `les côtés ne sont pas reliés à la même variable `
@@ -518,6 +548,15 @@ async function resolveGroup<K extends string>(
 
     const candidates = Array.from(new Set(tokensByAlternative.flat()));
     if (candidates.length > 1) {
+      if (estUneRacineDeVariant(warnings, node)) {
+        pousserPourLesVariants(warnings, node, {
+          titre: `${label} : plusieurs variables définissent la même valeur.`,
+          impact: `Le contrat ne transmettra pas ${objetDuChamp(label)} des variants concernés.`,
+          action: 'Dans chaque variant concerné, retirez les liaisons contradictoires pour ne '
+            + "conserver qu'une variable pour cette valeur, puis réexportez.",
+        });
+        return null;
+      }
       pousserLocalise(warnings, 'Layer', node, {
         champ: label,
         manque: `deux réglages Figma se contredisent (${candidates.join(', ')}).`,
@@ -561,7 +600,24 @@ async function resolveGroup<K extends string>(
           ? `variable introuvable : ${unresolved.map(fieldLabel).join(', ')}`
           : null,
       ].filter((value): value is string => Boolean(value));
-      if (details.length > 0) {
+      if (details.length > 0 && estUneRacineDeVariant(warnings, node)) {
+        // Les côtés reliés restent publiés : l'impact le dit, et une variable
+        // introuvable se distingue d'une variable absente.
+        const parties = partiesDuChamp(label);
+        const manques = [
+          missing.length > 0 ? `certains ${parties} n'ont pas de variable associée.` : null,
+          unresolved.length > 0 ? `certains ${parties} utilisent une variable introuvable.` : null,
+        ].filter((manque): manque is string => Boolean(manque));
+        for (const manque of manques) {
+          pousserPourLesVariants(warnings, node, {
+            titre: `${label} : ${manque}`,
+            impact: `Le contrat transmettra uniquement les valeurs des ${parties} reliés à une `
+              + 'variable.',
+            action: `Reliez les ${parties} manquants à des variables dans chaque variant `
+              + 'concerné, puis réexportez.',
+          });
+        }
+      } else if (details.length > 0) {
         pousserLocalise(warnings, 'Layer', node, {
           champ: label,
           manque: `certains côtés n'ont pas de variable exploitable (${details.join(' ; ')}).`,

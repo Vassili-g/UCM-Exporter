@@ -406,3 +406,141 @@ test('trois racines sans auto layout à la hauteur sans variable donnent une lig
   assert.deepEqual(partiesDe(canal).get(phrase(hauteur)), hauteur);
   assert.deepEqual(localisationsDe(canal).get(phrase(hauteur)), racines.map((noeud) => noeud.id));
 });
+
+/** Vérifie qu'un point s'écrit une fois pour trois racines, et qu'aucun ne nomme un calque. */
+function uneLignePourTrois(canal: string[], racines: ComponentNode[], attendu: {
+  titre: string; impact: string; action: string;
+}): void {
+  assert.deepEqual(partiesDe(canal).get(phrase(attendu)), attendu, canal.join('\n'));
+  assert.deepEqual(localisationsDe(canal).get(phrase(attendu)), racines.map((noeud) => noeud.id));
+  assert.equal(canal.filter((message) => message.startsWith('Layer «')).length, 0, canal.join('\n'));
+}
+
+test('trois racines au vertical gap « Auto » donnent une ligne à trois cibles', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racine(nom, {
+    layoutMode: 'HORIZONTAL',
+    layoutWrap: 'WRAP',
+    counterAxisAlignContent: 'SPACE_BETWEEN',
+    counterAxisSpacing: 12,
+  }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  await extraire(racines, canal);
+
+  uneLignePourTrois(canal, racines, {
+    titre: "vertical gap : la valeur « Auto » n'est pas exportée.",
+    impact: "Le contrat ne transmettra pas la répartition automatique de l'espace entre les lignes.",
+    action: 'Pour transmettre un espacement fixe, reliez vertical gap à une variable dans '
+      + 'chaque variant concerné, puis réexportez.',
+  });
+});
+
+test('trois racines aux côtés de stroke weight sur deux variables donnent une ligne', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racine(nom, {
+    strokes: [{ type: 'SOLID', boundVariables: { color: alias('encre') } }],
+    strokeAlign: 'INSIDE',
+    strokeWeight: 1,
+    strokeTopWeight: 1,
+    strokeRightWeight: 2,
+    strokeBottomWeight: 1,
+    strokeLeftWeight: 1,
+    boundVariables: {
+      strokes: [alias('encre')],
+      strokeWeight: alias('fin'),
+      strokeTopWeight: alias('fin'),
+      strokeRightWeight: alias('epais'),
+      strokeBottomWeight: alias('fin'),
+      strokeLeftWeight: alias('fin'),
+    },
+  }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  await extractVariantTokens(
+    {
+      axes: ['state'],
+      variants: racines.map((component) => ({ values: { state: component.name }, component })),
+    },
+    resolverFor({ encre: 'color.border', fin: 'border.thin', epais: 'border.thick' }),
+    canal,
+  );
+
+  uneLignePourTrois(canal, racines, {
+    titre: 'stroke weight : les côtés utilisent des variables différentes.',
+    impact: "Le contrat ne transmettra pas l'épaisseur du stroke des variants concernés.",
+    action: 'Dans chaque variant concerné, reliez les épaisseurs des côtés à une même '
+      + 'variable, puis réexportez.',
+  });
+});
+
+test('trois racines au corner radius défini deux fois donnent une ligne', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racine(nom, {
+    cornerRadius: 4,
+    topLeftRadius: 8,
+    topRightRadius: 8,
+    bottomLeftRadius: 8,
+    bottomRightRadius: 8,
+    boundVariables: {
+      cornerRadius: alias('sm'),
+      topLeftRadius: alias('md'),
+      topRightRadius: alias('md'),
+      bottomLeftRadius: alias('md'),
+      bottomRightRadius: alias('md'),
+    },
+  }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  for (const noeud of racines) {
+    await extractLayout(noeud, resolverFor({ sm: 'radius.sm', md: 'radius.md' }), canal);
+  }
+
+  uneLignePourTrois(canal, racines, {
+    titre: 'corner radius : plusieurs variables définissent la même valeur.',
+    impact: 'Le contrat ne transmettra pas le corner radius des variants concernés.',
+    action: 'Dans chaque variant concerné, retirez les liaisons contradictoires pour ne '
+      + "conserver qu'une variable pour cette valeur, puis réexportez.",
+  });
+});
+
+test('trois racines à un côté de padding sans variable donnent une ligne', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racine(nom, {
+    paddingLeft: 8,
+    paddingRight: 12,
+    boundVariables: { paddingLeft: alias('px') },
+  }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  for (const noeud of racines) await extractLayout(noeud, resolverFor({ px: 'space.x' }), canal);
+
+  uneLignePourTrois(canal, racines, {
+    titre: "horizontal padding : certains côtés n'ont pas de variable associée.",
+    impact: 'Le contrat transmettra uniquement les valeurs des côtés reliés à une variable.',
+    action: 'Reliez les côtés manquants à des variables dans chaque variant concerné, puis '
+      + 'réexportez.',
+  });
+});
+
+test('trois racines à un coin sans variable disent « coins », et une variable introuvable se distingue', async () => {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racine(nom, {
+    topLeftRadius: 8,
+    topRightRadius: 8,
+    bottomLeftRadius: 8,
+    bottomRightRadius: 4,
+    boundVariables: {
+      topLeftRadius: alias('md'),
+      topRightRadius: alias('md'),
+      bottomLeftRadius: alias('perdue'),
+    },
+  }));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+
+  for (const noeud of racines) await extractLayout(noeud, resolverFor({ md: 'radius.md' }), canal);
+
+  const titres = [...partiesDe(canal).values()].map(({ titre }) => titre);
+  assert.ok(titres.includes("corner radius : certains coins n'ont pas de variable associée."), titres.join('\n'));
+  assert.ok(titres.includes('corner radius : certains coins utilisent une variable introuvable.'), titres.join('\n'));
+});

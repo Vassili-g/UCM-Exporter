@@ -227,6 +227,21 @@ déplaceront pas automatiquement pour laisser de la place à un texte plus long 
 
 Le stroke non uni reprend le texte du fill, « fill » devenant « stroke ».
 
+### Refus d'un champ, sur les racines (E7)
+
+| Message | Titre | Impact | Action |
+|---|---|---|---|
+| Vertical gap « Auto » | vertical gap : la valeur « Auto » n'est pas exportée. | Le contrat ne transmettra pas la répartition automatique de l'espace entre les lignes. | Pour transmettre un espacement fixe, reliez vertical gap à une variable dans chaque variant concerné, puis réexportez. |
+| Côtés sur des variables différentes | stroke weight : les côtés utilisent des variables différentes. | Le contrat ne transmettra pas l'épaisseur du stroke des variants concernés. | Dans chaque variant concerné, reliez les épaisseurs des côtés à une même variable, puis réexportez. |
+| Réglages contradictoires | corner radius : plusieurs variables définissent la même valeur. | Le contrat ne transmettra pas le corner radius des variants concernés. | Dans chaque variant concerné, retirez les liaisons contradictoires pour ne conserver qu'une variable pour cette valeur, puis réexportez. |
+| Côtés sans variable | horizontal padding : certains côtés n'ont pas de variable associée. | Le contrat transmettra uniquement les valeurs des côtés reliés à une variable. | Reliez les côtés manquants à des variables dans chaque variant concerné, puis réexportez. |
+
+Un rayon dit « coins » au lieu de « côtés ». Une variable introuvable s'écrit
+« certains côtés utilisent une variable introuvable ». Un autre champ que le
+stroke weight écrit « le <champ> » dans l'impact et « les côtés » dans l'action
+des côtés reliés à des variables différentes. `nodeBindings.ts` emploie
+l'apostrophe droite.
+
 ### Ajustements de forme
 
 - Les titres de L6 finissent par un point : la phrase compacte de
@@ -241,6 +256,5 @@ L6 n'écrit un texte de groupe que pour ce que le mainteneur a validé. Sur la
 racine d'un variant, ces messages gardent une ligne par variant jusqu'au lot qui
 écrit leur texte retenu :
 
-- les autres refus d'un champ : côtés reliés à des variables différentes,
-  réglages qui se contredisent, côtés sans variable ;
+- les côtés sans variable d'un groupe qui ne publie aucun côté ;
 - l'alignement d'auto layout illisible.

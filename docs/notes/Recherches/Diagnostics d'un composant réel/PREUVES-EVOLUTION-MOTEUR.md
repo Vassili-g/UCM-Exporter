@@ -2,7 +2,7 @@
 
 ## État
 
-- Lot courant : E7
+- Lot courant : E8
 - Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
 - Portes franchies : H0, H1 et H2. Le rang des ombres dans `effects` se
   vérifie à la recette de E10.
@@ -283,6 +283,30 @@ copiés ; le build y tourne étape par étape.
   étape : 0 à chaque étape.
 - Mutation : `racineDeVariant` ignoré au site : les cinq regroupements échouent.
   Restauré par copie : vert.
+- Documents : `SPEC.md`, racine de variant ; `TEXTES-A-VALIDER.md`.
+- Écart ou réserve : aucun.
+
+### E7 : les refus d'un champ se regroupent sur les racines
+
+- Commit : ce commit, précédé de `60b44e4`.
+- Changement : dans `resolveGroup` (`nodeBindings.ts`), le vertical gap
+  « Auto », des côtés reliés à des variables différentes, deux réglages qui se
+  contredisent et des côtés sans variable d'un groupe latéral prennent les
+  textes 18 à 21 sur les racines. Un rayon dit « coins », une variable
+  introuvable a sa phrase. Des côtés sans variable d'un groupe qui ne publie
+  aucun côté gardent une ligne par racine : le texte retenu dit que les côtés
+  reliés sont transmis, ce qui y serait faux.
+- Adaptations : pour un autre champ que le stroke weight, l'impact de R12 et de
+  R13 écrit « le <champ> », et l'action de R12 « les côtés » ou « les coins ».
+  Les apostrophes suivent celles de `nodeBindings.ts`, droites.
+- Tests vus rouges avant le changement : cinq, un par message et le cas des
+  coins.
+- Commandes, worktree à `60b44e4` avec les fichiers du lot : `npm test` : 0,
+  suite du plugin de 975 à 980 tests. `npm run typecheck` : 0. Build étape par
+  étape : 0 à chaque étape.
+- Mutations : chaque test de racine rendu `false` à son site (vertical gap,
+  côtés différents, réglages contradictoires, côtés sans variable) fait échouer
+  son test. Restauré par copie : vert.
 - Documents : `SPEC.md`, racine de variant ; `TEXTES-A-VALIDER.md`.
 - Écart ou réserve : aucun.
 

@@ -355,7 +355,12 @@ variable a son propre texte, sur un calque comme sur les racines
 (`TEXTES_SANS_VARIABLE`, `nodeBindings.ts`). Un fill ou un stroke non uni, un
 blend mode, un mask et un pointillé ont leur texte de groupe
 (`pourLesVariants`, `unsupportedProperties.ts`) ; un réglage « mixed » et un
-réglage de texte n'en ont pas, une racine n'étant jamais un texte. Les
+réglage de texte n'en ont pas, une racine n'étant jamais un texte. Dans
+`resolveGroup`, le vertical gap « Auto », des côtés reliés à des variables
+différentes, deux réglages qui se contredisent et des côtés sans variable d'un
+groupe latéral ont aussi le leur. Des côtés sans variable d'un groupe qui ne
+publie rien gardent une ligne par racine : le texte retenu dit que les côtés
+reliés sont transmis. Les
 représentants de tailles d'un wrapper ne sont pas des racines du set exporté et
 gardent le nom de leur variant.
 
