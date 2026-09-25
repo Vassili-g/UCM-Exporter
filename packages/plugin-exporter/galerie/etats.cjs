@@ -82,10 +82,15 @@ const AVERTISSEMENT_BORNE_DES_VARIANTS = { // nodeBindings.ts, resolveSizeBounds
   impact: "Des variants déclarent un **min width** sans token. Le contrat ne publiera que les paramètres reliés à un token.",
   action: "Reliez ces paramètres à une variable dans chaque variant concerné, puis réexportez.",
 };
-const AVERTISSEMENT_OMBRE_DES_VARIANTS = { // unsupportedProperties.ts, effect
-  titre: "Propriété non supportée par le moteur.",
-  impact: "Le contrat n’exportera pas l’ombre ou le flou de ces variants.",
-  action: "Retirez cet effect si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin, puis réexportez.",
+const AVERTISSEMENT_OMBRE_DES_VARIANTS = { // effectStyles.ts, effet sans effect style
+  titre: "effect : aucun effect style appliqué.",
+  impact: "Le contrat ne transmettra pas les ombres ou les flous des variants concernés.",
+  action: "Appliquez un effect style à chaque variant concerné, puis réexportez.",
+};
+const AVERTISSEMENT_FILL_DES_VARIANTS = { // extractSlotTokens.ts, warnPeinturesLibres
+  titre: "fill : couleur sans variable associée.",
+  impact: "Le contrat ne transmettra pas les couleurs sans variable associée.",
+  action: "Reliez chaque couleur concernée à une variable dans les variants sélectionnés, puis réexportez.",
 };
 const AVERTISSEMENT_GAP_DES_VARIANTS = { // nodeBindings.ts, resolveGroup
   titre: "gap : aucun token n'est relié à cette propriété.",
@@ -715,9 +720,9 @@ const ETATS = [
     id: 'resultat-avertissement-regroupe',
     titre: 'Des avertissements regroupés sur les variants',
     quand:
-      "Un component set de cent quarante variants dont chaque racine fixe un min width sans variable, porte une ombre et laisse son gap sans variable. Le moteur écrit une phrase par sujet, sans nom de calque, et la carte réunit toutes les racines.",
+      "Un component set de cent quarante variants dont chaque racine fixe un min width sans variable, porte une ombre sans effect style, laisse son gap sans variable et peint son fill sans variable. Le moteur écrit une phrase par sujet, sans nom de calque, et la carte réunit toutes les racines.",
     regarder:
-      "Trois cartes, et non trois cent huit : aucune ne nomme un calque, et le bouton dit « Sélectionner les 140 calques » sur la première et la troisième, « Sélectionner les 28 calques » sur la deuxième. Le nom de la propriété est en gras dans l'impact de la première.",
+      "Quatre cartes, et non quatre cent quarante-huit : aucune ne nomme un calque, et le bouton dit « Sélectionner les 140 calques » sur la première, la troisième et la quatrième, « Sélectionner les 28 calques » sur la deuxième. Le nom de la propriété est en gras dans l'impact de la première.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -727,7 +732,8 @@ const ETATS = [
       diagnostic(AVERTISSEMENT_BORNE_DES_VARIANTS, Array.from({ length: 140 }, (_, rang) => `20:${rang + 1}`)),
       diagnostic(AVERTISSEMENT_OMBRE_DES_VARIANTS, Array.from({ length: 28 }, (_, rang) => `21:${rang + 1}`)),
       diagnostic(AVERTISSEMENT_GAP_DES_VARIANTS, Array.from({ length: 140 }, (_, rang) => `22:${rang + 1}`)),
-      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 3 }),
+      diagnostic(AVERTISSEMENT_FILL_DES_VARIANTS, Array.from({ length: 140 }, (_, rang) => `23:${rang + 1}`)),
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 4 }),
     ],
   },
   /*

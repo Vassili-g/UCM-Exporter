@@ -2,7 +2,7 @@
 
 ## État
 
-- Lot courant : E9
+- Lot courant : E10
 - Branche et `HEAD` de départ : `main`, `92e7cff` ; E1 part de `71fc6c9`
 - Portes franchies : H0, H1 et H2. Le rang des ombres dans `effects` se
   vérifie à la recette de E10.
@@ -328,6 +328,30 @@ copiés ; le build y tourne étape par étape.
   du conteneur, alignement d'un enfant, `layout grow`) fait échouer son test.
   Restauré par copie : vert.
 - Documents : `SPEC.md`, racine de variant ; `TEXTES-A-VALIDER.md`.
+- Écart ou réserve : aucun.
+
+### E9 : les couleurs se regroupent sur les racines
+
+- Commit : ce commit, précédé de `b987ea8`.
+- Changement : dans `extractSlotTokens.ts`, une couleur sans variable, un
+  alignement de stroke illisible et deux fills superposés prennent les textes
+  26 à 28 sur les racines. La couleur sans variable ne compte pas ses
+  peintures : leur nombre change d'un variant à l'autre, et la fusion se fait
+  sur le texte. Le stroke reprend le texte du fill.
+- Galerie : l'état `resultat-avertissement-regroupe` montre quatre cartes. Le
+  texte de l'ombre suit celui d'E3, et une carte de fill sans variable
+  s'ajoute ; `regarder` le dit. `npm run galerie` : 0, la carte est rendue
+  dans les trois thèmes.
+- Tests vus rouges avant le changement : quatre (fill, stroke, alignement du
+  stroke, deux fills).
+- Commandes, worktree à `b987ea8` avec les fichiers du lot : `npm test` : 0,
+  suite du plugin de 985 à 989 tests. `npm run typecheck` : 0. Build étape par
+  étape : 0 à chaque étape.
+- Mutations : chaque test de racine rendu `false` à son site fait échouer son
+  test. Restauré par copie : vert.
+- Documents : `SPEC.md`, racine de variant ; `TEXTES-A-VALIDER.md`, textes 26 à
+  28, et « Reste à valider » ne cite plus que R25 à R27 et les côtés sans
+  variable d'un groupe qui ne publie rien, chacun avec sa raison.
 - Écart ou réserve : aucun.
 
 ### Porte H : réponses reçues

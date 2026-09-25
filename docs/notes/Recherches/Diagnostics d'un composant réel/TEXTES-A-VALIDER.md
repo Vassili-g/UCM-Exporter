@@ -254,6 +254,16 @@ l'apostrophe droite.
 Une ligne de grille s'écrit « ligne 2 » et « cette ligne ». `flexLayout.ts`
 emploie l'apostrophe droite.
 
+### Couleurs, sur les racines (E9)
+
+| Message | Titre | Impact | Action |
+|---|---|---|---|
+| Fill sans variable | fill : couleur sans variable associée. | Le contrat ne transmettra pas les couleurs sans variable associée. | Reliez chaque couleur concernée à une variable dans les variants sélectionnés, puis réexportez. |
+| Alignement du stroke | stroke : l’alignement ne peut pas être lu. | Le contrat ne précisera pas si le stroke est placé en inside, center ou outside. | Choisissez de nouveau inside, center ou outside dans chaque variant concerné, puis réexportez. |
+| Deux fills superposés | fill : l’ordre des deux couleurs superposées n’est pas exporté. | Le développeur recevra les deux couleurs sans indication de leur ordre de superposition. | Si la superposition est nécessaire, signalez cette limite au mainteneur du plugin. Sinon, ne conservez qu’un fill relié à une variable dans chaque variant concerné, puis réexportez. |
+
+Le stroke sans variable reprend le texte du fill, « fill » devenant « stroke ».
+
 ### Ajustements de forme
 
 - Les titres de L6 finissent par un point : la phrase compacte de
@@ -264,8 +274,14 @@ emploie l'apostrophe droite.
 
 ## Reste à valider
 
-L6 n'écrit un texte de groupe que pour ce que le mainteneur a validé. Sur la
-racine d'un variant, ces messages gardent une ligne par variant jusqu'au lot qui
-écrit leur texte retenu :
+Chaque message qui peut viser la racine d'un variant a son texte de groupe,
+sauf ceux-ci, qui gardent une ligne par racine :
 
-- les côtés sans variable d'un groupe qui ne publie aucun côté.
+- R25, une couleur ou un stroke qui change de rôle : le message nomme deux
+  calques, et son geste dépend de celui qu'il nomme ;
+- R26, une variable introuvable : le message ne s'écrit déjà qu'une fois, au
+  nom du premier calque ; sa cible reste à corriger, hors du plan ;
+- R27, un variant sans aucune couleur liée : il nomme un variant précis, et la
+  règle de L6 garde ce nom ;
+- les côtés sans variable d'un groupe qui ne publie aucun côté : le texte
+  retenu dit que les côtés reliés sont transmis, ce qui y serait faux.

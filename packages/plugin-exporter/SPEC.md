@@ -364,7 +364,12 @@ reliés sont transmis. Dans `flexLayout.ts`, l'alignement d'auto layout
 illisible et la piste de grille illisible d'une racine ont leur texte de
 groupe. L'alignement illisible et le `layout grow` hors menu d'un enfant de
 racine gardent le nom de l'enfant et perdent celui de la racine : les enfants
-de tous les variants partagent une phrase. Les
+de tous les variants partagent une phrase. Dans `extractSlotTokens.ts`, une
+couleur sans variable, un alignement de stroke illisible et deux fills
+superposés ont le leur ; la couleur sans variable ne compte pas ses peintures,
+leur nombre changeant d'un variant à l'autre. Une couleur qui change de rôle et
+une variable introuvable gardent leur phrase : la première nomme deux calques,
+la seconde ne s'écrit déjà qu'une fois. Les
 représentants de tailles d'un wrapper ne sont pas des racines du set exporté et
 gardent le nom de leur variant.
 

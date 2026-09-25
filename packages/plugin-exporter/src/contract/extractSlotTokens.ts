@@ -23,7 +23,7 @@ import {
 import { paintSiteRole, roleKind } from './semantics';
 import { isIconLayer } from './slotNames';
 import type { StrokeAlignment, StrokeWidth } from '@ucm-kit/core/format';
-import { pousserLocalise } from './localisation';
+import { estUneRacineDeVariant, pousserLocalise, pousserPourLesVariants } from './localisation';
 export type { TokenResolver } from '../variables';
 
 const BOUND_FIELDS = ['fills', 'strokes'] as const;
@@ -63,6 +63,15 @@ function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment |
   if (raw === 'INSIDE') return 'inside';
   if (raw === 'CENTER') return 'center';
   if (raw === 'OUTSIDE') return 'outside';
+  if (estUneRacineDeVariant(warnings, node)) {
+    pousserPourLesVariants(warnings, node, {
+      titre: 'stroke : l’alignement ne peut pas être lu.',
+      impact: 'Le contrat ne précisera pas si le stroke est placé en inside, center ou outside.',
+      action: 'Choisissez de nouveau inside, center ou outside dans chaque variant concerné, '
+        + 'puis réexportez.',
+    });
+    return null;
+  }
   pousserLocalise(warnings, 'Layer', node, {
     manque: 'l’alignement du stroke est illisible.',
     impact: 'Le contrat ne dira pas s’il est inside, center ou outside.',
@@ -229,6 +238,17 @@ function warnPeinturesLibres(
   const stroke = field === 'strokes';
   const plusieurs = libres > 1;
   const nom = `${stroke ? 'stroke' : 'fill'}${plusieurs ? 's' : ''}`;
+  // Sur les racines, la phrase ne compte pas les peintures : leur nombre
+  // change d'un variant à l'autre, et la fusion se fait sur le texte.
+  if (estUneRacineDeVariant(warnings, node)) {
+    pousserPourLesVariants(warnings, node, {
+      titre: `${stroke ? 'stroke' : 'fill'} : couleur sans variable associée.`,
+      impact: 'Le contrat ne transmettra pas les couleurs sans variable associée.',
+      action: 'Reliez chaque couleur concernée à une variable dans les variants sélectionnés, '
+        + 'puis réexportez.',
+    });
+    return;
+  }
   pousserLocalise(warnings, 'Layer', node, {
     manque: `${plusieurs ? `${libres} ${nom} ne sont reliés` : `son ${nom} n’est relié`} `
       + `à aucune variable Figma.`,
@@ -329,14 +349,26 @@ export async function getSlotTokens(
       posees.set(marker, binding.token);
     } else if (dessous !== binding.token && dessous !== '') {
       posees.set(marker, '');
-      pousserLocalise(warnings, 'Layer', binding.node, {
-        manque: `deux ${isStroke ? 'strokes' : 'fills'} y sont reliés à des variables `
-          + `différentes (${toRef(dessous)} et ${toRef(binding.token)}).`,
-        impact: `Le développeur recevra les deux couleurs sans savoir laquelle passe `
-          + `au-dessus.`,
-        action: `Ne gardez qu'un ${isStroke ? 'stroke' : 'fill'} lié sur ce layer, `
-          + `puis réexportez.`,
-      });
+      if (estUneRacineDeVariant(warnings, binding.node)) {
+        const champ = isStroke ? 'stroke' : 'fill';
+        pousserPourLesVariants(warnings, binding.node, {
+          titre: `${champ} : l’ordre des deux couleurs superposées n’est pas exporté.`,
+          impact: 'Le développeur recevra les deux couleurs sans indication de leur ordre de '
+            + 'superposition.',
+          action: 'Si la superposition est nécessaire, signalez cette limite au mainteneur du '
+            + `plugin. Sinon, ne conservez qu’un ${champ} relié à une variable dans chaque `
+            + 'variant concerné, puis réexportez.',
+        });
+      } else {
+        pousserLocalise(warnings, 'Layer', binding.node, {
+          manque: `deux ${isStroke ? 'strokes' : 'fills'} y sont reliés à des variables `
+            + `différentes (${toRef(dessous)} et ${toRef(binding.token)}).`,
+          impact: `Le développeur recevra les deux couleurs sans savoir laquelle passe `
+            + `au-dessus.`,
+          action: `Ne gardez qu'un ${isStroke ? 'stroke' : 'fill'} lié sur ce layer, `
+            + `puis réexportez.`,
+        });
+      }
     }
 
     if (isStroke) {

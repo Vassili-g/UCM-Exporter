@@ -1,9 +1,9 @@
 # Plan d'évolution du moteur : propriétés visuelles et messages de racine
 
-> Statut : en cours. E0 à E5 sont faits, H0, H1 et H2
+> Statut : en cours. E0 à E9 sont faits, H0, H1 et H2
 > franchies ; leurs preuves, décisions et textes retenus sont dans
 > [PREUVES-EVOLUTION-MOTEUR.md](./PREUVES-EVOLUTION-MOTEUR.md), qui fait foi
-> sur la section 9. Le prochain lot est E6. Ce plan réunit deux sujets qui
+> sur la section 9. Le prochain lot est E10. Ce plan réunit deux sujets qui
 > touchent les mêmes sites du moteur. Le premier exécute les décisions de H3
 > ([DECISION-PROPRIETES-VISUELLES.md](./DECISION-PROPRIETES-VISUELLES.md)) et
 > fait passer le contrat en 14.0. Le second étend le regroupement des messages
@@ -437,7 +437,7 @@ première action sans preuve.
 ## 7. Lots
 
 Ordre : E0 (fait), E5 (fait), H0 et H2 (franchies), E1 (fait), porte H1
-(franchie), E2, E3 et E4 (faits), E6, E7, E8, E9, E10.
+(franchie), E2 à E4 et E6 à E9 (faits), E10.
 
 E1 n'attend plus rien : il ne dépend d'aucun texte de H1. La porte H1 vient
 après lui ; l'agent y présente la section 9 et s'arrête.
@@ -746,18 +746,18 @@ de `unsupportedProperties.ts`. Chaque apostrophe suit celle de son fichier.
 
 Pour chaque lot :
 
-- [ ] tests d'abord dans `messagesDeRacine.test.ts` : trois racines donnent une
+- [x] tests d'abord dans `messagesDeRacine.test.ts` : trois racines donnent une
       ligne à trois cibles, avec le titre, l'impact et l'action retenus ; un
       calque qui n'est pas une racine garde son texte par calque ; un message
       dont le détail varie donne une ligne par valeur retenue à H1. Les voir
       rouges pour la bonne raison ;
-- [ ] le scénario `diagnosticsComposantReel.test.ts` compte les familles
+- [x] le scénario `diagnosticsComposantReel.test.ts` compte les familles
       regroupées ;
-- [ ] une mutation par condition ajoutée : rendre `false` le test
+- [x] une mutation par condition ajoutée : rendre `false` le test
       `estUneRacineDeVariant` du site, constater une ligne par racine ;
-- [ ] `SPEC.md`, section « Racine de variant : une phrase pour tous les
+- [x] `SPEC.md`, section « Racine de variant : une phrase pour tous les
       variants », nomme les messages regroupés ;
-- [ ] `TEXTES-A-VALIDER.md` : textes retenus ajoutés, « Reste à valider »
+- [x] `TEXTES-A-VALIDER.md` : textes retenus ajoutés, « Reste à valider »
       réduit.
 
 E6 supprime aussi le test de `messagesDeRacine.test.ts` qui garde une ligne

@@ -652,3 +652,75 @@ test('un enfant au layout grow hors menu sous trois racines donne une ligne', as
     racines.map((noeud) => `label-${noeud.name}`),
   );
 });
+
+/** Relève les couleurs de trois racines réglées comme on le donne, et rend le canal. */
+async function couleursDeTrois(reglage: Record<string, unknown>) {
+  const racines = ['Wide', 'Narrow', 'Tall'].map((nom) => racine(nom, reglage));
+  const canal: string[] = [];
+  declarerLesRacinesDeVariants(canal, racines);
+  await extractVariantTokens(
+    {
+      axes: ['state'],
+      variants: racines.map((component) => ({ values: { state: component.name }, component })),
+    },
+    resolverFor({ encre: 'color.border', fond: 'color.primary', voile: 'color.overlay' }),
+    canal,
+  );
+  return { racines, canal };
+}
+
+const SANS_VARIABLE = (champ: string) => ({
+  titre: `${champ} : couleur sans variable associée.`,
+  impact: 'Le contrat ne transmettra pas les couleurs sans variable associée.',
+  action: 'Reliez chaque couleur concernée à une variable dans les variants sélectionnés, puis '
+    + 'réexportez.',
+});
+
+test('trois racines au fill sans variable donnent une ligne', async () => {
+  const { racines, canal } = await couleursDeTrois({
+    fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+  });
+  uneLignePourTrois(canal, racines, SANS_VARIABLE('fill'));
+});
+
+test('trois racines au stroke sans variable donnent une ligne', async () => {
+  const { racines, canal } = await couleursDeTrois({
+    strokes: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }],
+    strokeWeight: 1,
+    strokeAlign: 'INSIDE',
+  });
+  uneLignePourTrois(canal, racines, SANS_VARIABLE('stroke'));
+});
+
+test('trois racines à l’alignement de stroke illisible donnent une ligne', async () => {
+  const { racines, canal } = await couleursDeTrois({
+    strokes: [{ type: 'SOLID', boundVariables: { color: alias('encre') } }],
+    strokeWeight: 0,
+    strokeAlign: 'DIAGONAL',
+    boundVariables: { strokes: [alias('encre')] },
+  });
+  uneLignePourTrois(canal, racines, {
+    titre: 'stroke : l’alignement ne peut pas être lu.',
+    impact: 'Le contrat ne précisera pas si le stroke est placé en inside, center ou outside.',
+    action: 'Choisissez de nouveau inside, center ou outside dans chaque variant concerné, puis '
+      + 'réexportez.',
+  });
+});
+
+test('trois racines à deux fills superposés donnent une ligne', async () => {
+  const { racines, canal } = await couleursDeTrois({
+    fills: [
+      { type: 'SOLID', boundVariables: { color: alias('fond') } },
+      { type: 'SOLID', boundVariables: { color: alias('voile') } },
+    ],
+    boundVariables: { fills: [alias('fond'), alias('voile')] },
+  });
+  uneLignePourTrois(canal, racines, {
+    titre: 'fill : l’ordre des deux couleurs superposées n’est pas exporté.',
+    impact: 'Le développeur recevra les deux couleurs sans indication de leur ordre de '
+      + 'superposition.',
+    action: 'Si la superposition est nécessaire, signalez cette limite au mainteneur du plugin. '
+      + 'Sinon, ne conservez qu’un fill relié à une variable dans chaque variant concerné, puis '
+      + 'réexportez.',
+  });
+});
