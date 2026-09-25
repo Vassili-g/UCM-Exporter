@@ -192,7 +192,7 @@ packages/couleur/        le moteur de couleur d'UCM Palettes : ucm-couleur, priv
   src/recette.ts           la forme de la recette, sa validation, son classement à la lecture
   src/empreinte.ts         JSON canonique, encodeur UTF-8 et FNV-1a
   src/palette.ts           une palette lue contre sa recette : ses parts grises, l'ancrage de sa référence et ses rampes ancrées
-  src/promesses.ts         les quatorze paires, jugées par mode et par profil, et les emplois d'un cran
+  src/promesses.ts         les seize paires, jugées par mode et par profil, et les emplois d'un cran
   src/alertes.ts           les alertes de conception et la notice
   src/garantie.ts          la garantie des courbes : crans 600 et 700 contre le cran 50 gris, sur 360 teintes
   src/constats.ts          les sévérités et leur ordre d'affichage

@@ -363,7 +363,7 @@ référence n'entre pas dans les dépendances du paquet.
 | `#767676` sur `#FFFFFF` | contraste 4,54 |
 | `#1E6FD9` | `L ≈ 0,555`, `C ≈ 0,179`, `H ≈ 257,4` |
 | `plafond(0.5, h, srgb)` sur 360 teintes | jamais hors gamut, et une chroma supérieure de `1e-3` en sort |
-| dérives nulles, 360 teintes, deux profils, deux modes, rampes communes | les quatorze promesses de la [section 11.2](#112-promesses-des-emplois) tenues après arrondi |
+| dérives nulles, 360 teintes, deux profils, deux modes, rampes communes | les seize promesses de la [section 11.2](#112-promesses-des-emplois) tenues après arrondi |
 | gris de clarté 0,975 et 0,180 | `#F7F7F7` et `#121212`, les fonds par défaut |
 | toute dérive, toute référence dans `[Ls, Lc]` | la teinte à la clarté `La` vaut `Ha` |
 
@@ -794,17 +794,19 @@ nuance. L'écran de réglages qui essaie la palette est dans l'onglet Palettes
 
 ### 9.4 Quelle nuance pour quel usage
 
-Une ligne par usage, dans cet ordre : `surface`, `text`, `solid`,
-`border-control`, `focus`, `border-decorative`. `on-solid` n'a pas de ligne :
+Une ligne par usage, dans cet ordre : `surface-card`, quand la liste porte
+la 50, `surface`, `text`, `solid`, `border-control`, `focus`,
+`border-decorative`. `on-solid` n'a pas de ligne :
 il se lit sur `solid`. Chaque ligne donne à gauche le nom de l'usage, son rôle
 en police de code et ce qu'il habille ; puis une colonne par état, `default`,
 `hover` et `active`, dans le vocabulaire des composants. L'état avance d'une
-nuance. `focus` et `border-decorative` n'ont que `default` ; l'anneau se lit
+nuance. `surface-card`, `focus` et `border-decorative` n'ont que `default` ; l'anneau se lit
 « focus · état focus ». Une colonne montre un spécimen peint de la nuance de
 l'état, son numéro, puis ses garanties.
 
 | Usage | Spécimen |
 |---|---|
+| `surface-card` | une carte bordée de `border-decorative`, « Carte » écrit en `text` |
 | `surface` | un aplat, « Soft » écrit en `text` |
 | `text` | « Lien coloré » |
 | `solid` | un bouton plein, son libellé du fond du thème |
@@ -925,8 +927,8 @@ référence de la recette.
 
 ### 11.2 Promesses des emplois
 
-Pour chaque palette, chaque mode et chaque profil, quatorze paires, sur la
-table des emplois de l'architecture. `R+1` désigne le cran suivant celui que
+Pour chaque palette, chaque mode et chaque profil, seize paires, sur la
+table des emplois de l'architecture ; quatorze dans une liste sans 50. `R+1` désigne le cran suivant celui que
 l'emploi `R` vise, dans la même rampe : l'architecture fait avancer un état
 d'un cran. `on-solid` est le fond de référence du mode.
 
@@ -936,6 +938,7 @@ d'un cran. `on-solid` est le fond de référence du mode.
 | `on-solid` | fond |
 | `text` | 700 |
 | `surface` | 100 |
+| `surface-card` | 50, facultatif |
 | `border-control` | 600 |
 | `border-decorative` | 300 |
 | `focus` | 600 |
@@ -956,12 +959,23 @@ d'un cran. `on-solid` est le fond de référence du mode.
 | 12 | `focus` sur fond | 3 |
 | 13 | `focus` sur `surface` | 3 |
 | 14 | `solid+1` sur fond | 3 |
+| 15 | `text` sur `surface-card` | 4,5 |
+| 16 | `border-control` sur `surface-card` | 3 |
 
-Une palette compte 56 paires : quatorze par mode et par profil. Les deux
+`surface-card` est la surface d'une carte, jamais le fond d'un bouton : un
+bouton soft garde `surface`, et `surface` sur `surface-card` n'a aucun
+minimum, comme `surface` sur le fond. L'emploi n'existe, avec les paires 15
+et 16, que dans une liste qui porte la 50 : les trois préréglages l'ont. Une
+carte a la clarté du fond de page, un peu plus sombre que lui en Dark : elle
+se borde de `border-decorative`. L'anneau de focus, au cran de
+`border-control`, n'a pas de paire propre sur une carte.
+
+Une palette compte 64 paires : seize par mode et par profil, ou 56 dans une
+liste sans 50. Les deux
 profils partagent leurs clartés, mais pas leur chroma : leurs contrastes
 diffèrent un peu, et les composants citent l'un comme l'autre.
 
-Les quatorze paires se groupent en huit associations : une association réunit
+Les seize paires se groupent en dix associations : une association réunit
 les paires de même premier emploi et de même second membre. L'état d'une paire
 est le décalage le plus grand de ses deux membres, dans le vocabulaire des
 composants : `default`, puis `hover` à une nuance, `active` à deux.
@@ -976,10 +990,13 @@ composants : `default`, puis `hover` à une nuance, `active` à deux.
 | `focus` sur fond | 12 | default |
 | `focus` sur `surface` | 13 | default |
 | `solid` sur fond | 14 | hover |
+| `text` sur `surface-card` | 15 | default |
+| `border-control` sur `surface-card` | 16 | default |
 
-- `[VER-05]` Les paires visent les crans 100, 200, 300, 600, 700, 800 et 900.
-  `[REC-05]` refuse une recette dont `crans` n'en contient pas un : aucune
-  paire ne peut viser un cran absent.
+- `[VER-05]` Les paires visent les crans 100, 200, 300, 600, 700, 800 et 900,
+  et la 50 de `surface-card`. `[REC-05]` refuse une recette dont `crans`
+  n'en contient pas un, la 50 exceptée : une liste importée sans 50 reste
+  lisible, et les paires 15 et 16 ne s'y jugent pas.
 - `[VER-06]` Une promesse manquée nomme l'association (section 11.2), le mode,
   l'état, le profil, son contraste mesuré et le minimum demandé. L'onglet
   Palettes la porte sur la ligne de son association, dans la carte des
@@ -1044,7 +1061,8 @@ composants : `default`, puis `hover` à une nuance, `active` à deux.
   garde la mesure. La référence exacte n'est jamais décrite comme plus terne
   qu'elle-même ; les nuances autour d'elle peuvent l'être.
 - `[VER-11]` « Profils confondus » ne porte que sur les crans de la table des
-  emplois ; sur la planche, la pastille de toute nuance où les deux profils
+  emplois, la 50 de `surface-card` exceptée : les deux profils s'y confondent
+  sur la plupart des teintes claires, et aucun réglage ne les sépare ; sur la planche, la pastille de toute nuance où les deux profils
   se confondent porte ≈ (`[PLA-15]`). À dérive nulle, sur 360 teintes, l'alerte portée sur tous
   les crans sonne pour 320 teintes, aux crans 50, 100 et 950. Bornée aux crans
   de la table, elle sonne encore pour 249 teintes : `surface` vise le cran 100,
@@ -1596,7 +1614,7 @@ packages/couleur/                ucm-couleur, privé, le moteur pur    [ARC-01]
   src/rampe.ts                     cran, teinte pivotée, rampe entière
   src/tailwind.ts                  le préréglage et son relevé
   src/contraste.ts                 contraste WCAG, ΔEok, part de chroma
-  src/promesses.ts                 la table des emplois, ses quatorze paires
+  src/promesses.ts                 la table des emplois, ses seize paires
   src/alertes.ts                   les alertes de la section 11.3
   src/recette.ts                   forme, validation, migration, recette par défaut
   src/empreinte.ts                 JSON canonique, encodeur UTF-8 et FNV-1a

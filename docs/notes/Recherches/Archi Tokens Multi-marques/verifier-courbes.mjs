@@ -15,7 +15,7 @@
  * manquée.
  */
 
-/** Les deux courbes de clarté. Le cran 50 est le fond de page dans les deux modes. */
+/** Les deux courbes de clarté. Le cran 50 est le fond de page dans les deux modes, et la surface d'une carte. */
 export const COURBES = {
   light: [0.975, 0.950, 0.905, 0.845, 0.760, 0.670, 0.585, 0.500, 0.420, 0.340, 0.270],
   dark: [0.180, 0.225, 0.275, 0.330, 0.400, 0.490, 0.580, 0.670, 0.760, 0.850, 0.930],
@@ -239,6 +239,8 @@ const PROMESSES = [
   ['focus sur fond de page', 3, (m, t, q) => [couleur(m, 600, t, q), fondDePage(m, t)]],
   ['focus sur surface au repos', 3, (m, t, q) => [couleur(m, 600, t, q), couleur(m, 100, t, q)]],
   ['solid survolé sur fond de page', 3, (m, t, q) => [couleur(m, 800, t, q), fondDePage(m, t)]],
+  ['text sur surface-card', 4.5, (m, t, q) => [couleur(m, 700, t, q), couleur(m, 50, t, q)]],
+  ['border-control sur surface-card', 3, (m, t, q) => [couleur(m, 600, t, q), couleur(m, 50, t, q)]],
 ];
 
 function sectionRoles() {

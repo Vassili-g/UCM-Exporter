@@ -43,7 +43,9 @@ les marques.
 
 Le thème sombre a sa propre courbe, avec les mêmes numéros. Le cran 50 est le
 fond de page dans les deux thèmes : le plus clair en clair, le plus sombre en
-sombre. Un texte lié une fois à `theme.primary.vivid.700` reste lisible dans les
+sombre. Il sert aussi de surface de carte (`surface-card`, section 4) : une
+carte a la clarté du fond, un peu plus sombre que lui en sombre, et se borde
+du cran 300. Un texte lié une fois à `theme.primary.vivid.700` reste lisible dans les
 deux thèmes.
 
 | Cran | 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 950 |
@@ -305,6 +307,7 @@ profils.
 | `solid`, fond plein d'un bouton, d'un badge | 700 | 800 | 900 | `neutral.50` sur le fond, 4,5:1 | 5,23 · 7,45 · 10,50 |
 | `text`, texte de marque sur le fond de page | 700 | | | contre le fond de page, 4,5:1 | 5,23 |
 | `surface`, fond teinté discret | 100 | 200 | 300 | texte 700, 800, 900 sur le fond, 4,5:1 | 4,99 · 6,32 · 7,28 |
+| `surface-card`, surface d'une carte, d'un panneau | 50 | | | texte 700 sur la carte, 4,5:1 ; `border-control` 600 sur la carte, 3:1 | 5,30 · 3,68 |
 | `border-control`, contour d'un champ, d'une case | 600 | 700 | 800 | contre `surface` au même état, 3:1 | 3,46 · 4,46 · 5,25 |
 | `border-decorative`, séparateur, filet | 300 | | | aucune | |
 | `focus`, anneau de focus | 600 | | | contre le fond de page, 3:1 | 3,63 |
@@ -320,6 +323,10 @@ s'appliquent : l'état s'éloigne du fond de page dans les deux thèmes.
 
 **Un bouton texte** n'a pas de fond au repos : texte 700. Au survol, il prend
 le fond 200 et le texte 800 ; à l'appui, le fond 300 et le texte 900.
+
+**Une carte n'est pas un bouton.** `surface-card` porte les grands aplats :
+carte, panneau, en-tête de tableau. Un bouton soft garde `surface`, y compris
+posé sur une carte : sur le cran 50, un bouton au cran 50 disparaîtrait.
 
 **Un contrôle désactivé** prend les neutres, fond 200 et texte 500, hors seuil :
 WCAG n'exige aucun contraste d'un composant inactif.

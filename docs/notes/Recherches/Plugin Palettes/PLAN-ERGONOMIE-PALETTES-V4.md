@@ -393,48 +393,59 @@ plugin, et la planche ne montre plus que ce qu’elle doit prouver.
 
 ## Lot X6 : nuance 50
 
-Décision du mainteneur (X2.12, puis question du nom) : option D. La 50
-devient la surface d’une carte, sous le token `surface-card` ; elle ne sert
-jamais de fond à un bouton. `surface` garde 100, 200 et 300, et aucun token
-existant ne change de valeur. Conception à faire relire avant le code, comme
-tout changement du moteur.
+Décisions du mainteneur (X2.12, puis trois questions après la revue de la
+conception) :
 
-Conception :
+- la 50 est la surface d’une carte, jamais le fond d’un bouton : un emploi
+  `surface-card` au cran 50, sans état. `surface` garde 100, 200 et 300 ;
+- `surface-card` est un emploi, comme `surface`, et non un token : une carte
+  cite le cran 50 de `theme`. Aucune variable ne s’ajoute à
+  `intencial-library`, et aucune ne change de valeur ;
+- l’emploi est facultatif : il n’existe, avec ses garanties, que dans une
+  liste qui porte la 50, ce que font les trois préréglages.
+  `CRANS_DES_EMPLOIS` ne change pas, et une liste importée sans 50 reste
+  lisible ;
+- deux garanties, numérotées 15 et 16 : `text` sur `surface-card` au minimum
+  des textes, `border-control` sur `surface-card` au minimum des éléments
+  visibles. L’anneau de focus, au même cran que la bordure, n’a pas de
+  garantie propre sur une carte.
 
-- l’emploi `surface-card` entre dans `Emploi`, `EMPLOIS` et
-  `TABLE_DES_EMPLOIS` au cran 50, sans état : une carte ne se survole pas,
-  et `decalagesDeLEmploi` ne rend que 0 ;
-- `CRANS_DES_EMPLOIS` gagne 50 : `[REC-05]` refuse une recette standard
-  sans 50. Les trois préréglages portent déjà 50 ; une palette libre n’a pas
-  d’emplois et n’est pas concernée ;
-- trois paires nouvelles jugent ce qu’une carte porte : `text` sur
-  `surface-card` au minimum des textes, `border-control` et `focus` sur
-  `surface-card` au minimum des éléments visibles. Elles prennent les
-  numéros 15 à 17 ; les quatorze premières gardent les leurs. La 50 a la
-  luminosité du fond par défaut, et ces paires comptent pour un fond
-  personnalisé, qui peut s’en écarter ;
-- un bouton soft posé sur une carte n’a pas de paire : `surface` sur
-  `surface-card`, comme `surface` sur le fond, n’a aucun minimum ;
-- dans le plugin et sur la planche, `surface-card` suit les autres emplois :
-  une accolade sur la 50, une ligne d’usage « Fonds de carte » sur la
-  planche, avant « Fonds légers », son rôle dans le détail d’une nuance, ses
-  associations dans la carte des garanties, et la carte de l’écran de
-  l’interface de test.
+Retenu de la revue indépendante :
 
-- [ ] **X6.1** Moteur : l’emploi, sa table, `CRANS_DES_EMPLOIS` et les trois
-  paires, après la revue de la conception ; `[VER-05]` et `[REC-05]`.
-- [ ] **X6.2** Architecture multi-marques, sections 1 et 4 : la ligne
-  `surface-card`. Dire à l’équipe du design system qu’un token s’ajoute à
-  `theme`, sans qu’aucun token existant change de valeur ; sa création dans
-  `intencial-library` reste hors de ce plan.
-- [ ] **X6.3** Plugin et planche : accolades, ligne d’usage, détail,
-  garanties, interface de test.
-- [ ] **X6.4** Tests : les rôles gardent leurs numéros dans chaque
-  préréglage, les dix-sept paires se jugent, et une recette standard sans 50
-  se refuse.
+- l’alerte des profils confondus (`[VER-11]`) ne porte pas sur la 50 : elle
+  s’y lèverait sur la plupart des teintes claires sans réglage qui la lève ;
+- l’accolade de `surface-card` va sur la seconde ligne : une accolade ne se
+  pose sur une ligne qu’avec une colonne libre de chaque côté ;
+- `surface-card` a son spécimen, dans le plugin et sur la planche : un
+  aplat de carte portant un texte `text` ;
+- la garantie des courbes et l’alerte des fonds lisent le cran 50 à son rang
+  dans la liste, et non au premier ;
+- la section 1 de l’architecture dit « le cran 50 est le fond de page » : elle
+  dit désormais qu’il sert aussi de surface de carte, au plus près du fond,
+  un peu plus sombre que lui en Dark ;
+- les effets visibles : tous les cadres passent « À mettre à jour », et le
+  verdict d’une palette peut passer de ✓ à ✗ sans qu’aucune couleur change,
+  si une garantie de carte manque.
 
-Critère : la 50 a un usage que le designer comprend, sans qu’aucun token
-existant change de couleur à son insu.
+Écarté : l’ordre d’affichage des associations reste celui des paires ; les
+associations de carte viennent en fin de groupe.
+
+- [x] **X6.1** Moteur : l’emploi, sa table, les deux paires, facultatives
+  quand la liste n’a pas de 50 ; l’alerte des profils confondus ; le rang du
+  cran 50. Spécification : section 11.2, `[VER-03]` à `[VER-05]`,
+  `[VER-11]`. Fait : `EMPLOIS_FACULTATIFS`, `emploiPresent`, `paireJugeable` et `rangDuCranLeger` dans le moteur.
+- [x] **X6.2** Architecture multi-marques, sections 1 et 4 : la ligne
+  `surface-card`, et la phrase du cran 50. Fait. `verifier-courbes.mjs` relève les deux paires : 5,30 et 3,68.
+- [x] **X6.3** Plugin et planche : accolades, ligne d’usage « Fonds de
+  carte », spécimen, détail, garanties, interface de test. Fait. Dans l’écran de l’interface de test, le tableau est la carte ; la grille des états gagne la rangée « Carte ».
+- [x] **X6.4** Tests : les rôles gardent leurs numéros dans chaque
+  préréglage ; les deux paires se jugent ; une liste sans 50 n’a ni l’emploi
+  ni ses garanties, et reste lisible ; l’alerte des profils confondus ne
+  porte pas sur la 50. Fait, chaque loi vue rouge sur une mutation.
+
+Critère : la 50 a un usage que le designer comprend, sans qu’aucune variable
+existante change de couleur. Les cadres existants passent « À mettre à
+jour ».
 
 ## Lot X7 : ajuster la référence
 
