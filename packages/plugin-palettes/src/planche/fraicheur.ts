@@ -8,7 +8,7 @@
  * Un cadre rangé que la lecture ne retrouve pas n'est pas « jamais généré » :
  * il est introuvable, ou illisible quand Figma a refusé de le lire (V8.2).
  */
-import type { Recette } from 'ucm-couleur';
+import type { Palette, Recette } from 'ucm-couleur';
 
 import type { CadreLu, EtatDeLaPlanche, ProfilDuDocument } from '../lecture';
 import { empreinteDuModele } from './modele';
@@ -56,5 +56,28 @@ export function fraicheurDeLaPlanche(recette: Recette, profil: ProfilDuDocument,
     palettes: recette.palettes.map((palette) => ({ palette: palette.id, ...fraicheurDUnePalette(recette, profil, planche, palette.id) })),
     orphelins: planche.cadres.filter((cadre) => cadre.possede && !presentes.has(cadre.palette)),
     copies: planche.cadres.filter((cadre) => !cadre.possede),
+  };
+}
+
+/**
+ * Ce qu'un import ferait aux cadres déjà dessinés (V12.2), sans rien écrire :
+ * les palettes dont le cadre à jour passerait « À mettre à jour », et celles
+ * dont le cadre deviendrait orphelin, retirées par l'import.
+ */
+export function consequenceDeLImport(
+  actuelle: Recette,
+  importee: Recette,
+  profil: ProfilDuDocument,
+  planche: EtatDeLaPlanche,
+): { readonly aMettreAJour: readonly Palette[]; readonly orphelins: readonly Palette[] } {
+  const avant = fraicheurDeLaPlanche(actuelle, profil, planche);
+  const apres = fraicheurDeLaPlanche(importee, profil, planche);
+  const aJour = new Set(avant.palettes.filter(({ etat }) => etat === 'a-jour').map(({ palette }) => palette));
+  const dejaOrphelins = new Set(avant.orphelins.map(({ cadre }) => cadre));
+  const perimees = new Set(apres.palettes.filter(({ palette, etat }) => etat === 'perimee' && aJour.has(palette)).map(({ palette }) => palette));
+  const orphelins = new Set(apres.orphelins.filter(({ cadre }) => !dejaOrphelins.has(cadre)).map(({ palette }) => palette));
+  return {
+    aMettreAJour: importee.palettes.filter(({ id }) => perimees.has(id)),
+    orphelins: actuelle.palettes.filter(({ id }) => orphelins.has(id)),
   };
 }

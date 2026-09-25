@@ -112,6 +112,10 @@ export function createFrontiere(
       else envoyerRangement(recette);
     },
     dessiner(demande, surAbandon) {
+      if (courant === 'refuse') {
+        surAbandon();
+        return;
+      }
       if (enVol || enAttente) dessinEnAttente = { demande, surAbandon };
       else envoyerDessin(demande);
     },

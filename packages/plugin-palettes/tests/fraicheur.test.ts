@@ -7,7 +7,7 @@ import { recetteParDefaut, type Palette, type Recette } from 'ucm-couleur';
 import { ajouter, nouvellePalette } from '../src/edition';
 import { dessinerLaPlanche } from '../src/ecriture/planche';
 import { PLANCHE_SANS_CADRE, lireLaPlanche } from '../src/lecture';
-import { fraicheurDeLaPlanche } from '../src/planche/fraicheur';
+import { consequenceDeLImport, fraicheurDeLaPlanche } from '../src/planche/fraicheur';
 import { modeleDeCadre } from '../src/planche/modele';
 import { ecartsDePeinture } from '../src/planche/peints';
 import { FauxFigma } from './figmaDeTest';
@@ -193,4 +193,17 @@ test('L6.14 : les couleurs relues d’un dessin n’ont aucun écart avec l’ap
     { palette: premiere.palette, nom: premiere.nom, apercu: premiere.hexa, peint: '#000000' },
     { palette: 'p-ffffffff', nom: 'vivid/light/700', apercu: null, peint: '#123456' },
   ]);
+});
+
+test('V12.2 : un import dit quels cadres à jour passeraient « À mettre à jour », et lesquels resteraient sans palette', async () => {
+  const figma = new FauxFigma();
+  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU, AMBRE], grille: true });
+  // Vert, dessiné sans la grille, est déjà à mettre à jour : l'import ne le change pas.
+  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [VERT], grille: false });
+  const planche = await lireLaPlanche(figma.api());
+  const importee: Recette = { ...RECETTE, palettes: [{ ...BLEU, nom: 'Marine' }, VERT] };
+  const { aMettreAJour, orphelins } = consequenceDeLImport(RECETTE, importee, 'SRGB', planche);
+  assert.deepEqual(aMettreAJour.map(({ nom }) => nom), ['Marine']);
+  assert.deepEqual(orphelins.map(({ nom }) => nom), ['Ambre']);
+  assert.deepEqual(consequenceDeLImport(RECETTE, RECETTE, 'SRGB', planche), { aMettreAJour: [], orphelins: [] });
 });

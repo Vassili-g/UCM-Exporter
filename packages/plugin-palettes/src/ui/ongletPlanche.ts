@@ -50,6 +50,8 @@ export interface OngletPlancheUi {
   element: HTMLDivElement;
   afficher(classement: Classement, recette: Recette | null, planche: EtatDeLaPlanche, profil: ProfilDuDocument, empreinte: string | null): void;
   afficherDessin(etat: EtatDuDessin, noms: { readonly [id: string]: string }): void;
+  /** Rend les gestes de génération inactifs, avec la raison ; `null` les rend (V12.1). */
+  bloquer(raison: string | null): void;
 }
 
 export interface GestesDeLaPlanche extends GestesDuResultat {
@@ -153,6 +155,16 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   let profil: ProfilDuDocument = 'SRGB';
   let pasAJour: readonly string[] = [];
   let enCours = false;
+  let blocage: string | null = null;
+
+  /** Les gestes de génération, inactifs pendant un dessin ou un conflit d'enregistrement. */
+  function rendreLesGestes(): void {
+    const inactif = enCours || blocage !== null;
+    for (const bouton of [genererTout, genererPasAJour, ...Array.from(liste.querySelectorAll<HTMLButtonElement>('[data-geste="generer"]'))]) {
+      bouton.disabled = inactif;
+      bouton.title = blocage ?? '';
+    }
+  }
 
   const noms = (): { [id: string]: string } =>
     Object.fromEntries((recette?.palettes ?? []).map((palette) => [palette.id, nomDeLaPalette(palette)]));
@@ -207,7 +219,8 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     if (!sansGeneration && cadre.etat !== 'illisible') {
       const generer = bouton(TEXTES_DU_DESSIN.dessiner, 'bouton-discret', () => lancer([id]));
       generer.dataset.geste = 'generer';
-      generer.disabled = enCours;
+      generer.disabled = enCours || blocage !== null;
+      generer.title = blocage ?? '';
       gestesDeLaFiche.append(generer);
     }
 
@@ -298,16 +311,17 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     },
     afficherDessin(etat, nomsDuDessin) {
       enCours = etat.phase === 'en-cours';
-      genererTout.disabled = enCours;
-      genererPasAJour.disabled = enCours;
       actualiser.disabled = enCours;
       genererTout.setLabel(etat.phase === 'en-cours' ? progressionDuDessin(etat.fait, etat.total, etat.nom) : TEXTES_DU_DESSIN.dessinerTout);
-      liste.querySelectorAll<HTMLButtonElement>('[data-geste="generer"]').forEach((generer) => {
-        generer.disabled = enCours;
-      });
+      rendreLesGestes();
       const resultat = blocDuResultat(etat, nomsDuDessin, gestes);
       zoneDuResultat.replaceChildren(...(resultat ? [resultat] : []));
       zoneDuResultat.hidden = !resultat;
+    },
+    bloquer(raison) {
+      blocage = raison;
+      gestes.recetteEnFichier.bloquer(raison);
+      rendreLesGestes();
     },
   };
 }

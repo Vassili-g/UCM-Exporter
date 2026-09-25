@@ -512,8 +512,11 @@ dix-sept paires.
 - `[REC-10]` Chaque demande de rangement porte l'empreinte de la recette que
   l'interface a lue. Si la recette rangée a une autre empreinte, parce qu'un
   autre designer ou un Ctrl+Z dans Figma l'a changée, le sandbox refuse et
-  l'interface propose « Recharger ». L'interface relit l'état quand sa fenêtre
-  reprend le focus.
+  l'interface propose « Exporter mes modifications », qui exporte le
+  brouillon affiché, puis « Recharger ». Jusqu'à la relecture, les vues
+  restent consultables, et rien n'écrit sur la version périmée : aucun
+  rangement, aucune génération, ni import ni réinitialisation ; la bannière
+  reste en tête. L'interface relit l'état quand sa fenêtre reprend le focus.
 - `[REC-11]` Une recette illisible ou future offre trois gestes : exporter la
   recette rangée telle quelle, importer une recette, et repartir de la recette
   par défaut après confirmation.
@@ -862,9 +865,14 @@ ses cases ne sont pas des promesses.
   canonique de la [section 7.3](#73-rangement-et-version). Une recette
   illisible ou future s'exporte telle qu'elle est rangée (`[REC-11]`).
 - `[REC-08]` « Importer une recette » lit un fichier, le valide, puis affiche
-  l'écart avec la recette rangée : palettes ajoutées, retirées, modifiées, et
-  paramètres communs modifiés. Le designer confirme ; l'import remplace la
-  recette rangée et ne redessine rien.
+  l'écart avec la recette rangée : palettes ajoutées et retirées, palettes
+  modifiées avec leurs champs, palette de base comprise, réglages communs et
+  seuils modifiés, un à un. L'écart dit ce que l'import change : les couleurs
+  des nuances, le résultat des garanties sans les couleurs, ou les seuls
+  signalements de couleurs proches ; puis quels cadres à jour passeraient
+  « À mettre à jour » et lesquels resteraient sans palette. Le designer
+  confirme ; l'import remplace la recette rangée et ne redessine rien. Annuler
+  ne touche à rien.
 - `[REC-09]` La recette exportée se range dans le dépôt du design system. Cette
   étape est manuelle : le plugin n'a pas de réseau.
 

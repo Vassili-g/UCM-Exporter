@@ -215,7 +215,7 @@ const ETATS = [
     id: 'recette-modifiee-ailleurs',
     titre: 'Recette modifiée ailleurs',
     quand: 'Le designer duplique une palette, mais la recette rangée a changé depuis sa lecture.',
-    regarder: 'Le refus en tête, au-dessus de la barre, son geste « Recharger », et « non rangé ».',
+    regarder: 'Le refus en tête, au-dessus de la barre, ses gestes « Exporter mes modifications » et « Recharger les palettes », « Générer sur Figma » inactif avec sa raison en infobulle, et « non rangé ».',
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU])),
@@ -433,11 +433,11 @@ const ETATS = [
   {
     id: 'ecart-d-import',
     titre: 'Écart d’import',
-    quand: 'Le fichier importé renomme Bleu, retire Jaune, ajoute Ardoise et relève le seuil de texte.',
-    regarder: 'La confirmation : une ligne par genre d’écart, la phrase qui dit que l’import ne redessine rien, et ses gestes « Importer » et « Annuler ».',
+    quand: 'Bleu et Jaune sont à jour sur la planche ; le fichier importé renomme Bleu, retire Jaune, ajoute Ardoise et relève le seuil de texte.',
+    regarder: 'La confirmation : palettes ajoutées et retirées, « Palette à modifier : Bleu roi (nom) », « minimum des textes », les lignes Couleurs et Minimums, « Sur la planche : 1 cadre passera « À mettre à jour » (Bleu roi) ; 1 cadre restera sans palette (Jaune) », puis ses gestes.',
     existe: true,
     atteinte: [
-      etatDuFichier(rangee([BLEU, JAUNE])),
+      etatDuFichier(rangee([BLEU, JAUNE]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU, JAUNE]), BLEU, '40:2'), cadreDessine(rangee([BLEU, JAUNE]), JAUNE, '40:3')])),
       ouvrirLaPlanche,
       importer(rangee([{ ...BLEU, nom: 'Bleu roi' }, palette('p-5c1d0e77', 'Ardoise', '#6B7280')], (recette) => ({ ...recette, seuils: { ...recette.seuils, texte: 7 } }))),
     ],

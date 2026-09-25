@@ -666,15 +666,21 @@ courbe, aucun effet à la simple ouverture du panneau.
 
 Repris du lot R9 du premier plan.
 
-- [ ] **V12.1** (ex-R9.1) En cas de conflit d’enregistrement, préserver le
+- [x] **V12.1** (ex-R9.1) En cas de conflit d’enregistrement, préserver le
   brouillon, bloquer les gestes qui écriraient une version périmée et garder
   les vues consultables. L’export du brouillon et Recharger restent
   accessibles ; la bannière de récupération reste active.
-- [ ] **V12.2** (ex-R9.2) Avant un import, montrer les palettes ajoutées et
+  Fait (`[REC-10]`) : « Exporter mes modifications » dans la bannière ;
+  génération, import et réinitialisation inactifs avec leur raison ; la
+  frontière abandonne un dessin demandé pendant le conflit.
+- [x] **V12.2** (ex-R9.2) Avant un import, montrer les palettes ajoutées et
   retirées et les valeurs modifiées, palette de base comprise. Distinguer
   changement de couleurs, changement de minimums et conséquence sur la
   planche. Aucune écriture avant confirmation ; une annulation conserve le
   brouillon.
+  Fait (`[REC-08]`) : champs modifiés par palette, seuils nommés un à un,
+  nature de l’effet, et `consequenceDeLImport` pour les cadres à mettre à jour
+  ou orphelins. Rien ne s’écrit avant la confirmation.
 - [ ] **V12.3** (ex-R9.3) Exécuter la recette ci-dessous sur les parcours
   finis. Consigner les observations et les limites restantes.
 - [ ] **V12.4** (ex-R9.4) Mettre à jour AGENTS.md, la spécification et les

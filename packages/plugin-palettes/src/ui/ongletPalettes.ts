@@ -80,6 +80,8 @@ export interface DemandesDeLOnglet {
   ranger(recette: Recette): void;
   lireLaSelection(): void;
   recharger(): void;
+  /** Exporte la recette que l'onglet montre, brouillon compris : le geste de sortie d'un conflit (V12.1). */
+  exporterLeBrouillon(): void;
   /** Un entier de 32 bits tiré au hasard, pour les identifiants de palette (D-K). */
   tirer(): number;
   /** Génère la palette ouverte ([UI-05]). */
@@ -518,7 +520,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       return;
     }
     const bloc = blocDeConstat(refus, 'bloquant');
-    bloc.append(createButton({ label: TEXTES.recharger, onClick: () => demandes.recharger() }));
+    const sortie = document.createElement('div');
+    sortie.className = 'confirmation-gestes';
+    // Pendant un conflit, le brouillon s'exporte avant qu'un rechargement ne le remplace (V12.1).
+    if (statut === 'refuse') sortie.append(createButton({ label: TEXTES.exporterLeBrouillon, variant: 'secondary', onClick: () => demandes.exporterLeBrouillon() }));
+    sortie.append(createButton({ label: TEXTES.recharger, onClick: () => demandes.recharger() }));
+    bloc.append(sortie);
     zoneDuRefus.replaceChildren(bloc);
   }
 
@@ -650,6 +657,9 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     },
     poserStatut(suivant, refusDuSandbox) {
       statut = suivant;
+      const blocage = suivant === 'refuse' ? TEXTES.conflitEnCours : null;
+      generation.bloquer(blocage);
+      demandes.recetteEnFichier.bloquer(blocage);
       if (suivant === 'refuse') refus = recetteModifieeAilleurs();
       else if (suivant === 'invalide') refus = rangementInvalide(refusDuSandbox);
       rendre();

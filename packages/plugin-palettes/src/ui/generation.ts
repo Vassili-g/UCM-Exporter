@@ -22,6 +22,8 @@ export interface GenerationUi {
   afficherLeCadre(cadre: CadreDeLaPalette): void;
   /** Le dessin en cours ou fini ; `ouverte` est la palette de l'onglet, seule dont le résultat s'affiche. */
   afficherDessin(etat: EtatDuDessin, noms: { readonly [id: string]: string }, ouverte: string): void;
+  /** Rend « Générer sur Figma » inactif, avec la raison ; `null` le rend (V12.1). */
+  bloquer(raison: string | null): void;
 }
 
 export interface GestesDeLaGeneration extends GestesDuResultat {
@@ -50,6 +52,7 @@ export function createGeneration(gestes: GestesDeLaGeneration): GenerationUi {
 
   let cadre: CadreDeLaPalette = { etat: 'jamais-dessinee', page: null, cadre: null };
   let enCours = false;
+  let blocage: string | null = null;
 
   voir.addEventListener('click', () => {
     if (cadre.page && cadre.cadre) gestes.voirSurLaPlanche(cadre.page, [cadre.cadre]);
@@ -70,7 +73,7 @@ export function createGeneration(gestes: GestesDeLaGeneration): GenerationUi {
     },
     afficherDessin(suivi, noms, ouverte) {
       enCours = suivi.phase === 'en-cours';
-      generer.disabled = enCours;
+      generer.disabled = enCours || blocage !== null;
       generer.setLabel(suivi.phase === 'en-cours' ? progressionDuDessin(suivi.fait, suivi.total, suivi.nom) : TEXTES_DU_DESSIN.dessiner);
       rendreLeCadre();
       // Un résultat ne survit pas à son sujet : celui d'une autre palette ne s'affiche pas ici.
@@ -78,6 +81,11 @@ export function createGeneration(gestes: GestesDeLaGeneration): GenerationUi {
       const bloc = concerne ? blocDuResultat(suivi, noms, gestes) : null;
       zone.replaceChildren(...(bloc ? [bloc] : []));
       zone.hidden = !bloc;
+    },
+    bloquer(raison) {
+      blocage = raison;
+      generer.disabled = enCours || blocage !== null;
+      generer.title = blocage ?? '';
     },
   };
 }

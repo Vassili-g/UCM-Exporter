@@ -8,6 +8,7 @@
  * Les clés `soft`, `vivid`, `light`, `dark` et les codes d'emploi restent
  * ceux des données ; seul leur affichage se traduit ici.
  */
+import type { ChampDePalette } from '../importation';
 import {
   FORMAT_RECETTE,
   ecrireArrondi,
@@ -63,6 +64,9 @@ export const TEXTES = {
   descendre: 'Déplacer vers le bas',
   supprimer: 'Supprimer la palette',
   recharger: 'Recharger les palettes',
+  // N070, N071 : la sortie d'un conflit d'enregistrement (V12.1).
+  exporterLeBrouillon: 'Exporter mes modifications',
+  conflitEnCours: 'Exportez vos modifications ou rechargez les palettes avant d’enregistrer, d’importer ou de générer.',
   selectionVide: 'Sélectionnez un calque dans Figma pour récupérer sa couleur.',
   selectionSansRemplissage: 'Sélectionnez un calque avec une couleur de remplissage unie, visible et sans transparence.',
   detailTechnique: 'Détail technique',
@@ -306,7 +310,7 @@ export function recetteModifieeAilleurs(): Constat {
   return {
     ou: 'Modifications non enregistrées',
     quoi: 'Les palettes ou les réglages du fichier ont changé depuis leur chargement. Votre dernière modification n’a pas été enregistrée.',
-    geste: 'Rechargez les palettes pour récupérer la version du fichier. Vous perdrez la modification non enregistrée.',
+    geste: 'Exportez vos modifications pour les conserver, puis rechargez les palettes pour récupérer la version du fichier.',
   };
 }
 
@@ -772,6 +776,48 @@ export const NOMS_DES_PARAMETRES = {
   derives: 'préréglage Tailwind',
   gamut: 'espace de couleur',
 } as const;
+
+/** Le nom d'un seuil dans l'écart d'import, plutôt que « minimums et seuils de détection » d'un bloc (V12.2, N072). */
+export const SEUILS_DE_L_IMPORT: Record<keyof Recette['seuils'], string> = {
+  texte: 'minimum des textes',
+  nonTexte: 'minimum des éléments visibles',
+  profilsConfondus: 'écart minimal entre Soft et Vivid',
+  palettesProches: 'écart minimal entre deux palettes',
+  chromaGrise: 'seuil de détection du gris',
+};
+
+const NOMS_DES_CHAMPS: Record<ChampDePalette, string> = {
+  nom: 'nom',
+  reference: 'couleur de référence',
+  base: 'palette de base',
+  parts: 'intensités propres',
+  derive: 'dérive de teinte',
+};
+
+/** Les valeurs modifiées de chaque palette, palette de base comprise (V12.2, N072). */
+export function ligneDesValeurs(palettes: readonly { readonly nom: string; readonly champs: readonly ChampDePalette[] }[]): string {
+  const titre = palettes.length === 1 ? 'Palette à modifier' : 'Palettes à modifier';
+  return `${titre} : ${palettes.map(({ nom, champs }) => `${nom} (${champs.map((champ) => NOMS_DES_CHAMPS[champ]).join(', ')})`).join(' ; ')}.`;
+}
+
+/** Ce que l'import change, par nature : couleurs, minimums, signalements (V12.2, N073). */
+export function lignesDeNature(nature: { readonly couleurs: boolean; readonly minimums: boolean; readonly detection: boolean }): string[] {
+  return [
+    nature.couleurs ? 'Couleurs : les nuances des palettes concernées changent.' : null,
+    nature.minimums ? 'Minimums des promesses : le résultat des garanties peut changer, sans changer les couleurs.' : null,
+    nature.detection ? 'Détection des couleurs proches : seuls les signalements peuvent changer.' : null,
+  ].filter((ligne): ligne is string => ligne !== null);
+}
+
+/** Ce que l'import ferait aux cadres déjà générés (V12.2, N074). */
+export function consequenceSurLaPlanche(aMettreAJour: readonly string[], orphelins: readonly string[]): string {
+  if (aMettreAJour.length === 0 && orphelins.length === 0) return 'Sur la planche : aucun cadre à jour n’est touché.';
+  const parties = [
+    aMettreAJour.length === 0 ? null : `${aMettreAJour.length === 1 ? '1 cadre passera' : `${aMettreAJour.length} cadres passeront`} « À mettre à jour » (${aMettreAJour.join(', ')})`,
+    orphelins.length === 0 ? null : `${orphelins.length === 1 ? '1 cadre restera' : `${orphelins.length} cadres resteront`} sans palette (${orphelins.join(', ')})`,
+  ].filter((partie): partie is string => partie !== null);
+  return `Sur la planche : ${parties.join(' ; ')}.`;
+}
 
 /** Un fichier importé qui ne se lit pas : la recette enregistrée reste intacte ([REC-08]). */
 export function importInvalide(fichier: string, refus: readonly Refus[]): Constat {

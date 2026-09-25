@@ -218,11 +218,11 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/analyse.ts           une palette pour l'onglet : rampes, promesses, alertes et notices triées
   src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
   src/configuration.ts     les champs de la configuration, fonds et seuils compris, les palettes que chacun touche, et « Rétablir » par carte
-  src/importation.ts       un fichier importé, classé comme la recette rangée, et son écart avec elle
+  src/importation.ts       un fichier importé, classé comme la recette rangée, son écart avec elle, champ par champ, et la nature de cet écart
   src/rapport.ts           le rapport de vérification : crans, promesses, alertes, empreinte et écarts du dernier dessin
   src/presentation.ts      les promesses manquées groupées, la place de chaque alerte, le réglage que chaque message ouvre, les accolades de l'aperçu
   src/planche/modele.ts    le modèle pur d'un cadre de planche : rampes, on-solid, accolades, garanties par thème, grilles, styles nommés, empreinte
-  src/planche/fraicheur.ts chaque cadre à jour, périmé, jamais dessiné, introuvable ou illisible, et les cadres orphelins et copiés
+  src/planche/fraicheur.ts chaque cadre à jour, périmé, jamais dessiné, introuvable ou illisible, les cadres orphelins et copiés, et l'effet d'un import
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
   src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
   src/ecriture/planche.ts  le dessin de la planche : page, cadres possédés remplacés à leur place, polices, calques étrangers, un commitUndo par dessin

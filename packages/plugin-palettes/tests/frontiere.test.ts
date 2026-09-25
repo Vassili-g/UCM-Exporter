@@ -125,3 +125,20 @@ test('« Voir sur la planche » ne rend caduc aucun état attendu', () => {
   assert.deepEqual(envoyees[1], { type: 'voir-sur-la-planche', demande: 2, page: '1:2', cadres: ['3:4'] });
   assert.equal(etat(1), true);
 });
+
+test('V12.1 : pendant un conflit, un dessin ne part pas et s’abandonne, jusqu’à la relecture', () => {
+  const { frontiere, envoyees, etat } = banc();
+  frontiere.lireLEtat();
+  etat(1, 'aaaaaaaa');
+  frontiere.ranger(RECETTE);
+  frontiere.recevoirRangement({ type: 'rangement', demande: 2, issue: { issue: 'modifiee-ailleurs' } });
+  let abandons = 0;
+  frontiere.dessiner({ palettes: ['p-0000000a'], grille: true, etrangersConfirmes: [] }, () => { abandons += 1; });
+  assert.equal(abandons, 1);
+  assert.deepEqual(envoyees.map((demande) => demande.type), ['lire-etat', 'ranger-recette']);
+  frontiere.lireLEtat();
+  etat(3, 'eeeeeeee');
+  frontiere.dessiner({ palettes: ['p-0000000a'], grille: true, etrangersConfirmes: [] }, () => { abandons += 1; });
+  assert.equal(envoyees.at(-1)?.type, 'dessiner');
+  assert.equal(abandons, 1);
+});

@@ -19,6 +19,7 @@ import type { CibleDAction } from '../presentation';
 import type { EcartDePeinture } from '../planche/peints';
 import { rapportDeLaRecette } from '../rapport';
 import type { PluginMessage } from '../messages';
+import { consequenceDeLImport } from '../planche/fraicheur';
 import { ecartsDePeinture } from '../planche/peints';
 import { createConfiguration } from './configuration';
 import { createSuiviDuDessin, type GestesDuResultat } from './dessin';
@@ -28,7 +29,7 @@ import { createOngletPalettes } from './ongletPalettes';
 import { createOngletPlanche } from './ongletPlanche';
 import { telecharger } from './telechargement';
 import { versSandbox } from './pont';
-import { TEXTES } from './textes';
+import { TEXTES, nomDeLaPalette } from './textes';
 
 /** `index.html` déclare ce conteneur ; `tests/buildUi.test.ts` tient le gabarit. */
 const app = document.getElementById('app') as HTMLElement;
@@ -57,6 +58,7 @@ enTete.append(ligneDuHaut);
 
 const frontiere = createFrontiere(versSandbox, (statut, refus) => {
   ongletPalettes.poserStatut(statut, refus);
+  ongletPlanche.bloquer(statut === 'refuse' ? TEXTES.conflitEnCours : null);
   // Une recette rangée peut périmer des cadres ([PLA-20]).
   if (statut === 'range') afficherLaPlanche();
 });
@@ -108,6 +110,12 @@ const demandesDeLaRecette: DemandesDeLaRecette = {
   lire: (texte) => lireLImport(texte, ongletPalettes.recette()),
   remplacer: remplacerLaRecette,
   recetteParDefaut,
+  consequence(importee) {
+    const actuelle = ongletPalettes.recette();
+    if (!actuelle || !dernierEtat) return null;
+    const { aMettreAJour, orphelins } = consequenceDeLImport(actuelle, importee, dernierEtat.profil, dernierEtat.planche);
+    return { aMettreAJour: aMettreAJour.map(nomDeLaPalette), orphelins: orphelins.map(nomDeLaPalette) };
+  },
 };
 
 /** Chaque génération dessine la grille des contrastes (section 9.5, [UI-05]). */
@@ -117,6 +125,7 @@ const ongletPalettes = createOngletPalettes({
   ranger: (recette) => frontiere.ranger(recette),
   lireLaSelection: () => frontiere.lireLaSelection(),
   recharger: () => frontiere.lireLEtat(),
+  exporterLeBrouillon: () => demandesDeLaRecette.exporter(),
   tirer: () => crypto.getRandomValues(new Uint32Array(1))[0],
   dessiner: (palettes, noms) => suivi.dessiner(palettes, AVEC_LA_GRILLE, noms),
   resultat: gestesDuResultat,

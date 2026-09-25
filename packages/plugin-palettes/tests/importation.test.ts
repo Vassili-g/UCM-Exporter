@@ -1,11 +1,11 @@
-/** L'import d'une recette et son écart avec la recette du fichier ([REC-08], [REC-03]). */
+/** L'import d'une recette et son écart avec la recette du fichier ([REC-08], [REC-03], V12.2). */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { FORMAT_RECETTE, jsonCanonique, recetteParDefaut, type Recette } from 'ucm-couleur';
 
 import { ajouter, nouvellePalette, renommer } from '../src/edition';
-import { ecartDImport, lireLImport } from '../src/importation';
+import { ecartDImport, lireLImport, natureDeLEcart } from '../src/importation';
 
 const VIDE = recetteParDefaut();
 const BLEU = { ...nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9')!, nom: 'Bleu' };
@@ -29,7 +29,7 @@ test('[REC-08] l’écart nomme les palettes ajoutées, retirées et modifiées,
 
 test('[REC-08] une palette déplacée mais identique n’est pas modifiée ; une recette identique n’a aucun écart', () => {
   const ecart = ecartDImport(ACTUELLE, { ...ACTUELLE, palettes: [AMBRE, BLEU] });
-  assert.deepEqual(ecart, { ajoutees: [], retirees: [], modifiees: [], parametres: [] });
+  assert.deepEqual(ecart, { ajoutees: [], retirees: [], modifiees: [], champs: {}, parametres: [], seuils: [] });
 });
 
 test('[REC-11] sans recette lisible dans le fichier, tout l’import est un ajout', () => {
@@ -47,4 +47,24 @@ test('[REC-03] un fichier cassé, vide, invalide ou futur se refuse ; un fichier
   const prete = lireLImport(jsonCanonique({ ...ACTUELLE, palettes: [BLEU] }), ACTUELLE);
   assert.ok(prete.issue === 'prete');
   assert.deepEqual(prete.ecart.retirees.map(({ id }) => id), [AMBRE.id]);
+});
+
+test('V12.2 : l’écart nomme les champs modifiés de chaque palette, palette de base comprise, et les seuils un à un', () => {
+  const importee: Recette = {
+    ...ACTUELLE,
+    seuils: { ...ACTUELLE.seuils, texte: 7, palettesProches: 0.08 },
+    palettes: [{ ...BLEU, base: 'soft' }, renommer(AMBRE, 'Or')],
+  };
+  const ecart = ecartDImport(ACTUELLE, importee);
+  assert.deepEqual(ecart.champs, { [BLEU.id]: ['base'], [AMBRE.id]: ['nom'] });
+  assert.deepEqual(ecart.seuils, ['texte', 'palettesProches']);
+});
+
+test('V12.2 : la nature d’un import distingue les couleurs, les minimums et les seuls signalements', () => {
+  const nature = (importee: Recette) => natureDeLEcart(ecartDImport(ACTUELLE, importee));
+  assert.deepEqual(nature({ ...ACTUELLE, palettes: [renommer(BLEU, 'Marine'), AMBRE] }), { couleurs: false, minimums: false, detection: false });
+  assert.deepEqual(nature({ ...ACTUELLE, seuils: { ...ACTUELLE.seuils, texte: 7 } }), { couleurs: false, minimums: true, detection: false });
+  assert.deepEqual(nature({ ...ACTUELLE, seuils: { ...ACTUELLE.seuils, palettesProches: 0.08 } }), { couleurs: false, minimums: false, detection: true });
+  assert.deepEqual(nature({ ...ACTUELLE, palettes: [{ ...BLEU, reference: '#1D6DDB' }, AMBRE] }), { couleurs: true, minimums: false, detection: false });
+  assert.deepEqual(nature({ ...ACTUELLE, fonds: { ...ACTUELLE.fonds, dark: '#1C1C1C' } }), { couleurs: true, minimums: false, detection: false });
 });
