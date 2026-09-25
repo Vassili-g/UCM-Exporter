@@ -29,6 +29,7 @@ Les quatre autres se lisent quand une question précise les appelle.
 | Les modèles candidats, leurs tarifs, leurs capacités prouvées, les offres et l'auto-hébergement | [COMPARATIF-MODELES-OFFRES.md](./Recherches/COMPARATIF-MODELES-OFFRES.md) | Le travail demandé au modèle, que le plan fixe |
 | Ce que coûte la reconstruction par un agent, mesuré sur douze runs | [RAPPORT-COUT-GENERATION.md](./Recherches/RAPPORT-COUT-GENERATION.md) | Les leviers qui réduisent ce coût, qui sont dans le plan de réduction |
 | Les leviers du chemin agent, leur pondération et leurs lots | [PLAN-REDUCTION-TOKENS.md](./Recherches/PLAN-REDUCTION-TOKENS.md) | Le chemin compilé, que le plan de l'implémenteur remplace |
+| La revue critique du besoin, de la conception et du coût de construction | [review-plan-codex-astra.md](./review/review-plan-codex-astra.md) | Les choix adoptés, qui restent soumis à l’architecte |
 
 Deux fichiers accompagnent l'étude :
 [`mesurer-representations.py`](./Recherches/mesurer-representations.py) produit

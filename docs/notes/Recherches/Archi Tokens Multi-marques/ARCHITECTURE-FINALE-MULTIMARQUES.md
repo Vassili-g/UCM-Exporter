@@ -52,9 +52,23 @@ deux thèmes.
 | Sombre | 0,180 | 0,225 | 0,275 | 0,330 | 0,400 | 0,490 | 0,580 | 0,670 | 0,760 | 0,850 | 0,930 |
 
 Ces vingt-deux clartés sont posées à l'œil, près des rampes du Playground. Elles
-se règlent sur des palettes réelles. Toutes les rampes gardent onze crans, de 50
-à 950 ; le Playground en emploie aujourd'hui dix, onze ou douze selon la rampe,
-et son cran 500 y va de 2,2:1 à 6,9:1.
+se règlent sur des palettes réelles. Toutes les rampes d'un fichier ont le même
+nombre de crans, choisi parmi trois préréglages ; le Playground en emploie
+aujourd'hui dix, onze ou douze selon la rampe, et son cran 500 y va de 2,2:1 à
+6,9:1.
+
+| Préréglage | Crans | Clartés ajoutées |
+|---|---|---|
+| 9 | 50, 100, 200, 300, 500, 600, 700, 800, 900 | aucune : 400 et 950 sont retirés |
+| 11 | 50 à 950, la table ci-dessus | aucune |
+| 13 | 50 à 950, puis 1000 et 1050 | 0,215 et 0,165 en clair, 0,960 et 0,980 en sombre |
+
+Aucun préréglage n'insère de cran entre deux crans d'emploi : les états gardent
+leurs numéros (section 4), et un même numéro garde sa clarté d'un préréglage à
+l'autre. Une collection Figma porte les mêmes variables dans chaque mode : le
+nombre de crans reste commun à toutes les marques d'un fichier. Une palette
+libre du plugin UCM Palettes, dont les numéros sortent du modèle, n'alimente
+pas `theme`.
 
 ## 2. Les collections
 

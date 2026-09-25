@@ -18,6 +18,10 @@ cases encore ouvertes du [second plan](./PLAN-ERGONOMIE-PALETTES-V2.md), dont
 les décisions restent valables quand ce document ne les remplace pas. Il ne
 s’implémente pas avant que le mainteneur l’ait relu.
 
+Ses cases encore ouvertes sont reprises par le
+[quatrième plan](./PLAN-ERGONOMIE-PALETTES-V4.md), qui porte aussi le
+round 4 de la recette.
+
 ## Autorités
 
 Lire dans cet ordre :
@@ -325,11 +329,12 @@ Après validation de W3.4.
 - [x] **W5.4** Faire entrer le nouveau modèle dans l’empreinte : tous les
   cadres existants passent « À mettre à jour ». L’empreinte se calcule sur
   l’arbre et les styles ; l’arbre et les styles ont changé.
-- [ ] **W5.5** Tests du modèle : chaque paire du moteur reste représentée,
+- [x] **W5.5** Tests du modèle : chaque paire du moteur reste représentée,
   une palette libre (W6) n’a pas de section de garanties. Première moitié
   faite : chaque paire se lit sous chacun de ses membres qui a une ligne
-  d’usage, dans chaque thème, vu rouge sur une mutation. La seconde attend
-  W6.
+  d’usage, dans chaque thème, vu rouge sur une mutation. Seconde moitié
+  faite avec W6.6 : une palette libre n’a ni usages ni interface d’exemple,
+  et ses rampes et ses grilles suivent sa liste.
 - [ ] **W5.6** (ex-V6.4) Mesurer dans Figma le temps et le nombre de calques
   d’une génération de douze palettes ; appliquer `[PLA-24]` au résultat.
   Hors de Figma, le cadre de Bleu compte 1 712 calques avec les grilles,
@@ -373,18 +378,24 @@ Le mode standard garde le modèle du design system ; la palette libre en sort.
   950 ; 11 → 13 et 11 → 9 déplacent l’ancrage de certaines références, que le
   geste compte ; l’analyse porte la liste de la palette ; deux palettes
   libres se comparent dès qu’elles portent 500, 600 et 700.
-- [ ] **W6.4** Réglage du préréglage dans les Réglages communs, à la place
+- [x] **W6.4** Réglage du préréglage dans les Réglages communs, à la place
   que V9.2 lui réservait. Un changement de préréglage dit combien de palettes
-  et de cadres il touche.
-- [ ] **W6.5** Choix du mode dans la carte « Configuration de la palette » :
+  et de cadres il touche. Fait en tête de « Luminosité des nuances »
+  (`[ENT-13]`) : le changement se lit avant, ne se range qu’à « Passer à
+  N nuances », et « Rétablir » rend les courbes du préréglage reconnu.
+  Textes N104, à valider.
+- [x] **W6.5** Choix du mode dans la carte « Configuration de la palette » :
   standard ou libre, puis la liste des numéros d’une palette libre, selon
   W3.5. Une palette libre masque accolades, `on-solid`, carte des garanties
   et bilans de garanties ; la référence garde ses octets exacts et sa nuance
-  la plus proche.
-- [ ] **W6.6** Planche et fiche d’une palette libre : « Palette libre ·
+  la plus proche. Fait : « Modèle » (Standard, Libre) prend la troisième
+  colonne, la palette de base se règle dessous, et les puces viennent sous
+  les trois colonnes. Textes N103, à valider. Galerie : « Palette libre ».
+- [x] **W6.6** Planche et fiche d’une palette libre : « Palette libre ·
   N nuances » à la place des résultats Soft et Vivid ; rampes, référence et
-  grille des contrastes restent.
-- [ ] **W6.7** Mettre à jour l’architecture multi-marques, section 1 : les
+  grille des contrastes restent. Le même bilan remplace celui de la tête des
+  Réglages communs et de l’éditeur de dérive (N102).
+- [x] **W6.7** Mettre à jour l’architecture multi-marques, section 1 : les
   préréglages 9, 11 et 13 et leurs numéros ; une palette libre n’alimente pas
   `theme`. Réviser `[DER-01]`, `[REC-05]` et `[ENT-08]` dans la
   spécification.
@@ -394,8 +405,8 @@ Le mode standard garde le modèle du design system ; la palette libre en sort.
   moteur (`packages/couleur/tests/nuances.test.ts`), avec la section 4 de la
   conception : le moteur lit la liste de chaque palette, les bouts aux
   numéros 50 et 950, et la recette passe au format 3. Vu rouge sur une
-  mutation des bouts. Les vues lisent encore la liste commune : c’est
-  l’étape 2 de la conception, avant W6.4 à W6.6.
+  mutation des bouts. L’étape 2 de la conception est faite depuis : les
+  vues lisent la liste de chaque palette dans son analyse.
 
 Critère : le designer passe de 11 à 13 nuances sans qu’un rôle change de
 numéro, et crée une palette de six nuances pour un autre usage sans voir de
@@ -408,9 +419,10 @@ Parcours des [maquettes](./MAQUETTES-PLANCHE-ET-REFERENCE.html), en trois
 
 - [ ] **W7.1** Lien « Ajuster la référence » parmi les réglages qu’une
   garantie en échec propose, et sous le code de la couleur de référence.
-- [ ] **W7.2** Champ de l’originale dans la palette, facultatif, dans le
+- [x] **W7.2** Champ de l’originale dans la palette, facultatif, dans le
   format 3 conçu en W6.3 : absent, aucun ajustement. Conçu : `originale`,
-  section 3 de la conception.
+  section 3 de la conception. Fait dans le moteur avec le format 3, et porté
+  par le rapport.
 - [ ] **W7.3** Panneau d’ajustement : originale et proposition côte à côte,
   « − » et « + » par pas de 0,01 de luminosité OKLCH, chroma et teinte
   gardées, code saisissable, nuance visée par thème, garanties avant et

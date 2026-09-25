@@ -951,3 +951,5 @@ dans le lot qui change le comportement.
 - Déformation générale des courbes sans comparaison et décision explicites.
 - Livraison obligatoire de l’exploration Ajuster la référence avant la
   refonte d’ergonomie.
+
+

@@ -169,7 +169,7 @@ rôles par couleur. Sept de ces paires portent sur le survol et l'appui : elles
 se déduisent d'un cran d'avance. Le profil visé par le câblage n'était pas dit.
 
 Correction : le câblage est une proposition rangée dans la recette et affichée
-sur la planche ([section 9.4](./RECHERCHE-PLUGIN-PALETTES.md#94-les-emplois)) ;
+sur la planche ([section 9.4](./RECHERCHE-PLUGIN-PALETTES.md#94-quelle-nuance-pour-quel-usage)) ;
 [section 11.2](./RECHERCHE-PLUGIN-PALETTES.md#112-promesses-des-emplois) énumère
 les quatorze paires, leur calcul et le cas où elles ne se calculent pas.
 Depuis, la décision D-O a retiré le câblage : la spécification porte une table

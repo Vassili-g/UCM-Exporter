@@ -596,14 +596,22 @@ composant du socle la porte (`[UI-02]`).
 
 - `[ENT-07]` Chaque champ de la configuration affiche le nombre de palettes
   qu'il modifie.
+- `[ENT-13]` « Luminosité des nuances » s'ouvre sur le nombre de nuances,
+  9, 11 ou 13. Choisir un autre préréglage dit d'abord ce qu'il changerait :
+  les numéros ajoutés ou retirés, les palettes dont une nuance gardée change
+  de couleur, et le nombre de cadres qui passeraient « À mettre à jour ». Il
+  ne se range qu'à « Passer à N nuances » ; « Annuler » ne range rien. Une
+  liste importée se dit « Liste importée ». Au-delà de onze nuances, les
+  champs de la table se resserrent pour tenir à la largeur minimale.
 - `[ENT-12]` Les Réglages communs se rangent en cinq cartes : Couleurs de
   fond, Intensités, Luminosité des nuances, puis, repliées, Minimums des
   promesses et Détection des couleurs proches. « Rétablir » remet une carte
   aux valeurs de la recette par défaut, sans toucher aux autres cartes ni aux
   palettes : leurs parts propres, du designer ou d'une palette de base
   forcée, restent. Le seuil de gris rétabli recalcule les parts `grise`, comme
-  sa saisie. Les courbes ne se rétablissent pas sur une liste de crans
-  différente de celle par défaut. En tête, l'aperçu compact de la palette
+  sa saisie. Les courbes se rétablissent à celles du préréglage que la liste
+  reconnaît ; une liste importée n'en a pas, et « Rétablir » y reste inactif.
+  En tête, l'aperçu compact de la palette
   ouverte, dans le thème de son aperçu, donne le résultat Soft et Vivid de ses
   garanties ; sans palette, rien n'est montré à sa place. Le tracé des deux
   courbes précède leur table, et marque d'un ◆ la référence de la palette
@@ -1092,8 +1100,9 @@ titre et, à droite, le résumé du préréglage et de la synchronisation.
 
 ### 12.1 Ce que l'éditeur montre
 
-- `[DER-01]` Un graphe : en abscisse le rang du cran de la courbe claire, onze
-  positions régulières, du bout clair à gauche au bout sombre à droite ; en
+- `[DER-01]` Un graphe : en abscisse le rang du cran dans la liste de la
+  palette, une position régulière par nuance, commune ou libre, de la plus
+  claire à gauche à la plus sombre à droite ; en
   ordonnée la dérive par rapport à `Ha`. L'échelle vaut ±30° quand les deux
   dérives y tiennent, puis s'élargit par paliers lisibles, ±45°, ±60° et ±90°.
   Elle reste figée pendant un glisser et se réévalue avant ou après le geste :
@@ -1102,7 +1111,9 @@ titre et, à droite, le résumé du préréglage et de la synchronisation.
   qui passe, à chaque position, par la dérive que la
   [section 6.4](#64-la-teinte-dun-cran) donne à ce cran. Les positions
   régulières alignent le graphe, la bande de teintes et la rampe sur les mêmes
-  onze colonnes.
+  colonnes. Les poignées se posent sur les colonnes des numéros 50 et 950, où
+  se lisent les bouts ; une liste qui ne porte pas l'un d'eux pose sa poignée
+  au bord, du côté de son bout.
 - `[DER-02]` Le pivot est un losange sur la ligne 0°. L'abscisse est celle de
   la courbe claire, sur laquelle les deux bouts de la dérive se définissent :
   le graphe ne change pas avec le thème de l'aperçu. Pour le profil porteur
@@ -1339,9 +1350,18 @@ palette » gardent leurs libellés au-dessus des champs.
   retirer le focus du champ. La carte « Configuration de la palette » ouvre la
   configuration, en trois colonnes égales, libellé au-dessus du champ : Nom
   de la palette, Couleur de référence (pastille cliquable et code
-  hexadécimal), Palette de base (Auto, Soft ou Vivid). En Auto, une ligne
+  hexadécimal), Modèle (Standard ou Libre). Dans le modèle, la palette de base
+  (Auto, Soft ou Vivid) se règle sous le choix du modèle. En Auto, une ligne
   sous le sélecteur dit le profil que le classement a choisi : « Auto a choisi Vivid ». Soft ou Vivid force le profil
   porteur (`[MOT-17]`). L'erreur d'un code invalide reste sous son champ.
+  Libre retire la palette de base, dit « Sans rôles ni garanties », et montre
+  sous les trois colonnes une puce par multiple de 50, de 50 à 1050, allumée
+  quand la palette porte ce numéro. Une puce allumée ne s'éteint pas sous
+  quatre numéros ; une puce éteinte ne s'allume pas au-delà de treize. Une
+  palette libre n'a ni accolades, ni pastille `on-solid`, ni carte des
+  garanties, et chaque bilan de garanties dit « Palette libre · N nuances ».
+  Le détail d'une nuance libre ne lui prête aucun rôle. Standard rend la
+  liste commune.
 - `[UI-12]` « Intensités » et « Dérive de teinte » sont deux cartes
   repliables de même forme, repliées à l'ouverture, qui gardent leur état
   pendant la session. Leur en-tête est un bouton : chevron, titre et résumé
@@ -1448,6 +1468,7 @@ qui le créera.
 | Cartes repliées | « Intensités » et « Dérive de teinte » repliées, leur résumé, un point à vérifier annoncé |
 | Fond personnalisé | Un fond saturé peint sous le nuancier, textes et focus lisibles dessus |
 | Fond dans le sélecteur de couleur | La pastille du fond ouverte, la mention du fond commun à toutes les palettes |
+| Palette libre | Libre pressé, six puces allumées, l’aperçu à six colonnes sans `on-solid` ni accolades, aucune carte des garanties |
 | Référence dans le sélecteur de couleur | La pastille de la référence ouverte, les nuances Vivid de la palette proposées |
 | Réglages communs | Fonds, intensités, luminosité et groupes repliés, avec le nombre de palettes concernées |
 | Réglages communs sans palette | Aucun aperçu en tête, tracé sans ◆, aucune palette concernée |
