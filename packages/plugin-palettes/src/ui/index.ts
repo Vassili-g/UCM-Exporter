@@ -130,8 +130,22 @@ const ongletPlanche = createOngletPlanche({
   ...gestesDuResultat,
   dessiner: (palettes, noms) => suivi.dessiner(palettes, AVEC_LA_GRILLE, noms),
   versLesPalettes: () => onglets.selectionner('palettes'),
+  modifier(id, mode) {
+    onglets.selectionner('palettes');
+    ongletPalettes.ouvrirLaPalette(id, mode);
+  },
+  actualiser: relireLaPlanche,
   recetteEnFichier: createGestesDeLaRecette(demandesDeLaRecette),
 });
+
+/**
+ * Relit l'état pour la planche (V8.7) : à l'accès à l'onglet, et au geste
+ * « Actualiser » pour ce que les événements de Figma ne disent pas. Comme au
+ * retour du focus, la relecture attend qu'aucun rangement ne soit en vol.
+ */
+function relireLaPlanche(recherche?: 'fichier'): void {
+  if (frontiere.auRepos() && frontiere.statut() !== 'refuse') frontiere.lireLEtat(recherche);
+}
 
 /**
  * Le dernier état accepté : l'onglet Planche le relit quand on l'ouvre. Sa
@@ -150,7 +164,9 @@ const onglets = createOnglets(TEXTES.etiquetteDesOnglets, [
   { id: 'palettes', libelle: TEXTES.ongletPalettes, panneau: ongletPalettes.element },
   { id: 'planche', libelle: TEXTES.ongletPlanche, panneau: ongletPlanche.element },
 ], (id) => {
-  if (id === 'planche') afficherLaPlanche();
+  if (id !== 'planche') return;
+  afficherLaPlanche();
+  relireLaPlanche();
 });
 
 const travail = document.createElement('div');

@@ -28,13 +28,13 @@ function versUi(message: PluginMessage): void {
   figma.ui.postMessage(message);
 }
 
-async function envoyerEtat(demande: number): Promise<void> {
-  versUi({ type: 'etat', demande, ...lireEtat(figma.root), planche: await lireLaPlanche(figma) });
+async function envoyerEtat(demande: number, toutesLesPages: boolean): Promise<void> {
+  versUi({ type: 'etat', demande, ...lireEtat(figma.root), planche: await lireLaPlanche(figma, toutesLesPages) });
 }
 
 async function traiterMessage(message: UiRequest): Promise<void> {
   if (message.type === 'lire-etat') {
-    await envoyerEtat(message.demande);
+    await envoyerEtat(message.demande, message.recherche === 'fichier');
     return;
   }
 

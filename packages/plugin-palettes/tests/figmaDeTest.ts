@@ -1,8 +1,9 @@
 /**
  * Un double de l'API Figma, réduit à ce que le dessin de la planche emploie.
  * Il refuse ce que Figma refuse et que le dessin doit éviter : lire les
- * enfants d'une page non chargée (`documentAccess: "dynamic-page"`), poser un
- * texte dans une police non chargée. Un journal garde l'ordre des opérations.
+ * enfants d'une page non chargée (`documentAccess: "dynamic-page"`), y
+ * chercher, poser un texte dans une police non chargée. Un journal garde
+ * l'ordre des opérations.
  */
 import type { FigmaDuDessin } from '../src/ecriture/planche';
 
@@ -17,6 +18,9 @@ class Noeud {
   y = 0;
   width = 100;
   height = 20;
+  /** La partie de `relativeTransform` que x et y ne portent pas : une rotation, par exemple. */
+  lineaire: [[number, number], [number, number]] = [[1, 0], [0, 1]];
+  layoutPositioning = 'AUTO';
   enfants: Noeud[] = [];
   readonly donnees = new Map<string, string>();
 
@@ -37,9 +41,23 @@ class Noeud {
   }
 
   appendChild(enfant: Noeud): void {
+    this.insertChild(this.enfants.length, enfant);
+  }
+
+  insertChild(rang: number, enfant: Noeud): void {
     if (enfant.parent) enfant.parent.enfants = enfant.parent.enfants.filter((autre) => autre !== enfant);
     enfant.parent = this;
-    this.enfants.push(enfant);
+    this.enfants.splice(rang, 0, enfant);
+  }
+
+  get relativeTransform(): [[number, number, number], [number, number, number]] {
+    return [[this.lineaire[0][0], this.lineaire[0][1], this.x], [this.lineaire[1][0], this.lineaire[1][1], this.y]];
+  }
+
+  set relativeTransform([[a, b, x], [c, d, y]]: [[number, number, number], [number, number, number]]) {
+    this.lineaire = [[a, b], [c, d]];
+    this.x = x;
+    this.y = y;
   }
 
   resize(largeur: number, hauteur: number): void {
@@ -82,6 +100,20 @@ class Page extends Noeud {
   async loadAsync(): Promise<void> {
     this.charge = true;
     this.figma.journal.push(`charger ${this.name}`);
+  }
+
+  /** La recherche de Figma : les nœuds du type demandé qui portent l'une des clés partagées, en profondeur. */
+  findAllWithCriteria(criteres: { types: string[]; sharedPluginData: { namespace: string; keys: string[] } }): Noeud[] {
+    const { namespace, keys } = criteres.sharedPluginData;
+    const trouves: Noeud[] = [];
+    const parcourir = (noeud: Noeud): void => {
+      for (const enfant of noeud.enfants) {
+        if (criteres.types.includes(enfant.type) && keys.some((cle) => enfant.getSharedPluginData(namespace, cle) !== '')) trouves.push(enfant);
+        parcourir(enfant);
+      }
+    };
+    parcourir({ enfants: this.children } as Noeud);
+    return trouves;
   }
 }
 
@@ -144,8 +176,17 @@ class Cadre extends Noeud {
   }
 }
 
+/** Une section, où le designer range des cadres. */
+class Section extends Noeud {
+  constructor(figma: FauxFigma) {
+    super('SECTION', figma);
+  }
+}
+
 export class FauxFigma {
   readonly registre = new Map<string, Noeud>();
+  /** Les identifiants que Figma refuse de lire : `getNodeByIdAsync` lève. */
+  readonly illisibles = new Set<string>();
   readonly journal: string[] = [];
   readonly polices = new Set<string>();
   /** Les styles dont le chargement échoue. */
@@ -190,7 +231,16 @@ export class FauxFigma {
     return texte;
   }
 
+  /** Une section posée sur une page. */
+  section(page: Page): Section {
+    const section = new Section(this);
+    page.enfants.push(section);
+    section.parent = page;
+    return section;
+  }
+
   async getNodeByIdAsync(id: string): Promise<Noeud | null> {
+    if (this.illisibles.has(id)) throw new Error(`lecture refusée : ${id}`);
     const noeud = this.registre.get(id);
     return noeud && !noeud.removed ? noeud : null;
   }

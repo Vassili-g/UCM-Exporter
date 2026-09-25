@@ -18,19 +18,25 @@ import {
   dessinInterrompu,
   ecartDePeinture,
   dessinSurUneAutreRecette,
+  lectureImpossible,
   policeIndisponible,
+  suiviFutur,
 } from './textes';
 
 export type EtatDuDessin =
   | { readonly phase: 'repos' }
   | { readonly phase: 'en-cours'; readonly fait: number; readonly total: number; readonly nom: string }
-  /** `ecarts` compare les couleurs relues sur la planche à l'aperçu (L6.14). */
-  | { readonly phase: 'fini'; readonly resultat: ResultatDuDessin; readonly ecarts: readonly EcartDePeinture[] };
+  /**
+   * `ecarts` compare les couleurs relues sur la planche à l'aperçu (L6.14).
+   * `demandees` garde les palettes demandées, dans l'ordre de la recette où le
+   * sandbox les dessine : une génération interrompue les nomme (V8.4).
+   */
+  | { readonly phase: 'fini'; readonly resultat: ResultatDuDessin; readonly ecarts: readonly EcartDePeinture[]; readonly demandees: readonly string[] };
 
 export interface SuiviDuDessin {
   /** Dessine les palettes nommées ; `noms` donne le nom affiché de chacune. */
   dessiner(palettes: readonly string[], grille: boolean, noms: { readonly [id: string]: string }): void;
-  /** Relance le dernier dessin demandé. */
+  /** Relance le dernier dessin demandé ; après une interruption, à partir de la palette fautive (V8.4). */
   reessayer(): void;
   /** Relance le dernier dessin en acceptant de perdre les calques étrangers qu'il a nommés. */
   confirmerEtrangers(): void;
@@ -74,7 +80,10 @@ export function createSuiviDuDessin(
   return {
     dessiner: (palettes, grille, nomsDesPalettes) => dessiner(palettes, grille, nomsDesPalettes),
     reessayer() {
-      if (derniereDemande) dessiner(derniereDemande.palettes, derniereDemande.grille, noms);
+      if (!derniereDemande) return;
+      const { palettes, grille } = derniereDemande;
+      const fautive = courant.phase === 'fini' && courant.resultat.issue === 'interrompue' ? palettes.indexOf(courant.resultat.palette) : -1;
+      dessiner(fautive > 0 ? palettes.slice(fautive) : palettes, grille, noms);
     },
     confirmerEtrangers() {
       if (!derniereDemande || courant.phase !== 'fini' || courant.resultat.issue !== 'etrangers') return;
@@ -91,7 +100,7 @@ export function createSuiviDuDessin(
         poser({ phase: 'en-cours', fait: message.fait, total: message.total, nom: message.nom });
         return;
       }
-      poser({ phase: 'fini', resultat: message.resultat, ecarts: comparer(message.resultat) });
+      poser({ phase: 'fini', resultat: message.resultat, ecarts: comparer(message.resultat), demandees: derniereDemande?.palettes ?? [] });
       surFin();
     },
     etat: () => courant,
@@ -158,14 +167,24 @@ export function blocDuResultat(etat: EtatDuDessin, noms: { readonly [id: string]
     return pile;
   }
   if (resultat.issue === 'sans-recette') return null;
+  const nom = (id: string) => noms[id] ?? id;
+  if (resultat.issue === 'suivi-futur') return blocDeConstat(suiviFutur(), 'bloquant');
+  if (resultat.issue === 'interrompue') {
+    const rang = etat.demandees.indexOf(resultat.palette);
+    const creees = rang > 0 ? etat.demandees.slice(0, rang) : [];
+    const restantes = rang >= 0 ? etat.demandees.slice(rang + 1) : [];
+    const bloc = blocDeConstat(dessinInterrompu(nom(resultat.palette), resultat.message, creees.map(nom), restantes.map(nom)), 'bloquant');
+    bloc.append(createButton({ label: TEXTES_DU_DESSIN.reessayer, onClick: () => gestes.reessayer() }));
+    return bloc;
+  }
   const constat = resultat.issue === 'police'
     ? policeIndisponible(resultat.style)
-    : resultat.issue === 'interrompue'
-      ? dessinInterrompu(noms[resultat.palette] ?? resultat.palette, resultat.message, resultat.dessines)
+    : resultat.issue === 'lecture-impossible'
+      ? lectureImpossible(resultat.palettes.map(nom))
       : dessinSurUneAutreRecette();
   const bloc = blocDeConstat(constat, 'bloquant');
-  bloc.append(resultat.issue === 'modifiee-ailleurs'
-    ? createButton({ label: TEXTES.recharger, onClick: () => gestes.recharger() })
-    : createButton({ label: TEXTES_DU_DESSIN.reessayer, onClick: () => gestes.reessayer() }));
+  bloc.append(resultat.issue === 'police'
+    ? createButton({ label: TEXTES_DU_DESSIN.reessayer, onClick: () => gestes.reessayer() })
+    : createButton({ label: resultat.issue === 'lecture-impossible' ? TEXTES_DU_DESSIN.actualiser : TEXTES.recharger, onClick: () => gestes.recharger() }));
   return bloc;
 }

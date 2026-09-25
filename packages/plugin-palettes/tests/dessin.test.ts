@@ -32,7 +32,7 @@ test('[PLA-01] [PLA-02] un premier dessin crée la page « Palettes », un cadre
     assert.equal(cadre.getSharedPluginData('ucm_palettes', 'proprietaire'), cadre.id);
     assert.equal(cadre.getSharedPluginData('ucm_palettes', 'empreinte'), modeleDeCadre(RECETTE, palette, 'SRGB').empreinte);
   }
-  assert.deepEqual(lirePlanche(figma.root), { page: figma.page('Palettes').id, cadres: { [BLEU.id]: bleu.id, [AMBRE.id]: ambre.id } });
+  assert.deepEqual(lirePlanche(figma.root), { version: 2, page: figma.page('Palettes').id, cadres: { [BLEU.id]: bleu.id, [AMBRE.id]: ambre.id } });
 });
 
 test('D-H : chaque calque posé porte le marqueur du plugin', async () => {
@@ -245,4 +245,119 @@ test('L6.14 : le dessin relit la peinture que Figma garde, pas celle que le mod�
   assert.ok(issue.issue === 'dessinee');
   assert.equal(issue.peints.length, 44);
   assert.deepEqual(issue.peints.filter(({ hexa }) => !hexa.startsWith('#00')), []);
+});
+
+test('[PLA-03] V8.6 : un cadre rangé dans une section est redessiné dans la section, à son rang, sans doublon', async () => {
+  const figma = new FauxFigma();
+  await dessiner(figma, [BLEU, AMBRE]);
+  const page = figma.page('Palettes');
+  const section = figma.section(page);
+  const [bleu] = cadres(figma);
+  const note = figma.createFrame();
+  note.name = 'Note';
+  section.appendChild(bleu);
+  section.appendChild(note);
+  bleu.x = 48;
+  bleu.y = 64;
+
+  assert.equal((await dessiner(figma, [BLEU])).issue, 'dessinee');
+  const [neuf] = section.enfants;
+  assert.equal(bleu.removed, true);
+  assert.deepEqual(section.enfants.map((enfant) => enfant.name), ['Bleu', 'Note']);
+  assert.deepEqual([neuf.x, neuf.y], [48, 64]);
+  assert.equal(page.enfants.filter((enfant) => enfant.getSharedPluginData('ucm_palettes', 'cadre') === BLEU.id).length, 0, 'aucun doublon au premier niveau');
+  assert.equal(lirePlanche(figma.root).cadres[BLEU.id], neuf.id);
+});
+
+test('[PLA-26] V8.6 : un cadre déplacé sur une autre page y est redessiné, et les cadres neufs vont sur la planche', async () => {
+  const figma = new FauxFigma(['Page 1', 'Archives']);
+  await dessiner(figma, [BLEU]);
+  const archives = figma.page('Archives');
+  const [bleu] = cadres(figma);
+  archives.appendChild(bleu);
+  archives.charge = false;
+
+  await dessiner(figma, [BLEU, AMBRE]);
+  assert.deepEqual(archives.enfants.map((enfant) => enfant.name), ['Bleu']);
+  assert.deepEqual(cadres(figma).map((enfant) => enfant.name), ['Ambre']);
+  assert.deepEqual([cadres(figma)[0].x, cadres(figma)[0].y], [0, 0], 'un cadre d’une autre page ne décale pas le premier cadre de la planche');
+  assert.deepEqual(lirePlanche(figma.root), { version: 2, page: figma.page('Palettes').id, cadres: { [BLEU.id]: archives.enfants[0].id, [AMBRE.id]: cadres(figma)[0].id } });
+});
+
+test('[PLA-03] V8.6 : le cadre neuf prend la transformation de l’ancien ; dans un auto layout, son rang et sa position', async () => {
+  const figma = new FauxFigma();
+  await dessiner(figma, [BLEU, AMBRE]);
+  const [bleu, ambre] = cadres(figma);
+  bleu.lineaire = [[0, -1], [1, 0]];
+  bleu.x = 300;
+  await dessiner(figma, [BLEU]);
+  const tourne = cadres(figma).find((cadre) => cadre.name === 'Bleu')!;
+  assert.deepEqual(tourne.relativeTransform, [[0, -1, 300], [1, 0, 0]]);
+
+  // Un cadre du designer en auto layout, où Ambre est le deuxième enfant et Bleu en position absolue.
+  const pile = figma.createFrame();
+  pile.layoutMode = 'VERTICAL';
+  figma.page('Palettes').appendChild(pile);
+  const tete = figma.createFrame();
+  pile.appendChild(tete);
+  pile.appendChild(ambre);
+  pile.appendChild(tourne);
+  tourne.layoutPositioning = 'ABSOLUTE';
+  ambre.x = 999;
+  await dessiner(figma, [BLEU, AMBRE]);
+  const [, ambreNeuf, bleuNeuf] = pile.enfants;
+  assert.deepEqual([ambreNeuf.name, bleuNeuf.name], ['Ambre', 'Bleu']);
+  assert.equal(ambreNeuf.layoutPositioning, 'AUTO');
+  assert.equal(ambreNeuf.x, 0, 'dans le flux, le rang place le cadre');
+  assert.equal(bleuNeuf.layoutPositioning, 'ABSOLUTE');
+  assert.deepEqual(bleuNeuf.relativeTransform, [[0, -1, 300], [1, 0, 0]]);
+});
+
+test('[PLA-04] V8.6 : un cadre que Figma refuse de lire arrête le dessin avant tout calque, et son entrée reste rangée', async () => {
+  const figma = new FauxFigma(['Page 1', 'Archives']);
+  await dessiner(figma, [BLEU]);
+  const [bleu] = cadres(figma);
+  // Hors de la page de la planche, la recherche de secours ne le lit pas.
+  figma.page('Archives').appendChild(bleu);
+  figma.illisibles.add(bleu.id);
+  const avant = figma.journal.length;
+  assert.deepEqual(await dessiner(figma, [BLEU, AMBRE]), { issue: 'lecture-impossible', palettes: [BLEU.id] });
+  assert.deepEqual(creations({ journal: figma.journal.slice(avant) } as FauxFigma), []);
+
+  assert.equal((await dessiner(figma, [AMBRE])).issue, 'dessinee');
+  assert.equal(lirePlanche(figma.root).cadres[BLEU.id], bleu.id, 'l’entrée illisible survit au dessin d’une autre palette');
+});
+
+test('[PLA-25] V8.6 : un cadre coupé puis collé est une copie : il n’est pas réécrit, et la palette reçoit un cadre neuf', async () => {
+  const figma = new FauxFigma();
+  await dessiner(figma, [BLEU]);
+  const [bleu] = cadres(figma);
+  const collee = figma.createFrame();
+  figma.page('Palettes').appendChild(collee);
+  collee.name = 'Bleu';
+  for (const cle of ['cadre', 'proprietaire', 'empreinte', 'grille']) collee.setSharedPluginData('ucm_palettes', cle, bleu.getSharedPluginData('ucm_palettes', cle));
+  bleu.remove();
+
+  await dessiner(figma, [BLEU]);
+  assert.equal(collee.removed, false);
+  const neuf = cadres(figma).find((cadre) => cadre !== collee)!;
+  assert.equal(neuf.getSharedPluginData('ucm_palettes', 'proprietaire'), neuf.id);
+  assert.equal(lirePlanche(figma.root).cadres[BLEU.id], neuf.id);
+});
+
+test('[PLA-01] V8.8 : un suivi sans version se lit comme la version 1 ; un suivi plus récent refuse le dessin avant tout calque', async () => {
+  const figma = new FauxFigma();
+  await dessiner(figma, [BLEU]);
+  const [bleu] = cadres(figma);
+  const page = figma.page('Palettes');
+  figma.root.setSharedPluginData('ucm_palettes', 'planche', JSON.stringify({ page: page.id, cadres: { [BLEU.id]: bleu.id } }));
+  assert.equal(lirePlanche(figma.root).version, 1);
+  await dessiner(figma, [BLEU]);
+  assert.equal(cadres(figma).length, 1, 'le cadre de la version 1 est remplacé, pas doublé');
+  assert.equal(lirePlanche(figma.root).version, 2);
+
+  figma.root.setSharedPluginData('ucm_palettes', 'planche', JSON.stringify({ version: 3, page: page.id, cadres: {} }));
+  const avant = figma.journal.length;
+  assert.deepEqual(await dessiner(figma, [BLEU]), { issue: 'suivi-futur' });
+  assert.deepEqual(creations({ journal: figma.journal.slice(avant) } as FauxFigma), []);
 });

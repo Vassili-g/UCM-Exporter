@@ -769,11 +769,68 @@ export const TEXTES_DU_DESSIN = {
   annuler: 'Annuler',
   plancheSansPalette: 'Créez une palette dans l’onglet « Palettes » pour pouvoir générer sa présentation ici.',
   versLesPalettes: 'Créer une palette',
+  // N009, N010, puis N043 à N047.
+  introuvable: 'Cadre introuvable',
+  illisible: 'Lecture impossible',
+  modifier: 'Modifier la palette',
+  actualiser: 'Actualiser',
+  chercherPartout: 'Chercher dans tout le fichier',
+  palettesEtReglages: 'Palettes et réglages',
+  themeDesFiches: 'Thème des fiches',
 } as const;
 
-/** L'état d'un cadre de palette, tel que les deux onglets l'écrivent ([PLA-20]). */
-export function etatDuCadreEcrit(etat: 'a-jour' | 'perimee' | 'jamais-dessinee'): string {
-  return { 'a-jour': TEXTES_DU_DESSIN.aJour, perimee: TEXTES_DU_DESSIN.perimee, 'jamais-dessinee': TEXTES_DU_DESSIN.jamaisDessinee }[etat];
+/** L'état d'un cadre de palette, tel que les deux onglets l'écrivent ([PLA-20], V8.2). */
+export function etatDuCadreEcrit(etat: 'a-jour' | 'perimee' | 'jamais-dessinee' | 'introuvable' | 'illisible'): string {
+  return {
+    'a-jour': TEXTES_DU_DESSIN.aJour,
+    perimee: TEXTES_DU_DESSIN.perimee,
+    'jamais-dessinee': TEXTES_DU_DESSIN.jamaisDessinee,
+    introuvable: TEXTES_DU_DESSIN.introuvable,
+    illisible: TEXTES_DU_DESSIN.illisible,
+  }[etat];
+}
+
+/** La page d'un cadre rangé hors de la page de la planche (V8.6, N048). */
+export function pageDuCadre(nom: string): string {
+  return `Page « ${nom} »`;
+}
+
+/** Le geste qui génère les palettes qui ne sont pas à jour (V8.4, N049). */
+export function genererLesPalettesPasAJour(nombre: number): string {
+  return nombre === 1 ? 'Générer la palette qui n’est pas à jour' : `Générer les ${nombre} palettes qui ne sont pas à jour`;
+}
+
+/** La ligne technique de la carte « Palettes et réglages » (V8.5, N050). */
+export function detailsTechniques(empreinte: string | null, versionDuSuivi: number): string {
+  return `Format des palettes et réglages : ${FORMAT_RECETTE} · empreinte : ${empreinte ?? 'aucune'} · suivi des cadres : version ${versionDuSuivi}`;
+}
+
+/** Un cadre introuvable après une recherche bornée à la page de la planche (V8.6, N051). */
+export function rechercheBornee(nomDeLaPage: string | null, introuvables: readonly string[]): Constat {
+  const seul = introuvables.length === 1;
+  return {
+    ou: seul ? `Cadre introuvable : ${citer(introuvables)}` : `Cadres introuvables : ${citer(introuvables)}`,
+    quoi: `Le plugin a cherché ${seul ? 'ce cadre' : 'ces cadres'} sur la page ${nomDeLaPage ? `« ${nomDeLaPage} »` : 'de la planche'} seulement. Un cadre supprimé, ou coupé puis collé sur une autre page, n’y figure plus. Générer la palette crée un nouveau cadre.`,
+    geste: 'Cherchez dans tout le fichier avant de générer, pour ne pas créer de doublon.',
+  };
+}
+
+/** Une génération refusée : Figma n'a pas pu lire le cadre existant d'une palette (V8.6, N052). */
+export function lectureImpossible(noms: readonly string[]): Constat {
+  return {
+    ou: `Lecture impossible : ${citer(noms)}`,
+    quoi: `Figma n’a pas pu lire le cadre existant ${noms.length === 1 ? 'de cette palette' : 'de ces palettes'}. Aucune palette n’a été générée, pour ne pas créer un second cadre à côté du premier.`,
+    geste: 'Actualisez l’onglet Planche, puis relancez la génération.',
+  };
+}
+
+/** Un suivi des cadres écrit par une version plus récente du plugin (V8.8, N053). */
+export function suiviFutur(): Constat {
+  return {
+    ou: 'Planche d’une version plus récente',
+    quoi: 'Les cadres de ce fichier ont été générés par une version plus récente d’UCM Palettes. Cette version ne peut ni les lire ni les mettre à jour.',
+    geste: 'Mettez le plugin à jour pour générer les palettes.',
+  };
 }
 
 /** Le nombre de palettes, en tête de l'onglet Planche ([UI-02]). */
@@ -803,17 +860,21 @@ export function policeIndisponible(style: string): Constat {
 
 /**
  * Une génération interrompue : le cadre en cours n'est pas posé, et l'ancien
- * cadre de cette palette reste en place. L'erreur de Figma se lit dans le
- * détail technique.
+ * cadre de cette palette reste en place. Une génération de plusieurs palettes
+ * nomme celles déjà créées et celles qui attendent (V8.4, N054) ; « Réessayer »
+ * reprend à la palette fautive. L'erreur de Figma se lit dans le détail
+ * technique.
  */
-export function dessinInterrompu(nom: string, message: string, dessines: number): ConstatIllustre {
-  const suite = dessines === 0
+export function dessinInterrompu(nom: string, message: string, creees: readonly string[] = [], restantes: readonly string[] = []): ConstatIllustre {
+  const conservees = creees.length === 0 ? '' : ` ; ${creees.length === 1 ? `celle de ${citer(creees)} est conservée` : `celles de ${citer(creees)} sont conservées`}`;
+  const suite = creees.length === 0 && restantes.length === 0
     ? 'aucune nouvelle présentation de palette n’a été créée'
-    : `la présentation de cette palette n’a pas été créée ; ${dessines === 1 ? 'la présentation créée juste avant est conservée' : `les ${dessines} présentations déjà créées sont conservées`}`;
+    : `la présentation de cette palette n’a pas été créée${conservees}`;
+  const attente = restantes.length === 0 ? '' : ` ${restantes.length === 1 ? `${citer(restantes)} n’a pas encore été générée` : `${citer(restantes)} n’ont pas encore été générées`}.`;
   return {
     ou: `Génération interrompue : ${nom}`,
-    quoi: `La génération s’est arrêtée : ${suite}.`,
-    geste: 'Réessayez de générer la palette.',
+    quoi: `La génération s’est arrêtée : ${suite}.${attente}`,
+    geste: restantes.length === 0 ? 'Réessayez de générer la palette.' : 'Réessayez : la génération reprend à cette palette.',
     detail: `Détail de l’erreur : ${message}`,
   };
 }

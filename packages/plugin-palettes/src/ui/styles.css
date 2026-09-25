@@ -593,27 +593,79 @@
   stroke-width: 3;
 }
 
-/* L'onglet Planche : une ligne par palette, son état au rang 3 et son geste. */
-.liste-planche {
-  display: grid;
-  gap: var(--espace-serre);
-}
-
-.ligne-planche {
+/*
+ * L'onglet Planche : le compte, le thème des fiches et « Actualiser » en tête,
+ * puis une carte par palette (V8.1).
+ */
+.planche-tete {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--espace-controle);
-  min-height: var(--hauteur-action);
-  border-bottom: 1px solid var(--bordure);
 }
 
-.ligne-planche-nom {
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow: hidden;
+.planche-compte {
+  margin: 0 auto 0 0;
   font-weight: 600;
+}
+
+.liste-planche {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+.fiche-planche .carte-titre {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Les deux rampes d'une fiche, peintes du fond du thème : onze pastilles par rangée. */
+.fiche-apercu {
+  display: grid;
+  gap: var(--espace-serre);
+  padding: var(--espace-serre) var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  color: var(--encre-surface);
+}
+
+.fiche-rangee {
+  display: grid;
+  align-items: center;
+  gap: 2px;
+  grid-template-columns: 40px repeat(11, minmax(0, 1fr));
+}
+
+.fiche-profil {
+  font-weight: 600;
+}
+
+.fiche-pastille {
+  display: flex;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--bordure-surface);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.fiche-garanties {
+  display: flex;
+  gap: var(--espace-controle);
+  margin: 0;
+}
+
+.fiche-garanties [data-verdict='manquee'] {
+  color: var(--texte-danger);
+}
+
+.fiche-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-serre);
 }
 
 .case-a-cocher {
@@ -1269,5 +1321,12 @@
 }
 
 .etat-du-cadre {
+  margin: 0;
   color: var(--texte-second);
+}
+
+/* Un cadre introuvable ou illisible se distingue d'un cadre pas encore généré (V8.2). */
+.etat-du-cadre[data-etat='introuvable'],
+.etat-du-cadre[data-etat='illisible'] {
+  color: var(--texte-danger);
 }

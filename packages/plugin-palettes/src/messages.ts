@@ -18,7 +18,11 @@ import type { EtatDeLaPlanche, LectureDeSelection, ProfilDuDocument } from './le
 
 /** Ce que l'interface demande au sandbox. */
 export type UiRequest =
-  | { type: 'lire-etat'; demande: number }
+  /**
+   * `recherche: 'fichier'` étend la recherche des cadres à toutes les pages,
+   * au geste explicite du designer (V8.6) ; sinon, la seule page de la planche.
+   */
+  | { type: 'lire-etat'; demande: number; recherche?: 'fichier' }
   | { type: 'lire-selection'; demande: number }
   /**
    * Première écriture : la recette, sous la clé partagée, après validation et

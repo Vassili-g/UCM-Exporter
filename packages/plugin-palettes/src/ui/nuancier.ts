@@ -73,6 +73,8 @@ export interface NuancierUi {
   mode(): Mode;
   /** Montre un autre thème, et offre de revenir à celui d'avant ([UI-09]). */
   montrerLeTheme(mode: Mode): void;
+  /** Pose le thème, sans retour : celui qu'une fiche de l'onglet Planche montrait (V8.3). */
+  choisirLeTheme(mode: Mode): void;
 }
 
 type Choix =
@@ -536,6 +538,11 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       if (suivant === mode) return;
       modeDAvant = mode;
       changerDeMode(suivant);
+    },
+    choisirLeTheme(suivant) {
+      modeDAvant = null;
+      if (suivant === mode) dessiner();
+      else changerDeMode(suivant);
     },
   };
 }

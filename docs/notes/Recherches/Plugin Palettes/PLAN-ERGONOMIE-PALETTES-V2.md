@@ -441,25 +441,41 @@ d’impacts vérifiée dans le code.
 Repris du lot R6 du premier plan. Les fiches adoptent les cartes et les termes
 de ce plan.
 
-- [ ] **V8.1** (ex-R6.1) Une fiche par palette, dans l’ordre enregistré :
+- [x] **V8.1** (ex-R6.1) Une fiche par palette, dans l’ordre enregistré :
   nom, aperçu Soft et Vivid, profil et nuance de la référence, résultat Soft
   et Vivid des garanties comme dans la bascule de V4.2, état du cadre. Une
   bascule de thème commune à la liste évite une bascule par fiche.
-- [ ] **V8.2** (ex-R6.2) Séparer les états du cadre et les garanties. À
+  Fait : une carte par palette ; « Thème des fiches » et « Actualiser » en
+  tête, à côté du compte.
+- [x] **V8.2** (ex-R6.2) Séparer les états du cadre et les garanties. À
   jour, À mettre à jour, Pas encore sur la planche, Lecture impossible et
   Copie ont des sens distincts. Un ratio insuffisant n’est pas une panne de
   génération.
-- [ ] **V8.3** (ex-R6.3) Trois gestes : Afficher dans Figma, Modifier la
+  Fait : s’y ajoute « Cadre introuvable », pour un cadre rangé que Figma ne
+  connaît plus. Introuvable et Lecture impossible s’écrivent en couleur de
+  danger ; une copie reste une notice.
+- [x] **V8.3** (ex-R6.3) Trois gestes : Afficher dans Figma, Modifier la
   palette, Générer sur Figma. Le premier est proposé seulement pour une cible
   localisée. Le deuxième conserve la palette et le thème choisis.
-- [ ] **V8.4** (ex-R6.4) Proposer la génération des palettes à mettre à jour
+  Fait : « Afficher dans Figma » ouvre la page du cadre, même hors de la
+  planche ; « Générer sur Figma » manque sur une fiche en lecture
+  impossible.
+- [x] **V8.4** (ex-R6.4) Proposer la génération des palettes à mettre à jour
   et Tout générer. Gérer singulier et pluriel, confirmer les générations
   volumineuses. Montrer la progression, l’annulation si elle est réellement
   supportée, et le résultat partiel par palette. Aucune option de grille
   (V6.4).
-- [ ] **V8.5** (ex-R6.5) Garder le compte de palettes en tête. Ranger import,
+  Fait : « Générer les N palettes qui ne sont pas à jour » reprend les cadres
+  à mettre à jour, jamais générés et introuvables. Aucune annulation : le
+  sandbox dessine d’un seul tenant, sans point d’arrêt entre deux palettes.
+  Une interruption nomme les palettes conservées et celles qui attendent ;
+  « Réessayer » reprend à la palette fautive.
+- [x] **V8.5** (ex-R6.5) Garder le compte de palettes en tête. Ranger import,
   export, rapport et détails techniques dans une carte repliable secondaire.
-- [ ] **V8.6** (ex-R6.6) Résoudre d’abord les identifiants enregistrés,
+  Fait : carte « Palettes et réglages », repliée, ouverte d’office sur une
+  recette illisible ou future ; les versions du format et du suivi et
+  l’empreinte y figurent.
+- [x] **V8.6** (ex-R6.6) Résoudre d’abord les identifiants enregistrés,
   valider les marqueurs de propriété et retrouver page, parent et position
   réels. Prévoir un cadre déplacé dans une section ou sur une autre page,
   sans assimiler une copie à l’original. Vérifier les capacités de lecture
@@ -473,14 +489,29 @@ de ce plan.
   l’interface annonce cette limite et propose une recherche explicite. Ne
   pas reconstituer des réglages depuis les couleurs d’un cadre d’origine
   inconnue.
-- [ ] **V8.7** (ex-R6.7) Actualiser à l’ouverture du plugin, à l’accès à
+
+  Fait (`[PLA-26]`) : `resoudreLesCadres` lit chaque identifiant rangé, puis
+  parcourt la page de la planche par `findAllWithCriteria`, sections
+  comprises ; « Chercher dans tout le fichier » étend ce parcours à toutes les
+  pages. Un cadre coupé puis collé change d’identifiant : c’est une copie, et
+  sa palette est introuvable. Le cadre neuf prend le parent, le rang et la
+  transformation de l’ancien. Un nœud qui lève pendant la recherche est sauté.
+  Les capacités sont vérifiées dans les typages de l’API ; leur comportement
+  sous `dynamic-page` reste à constater dans Figma, cadre dans une section
+  et sur une autre page.
+- [x] **V8.7** (ex-R6.7) Actualiser à l’ouverture du plugin, à l’accès à
   Planche et après génération. Prévoir une actualisation explicite pour les
   gestes externes que les événements Figma ne signalent pas. Borner le coût :
   aucune boucle qui parcourt le document en continu.
-- [ ] **V8.8** (ex-R6.8) Adapter les données de suivi si plusieurs pages
+  Fait : s’y ajoute le retour du focus, déjà en place. La recherche étendue ne
+  dure qu’une lecture : la relecture suivante revient à la page de la
+  planche.
+- [x] **V8.8** (ex-R6.8) Adapter les données de suivi si plusieurs pages
   deviennent possibles. Une ancienne entrée de page unique reste lisible.
   Distinguer la version du suivi des cadres de celle des palettes et
   réglages.
+  Fait : `VERSION_DU_SUIVI` vaut 2 ; un suivi sans version se lit comme la
+  version 1, et un suivi plus récent bloque lecture et génération.
 
 Critère : déplacer ou ranger un cadre ne crée pas une seconde planche au clic
 suivant. Une cible introuvable se distingue d’une cible jamais créée.

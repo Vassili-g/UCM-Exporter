@@ -34,7 +34,7 @@ const {
 const { modeleDeCadre } = compiler(path.resolve(__dirname, '../src/planche/modele.ts'), 'galerie-modele');
 
 /** Une planche sans page, avant tout dessin. */
-const PLANCHE_VIDE = { page: null, cadres: [] };
+const PLANCHE_VIDE = { page: null, nomDeLaPage: null, cadres: [], manquants: [], recherche: 'page', suiviFutur: false };
 
 /** L'état que le sandbox envoie pour un texte rangé sous la clé de la recette, en réponse à la demande `demande`. */
 function etatDuFichier(texte, profil = 'SRGB', planche = PLANCHE_VIDE, demande = 1) {
@@ -85,9 +85,12 @@ function cadreDessine(texte, palette, cadre, { profil = 'SRGB', ...reglages } = 
   const recette = classerRecette(texte).recette;
   const rangeeDansLaRecette = recette.palettes.find((candidate) => candidate.id === palette.id) ?? palette;
   const empreinte = modeleDeCadre(recette, rangeeDansLaRecette, profil, { grille: true }).empreinte;
-  return { palette: palette.id, cadre, nom: palette.nom, empreinte, grille: true, possede: true, ...reglages };
+  return { palette: palette.id, cadre, nom: palette.nom, page: PAGE_DE_LA_PLANCHE, nomDeLaPage: 'Palettes', empreinte, grille: true, possede: true, ...reglages };
 }
 const PAGE_DE_LA_PLANCHE = '40:1';
+
+/** La planche que la lecture relève : sa page, ses cadres, et ce qu'elle n'a pas trouvé. */
+const plancheLue = (cadres, reglages = {}) => ({ ...PLANCHE_VIDE, page: PAGE_DE_LA_PLANCHE, nomDeLaPage: 'Palettes', cadres, ...reglages });
 const ouvrirLaPlanche = { clic: '#onglet-planche' };
 
 /** Le designer choisit un fichier de recette dans l'onglet Planche. */
@@ -285,7 +288,7 @@ const ETATS = [
   {
     id: 'dessin-en-cours',
     titre: 'Dessin en cours',
-    quand: 'Le designer clique « Dessiner » : le sandbox annonce le premier cadre.',
+    quand: 'Le designer clique « Générer sur Figma » : le sandbox annonce le premier cadre.',
     regarder: 'Le bouton qui dit la progression, et les deux onglets inertes : aucun geste possible.',
     existe: true,
     atteinte: [
@@ -309,8 +312,8 @@ const ETATS = [
   {
     id: 'confirmation-six-palettes',
     titre: 'Confirmation au-delà de six palettes',
-    quand: 'Le designer clique « Dessiner toutes les palettes » sur un fichier de sept palettes.',
-    regarder: 'La confirmation qui compte les cadres, sous la liste, et ses deux gestes.',
+    quand: 'Le designer clique « Générer les 7 palettes qui ne sont pas à jour » sur un fichier de sept palettes jamais générées.',
+    regarder: 'La confirmation qui compte les palettes et les calques, sous les fiches, et ses deux gestes.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee(SEPT_PALETTES)),
@@ -342,13 +345,10 @@ const ETATS = [
     id: 'planche-a-jour',
     titre: 'Planche à jour',
     quand: 'Bleu et Jaune ont été dessinées, et la recette n’a pas changé depuis.',
-    regarder: 'Chaque ligne dit « à jour », sans geste ; seul « Dessiner toutes les palettes » reste.',
+    regarder: 'Deux fiches « À jour », chacune avec ses rampes Soft et Vivid, le ◆ de la référence, le résultat de ses garanties et ses trois gestes ; en pied, « Générer toutes les palettes » seul.',
     existe: true,
     atteinte: [
-      etatDuFichier(rangee([BLEU, JAUNE]), 'SRGB', {
-        page: PAGE_DE_LA_PLANCHE,
-        cadres: [cadreDessine(rangee([BLEU, JAUNE]), BLEU, '40:2'), cadreDessine(rangee([BLEU, JAUNE]), JAUNE, '40:3')],
-      }),
+      etatDuFichier(rangee([BLEU, JAUNE]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU, JAUNE]), BLEU, '40:2'), cadreDessine(rangee([BLEU, JAUNE]), JAUNE, '40:3')])),
       ouvrirLaPlanche,
     ],
   },
@@ -356,13 +356,10 @@ const ETATS = [
     id: 'planche-perimee',
     titre: 'Planche périmée',
     quand: 'Le cadre de Jaune a été dessiné sur une recette d’avant ; Ardoise n’a jamais été dessinée.',
-    regarder: 'Bleu à jour, Jaune « périmée » avec « Redessiner », Ardoise « jamais dessinée » avec « Dessiner ».',
+    regarder: 'Bleu « À jour », Jaune « À mettre à jour », Ardoise « Pas encore sur la planche » sans « Afficher dans Figma », et « Générer les 2 palettes qui ne sont pas à jour » en pied.',
     existe: true,
     atteinte: [
-      etatDuFichier(rangee(TROIS_PALETTES), 'SRGB', {
-        page: PAGE_DE_LA_PLANCHE,
-        cadres: [cadreDessine(rangee(TROIS_PALETTES), BLEU, '40:2'), cadreDessine(rangee(TROIS_PALETTES), JAUNE, '40:3', { empreinte: '0badc0de' })],
-      }),
+      etatDuFichier(rangee(TROIS_PALETTES), 'SRGB', plancheLue([cadreDessine(rangee(TROIS_PALETTES), BLEU, '40:2'), cadreDessine(rangee(TROIS_PALETTES), JAUNE, '40:3', { empreinte: '0badc0de' })])),
       ouvrirLaPlanche,
     ],
   },
@@ -370,13 +367,10 @@ const ETATS = [
     id: 'cadre-orphelin',
     titre: 'Cadre orphelin',
     quand: 'La palette Ardoise a été supprimée ; son cadre est resté sur la planche.',
-    regarder: 'La notice sous « Dessiner toutes les palettes », qui nomme le cadre, dit qu’aucun dessin ne le touche plus, et propose « Voir sur la planche ».',
+    regarder: 'La notice sous les gestes de génération, qui nomme le cadre, dit qu’il ne sera plus mis à jour, et propose « Afficher dans Figma ».',
     existe: true,
     atteinte: [
-      etatDuFichier(rangee([BLEU]), 'SRGB', {
-        page: PAGE_DE_LA_PLANCHE,
-        cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2'), { palette: 'p-5c1d0e77', cadre: '40:4', nom: 'Ardoise', empreinte: '0badc0de', grille: true, possede: true }],
-      }),
+      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2'), { palette: 'p-5c1d0e77', cadre: '40:4', nom: 'Ardoise', page: PAGE_DE_LA_PLANCHE, nomDeLaPage: 'Palettes', empreinte: '0badc0de', grille: true, possede: true }])),
       ouvrirLaPlanche,
     ],
   },
@@ -384,24 +378,21 @@ const ETATS = [
     id: 'copie-de-cadre',
     titre: 'Copie de cadre',
     quand: 'Le designer a dupliqué le cadre de Bleu sur la planche.',
-    regarder: 'Bleu à jour, et la notice de la copie, qui dit que le plugin ne la redessine pas.',
+    regarder: 'La fiche de Bleu « À jour », et la notice de la copie, qui dit que le plugin ne met à jour que le cadre d’origine.',
     existe: true,
     atteinte: [
-      etatDuFichier(rangee([BLEU]), 'SRGB', {
-        page: PAGE_DE_LA_PLANCHE,
-        cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2'), cadreDessine(rangee([BLEU]), BLEU, '40:5', { nom: 'Bleu copie', possede: false })],
-      }),
+      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2'), cadreDessine(rangee([BLEU]), BLEU, '40:5', { nom: 'Bleu copie', possede: false })])),
       ouvrirLaPlanche,
     ],
   },
   {
     id: 'calques-etrangers',
     titre: 'Calques étrangers',
-    quand: 'Le designer a posé une note et une flèche dans le cadre de Bleu, puis clique « Dessiner ».',
+    quand: 'Le designer a posé une note et une flèche dans le cadre de Bleu, puis clique « Générer sur Figma ».',
     regarder: 'La confirmation qui nomme les deux calques, et ses gestes « Redessiner quand même » et « Annuler ».',
     existe: true,
     atteinte: [
-      etatDuFichier(rangee([BLEU]), 'SRGB', { page: PAGE_DE_LA_PLANCHE, cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2')] }),
+      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2')])),
       dessinerLaPalette,
       {
         message: {
@@ -419,10 +410,7 @@ const ETATS = [
     regarder: 'La notice qui dit que la pipette lit des valeurs P3, et de copier l’hexa depuis la carte.',
     existe: true,
     atteinte: [
-      etatDuFichier(rangee([BLEU]), 'DISPLAY_P3', {
-        page: PAGE_DE_LA_PLANCHE,
-        cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2', { profil: 'DISPLAY_P3' })],
-      }),
+      etatDuFichier(rangee([BLEU]), 'DISPLAY_P3', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2', { profil: 'DISPLAY_P3' })])),
       ouvrirLaPlanche,
     ],
   },
@@ -488,7 +476,7 @@ const ETATS = [
       etatDuFichier(rangee([BLEU])),
       dessinerLaPalette,
       { message: { type: 'dessin', demande: 2, resultat: { issue: 'dessinee', page: PAGE_DE_LA_PLANCHE, cadres: [{ palette: BLEU.id, cadre: '40:2' }], peints: [] } } },
-      etatDuFichier(rangee([BLEU]), 'SRGB', { page: PAGE_DE_LA_PLANCHE, cadres: [cadreDessine(rangee([BLEU]), BLEU, '40:2')] }, 3),
+      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2')]), 3),
     ],
   },
   {
@@ -551,17 +539,32 @@ const ETATS = [
     id: 'generation-partielle',
     titre: 'Génération partielle',
     quand: 'Sur trois palettes, la deuxième s’arrête : la première est créée, la troisième attend.',
-    regarder: null,
-    existe: false,
-    attendu: 'V8.4',
+    regarder: 'Le bloquant en tête de l’onglet Planche : Jaune interrompue, Bleu conservée, Ardoise en attente, et « Réessayer », qui reprend à Jaune.',
+    existe: true,
+    // L'ouverture de l'onglet relit l'état (demande 2) : la génération porte la demande 3.
+    atteinte: [
+      etatDuFichier(rangee(TROIS_PALETTES)),
+      ouvrirLaPlanche,
+      { clic: '#panneau-planche .creation-ligne .btn' },
+      { message: { type: 'dessin', demande: 3, resultat: { issue: 'interrompue', palette: JAUNE.id, message: 'in set_characters: font not loaded', dessines: 1 } } },
+    ],
   },
   {
     id: 'cadre-deplace',
     titre: 'Cadre déplacé',
-    quand: 'Le designer a rangé le cadre de Bleu dans une section d’une autre page.',
-    regarder: null,
-    existe: false,
-    attendu: 'V8.6',
+    quand: 'Le designer a rangé le cadre de Bleu dans une section de la page « Archives », et coupé puis collé celui de Jaune, qui change alors d’identifiant.',
+    regarder: 'Bleu « À jour · Page « Archives » » avec « Afficher dans Figma », Jaune « Cadre introuvable » en rouge, et la notice qui dit que la recherche s’est bornée à la page « Palettes », avec « Chercher dans tout le fichier ».',
+    existe: true,
+    atteinte: [
+      etatDuFichier(
+        rangee([BLEU, JAUNE]),
+        'SRGB',
+        plancheLue([cadreDessine(rangee([BLEU, JAUNE]), BLEU, '41:2', { page: '41:1', nomDeLaPage: 'Archives' })], {
+          manquants: [{ palette: JAUNE.id, cadre: '40:3', raison: 'introuvable' }],
+        }),
+      ),
+      ouvrirLaPlanche,
+    ],
   },
 ];
 

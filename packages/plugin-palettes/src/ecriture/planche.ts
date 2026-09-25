@@ -5,7 +5,8 @@
  *
  * Un cadre se construit entier avant de remplacer l'ancien : une erreur en
  * chemin retire le cadre neuf, et aucun cadre à moitié dessiné ne reste
- * ([PLA-22]). Le cadre neuf prend la place de l'ancien ([PLA-03]).
+ * ([PLA-22]). Le cadre neuf prend la place de l'ancien, dans son parent et à
+ * son rang ([PLA-03], V8.6).
  */
 import type { Palette, Recette } from 'ucm-couleur';
 
@@ -13,10 +14,12 @@ import {
   CLES_DU_CADRE,
   CLE_PLANCHE,
   ESPACE_PARTAGE,
-  cadresDeLaPage,
+  VERSION_DU_SUIVI,
   couleurDeLaSelection,
   lireEtat,
   lirePlanche,
+  resoudreLesCadres,
+  type PageLue,
   type PlancheRangee,
   type ProfilDuDocument,
 } from '../lecture';
@@ -72,7 +75,14 @@ export type IssueDuDessin =
   /** Une police ne se charge pas : aucun calque n'est posé ([PLA-22]). */
   | { readonly issue: 'police'; readonly style: string }
   /** Une erreur au milieu d'un cadre : ce cadre est retiré, les cadres déjà dessinés restent. */
-  | { readonly issue: 'interrompue'; readonly palette: string; readonly message: string; readonly dessines: number };
+  | { readonly issue: 'interrompue'; readonly palette: string; readonly message: string; readonly dessines: number }
+  /**
+   * Figma a refusé de lire le cadre existant de ces palettes : un cadre neuf
+   * en ferait un doublon, rien n'est posé (V8.6).
+   */
+  | { readonly issue: 'lecture-impossible'; readonly palettes: readonly string[] }
+  /** Le suivi des cadres vient d'une version plus récente du plugin : rien n'est posé (V8.8). */
+  | { readonly issue: 'suivi-futur' };
 
 function marquer(noeud: AvecDonnees): void {
   noeud.setSharedPluginData(ESPACE_PARTAGE, CLE_DU_MARQUEUR, '1');
@@ -137,11 +147,8 @@ function construire(figma: FigmaDuDessin, modele: Noeud, crees: Crees): FrameNod
  * (E14), sinon une page neuve, « Palettes (UCM) » quand une page « Palettes »
  * existe déjà ([PLA-01], [PLA-04], E16).
  */
-async function pageDeLaPlanche(figma: FigmaDuDessin, planche: PlancheRangee): Promise<PageNode> {
-  if (planche.page) {
-    const trouvee = await figma.getNodeByIdAsync(planche.page) as PageNode | null;
-    if (trouvee && trouvee.type === 'PAGE' && !trouvee.removed) return trouvee;
-  }
+function pageDeLaPlanche(figma: FigmaDuDessin, rangee: PageLue | null): PageNode {
+  if (rangee) return rangee as unknown as PageNode;
   const page = figma.createPage();
   const pris = figma.root.children.some((existante) => existante.name === NOMS_DE_PAGE[0]);
   page.name = pris ? NOMS_DE_PAGE[1] : NOMS_DE_PAGE[0];
@@ -149,18 +156,18 @@ async function pageDeLaPlanche(figma: FigmaDuDessin, planche: PlancheRangee): Pr
 }
 
 /**
- * Les cadres que le plugin possède sur la page ([PLA-02]) : un cadre qui porte
- * l'identifiant d'une palette et dont le propriétaire rangé est lui-même.
- * Une copie faite par le designer porte un autre propriétaire : elle n'est
- * jamais réécrite ([PLA-25], E15).
+ * Pose le cadre neuf à la place de l'ancien (V8.6) : même parent, même rang,
+ * puis la transformation de l'ancien. Dans un parent en auto layout, le rang
+ * suffit, sauf pour un cadre en position absolue ; le couple x/y ne suffirait
+ * pas dans un parent tourné. L'ancien part ensuite.
  */
-export function cadresPossedes(page: PageNode): Map<string, FrameNode> {
-  const parIdentifiant = new Map(page.children.map((enfant) => [enfant.id, enfant]));
-  const possedes = new Map<string, FrameNode>();
-  for (const lu of cadresDeLaPage(page.children)) {
-    if (lu.possede) possedes.set(lu.palette, parIdentifiant.get(lu.cadre) as FrameNode);
-  }
-  return possedes;
+function prendreLaPlace(neuf: FrameNode, ancien: FrameNode): void {
+  const parent = ancien.parent as (BaseNode & ChildrenMixin) | null;
+  if (!parent) throw new Error('Le cadre à remplacer n’a plus de parent.');
+  parent.insertChild(parent.children.indexOf(ancien), neuf);
+  const enAutoLayout = 'layoutMode' in parent && (parent as FrameNode).layoutMode !== 'NONE';
+  if (enAutoLayout) neuf.layoutPositioning = ancien.layoutPositioning;
+  if (!enAutoLayout || ancien.layoutPositioning === 'ABSOLUTE') neuf.relativeTransform = ancien.relativeTransform;
 }
 
 /**
@@ -278,10 +285,15 @@ export async function dessinerLaPlanche(
     }
   }
 
-  const rangee = lirePlanche(figma.root);
-  const page = await pageDeLaPlanche(figma, rangee);
+  if (lirePlanche(figma.root).version > VERSION_DU_SUIVI) return { issue: 'suivi-futur' };
+  const resolus = await resoudreLesCadres<FrameNode>(figma);
+  const demandees = new Set(demande.palettes.map((palette) => palette.id));
+  const illisibles = resolus.manquants.filter(({ palette, raison }) => raison === 'illisible' && demandees.has(palette));
+  if (illisibles.length > 0) return { issue: 'lecture-impossible', palettes: illisibles.map(({ palette }) => palette) };
+
+  const page = pageDeLaPlanche(figma, resolus.page);
   await page.loadAsync();
-  const possedes = cadresPossedes(page);
+  const possedes = new Map([...resolus.possedes].map(([palette, { noeud }]) => [palette, noeud]));
 
   const etrangers = demande.palettes.flatMap((palette) => {
     const ancien = possedes.get(palette.id);
@@ -294,8 +306,14 @@ export async function dessinerLaPlanche(
   const cadres: { palette: string; cadre: string }[] = [];
   const peints: CouleurPeinte[] = [];
 
+  // Un cadre illisible garde son entrée : la lecture suivante le réessaiera.
+  const gardes = Object.fromEntries(resolus.manquants.filter(({ raison }) => raison === 'illisible').map(({ palette, cadre }) => [palette, cadre]));
   const ranger = () => {
-    const suivante: PlancheRangee = { page: page.id, cadres: Object.fromEntries([...possedes].map(([palette, cadre]) => [palette, cadre.id])) };
+    const suivante: PlancheRangee = {
+      version: VERSION_DU_SUIVI,
+      page: page.id,
+      cadres: { ...gardes, ...Object.fromEntries([...possedes].map(([palette, cadre]) => [palette, cadre.id])) },
+    };
     figma.root.setSharedPluginData(ESPACE_PARTAGE, CLE_PLANCHE, JSON.stringify(suivante));
   };
 
@@ -303,15 +321,19 @@ export async function dessinerLaPlanche(
     const modele = modeleDeCadre(demande.recette, palette, demande.profil, { grille: demande.grille });
     surProgression(rang, demande.palettes.length, modele.nom);
     const ancien = possedes.get(palette.id);
-    const place = ancien ? { x: ancien.x, y: ancien.y } : placeDUnCadreNeuf([...possedes.values()]);
+    // Un cadre neuf se range parmi les cadres du premier niveau de la page (E17).
+    const place = ancien ? null : placeDUnCadreNeuf([...possedes.values()].filter((cadre) => cadre.parent === page));
     // Un calque créé part d'abord dans la page courante : une erreur retire chacun, rattaché ou non.
     const crees: Crees = [];
     let neuf: FrameNode;
     try {
       neuf = construireCadre(figma, modele.racine, crees);
-      page.appendChild(neuf);
-      neuf.x = place.x;
-      neuf.y = place.y;
+      if (ancien) prendreLaPlace(neuf, ancien);
+      else if (place) {
+        page.appendChild(neuf);
+        neuf.x = place.x;
+        neuf.y = place.y;
+      }
       neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.cadre, palette.id);
       neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.proprietaire, neuf.id);
       neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.empreinte, modele.empreinte);

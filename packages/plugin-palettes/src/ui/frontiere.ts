@@ -25,7 +25,8 @@ export interface DemandeDeDessin {
 }
 
 export interface Frontiere {
-  lireLEtat(): void;
+  /** Relit l'état ; `'fichier'` cherche les cadres sur toutes les pages, au geste du designer (V8.6). */
+  lireLEtat(recherche?: 'fichier'): void;
   lireLaSelection(): void;
   ranger(recette: Recette): void;
   /**
@@ -98,8 +99,8 @@ export function createFrontiere(
   }
 
   return {
-    lireLEtat() {
-      envoyer({ type: 'lire-etat', demande: numeroter() });
+    lireLEtat(recherche) {
+      envoyer(recherche ? { type: 'lire-etat', demande: numeroter(), recherche } : { type: 'lire-etat', demande: numeroter() });
     },
     lireLaSelection() {
       derniereSelection = numeroter();

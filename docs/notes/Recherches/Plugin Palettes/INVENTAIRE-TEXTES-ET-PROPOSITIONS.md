@@ -650,6 +650,18 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N040 | Résumé replié de la carte Intensités | Communes · Propres · Palette de base {profil} · Soft {intensité} · Vivid {intensité} | À valider |
 | N041 | Résumé replié de la carte Dérive de teinte | {préréglage} · synchronisée · {préréglage soft} et {préréglage vivid} · désynchronisée | À valider |
 | N042 | Sous les réglettes de la dérive, remplace le bilan | Garanties : {résultat soft} · {résultat vivid} · Voir les garanties | À valider |
+| N043 | État d’un cadre rangé que Figma ne connaît plus, en plus de N009 | Cadre introuvable | À valider |
+| N044 | En-tête de l’onglet Planche, relecture de la planche | Actualiser | À valider |
+| N045 | Notice d’un cadre introuvable, geste de recherche étendue | Chercher dans tout le fichier | À valider |
+| N046 | Onglet Planche, carte repliée de l’import, de l’export et du rapport | Palettes et réglages | À valider |
+| N047 | Onglet Planche, étiquette de la bascule de thème des fiches | Thème des fiches | À valider |
+| N048 | État d’un cadre rangé hors de la page de la planche | {état} · Page « {nom de la page} » | À valider |
+| N049 | Pied de l’onglet Planche, génération groupée | Générer la palette qui n’est pas à jour · Générer les {nombre} palettes qui ne sont pas à jour | À valider |
+| N050 | Carte « Palettes et réglages », ligne technique | Format des palettes et réglages : {format} · empreinte : {empreinte} · suivi des cadres : version {version} | À valider |
+| N051 | Notice d’un cadre introuvable après une recherche bornée | Cadre introuvable : {palette} · Le plugin a cherché ce cadre sur la page « {page} » seulement. Un cadre supprimé, ou coupé puis collé sur une autre page, n’y figure plus. Générer la palette crée un nouveau cadre. · Cherchez dans tout le fichier avant de générer, pour ne pas créer de doublon. | À valider |
+| N052 | Génération refusée, cadre existant illisible | Lecture impossible : {palettes} · Figma n’a pas pu lire le cadre existant de cette palette. Aucune palette n’a été générée, pour ne pas créer un second cadre à côté du premier. · Actualisez l’onglet Planche, puis relancez la génération. | À valider |
+| N053 | Suivi des cadres d’une version plus récente | Planche d’une version plus récente · Les cadres de ce fichier ont été générés par une version plus récente d’UCM Palettes. Cette version ne peut ni les lire ni les mettre à jour. · Mettez le plugin à jour pour générer les palettes. | À valider |
+| N054 | Génération groupée interrompue, suite de T325 à T330 | celle de {palette} est conservée · celles de {palettes} sont conservées · {palette} n’a pas encore été générée · {palettes} n’ont pas encore été générées · Réessayez : la génération reprend à cette palette. | À valider |
 | N026 | Résumé du repli N008 | Options de génération : sans grille des contrastes · Options de génération : avec la grille des contrastes | À valider |
 | N027 | Détail d’un usage peint sur le fond du thème | {usage} · Fond du thème | À valider |
 

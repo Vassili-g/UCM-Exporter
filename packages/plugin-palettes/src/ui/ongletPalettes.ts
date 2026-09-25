@@ -14,6 +14,7 @@ import {
   estPresqueGrise,
   profilAutomatique,
   type Classement,
+  type Mode,
   type Palette,
   type Recette,
   type Refus,
@@ -34,7 +35,7 @@ import {
   renommer,
   supprimer,
 } from '../edition';
-import type { EtatDeLaPlanche, LectureDeSelection, ProfilDuDocument } from '../lecture';
+import { PLANCHE_SANS_CADRE, type EtatDeLaPlanche, type LectureDeSelection, type ProfilDuDocument } from '../lecture';
 import { fraicheurDUnePalette } from '../planche/fraicheur';
 import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction } from '../presentation';
 import { blocDeConstat, listeDesMessages, type Message } from './constats';
@@ -106,8 +107,8 @@ export interface OngletPalettesUi {
   importer(recette: Recette): void;
   /** La génération en cours ou finie, que la ligne de l'action montre. */
   afficherDessin(etat: EtatDuDessin, noms: { readonly [id: string]: string }): void;
-  /** Ouvre une palette, depuis la fiche de l'onglet Planche. */
-  ouvrirLaPalette(id: string): void;
+  /** Ouvre une palette dans le thème que sa fiche de l'onglet Planche montrait (V8.3). */
+  ouvrirLaPalette(id: string, mode: Mode): void;
 }
 
 function ligneDEtat(texte: string): HTMLParagraphElement {
@@ -138,7 +139,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   let recette: Recette | null = null;
   let classementLu: Classement | null = null;
   let profil: ProfilDuDocument = 'SRGB';
-  let planche: EtatDeLaPlanche = { page: null, cadres: [] };
+  let planche: EtatDeLaPlanche = PLANCHE_SANS_CADRE;
   let idOuvert = '';
   let creationOuverte = false;
   let suppressionDemandee = false;
@@ -381,8 +382,8 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   function recalculerLeCadre(): void {
     const courante = ouverte();
     if (!recette || !courante) return;
-    const fraicheur = fraicheurDUnePalette(recette, profil, planche, courante.id);
-    cadreOuvert = { etat: fraicheur.etat, page: fraicheur.cadre ? planche.page : null, cadre: fraicheur.cadre };
+    const { etat, page, cadre } = fraicheurDUnePalette(recette, profil, planche, courante.id);
+    cadreOuvert = { etat, page, cadre };
   }
 
   /** Remplace la recette affichée, sans l'enregistrer : une saisie en cours. */
@@ -647,12 +648,13 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       else if (suivant === 'invalide') refus = rangementInvalide(refusDuSandbox);
       rendre();
     },
-    ouvrirLaPalette(id) {
+    ouvrirLaPalette(id, mode) {
       idOuvert = id;
       suppressionDemandee = false;
       creationOuverte = false;
       recalculerLeCadre();
       rendre();
+      nuancier.choisirLeTheme(mode);
     },
   };
 }

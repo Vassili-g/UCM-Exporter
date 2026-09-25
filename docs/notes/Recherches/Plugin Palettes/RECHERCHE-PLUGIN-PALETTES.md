@@ -607,22 +607,42 @@ présenter et à comparer des palettes côte à côte.
 
 - `[PLA-01]` La planche vit sur une page dédiée, « Palettes », créée au premier
   dessin. Si une page de ce nom existe déjà sans être celle du plugin, le
-  plugin crée « Palettes (UCM) ». L'identifiant de la page est rangé sous la
-  clé `ucm_palettes/planche`. Le plugin retrouve la page par
-  `getNodeByIdAsync`, contrôle `removed`, puis appelle `await page.loadAsync()`
-  avant de lire ses enfants ou d'y écrire : le manifest déclare
-  `documentAccess: "dynamic-page"`. Il ne charge aucune autre page.
-- `[PLA-02]` Un cadre de premier niveau par palette, nommé du nom de la palette
-  ou de son hexa de référence. Chaque cadre porte la donnée de plugin partagée
-  `ucm_palettes/cadre`, qui vaut l'identifiant de la palette, et
-  `ucm_palettes/proprietaire`, qui vaut l'`id` du cadre lui-même.
-- `[PLA-03]` Redessiner un cadre garde sa position et remplace son contenu. Le
+  plugin crée « Palettes (UCM) ». Le suivi des cadres est rangé sous la clé
+  `ucm_palettes/planche` : sa version, l'identifiant de la page et celui du
+  cadre de chaque palette. Sa version est distincte de celle de la recette ;
+  un suivi sans version se lit comme la version 1, et un suivi d'une version
+  plus récente n'est ni lu ni réécrit. Le manifest déclare
+  `documentAccess: "dynamic-page"` : le plugin appelle
+  `await page.loadAsync()` avant de lire les enfants d'une page ou d'y écrire.
+- `[PLA-26]` Le plugin retrouve d'abord chaque cadre par son identifiant rangé
+  (`getNodeByIdAsync`), où que le designer l'ait rangé : section, autre cadre
+  ou autre page déplacée par « Déplacer vers la page ». Un cadre ne compte que
+  s'il porte encore l'identifiant de sa palette et se possède lui-même. Une
+  recherche de secours parcourt ensuite la page de la planche en profondeur
+  (`findAllWithCriteria` sur `ucm_palettes/cadre`) pour relever les copies.
+  Elle ne parcourt toutes les pages qu'au geste « Chercher dans tout le
+  fichier » ; l'onglet Planche annonce cette limite quand un cadre reste
+  introuvable. Le plugin charge la page de la planche et celles des cadres
+  retrouvés, et aucune autre sans ce geste.
+- `[PLA-02]` Un cadre par palette, posé au premier niveau de la page de la
+  planche et nommé du nom de la palette ou de son hexa de référence. Chaque
+  cadre porte la donnée de plugin partagée `ucm_palettes/cadre`, qui vaut
+  l'identifiant de la palette, et `ucm_palettes/proprietaire`, qui vaut l'`id`
+  du cadre lui-même.
+- `[PLA-03]` Redessiner un cadre le remplace à sa place : même parent, même
+  rang parmi ses frères, et la transformation de l'ancien. Dans un parent en
+  auto layout, le rang suffit, sauf pour un cadre en position absolue. Le
   plugin n'écrit jamais hors des cadres qu'il possède. Chaque calque qu'il pose
   porte un marqueur. Avant de redessiner, il compte les calques sans marqueur
   que le designer a ajoutés dans le cadre, et demande confirmation en les
   nommant : ces calques disparaissent au dessin.
-- `[PLA-04]` Une page ou un cadre supprimé par le designer est recréé au dessin
-  suivant ; son identifiant rangé est alors remplacé.
+- `[PLA-04]` Une page supprimée par le designer est recréée au dessin suivant.
+  Un cadre que Figma ne connaît plus est « introuvable » : supprimé, ou coupé
+  puis collé, ce qui lui donne un nouvel identifiant et fait de lui une copie.
+  Sa génération pose un cadre neuf et remplace l'identifiant rangé. Un cadre
+  que Figma refuse de lire est en « lecture impossible » : son entrée reste
+  rangée, et aucune génération de sa palette n'a lieu, pour ne pas poser un
+  second cadre à côté du premier.
 - `[PLA-05]` Les cadres se rangent de gauche à droite dans l'ordre de
   `recette.palettes`, 200 px entre eux. Un cadre déplacé à la main garde sa
   nouvelle position. Un cadre neuf se pose à 200 px à droite du cadre possédé
@@ -786,8 +806,12 @@ ses cases ne sont pas des promesses.
   qu'une seule palette change.
 - `[PLA-20]` À l'ouverture et après chaque rangement de la recette, le plugin
   recalcule le modèle de chaque cadre et compare son empreinte à celle du
-  cadre. Un écart classe le cadre « périmé » dans l'interface, avec le geste
-  « Redessiner ». Le plugin ne redessine jamais sans ce geste. Renommer une
+  cadre. Un écart classe le cadre « À mettre à jour » dans l'interface, avec le
+  geste « Générer sur Figma ». Le plugin ne redessine jamais sans ce geste.
+  L'état du cadre se distingue du résultat des garanties : un ratio
+  insuffisant n'est pas une panne de génération. L'onglet Planche relit l'état
+  à son ouverture, après chaque génération et au geste « Actualiser », pour ce
+  que les événements de Figma ne signalent pas. Renommer une
   palette peut périmer le cadre d'une autre, dont l'alerte « Palettes proches »
   cite le nom.
 
@@ -802,8 +826,10 @@ ses cases ne sont pas des promesses.
 - `[PLA-23]` Les couleurs de légende et de filet de la planche sont des
   constantes du plugin, séparées des couleurs de la palette.
 - `[PLA-24]` Le dessin se fait palette par palette, avec un message de
-  progression. « Dessiner toutes les palettes » demande une confirmation
-  au-delà de six palettes. Le lot 6 mesure le temps de dessin de douze palettes
+  progression. Une génération groupée demande une confirmation au-delà de six
+  palettes. Interrompue, elle nomme les palettes déjà générées et celles qui
+  attendent ; « Réessayer » reprend à la palette fautive. Elle ne s'annule pas
+  en cours de route. Le lot 6 mesure le temps de dessin de douze palettes
   et revoit ce seuil ; au-delà de dix secondes pour douze, le dessin d'une
   seule palette reste le geste par défaut.
 
@@ -1101,8 +1127,9 @@ titre et, à droite, le résumé du préréglage et de la synchronisation.
   d'engrenage dans l'en-tête, qui ouvre les Réglages communs (section 8.3)
   comme celui d'UCM Exporter ouvre sa configuration. L'onglet Palettes génère
   la palette ouverte. L'onglet Planche montre chaque palette, dans l'ordre de
-  la recette : son nom, ses rampes Soft et Vivid, sa référence, le bilan de ses
-  promesses et l'état de son cadre, avec trois gestes, « Afficher dans Figma »,
+  la recette : son nom, ses rampes Soft et Vivid dans le thème choisi en tête
+  de l'onglet, sa référence, le résultat Soft et Vivid de ses garanties et
+  l'état de son cadre, avec trois gestes, « Afficher dans Figma »,
   « Modifier la palette » et « Générer sur Figma ». Il propose aussi de générer
   les palettes à mettre à jour, ou toutes, et range dans une section
   secondaire l'export et l'import des palettes et réglages et l'export du
@@ -1264,17 +1291,17 @@ Onglet Planche :
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ 3 palettes                       [Thème Light] [Thème Dark]   │
+│ 3 palettes             [Thème Light] [Thème Dark] [Actualiser] │
 │ ┌ Bleu ────────────────────────────────────────────────────┐ │
 │ │ Soft  ▪▪▪▪▪▪▪▪▪▪▪                                        │ │
 │ │ Vivid ▪▪▪▪▪▪◆▪▪▪▪   Référence : Vivid · nuance 600        │ │
-│ │ 56/56 promesses respectées                 Cadre : À jour │ │
+│ │ Soft ✓  Vivid ✗ 2                                   À jour │ │
 │ │ [Afficher dans Figma] [Modifier la palette] [Générer…]   │ │
 │ └──────────────────────────────────────────────────────────┘ │
 │ … une fiche par palette                                       │
-│ [Générer les 2 palettes à mettre à jour]  Générer toutes      │
+│ [Générer les 2 palettes qui ne sont pas à jour] [Générer toutes] │
 │ ▸ Palettes et réglages : exporter, importer, rapport          │
-│ Informations : cadre supprimé, copie, document Display P3     │
+│ Informations : cadre introuvable, cadre orphelin, copie, P3   │
 └──────────────────────────────────────────────────────────────┘
 ```
 

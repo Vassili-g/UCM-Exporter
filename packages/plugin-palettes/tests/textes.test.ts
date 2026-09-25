@@ -151,7 +151,7 @@ test('[VER-13] un niveau WCAG distingue texte courant, grand texte et éléments
 });
 
 test('l’exception de Figma et l’exemple d’écart se lisent dans le détail, pas dans le message', () => {
-  const interrompu = dessinInterrompu('Bleu', 'in set_characters: font not loaded', 0);
+  const interrompu = dessinInterrompu('Bleu', 'in set_characters: font not loaded');
   assert.ok(!interrompu.quoi.includes('set_characters'));
   assert.equal(interrompu.detail, 'Détail de l’erreur : in set_characters: font not loaded');
   const ecart = ecartDePeinture('Bleu', [{ nom: 'soft/light/50', apercu: null, peint: '#FAF5F5' }]);

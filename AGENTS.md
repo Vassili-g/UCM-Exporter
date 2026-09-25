@@ -214,7 +214,7 @@ packages/plugin-socle/   ce que les plugins partagent : ucm-plugin-socle, privé
 packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/code.ts              routage des demandes de l'interface, une porte par geste d'écriture
   src/messages.ts          les deux sens de la frontière sandbox ↔ interface
-  src/lecture.ts           la recette rangée, classée, son empreinte, le profil du document et les cadres de la planche
+  src/lecture.ts           la recette rangée, classée, son empreinte, le profil du document, et les cadres retrouvés où qu'ils soient
   src/analyse.ts           une palette pour l'onglet : rampes, promesses, alertes et notices triées
   src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
   src/configuration.ts     les champs de la configuration, fonds et seuils compris, et les palettes que chacun touche
@@ -222,11 +222,11 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/rapport.ts           le rapport de vérification : crans, promesses, alertes, empreinte et écarts du dernier dessin
   src/presentation.ts      les promesses manquées groupées, la place de chaque alerte, le réglage que chaque message ouvre, les accolades de l'aperçu
   src/planche/modele.ts    le modèle pur d'un cadre de planche : cadres, textes, peintures, noms de calque, empreinte
-  src/planche/fraicheur.ts chaque cadre à jour, périmé ou jamais dessiné, et les cadres orphelins et copiés
+  src/planche/fraicheur.ts chaque cadre à jour, périmé, jamais dessiné, introuvable ou illisible, et les cadres orphelins et copiés
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
   src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
-  src/ecriture/planche.ts  le dessin de la planche : page, cadres possédés, polices, calques étrangers, un commitUndo par dessin
-  src/navigation.ts        « Voir sur la planche » : ouvre la page et cadre les cadres, sans toucher au document
+  src/ecriture/planche.ts  le dessin de la planche : page, cadres possédés remplacés à leur place, polices, calques étrangers, un commitUndo par dessin
+  src/navigation.ts        « Afficher dans Figma » : ouvre la page du cadre et le cadre, sans toucher au document
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
   src/ui/ongletPalettes.ts le sélecteur, puis « Configuration de la palette » en cartes, chaque message sous la sienne
@@ -238,7 +238,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/creation.ts       une palette neuve, par sa référence ou par la couleur de la sélection
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
   src/ui/frontiere.ts      la numérotation des demandes, un seul rangement en vol, le dessin après lui
-  src/ui/ongletPlanche.ts  une ligne par palette et sa fraîcheur, « Générer toutes les palettes » et les notices
+  src/ui/ongletPlanche.ts  une fiche par palette : rampes, garanties, état du cadre, trois gestes ; génération groupée, notices, recette repliée
   src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
   src/ui/configuration.ts  courbes, parts, fonds et seuils derrière l'engrenage, avec la garantie des courbes
   src/ui/intensites.ts     les intensités de la palette : curseurs, repère de la référence, origine, retour aux réglages communs
