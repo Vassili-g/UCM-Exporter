@@ -585,6 +585,18 @@ composant du socle la porte (`[UI-02]`).
 
 - `[ENT-07]` Chaque champ de la configuration affiche le nombre de palettes
   qu'il modifie.
+- `[ENT-12]` Les Réglages communs se rangent en cinq cartes : Couleurs de
+  fond, Intensités, Luminosité des nuances, puis, repliées, Minimums des
+  promesses et Détection des couleurs proches. « Rétablir » remet une carte
+  aux valeurs de la recette par défaut, sans toucher aux autres cartes ni aux
+  palettes : leurs parts propres, du designer ou d'une palette de base
+  forcée, restent. Le seuil de gris rétabli recalcule les parts `grise`, comme
+  sa saisie. Les courbes ne se rétablissent pas sur une liste de crans
+  différente de celle par défaut. En tête, l'aperçu compact de la palette
+  ouverte, dans le thème de son aperçu, donne le résultat Soft et Vivid de ses
+  garanties ; sans palette, rien n'est montré à sa place. Le tracé des deux
+  courbes précède leur table, et marque d'un ◆ la référence de la palette
+  ouverte à la nuance où elle est insérée, à sa propre luminosité.
 - `[ENT-08]` La liste des crans ne se modifie pas dans l'interface : elle
   passe par un import de recette.
 - `[ENT-10]` La configuration mesure la garantie des courbes : le cran 600
@@ -1310,15 +1322,18 @@ Réglages communs, derrière l'engrenage :
 ```text
 ┌──────────────────────────────────────────────────────────────┐
 │ ← Retour aux palettes et à la planche     Réglages communs    │
-│ Bleu  Soft ▪▪▪▪▪▪▪▪▪▪▪  Vivid ▪▪▪▪▪▪▪▪▪▪▪   2 promesses à corriger │
-│ Couleurs de fond · 3 palettes concernées           Rétablir   │
-│   Fond du thème Light [■][#F7F7F7]  Fond du thème Dark […]    │
-│ Intensités · 2 palettes concernées                 Rétablir   │
-│   Soft [───●──────] 0,45   Vivid [────────●─] 0,95            │
-│ Luminosité des nuances · 3 palettes concernées     Rétablir   │
-│   tracé des deux courbes, puis la table des onze nuances      │
-│ ▸ Minimums des promesses                                      │
-│ ▸ Détection des couleurs proches                              │
+│ Palette ouverte : Bleu · Thème Light      Soft ✓  Vivid ✗ 2   │
+│ Soft ▪▪▪▪▪▪▪▪▪▪▪  Vivid ▪▪▪▪▪▪◆▪▪▪▪                           │
+│ ┌ Couleurs de fond ─────────── 3 palettes concernées  Rétablir ┐ │
+│ │ Fond du thème Light         Fond du thème Dark              │ │
+│ │ [■][#F7F7F7]                [■][#121212]                     │ │
+│ ┌ Intensités ───────────────── 2 palettes concernées  Rétablir ┐ │
+│ │ Intensité Soft  [───●──────] 0,45                           │ │
+│ │ Intensité Vivid [────────●─] 0,95                           │ │
+│ ┌ Luminosité des nuances ───── 3 palettes concernées  Rétablir ┐ │
+│ │ tracé des deux courbes et ◆, puis la table des onze nuances │ │
+│ ┌ › Minimums des promesses  Texte 4,5:1 · Éléments graphiques 3:1 ┐ │
+│ ┌ › Détection des couleurs proches   Soft et Vivid 0,02 · …   ┐ │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -1347,6 +1362,7 @@ qui le créera.
 | Cartes repliées | « Intensités » et « Dérive de teinte » repliées, leur résumé, un point à vérifier annoncé |
 | Fond personnalisé | Un fond saturé peint sous le nuancier, textes et focus lisibles dessus |
 | Réglages communs | Fonds, intensités, luminosité et groupes repliés, avec le nombre de palettes concernées |
+| Réglages communs sans palette | Aucun aperçu en tête, tracé sans ◆, aucune palette concernée |
 | Courbe hors garantie | Alerte sous la courbe : cran, mode, profil, teinte du pire cas et contraste |
 | Hexa invalide | Le champ de référence refuse la saisie, aperçu inchangé |
 | Conflit de sauvegarde | Enregistrement refusé : consultation et export du brouillon possibles, « Recharger » |

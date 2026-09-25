@@ -217,7 +217,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/lecture.ts           la recette rangée, classée, son empreinte, le profil du document, et les cadres retrouvés où qu'ils soient
   src/analyse.ts           une palette pour l'onglet : rampes, promesses, alertes et notices triées
   src/edition.ts           ce qu'une saisie fait à une palette, avant tout rangement
-  src/configuration.ts     les champs de la configuration, fonds et seuils compris, et les palettes que chacun touche
+  src/configuration.ts     les champs de la configuration, fonds et seuils compris, les palettes que chacun touche, et « Rétablir » par carte
   src/importation.ts       un fichier importé, classé comme la recette rangée, et son écart avec elle
   src/rapport.ts           le rapport de vérification : crans, promesses, alertes, empreinte et écarts du dernier dessin
   src/presentation.ts      les promesses manquées groupées, la place de chaque alerte, le réglage que chaque message ouvre, les accolades de l'aperçu
@@ -240,7 +240,9 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/frontiere.ts      la numérotation des demandes, un seul rangement en vol, le dessin après lui
   src/ui/ongletPlanche.ts  une fiche par palette : rampes, garanties, état du cadre, trois gestes ; génération groupée, notices, recette repliée
   src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
-  src/ui/configuration.ts  courbes, parts, fonds et seuils derrière l'engrenage, avec la garantie des courbes
+  src/ui/configuration.ts  les Réglages communs en cartes : aperçu de la palette ouverte, fonds, intensités, courbes, seuils repliés
+  src/ui/traceDesCourbes.ts le tracé des deux courbes au-dessus de leur table, et le ◆ de la référence insérée
+  src/ui/apercuCompact.ts  les rampes Soft et Vivid d'une palette et le résultat de ses garanties, pour une fiche ou les réglages
   src/ui/intensites.ts     les intensités de la palette : curseurs, repère de la référence, origine, retour aux réglages communs
   src/ui/messagesDePalette.ts les messages de la palette ouverte : ceux de la liste, et ceux des intensités
   src/ui/generation.ts     « Générer sur Figma », l'état du cadre et « Afficher dans Figma » sur une ligne

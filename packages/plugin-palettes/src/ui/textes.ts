@@ -119,7 +119,42 @@ export const TEXTES_DE_CONFIGURATION = {
   aideMinimums: 'Ces valeurs définissent les contrastes minimums de vos promesses. Les modifier change leur résultat, sans modifier les couleurs ni les niveaux WCAG.',
   aideGris: 'En dessous de cette valeur de chroma, la couleur est considérée comme presque grise. Le réglage de dérive de teinte est alors désactivé.',
   retablir: 'Rétablir',
+  // N059 : la garantie des courbes ne remplace pas celles des palettes (V9.4).
+  garantieCommune: 'Cette vérification porte sur les courbes communes, pour toutes les teintes. Les garanties d’une palette se lisent dans sa carte « Garanties de contraste ».',
+  // N060 : « Rétablir » des courbes, quand la liste des nuances a changé par import.
+  courbesSansDefaut: 'Ces réglages n’ont pas les onze nuances par défaut : les courbes par défaut ne s’y appliquent pas.',
+  // N061 : les unités des mesures avancées (V9.8).
+  uniteDeContraste: ':1',
+  uniteDEcart: 'ΔEok',
+  uniteDeChroma: 'chroma',
 } as const;
+
+/** La tête des Réglages communs : la palette ouverte et le thème de son aperçu (V9.3, N055). */
+export function paletteDeLApercu(nom: string, mode: Mode): string {
+  return `Palette ouverte : ${nom} · ${mode === 'light' ? 'Thème Light' : 'Thème Dark'}`;
+}
+
+/** La légende du tracé des courbes (V9.4, N056). */
+export function legendeDesCourbes(reference: { readonly nom: string; readonly crans: { readonly [M in Mode]: number } } | null): string {
+  const traits = 'Trait plein : Thème Light · tireté : Thème Dark.';
+  if (!reference) return traits;
+  return `${traits} ◆ : la référence de « ${reference.nom} », insérée à la nuance ${reference.crans.light} en Thème Light et ${reference.crans.dark} en Thème Dark, à sa propre luminosité.`;
+}
+
+/** Le résumé replié de la carte « Minimums des promesses » (V9.2, N057). */
+export function resumeDesMinimums(texte: number, nonTexte: number): string {
+  return `Texte ${nombreEcrit(texte)}:1 · Éléments graphiques ${nombreEcrit(nonTexte)}:1`;
+}
+
+/** Le résumé replié de la carte « Détection des couleurs proches » (V9.2, N057). */
+export function resumeDesEcarts(profilsConfondus: number, palettesProches: number, chromaGrise: number): string {
+  return `Soft et Vivid ${nombreEcrit(profilsConfondus)} · Deux palettes ${nombreEcrit(palettesProches)} · Gris ${nombreEcrit(chromaGrise)}`;
+}
+
+/** Le nom accessible de « Rétablir », qui nomme la carte (V9.5, N058). */
+export function retablirLaCarte(titre: string): string {
+  return `Rétablir les valeurs par défaut : ${titre}`;
+}
 
 /** La portée d'un groupe de réglages, avant toute saisie ([ENT-07]). */
 export function palettesConcernees(nombre: number): string {

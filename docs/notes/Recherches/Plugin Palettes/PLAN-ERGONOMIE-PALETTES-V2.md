@@ -520,38 +520,58 @@ suivant. Une cible introuvable se distingue d’une cible jamais créée.
 
 Repris du lot R7 du premier plan, avec la grammaire de cartes de ce plan.
 
-- [ ] **V9.1** (ex-R7.1) Reprendre les trois niveaux de titre de Palettes.
+- [x] **V9.1** (ex-R7.1) Reprendre les trois niveaux de titre de Palettes.
   Le gras reste réservé aux titres ; valeurs et libellés gardent le poids
   courant.
-- [ ] **V9.2** (ex-R7.2) Présenter dans l’ordre : Couleurs de fond,
+  Fait : cinq cartes de la configuration d’une palette ; libellés au-dessus
+  des champs, en texte secondaire.
+- [x] **V9.2** (ex-R7.2) Présenter dans l’ordre : Couleurs de fond,
   Intensités, Luminosité des nuances, puis les cartes repliées Minimums des
   promesses et Détection des couleurs proches. Le réglage du nombre de
   nuances prend la place que V7 lui donne. Chaque groupe est une carte ; un
   groupe replié a la forme de V6.1.
-- [ ] **V9.3** (ex-R7.3) Garder un aperçu compact de la palette ouverte et le
+  Fait : `CARTES_DES_REGLAGES` fixe l’ordre ; les cartes repliées résument
+  leurs seuils. Le nombre de nuances attend V7.
+- [x] **V9.3** (ex-R7.3) Garder un aperçu compact de la palette ouverte et le
   résultat Soft et Vivid de ses garanties. Sans palette, afficher les
   réglages sans inventer de palette de marque.
-- [ ] **V9.4** (ex-R7.4) Montrer les courbes au-dessus des valeurs. Les
+  Fait : `src/ui/apercuCompact.ts`, partagé avec les fiches de l’onglet
+  Planche, dans le thème de l’aperçu de l’onglet Palettes.
+- [x] **V9.4** (ex-R7.4) Montrer les courbes au-dessus des valeurs. Les
   champs restent utilisables au clavier. Distinguer la courbe commune du
   point de référence réellement inséré ; la garantie des courbes ne remplace
   pas les garanties des palettes.
-- [ ] **V9.5** (ex-R7.5) Rétablir les valeurs par défaut d’un groupe sans
+  Fait : `src/ui/traceDesCourbes.ts`, Light en trait plein, Dark en tireté ;
+  le ◆ se pose à la nuance insérée et à la luminosité de la référence. Une
+  phrase sous l’alerte de garantie renvoie aux garanties des palettes.
+- [x] **V9.5** (ex-R7.5) Rétablir les valeurs par défaut d’un groupe sans
   écraser les autres groupes ni les intensités propres des palettes, y
   compris celles posées par une palette de base forcée (V2.4). Afficher le
   nombre de palettes concernées.
-- [ ] **V9.6** (ex-R7.6) Associer code hexadécimal, pastille et sélecteur de
+  Fait (`[ENT-12]`) : `retablir` et `estParDefaut` par carte ; « Rétablir »
+  est inactif quand la carte porte déjà ses valeurs, et sur des courbes
+  d’une autre liste de nuances.
+- [x] **V9.6** (ex-R7.6) Associer code hexadécimal, pastille et sélecteur de
   couleur avec aperçu. Réutiliser d’abord le contrôle existant. Si le
   sélecteur natif ne convient pas dans Figma, choisir un contrôle embarqué
   après examen de son interaction et de son coût, sans requête externe.
-- [ ] **V9.7** (ex-R7.7) Ouvrir le bon groupe depuis les liens, conserver le
+  Fait : la pastille native et le code, comme la couleur de référence. Le
+  confort du sélecteur natif dans Figma reste à juger à la recette.
+- [x] **V9.7** (ex-R7.7) Ouvrir le bon groupe depuis les liens, conserver le
   contexte de retour et rendre le focus au déclencheur. L’engrenage reste
   l’entrée générale.
-- [ ] **V9.8** (ex-R7.8) Employer les textes retenus et afficher l’unité de
+  Fait : un lien ouvre la carte du groupe, puis focalise son champ ; le
+  retour et le focus suivent le point de lecture déjà rangé.
+- [x] **V9.8** (ex-R7.8) Employer les textes retenus et afficher l’unité de
   chaque mesure avancée. Ne pas présenter une intensité relative comme un
   pourcentage de saturation HSL.
-- [ ] **V9.9** (ex-R7.9) Prévisualiser une saisie valide ; conserver les
+  Fait : les aides A01 à A05, et les unités « :1 », « ΔEok » et « chroma ».
+  Les intensités restent des nombres de 0 à 1.
+- [x] **V9.9** (ex-R7.9) Prévisualiser une saisie valide ; conserver les
   saisies intermédiaires sans écraser leur champ. Enregistrer selon le geste
   prévu, avec un retour visible en cas de refus.
+  Fait : les intensités gagnent un curseur, borné pour que Soft ne dépasse
+  pas Vivid ; un curseur prévisualise, sa fin enregistre.
 
 Critère : le designer voit l’effet de ses réglages, sait quelles palettes
 sont concernées et retrouve son point de départ après fermeture.

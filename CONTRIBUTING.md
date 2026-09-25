@@ -263,7 +263,11 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
   garde un filet de sévérité, sous la carte qu’il concerne ;
 - un résultat nomme toujours la palette ouverte. Un résultat d’une autre
   palette, ou d’une demande plus ancienne, ne la remplace pas ;
-- à la taille minimale, aucun élément fixe ne recouvre l’aperçu ou un champ.
+- à la taille minimale, aucun élément fixe ne recouvre l’aperçu ou un champ ;
+- les Réglages communs reprennent les mêmes cartes : l’aperçu compact de la
+  palette ouverte en tête, puis Couleurs de fond, Intensités, Luminosité des
+  nuances, et deux cartes repliées de seuils. Une carte fixe porte son compte
+  de palettes et « Rétablir » à droite de son titre.
 
 Le bleu de marque signale une action ou une sélection, jamais une section.
 

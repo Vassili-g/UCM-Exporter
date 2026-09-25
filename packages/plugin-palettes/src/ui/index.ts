@@ -186,6 +186,7 @@ suivi.abonner((etat) => {
 
 const panneauDeConfiguration = createConfiguration({
   lire: () => ongletPalettes.recette(),
+  ouverte: () => ongletPalettes.ouverte(),
   previsualiser: (recette) => ongletPalettes.previsualiser(recette),
   appliquer: (recette) => ongletPalettes.appliquer(recette),
 });

@@ -99,6 +99,8 @@ export interface OngletPalettesUi {
   poserStatut(statut: StatutDuRangement, refus: readonly Refus[]): void;
   /** La recette affichée, `null` quand elle ne se lit pas. */
   recette(): Recette | null;
+  /** La palette ouverte et le thème de son aperçu, que les Réglages communs montrent (V9.3) ; `null` sans palette. */
+  ouverte(): { readonly id: string; readonly mode: Mode } | null;
   /** Une recette en cours de saisie ailleurs, dans les Réglages communs : l'aperçu la suit. */
   previsualiser(recette: Recette): void;
   /** Une recette validée ailleurs : elle s'enregistre. */
@@ -628,6 +630,10 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       creer(lecture.hexa, creation.nom(), lecture.ramenee ? couleurRamenee(lecture.hexa) : null);
     },
     recette: () => recette,
+    ouverte() {
+      const courante = ouverte();
+      return courante ? { id: courante.id, mode: nuancier.mode() } : null;
+    },
     previsualiser(suivante) {
       recette = suivante;
       rendre();

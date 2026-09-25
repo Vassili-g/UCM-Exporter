@@ -89,12 +89,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.ligne-infos {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--espace-controle);
-}
-
 /* Rang 3 : « Enregistré » ou « Enregistrement… », à droite du titre de premier rang. */
 .etat-rangement {
   flex-shrink: 0;
@@ -187,20 +181,6 @@
   height: 12px;
   border: 1px solid var(--bordure);
   border-radius: 50%;
-}
-
-.ligne-reference {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-controle);
-}
-
-.ligne-reference > .champ-ligne {
-  flex: 1 1 auto;
-}
-
-.ligne-reference .field-label {
-  white-space: nowrap;
 }
 
 .champ-ligne {
@@ -385,9 +365,81 @@
   justify-self: start;
 }
 
-.config-groupe {
+/*
+ * Les Réglages communs (V9) : les cartes de la configuration d'une palette.
+ * Dans une carte fixe, le compte et « Rétablir » se rangent à droite du titre.
+ */
+.carte-de-reglage .carte-resume {
+  margin-left: auto;
+}
+
+.pied-de-reglage {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.colonnes-de-reglage {
   display: grid;
   gap: var(--espace-controle);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.seuil-de-reglage {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+/* L'unité d'une mesure avancée, après son champ : « :1 », « ΔEok », « chroma » (V9.8). */
+.unite {
+  color: var(--texte-second);
+  white-space: nowrap;
+}
+
+/* La palette ouverte, en tête des réglages : ses rampes et le résultat de ses garanties (V9.3). */
+.reglages-apercu {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+/* Le tracé des deux courbes, au-dessus de leur table (V9.4) : plein en Light, tireté en Dark. */
+.trace-des-courbes {
+  padding: var(--espace-serre) 0;
+}
+
+.trace-courbes {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.trace-repere {
+  stroke: var(--bordure);
+  stroke-width: 1;
+}
+
+.trace-courbe {
+  fill: none;
+  stroke: var(--texte);
+  stroke-width: 1.5;
+}
+
+.trace-courbe[data-mode='dark'] {
+  stroke-dasharray: 4 3;
+}
+
+.trace-point {
+  fill: var(--texte);
+}
+
+.trace-point[data-mode='dark'] {
+  fill: var(--fond-bloc);
+  stroke: var(--texte);
+}
+
+.trace-reference {
+  fill: var(--texte);
+  font-size: 11px;
+  text-anchor: middle;
 }
 
 /* Les deux courbes côte à côte, un cran par ligne : onze lignes tiennent en largeur minimale. */
@@ -399,7 +451,7 @@
 .table-courbes th {
   padding: var(--espace-serre) var(--espace-controle) var(--espace-serre) 0;
   color: var(--texte-second);
-  font-weight: 600;
+  font-weight: 400;
   text-align: left;
 }
 

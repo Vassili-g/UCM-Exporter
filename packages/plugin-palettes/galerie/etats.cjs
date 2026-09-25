@@ -242,9 +242,17 @@ const ETATS = [
     id: 'configuration-de-la-recette',
     titre: 'Configuration de la recette',
     quand: 'Le designer ouvre l’engrenage sur un fichier de trois palettes, dont une aux parts propres et une grise.',
-    regarder: 'Les onze lignes des deux courbes, et le compte des palettes touchées : 3 par les courbes, 1 par les parts, 2 par le seuil.',
+    regarder: 'En tête, Bleu en Thème Light avec « Soft ✓ · Vivid ✓ » et ses rampes ; les cartes Couleurs de fond, Intensités et Luminosité des nuances, chacune avec son compte (3, 1 et 3 palettes concernées) et « Rétablir » inactif ; le tracé des deux courbes et les deux ◆ de Bleu au-dessus des onze lignes de la table ; puis Minimums des promesses et Détection des couleurs proches repliées, avec leur résumé.',
     existe: true,
     atteinte: [etatDuFichier(rangee(TROIS_PALETTES)), ouvrirLaConfiguration],
+  },
+  {
+    id: 'reglages-sans-palette',
+    titre: 'Réglages communs sans palette',
+    quand: 'Le designer ouvre l’engrenage sur un fichier qui n’a encore aucune palette.',
+    regarder: 'Les cinq cartes sans aperçu en tête, aucune palette inventée, le tracé sans ◆, et « Aucune palette concernée » dans chaque compte.',
+    existe: true,
+    atteinte: [etatDuFichier(''), ouvrirLaConfiguration],
   },
   {
     id: 'courbe-hors-garantie',

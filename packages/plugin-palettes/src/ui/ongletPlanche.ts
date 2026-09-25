@@ -10,19 +10,18 @@
  * Chaque génération dessine la grille des contrastes (section 9.5). Au-delà de
  * six palettes, une génération groupée demande confirmation ([PLA-24], D-I).
  */
-import { MODES, PROFILS, lireHexa, type Classement, type Mode, type Recette } from 'ucm-couleur';
+import { MODES, type Classement, type Mode, type Recette } from 'ucm-couleur';
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
 import { analyserPalette } from '../analyse';
 import { VERSION_DU_SUIVI, type EtatDeLaPlanche, type ProfilDuDocument } from '../lecture';
 import { fraicheurDeLaPlanche, type CadreDUnePalette } from '../planche/fraicheur';
+import { apercuCompact, resultatsDesGaranties } from './apercuCompact';
 import { createCarte } from './carte';
 import { blocDeConstat } from './constats';
 import { blocDuResultat, type EtatDuDessin, type GestesDuResultat } from './dessin';
 import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
-import { encresSur } from './nuancier';
 import {
-  NOM_DU_PROFIL,
   TEXTES,
   TEXTES_DU_DESSIN,
   cadreOrphelin,
@@ -40,8 +39,6 @@ import {
   rechercheBornee,
   recetteFuture,
   recetteIllisible,
-  resultatDuProfil,
-  resultatDuProfilEnMots,
   suiviFutur,
   type Constat,
 } from './textes';
@@ -177,38 +174,6 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     confirmation.hidden = false;
   }
 
-  /** Les rampes Soft et Vivid d'une palette, peintes du fond du thème choisi, la référence marquée ◆. */
-  function apercuDeLaFiche(lue: Recette, analyse: ReturnType<typeof analyserPalette>): HTMLDivElement {
-    const surface = document.createElement('div');
-    surface.className = 'fiche-apercu';
-    surface.style.background = lue.fonds[mode];
-    const encres = encresSur(lireHexa(lue.fonds[mode]) ?? [255, 255, 255]);
-    surface.style.setProperty('--encre-surface', encres.encre);
-    surface.style.setProperty('--bordure-surface', encres.bordure);
-    surface.setAttribute('aria-hidden', 'true');
-    for (const duProfil of PROFILS) {
-      const rangee = document.createElement('div');
-      rangee.className = 'fiche-rangee';
-      const nom = document.createElement('span');
-      nom.className = 'fiche-profil';
-      nom.textContent = NOM_DU_PROFIL[duProfil];
-      rangee.append(nom);
-      analyse.rampes[duProfil][mode].forEach((cran, rang) => {
-        const pastille = document.createElement('span');
-        pastille.className = 'fiche-pastille';
-        pastille.style.background = cran.hexa;
-        if (analyse.ancrage.profil === duProfil && analyse.ancrage.rangs[mode] === rang) {
-          pastille.dataset.reference = 'true';
-          pastille.textContent = '◆';
-          pastille.style.color = encresSur(lireHexa(cran.hexa) ?? [255, 255, 255]).encre;
-        }
-        rangee.append(pastille);
-      });
-      surface.append(rangee);
-    }
-    return surface;
-  }
-
   function ficheDePalette(lue: Recette, id: string, cadre: CadreDUnePalette, sansGeneration: boolean): HTMLElement {
     const palette = lue.palettes.find((candidate) => candidate.id === id)!;
     const analyse = analyserPalette(lue, palette);
@@ -221,19 +186,6 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     const reference = document.createElement('p');
     reference.className = 'ligne-secondaire';
     reference.textContent = `◆ ${ligneDeLaReference(analyse.ancrage, mode)}`;
-
-    // Le résultat de chaque profil dans le thème choisi, comme la bascule des garanties (V4.2).
-    const resultats = document.createElement('p');
-    resultats.className = 'fiche-garanties';
-    const manquees = (duProfil: (typeof PROFILS)[number]) =>
-      analyse.promesses.filter((promesse) => promesse.mode === mode && promesse.profil === duProfil && promesse.verdict === 'manquee').length;
-    for (const duProfil of PROFILS) {
-      const resultat = document.createElement('span');
-      resultat.textContent = resultatDuProfil(duProfil, manquees(duProfil));
-      resultat.dataset.verdict = manquees(duProfil) === 0 ? 'tenue' : 'manquee';
-      resultat.setAttribute('aria-label', resultatDuProfilEnMots(duProfil, manquees(duProfil)));
-      resultats.append(resultat);
-    }
 
     // L'état du cadre est un autre sujet que les garanties : un ratio manqué n'est pas une panne (V8.2).
     const etat = document.createElement('p');
@@ -259,7 +211,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
       gestesDeLaFiche.append(generer);
     }
 
-    fiche.corps.append(apercuDeLaFiche(lue, analyse), reference, resultats, etat, gestesDeLaFiche);
+    fiche.corps.append(apercuCompact(lue, analyse, mode), reference, resultatsDesGaranties(analyse, mode), etat, gestesDeLaFiche);
     return fiche.element;
   }
 

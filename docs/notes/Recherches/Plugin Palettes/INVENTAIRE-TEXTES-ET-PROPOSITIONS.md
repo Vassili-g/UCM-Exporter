@@ -662,6 +662,13 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N052 | Génération refusée, cadre existant illisible | Lecture impossible : {palettes} · Figma n’a pas pu lire le cadre existant de cette palette. Aucune palette n’a été générée, pour ne pas créer un second cadre à côté du premier. · Actualisez l’onglet Planche, puis relancez la génération. | À valider |
 | N053 | Suivi des cadres d’une version plus récente | Planche d’une version plus récente · Les cadres de ce fichier ont été générés par une version plus récente d’UCM Palettes. Cette version ne peut ni les lire ni les mettre à jour. · Mettez le plugin à jour pour générer les palettes. | À valider |
 | N054 | Génération groupée interrompue, suite de T325 à T330 | celle de {palette} est conservée · celles de {palettes} sont conservées · {palette} n’a pas encore été générée · {palettes} n’ont pas encore été générées · Réessayez : la génération reprend à cette palette. | À valider |
+| N055 | Tête des Réglages communs, au-dessus de l’aperçu compact | Palette ouverte : {nom} · Thème {mode} | À valider |
+| N056 | Légende du tracé des courbes, Réglages communs | Trait plein : Thème Light · tireté : Thème Dark. ◆ : la référence de « {nom} », insérée à la nuance {numéro} en Thème Light et {numéro} en Thème Dark, à sa propre luminosité. | À valider |
+| N057 | Résumés repliés des cartes de seuils | Texte {seuil}:1 · Éléments graphiques {seuil}:1 · Soft et Vivid {écart} · Deux palettes {écart} · Gris {chroma} | À valider |
+| N058 | Nom accessible de « Rétablir » | Rétablir les valeurs par défaut : {titre de la carte} | À valider |
+| N059 | Sous l’alerte « courbe hors garantie » | Cette vérification porte sur les courbes communes, pour toutes les teintes. Les garanties d’une palette se lisent dans sa carte « Garanties de contraste ». | À valider |
+| N060 | Infobulle de « Rétablir » inactif, carte Luminosité des nuances | Ces réglages n’ont pas les onze nuances par défaut : les courbes par défaut ne s’y appliquent pas. | À valider |
+| N061 | Unités après les champs de seuil | :1 · ΔEok · chroma | À valider |
 | N026 | Résumé du repli N008 | Options de génération : sans grille des contrastes · Options de génération : avec la grille des contrastes | À valider |
 | N027 | Détail d’un usage peint sur le fond du thème | {usage} · Fond du thème | À valider |
 
