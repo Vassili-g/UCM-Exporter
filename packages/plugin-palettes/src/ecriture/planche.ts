@@ -294,8 +294,6 @@ export async function dessinerLaPlanche(
   const illisibles = resolus.manquants.filter(({ palette, raison }) => raison === 'illisible' && demandees.has(palette));
   if (illisibles.length > 0) return { issue: 'lecture-impossible', palettes: illisibles.map(({ palette }) => palette) };
 
-  const page = pageDeLaPlanche(figma, resolus.page);
-  await page.loadAsync();
   const possedes = new Map([...resolus.possedes].map(([palette, { noeud }]) => [palette, noeud]));
 
   const etrangers = demande.palettes.flatMap((palette) => {
@@ -309,12 +307,26 @@ export async function dessinerLaPlanche(
   const cadres: { palette: string; cadre: string }[] = [];
   const peints: CouleurPeinte[] = [];
 
-  // Un cadre illisible garde son entrée : la lecture suivante le réessaiera.
-  const gardes = Object.fromEntries(resolus.manquants.filter(({ raison }) => raison === 'illisible').map(({ palette, cadre }) => [palette, cadre]));
+  // La page de la planche ne se crée qu'au premier cadre neuf, après les refus : un dessin qui ne fait que
+  // remplacer des cadres rangés ailleurs n'en laisse pas une vide ([PLA-04]).
+  let page: PageNode | null = resolus.page as unknown as PageNode | null;
+  const pageDesNeufs = async (): Promise<PageNode> => {
+    if (!page) {
+      page = pageDeLaPlanche(figma, null);
+      await page.loadAsync();
+    }
+    return page;
+  };
+
+  // Un cadre manquant garde son entrée tant que sa palette reste dans la recette : un cadre illisible se
+  // relira, un cadre introuvable le reste, et aucun ne devient « jamais dessiné » (V8.2). Redessiner sa
+  // palette remplace l'entrée.
+  const presentes = new Set(demande.recette.palettes.map((palette) => palette.id));
+  const gardes = Object.fromEntries(resolus.manquants.filter(({ palette }) => presentes.has(palette)).map(({ palette, cadre }) => [palette, cadre]));
   const ranger = () => {
     const suivante: PlancheRangee = {
       version: VERSION_DU_SUIVI,
-      page: page.id,
+      page: page?.id ?? null,
       cadres: { ...gardes, ...Object.fromEntries([...possedes].map(([palette, cadre]) => [palette, cadre.id])) },
     };
     figma.root.setSharedPluginData(ESPACE_PARTAGE, CLE_PLANCHE, JSON.stringify(suivante));
@@ -325,15 +337,16 @@ export async function dessinerLaPlanche(
     surProgression(rang, demande.palettes.length, modele.nom);
     const ancien = possedes.get(palette.id);
     // Un cadre neuf se range parmi les cadres du premier niveau de la page (E17).
-    const place = ancien ? null : placeDUnCadreNeuf([...possedes.values()].filter((cadre) => cadre.parent === page));
+    const pageDuNeuf = ancien ? null : await pageDesNeufs();
+    const place = pageDuNeuf ? placeDUnCadreNeuf([...possedes.values()].filter((cadre) => cadre.parent === pageDuNeuf)) : null;
     // Un calque créé part d'abord dans la page courante : une erreur retire chacun, rattaché ou non.
     const crees: Crees = [];
     let neuf: FrameNode;
     try {
       neuf = construireCadre(figma, modele.racine, crees);
       if (ancien) prendreLaPlace(neuf, ancien);
-      else if (place) {
-        page.appendChild(neuf);
+      else if (pageDuNeuf && place) {
+        pageDuNeuf.appendChild(neuf);
         neuf.x = place.x;
         neuf.y = place.y;
       }
@@ -355,5 +368,14 @@ export async function dessinerLaPlanche(
 
   ranger();
   figma.commitUndo();
-  return { issue: 'dessinee', page: page.id, cadres, peints };
+  // Sans cadre neuf ni page rangée, la page rendue est celle du premier cadre remplacé.
+  const pageRendue = (page as PageNode | null)?.id ?? pageDuCadre(possedes.get(demande.palettes[0]?.id ?? ''));
+  return { issue: 'dessinee', page: pageRendue, cadres, peints };
+}
+
+/** L'identifiant de la page qui porte un cadre, en remontant ses parents. */
+function pageDuCadre(cadre: FrameNode | undefined): string {
+  let courant: BaseNode | null = cadre?.parent ?? null;
+  while (courant && courant.type !== 'PAGE') courant = courant.parent;
+  return courant?.id ?? '';
 }

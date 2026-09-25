@@ -84,18 +84,19 @@ export function createGestesDeLaRecette(demandes: DemandesDeLaRecette): GestesDe
   zone.hidden = true;
   element.append(ligne, zone);
 
-  /** La raison du blocage en cours, et les boutons qui écriraient dans le fichier. */
+  /** La raison du blocage en cours, et le bouton de la confirmation montrée : ils écriraient dans le fichier. */
   let blocage: string | null = null;
-  const ecritures: HTMLButtonElement[] = [importer, repartir];
+  let confirmationMontree: HTMLButtonElement | null = null;
 
   function appliquerLeBlocage(): void {
-    for (const bouton of ecritures) {
+    for (const bouton of [importer, repartir, ...(confirmationMontree ? [confirmationMontree] : [])]) {
       bouton.disabled = blocage !== null;
       bouton.title = blocage ?? '';
     }
   }
 
   function montrer(contenu: HTMLElement | null): void {
+    if (!contenu) confirmationMontree = null;
     zone.replaceChildren(...(contenu ? [contenu] : []));
     zone.hidden = !contenu;
   }
@@ -104,7 +105,7 @@ export function createGestesDeLaRecette(demandes: DemandesDeLaRecette): GestesDe
     const rangee = document.createElement('div');
     rangee.className = 'confirmation-gestes';
     const confirmation = createButton({ label: confirmer, onClick: () => { montrer(null); surConfirmation(); } });
-    ecritures.push(confirmation);
+    confirmationMontree = confirmation;
     appliquerLeBlocage();
     rangee.append(
       confirmation,

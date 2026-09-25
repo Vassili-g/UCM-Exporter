@@ -173,9 +173,17 @@ export async function resoudreLesCadres<N>(figma: FigmaDeLaLecture, toutesLesPag
     }
   }
 
-  for (const [palette, id] of Object.entries(rangee.cadres)) {
+  // Les identifiants rangés se demandent ensemble : une lecture par palette, sans attendre la précédente.
+  const lus = await Promise.all(Object.entries(rangee.cadres).map(async ([palette, id]) => {
     try {
-      const noeud = await figma.getNodeByIdAsync(id) as NoeudLu | null;
+      return { palette, id, noeud: await figma.getNodeByIdAsync(id) as NoeudLu | null, refus: false };
+    } catch {
+      return { palette, id, noeud: null, refus: true };
+    }
+  }));
+  for (const { palette, id, noeud, refus } of lus) {
+    try {
+      if (refus) throw new Error(`lecture refusée : ${id}`);
       const saPage = noeud && !noeud.removed && noeud.type === 'FRAME' && paletteDu(noeud) === palette && estPossede(noeud) ? pageDu(noeud) : null;
       if (!saPage) {
         manquants.push({ palette, cadre: id, raison: 'introuvable' });
@@ -205,8 +213,9 @@ export async function resoudreLesCadres<N>(figma: FigmaDeLaLecture, toutesLesPag
         if (vus.has(noeud.id)) continue;
         vus.add(noeud.id);
         const palette = paletteDu(noeud);
-        if (!estPossede(noeud)) copies.push({ noeud: noeud as unknown as N, page: parcourue });
-        else if (!possedes.has(palette)) {
+        // Un second cadre possédé de la même palette n'est pas réécrit : il se signale comme une copie.
+        if (!estPossede(noeud) || possedes.has(palette)) copies.push({ noeud: noeud as unknown as N, page: parcourue });
+        else {
           possedes.set(palette, { noeud: noeud as unknown as N, page: parcourue });
           retrouves.set(palette, noeud.id);
         }
@@ -227,7 +236,8 @@ export async function resoudreLesCadres<N>(figma: FigmaDeLaLecture, toutesLesPag
   };
 }
 
-function cadreLu(noeud: NoeudLu, page: PageLue): CadreLu {
+/** Un cadre tel que la planche le relève ; `possede` vaut faux pour une copie, doublon possédé compris. */
+function cadreLu(noeud: NoeudLu, page: PageLue, possede: boolean): CadreLu {
   const donnee = (cle: string) => noeud.getSharedPluginData(ESPACE_PARTAGE, cle);
   return {
     palette: donnee(CLES_DU_CADRE.cadre),
@@ -237,7 +247,7 @@ function cadreLu(noeud: NoeudLu, page: PageLue): CadreLu {
     nomDeLaPage: page.name,
     empreinte: donnee(CLES_DU_CADRE.empreinte),
     grille: donnee(CLES_DU_CADRE.grille) === '1',
-    possede: estPossede(noeud),
+    possede,
   };
 }
 
@@ -249,17 +259,24 @@ export async function lireLaPlanche(figma: FigmaDeLaLecture, toutesLesPages = fa
   const recherche = toutesLesPages ? 'fichier' : 'page';
   if (lirePlanche(figma.root).version > VERSION_DU_SUIVI) return { ...PLANCHE_SANS_CADRE, recherche, suiviFutur: true };
   const resolus = await resoudreLesCadres<NoeudLu>(figma, toutesLesPages);
-  return {
-    page: resolus.page?.id ?? null,
-    nomDeLaPage: resolus.page?.name ?? null,
-    cadres: [
-      ...[...resolus.possedes.values()].map(({ noeud, page }) => cadreLu(noeud, page)),
-      ...resolus.copies.map(({ noeud, page }) => cadreLu(noeud, page)),
-    ],
-    manquants: resolus.manquants,
-    recherche,
-    suiviFutur: false,
-  };
+  // Figma peut lever en lisant le nom d'un nœud qu'il annonce : un cadre possédé devient illisible, une copie se tait.
+  const cadres: CadreLu[] = [];
+  const manquants: CadreManquant[] = [...resolus.manquants];
+  for (const [palette, { noeud, page }] of resolus.possedes) {
+    try {
+      cadres.push(cadreLu(noeud, page, true));
+    } catch {
+      manquants.push({ palette, cadre: noeud.id, raison: 'illisible' });
+    }
+  }
+  for (const { noeud, page } of resolus.copies) {
+    try {
+      cadres.push(cadreLu(noeud, page, false));
+    } catch {
+      continue;
+    }
+  }
+  return { page: resolus.page?.id ?? null, nomDeLaPage: resolus.page?.name ?? null, cadres, manquants, recherche, suiviFutur: false };
 }
 
 export type ProfilDuDocument = DocumentNode['documentColorProfile'];

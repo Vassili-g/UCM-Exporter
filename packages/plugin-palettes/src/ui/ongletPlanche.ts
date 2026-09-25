@@ -15,7 +15,7 @@ import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 
 import { analyserPalette } from '../analyse';
 import { VERSION_DU_SUIVI, type EtatDeLaPlanche, type ProfilDuDocument } from '../lecture';
-import { fraicheurDeLaPlanche, type CadreDUnePalette } from '../planche/fraicheur';
+import { fraicheurDeLaPlanche, type CadreDUnePalette, type FraicheurDeLaPlanche } from '../planche/fraicheur';
 import { apercuCompact, resultatsDesGaranties } from './apercuCompact';
 import { createCarte } from './carte';
 import { blocDeConstat } from './constats';
@@ -152,6 +152,12 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
 
   let recette: Recette | null = null;
   let planche: EtatDeLaPlanche | null = null;
+  /**
+   * La fraîcheur et les analyses ne dépendent pas du thème des fiches : elles
+   * se calculent à chaque état lu, pas à chaque bascule de thème.
+   */
+  let fraicheur: FraicheurDeLaPlanche | null = null;
+  const analyses = new Map<string, ReturnType<typeof analyserPalette>>();
   let profil: ProfilDuDocument = 'SRGB';
   let pasAJour: readonly string[] = [];
   let enCours = false;
@@ -188,7 +194,8 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
 
   function ficheDePalette(lue: Recette, id: string, cadre: CadreDUnePalette, sansGeneration: boolean): HTMLElement {
     const palette = lue.palettes.find((candidate) => candidate.id === id)!;
-    const analyse = analyserPalette(lue, palette);
+    const analyse = analyses.get(id) ?? analyserPalette(lue, palette);
+    analyses.set(id, analyse);
     const nom = nomDeLaPalette(palette);
     const fiche = createCarte({ titre: nom });
     fiche.element.classList.add('fiche-planche');
@@ -252,7 +259,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
       vide.replaceChildren(texte, createButton({ label: TEXTES_DU_DESSIN.versLesPalettes, variant: 'secondary', onClick: gestes.versLesPalettes }));
     }
 
-    const fraicheur = fraicheurDeLaPlanche(lue, profil, planche);
+    fraicheur ??= fraicheurDeLaPlanche(lue, profil, planche);
     pasAJour = fraicheur.palettes.filter(({ etat }) => A_GENERER.has(etat)).map(({ palette }) => palette);
 
     // Les fiches se reconstruisent : le focus d'un geste revient au même geste de la même fiche.
@@ -307,6 +314,8 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
       planche = plancheLue;
       profil = profilLu;
       empreinte = empreinteLue;
+      fraicheur = null;
+      analyses.clear();
       rendre();
     },
     afficherDessin(etat, nomsDuDessin) {

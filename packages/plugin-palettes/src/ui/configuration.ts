@@ -228,8 +228,8 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     curseur.step = '0.01';
     curseur.className = 'reglette-curseur';
     curseur.setAttribute('aria-label', TEXTES_DES_INTENSITES.libelle(NOM_DU_PROFIL[profil]));
-    curseur.addEventListener('input', () => glisser(profil, Number(curseur.value), false));
-    curseur.addEventListener('change', () => glisser(profil, Number(curseur.value), true));
+    curseur.addEventListener('input', () => glisser(profil, curseur, false));
+    curseur.addEventListener('change', () => glisser(profil, curseur, true));
     piste.append(curseur);
     ligne.append(libelle, piste, champDeSaisie({ part: profil }, 'parts', TEXTES_DES_INTENSITES.libelle(NOM_DU_PROFIL[profil])));
     reglagesDesParts.append(ligne);
@@ -350,8 +350,13 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     }
     signaler(carte, null);
     rendreLesVues(suivante);
-    if (fin) recette.appliquer(suivante);
-    else recette.previsualiser(suivante);
+    if (!fin) {
+      recette.previsualiser(suivante);
+      return;
+    }
+    // La fin d'un geste relit tout : comptes, résumés, « Rétablir » et les autres champs.
+    recette.appliquer(suivante);
+    afficher();
   }
 
   /**
@@ -370,14 +375,18 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     proposer(poserValeur(lue, champ, valeur), carte, fin);
   }
 
-  /** Un curseur d'intensité, borné pour que Soft ne dépasse pas Vivid. */
-  function glisser(profil: Profil, valeur: number, fin: boolean): void {
+  /**
+   * Un curseur d'intensité, borné pour que Soft ne dépasse pas Vivid. Le
+   * curseur revient à la borne : focalisé, `afficher` ne le toucherait pas.
+   */
+  function glisser(profil: Profil, curseur: HTMLInputElement, fin: boolean): void {
     const lue = recette.lire();
     if (!lue) return;
     const { soft, vivid } = lue.profils;
+    const valeur = Number(curseur.value);
     const bornee = profil === 'soft' ? Math.min(valeur, vivid.part) : Math.max(valeur, soft.part);
+    if (bornee !== valeur) curseur.value = String(bornee);
     proposer(poserValeur(lue, { part: profil }, bornee), 'parts', fin);
-    if (fin) afficher();
   }
 
   /** Un fond saisi, au clavier ou au sélecteur de couleur. */
@@ -390,7 +399,6 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
       return;
     }
     proposer(suivante, 'fonds', fin);
-    if (fin) afficher();
   }
 
   function retablirLaCarteChoisie(carte: CarteDesReglages): void {
@@ -398,7 +406,6 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
     const suivante = lue ? retablir(lue, carte) : null;
     if (!suivante) return;
     proposer(suivante, carte, true);
-    afficher();
   }
 
   function afficher(): void {

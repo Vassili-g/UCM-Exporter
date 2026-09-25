@@ -207,3 +207,25 @@ test('V12.2 : un import dit quels cadres à jour passeraient « À mettre à jou
   assert.deepEqual(orphelins.map(({ nom }) => nom), ['Ambre']);
   assert.deepEqual(consequenceDeLImport(RECETTE, RECETTE, 'SRGB', planche), { aMettreAJour: [], orphelins: [] });
 });
+
+test('[PLA-26] un second cadre possédé de la même palette se signale comme une copie, et n’est pas réécrit', async () => {
+  const figma = await plancheDessinee();
+  const [bleu] = figma.page('Palettes').enfants;
+  const double = copierLeCadre(figma, bleu);
+  double.setSharedPluginData('ucm_palettes', 'proprietaire', double.id);
+  const planche = await lireLaPlanche(figma.api());
+  assert.deepEqual(planche.cadres.filter(({ palette }) => palette === BLEU.id).map(({ cadre, possede }) => [cadre, possede]), [[bleu.id, true], [double.id, false]]);
+  assert.deepEqual(fraicheurDeLaPlanche(RECETTE, 'SRGB', planche).copies.map(({ cadre }) => cadre), [double.id]);
+});
+
+test('[PLA-26] un nom que Figma refuse de lire rend un cadre possédé illisible, tait une copie, et la lecture aboutit', async () => {
+  const figma = await plancheDessinee();
+  const [bleu, ambre] = figma.page('Palettes').enfants;
+  const copie = copierLeCadre(figma, ambre);
+  for (const noeud of [bleu, copie]) {
+    Object.defineProperty(noeud, 'name', { get: () => { throw new Error('nœud annoncé, plus servi'); } });
+  }
+  const planche = await lireLaPlanche(figma.api());
+  assert.deepEqual(planche.cadres.map(({ cadre }) => cadre), [ambre.id]);
+  assert.deepEqual(planche.manquants, [{ palette: BLEU.id, cadre: bleu.id, raison: 'illisible' }]);
+});

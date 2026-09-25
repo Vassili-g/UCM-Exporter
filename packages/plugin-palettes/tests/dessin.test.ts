@@ -375,3 +375,33 @@ test('V10.4 V10.8 : le filet d’une section et le tireté de la pastille on-sol
   const titre = figma.sous(cadre).find((noeud) => noeud.name === 'titre' && noeud.parent === figma.sous(cadre).find((autre) => autre.name === 'section light')) as unknown as { fontName: { style: string }; fontSize: number };
   assert.deepEqual([titre.fontName.style, titre.fontSize], ['Semi Bold', 16]);
 });
+
+test('V8.2 : un cadre introuvable garde son entrée quand une autre palette est dessinée ; il n’est pas « jamais dessiné »', async () => {
+  const figma = new FauxFigma();
+  await dessiner(figma, [BLEU]);
+  const [bleu] = cadres(figma);
+  const disparu = bleu.id;
+  bleu.remove();
+  await dessiner(figma, [AMBRE]);
+  assert.equal(lirePlanche(figma.root).cadres[BLEU.id], disparu);
+  await dessiner(figma, [BLEU]);
+  assert.notEqual(lirePlanche(figma.root).cadres[BLEU.id], disparu, 'redessiner la palette remplace l’entrée');
+});
+
+test('[PLA-04] un dessin qui ne remplace que des cadres rangés ailleurs, ou qui s’arrête avant tout calque, ne crée pas de page vide', async () => {
+  const figma = new FauxFigma(['Page 1', 'Archives']);
+  await dessiner(figma, [BLEU]);
+  const [bleu] = cadres(figma);
+  figma.page('Archives').appendChild(bleu);
+  figma.page('Palettes').remove();
+  const issue = await dessiner(figma, [BLEU]);
+  assert.equal(issue.issue, 'dessinee');
+  assert.ok(issue.issue === 'dessinee' && issue.page === figma.page('Archives').id);
+  assert.deepEqual(figma.root.enfants.filter((page) => !page.removed).map((page) => page.name), ['Page 1', 'Archives']);
+
+  const note = figma.createFrame();
+  note.name = 'Note';
+  figma.page('Archives').enfants[0].appendChild(note);
+  assert.equal((await dessiner(figma, [BLEU])).issue, 'etrangers');
+  assert.deepEqual(figma.root.enfants.filter((page) => !page.removed).map((page) => page.name), ['Page 1', 'Archives']);
+});

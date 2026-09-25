@@ -634,7 +634,10 @@ présenter et à comparer des palettes côte à côte.
   ou autre page déplacée par « Déplacer vers la page ». Un cadre ne compte que
   s'il porte encore l'identifiant de sa palette et se possède lui-même. Une
   recherche de secours parcourt ensuite la page de la planche en profondeur
-  (`findAllWithCriteria` sur `ucm_palettes/cadre`) pour relever les copies.
+  (`findAllWithCriteria` sur `ucm_palettes/cadre`) pour relever les copies ;
+  un second cadre possédé de la même palette se signale aussi comme copie, et
+  n'est jamais réécrit. Un cadre dont Figma refuse de lire le nom devient
+  illisible, sans faire échouer la lecture.
   Elle ne parcourt toutes les pages qu'au geste « Chercher dans tout le
   fichier » ; l'onglet Planche annonce cette limite quand un cadre reste
   introuvable. Le plugin charge la page de la planche et celles des cadres
@@ -654,7 +657,9 @@ présenter et à comparer des palettes côte à côte.
 - `[PLA-04]` Une page supprimée par le designer est recréée au dessin suivant.
   Un cadre que Figma ne connaît plus est « introuvable » : supprimé, ou coupé
   puis collé, ce qui lui donne un nouvel identifiant et fait de lui une copie.
-  Sa génération pose un cadre neuf et remplace l'identifiant rangé. Un cadre
+  Sa génération pose un cadre neuf et remplace l'identifiant rangé ; générer
+  une autre palette garde son entrée. La page de la planche ne se recrée qu'au
+  premier cadre neuf. Un cadre
   que Figma refuse de lire est en « lecture impossible » : son entrée reste
   rangée, et aucune génération de sa palette n'a lieu, pour ne pas poser un
   second cadre à côté du premier.
