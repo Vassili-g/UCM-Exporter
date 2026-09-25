@@ -655,6 +655,9 @@ l’organisation des garanties de ce plan.
   carte, bouton, champ, lien et anneau de focus peints avec la palette, chaque
   élément annoté de ses rôles et numéros. Présenter une maquette au
   mainteneur avant de l’ajouter au modèle de planche.
+  Proposé : [maquettes](./MAQUETTES-PLANCHE-ET-REFERENCE.html), un écran par
+  thème, Soft et Vivid côte à côte, environ 120 calques ; en attente des
+  réponses Q1.
 
 Critère : sans le plugin, le designer trouve la référence, lit le rôle de
 chaque nuance et comprend une garantie avec ses deux numéros.
@@ -670,6 +673,9 @@ origine. Aucun alignement automatique, aucun changement imposé par une
 courbe, aucun effet à la simple ouverture du panneau.
 
 - [ ] **V11.1** Maquette et parcours présentés au mainteneur.
+  Proposé : [maquettes](./MAQUETTES-PLANCHE-ET-REFERENCE.html), parcours en
+  trois écrans sur `#16A34A`, pas de 0,01 de luminosité, originale gardée
+  dans un format 3 ; en attente des réponses Q2 à Q4.
 - [ ] **V11.2** Décision de format, puis implémentation.
 
 ## Lot V12 : récupération et clôture

@@ -1,0 +1,369 @@
+<title>Planche et référence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root {
+  --sol: #F3F4F6; --papier: #FFFFFF; --encre: #17191E; --encre-2: #555C69; --filet: #D9DCE2;
+  --accent: #A8511B; --accent-fond: #FBEDE3; --ok: #17784A; --ko: #C7321B;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --sol: #15171B; --papier: #1D2026; --encre: #ECEEF2; --encre-2: #A3AAB7;
+    --filet: #343944; --accent: #F0A06A; --accent-fond: #3A2618; --ok: #5BD08F; --ko: #FF8C78;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --sol: #15171B; --papier: #1D2026; --encre: #ECEEF2; --encre-2: #A3AAB7;
+  --filet: #343944; --accent: #F0A06A; --accent-fond: #3A2618; --ok: #5BD08F; --ko: #FF8C78;
+}
+* { box-sizing: border-box; }
+body { background: var(--sol); color: var(--encre); font: 15px/1.55 var(--sans); padding-inline: 16px; padding-block: 32px 64px; }
+main { max-width: 900px; margin: 0 auto; display: grid; gap: 56px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 21px; font-weight: 600; }
+h3 { font-size: 15px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+ul { margin: 0; padding-left: 1.2em; max-width: 68ch; }
+li + li { margin-top: 4px; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+.intro, .bloc { display: grid; gap: 16px; }
+.tete { display: grid; gap: 8px; }
+.sur { font: 500 12px/1 var(--sans); text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.reco-legende { display: flex; gap: 8px; align-items: center; color: var(--encre-2); font-size: 14px; }
+.decision { font: 600 12px/1 var(--mono); color: var(--accent); background: var(--accent-fond); padding: 4px 7px; border-radius: 4px; white-space: nowrap; }
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.option { background: var(--papier); border: 1px solid var(--filet); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.option.reco { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.option h3 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.option p { font-size: 14px; color: var(--encre-2); }
+.chip-reco { font: 600 11px/1 var(--sans); color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+.pour, .contre { font-size: 13.5px; }
+.pour::before { content: "+ "; color: var(--ok); font-weight: 600; }
+.contre::before { content: "− "; color: var(--ko); font-weight: 600; }
+.note { border-left: 3px solid var(--filet); padding: 2px 0 2px 14px; color: var(--encre-2); font-size: 14px; }
+.faits { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.faits div { background: var(--papier); border: 1px solid var(--filet); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.faits b { font-size: 15px; }
+.faits span { font-size: 14px; color: var(--encre-2); }
+.recap { background: var(--papier); border: 1px solid var(--filet); border-radius: 12px; overflow-x: auto; }
+.recap table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+.recap th, .recap td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--filet); vertical-align: top; }
+.recap tr:last-child td { border-bottom: 0; }
+.recap th { font-weight: 600; color: var(--encre-2); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+/* ——— Maquettes : panneau Figma sombre, échelle 1 ——— */
+.scene { overflow-x: auto; padding: 4px 0 8px; }
+.scene-rangee { display: flex; gap: 24px; align-items: flex-start; width: max-content; }
+.legende { font-size: 13px; color: var(--encre-2); margin-top: 8px; max-width: 500px; }
+.fp {
+  --f-fond: #2C2C2C; --f-bloc: #383838; --f-bord: #5E5E5E; --f-champ: #2C2C2C;
+  --f-texte: #FFFFFF; --f-texte-2: #B3B3B3; --f-marque: #0D99FF; --f-lien: #7CC4F8;
+  --f-succes: #85E0A3; --f-danger: #FFAFA3; --f-avert: #FFC470;
+  width: 500px; flex: none; background: var(--f-fond); color: var(--f-texte);
+  font: 11px/16px Inter, system-ui, sans-serif; border: 1px solid #1B1B1B; border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35); overflow: hidden;
+}
+.fp-barre { height: 32px; display: flex; align-items: center; gap: 14px; padding: 0 16px; border-bottom: 1px solid var(--f-bord); font-weight: 500; }
+.fp-barre .actif { box-shadow: inset 0 -2px 0 var(--f-texte); padding: 8px 0 7px; }
+.fp-barre .inactif { color: var(--f-texte-2); }
+.fp-barre .engrenage { margin-left: auto; color: var(--f-texte-2); }
+.fp-corps { padding: 16px; display: grid; gap: 12px; }
+.fp-select { display: flex; gap: 8px; align-items: center; }
+.fp-select .champ { flex: 1; }
+.champ { height: 28px; border: 1px solid var(--f-bord); border-radius: 6px; display: flex; align-items: center; gap: 6px; padding: 0 8px; background: var(--f-champ); min-width: 0; }
+.champ .pastille { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+.bouton-icone { width: 28px; height: 28px; border: 1px solid var(--f-bord); border-radius: 6px; display: grid; place-items: center; flex: none; }
+.fp-h1 { font-size: 16px; line-height: 24px; font-weight: 600; padding-top: 4px; }
+.carte-f { background: var(--f-bloc); border: 1px solid var(--f-bord); border-radius: 8px; padding: 12px; display: grid; gap: 10px; }
+.carte-f.plate { background: var(--f-fond); }
+.carte-titre { font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.libelle { color: var(--f-texte-2); }
+.trois { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.trois > div { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.segment { display: flex; border: 1px solid var(--f-bord); border-radius: 6px; height: 28px; padding: 2px; gap: 2px; background: var(--f-champ); }
+.segment span { flex: 1; display: grid; place-items: center; border-radius: 4px; color: var(--f-texte-2); white-space: nowrap; padding: 0 6px; }
+.segment .on { background: #4A4A4A; color: var(--f-texte); font-weight: 600; }
+.segment.petit { height: 24px; }
+.aide { color: var(--f-texte-2); }
+.ref-ligne { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.surface { border-radius: 6px; padding: 10px 10px 8px; background: #121212; }
+.grille, .brackets { display: grid; grid-template-columns: 34px 30px repeat(11, 1fr); column-gap: 3px; }
+.sw.onsolid { grid-row: span 2; height: 55px; border: 1px dashed #6E6E6E; }
+.centre { display: flex; justify-content: center; }
+.grille { row-gap: 3px; align-items: center; }
+.grille .num { text-align: center; font-size: 9.5px; line-height: 12px; color: #9A9A9A; font-variant-numeric: tabular-nums; }
+.grille .prof { font-size: 10px; font-weight: 600; color: #CFCFCF; }
+.sw { height: 26px; border-radius: 4px; position: relative; }
+.sw.ref::after { content: "◆"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 10px; }
+.sw.choisie { box-shadow: 0 0 0 2px #121212, 0 0 0 3.5px #FFFFFF; }
+.brackets { margin-top: 6px; row-gap: 1px; }
+.br { border: 1px solid #8C8C8C; border-top: 0; height: 5px; border-radius: 0 0 2px 2px; }
+.br-l { font: 500 9.5px/12px "IBM Plex Mono", monospace; color: #E6E6E6; text-align: center; white-space: nowrap; }
+.br-fr { font-size: 9px; line-height: 11px; color: #9A9A9A; text-align: center; white-space: nowrap; margin-bottom: 4px; }
+.accordeon { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; background: var(--f-bloc); border: 1px solid var(--f-bord); border-radius: 8px; }
+.accordeon b { font-size: 12px; font-weight: 600; }
+.accordeon .resume { margin-left: auto; color: var(--f-texte-2); }
+.chevron { color: var(--f-texte-2); width: 10px; display: inline-block; }
+.btn-marque { height: 32px; border-radius: 6px; background: var(--f-marque); color: #fff; font-weight: 600; display: grid; place-items: center; padding: 0 14px; }
+.gen { display: flex; align-items: center; gap: 10px; }
+.gen .etat { color: var(--f-avert); }
+.gen .lien { margin-left: auto; color: var(--f-lien); }
+.tok { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight: 500; color: #FFFFFF; }
+.sur-mot { color: var(--f-texte-2); }
+
+/* Garanties repensées */
+.reglette { background: #121212; border-radius: 6px; padding: 6px 0 4px; }
+.reglette svg { display: block; width: 100%; height: auto; }
+.groupe-titre { display: flex; justify-content: space-between; font-weight: 600; font-size: 11px; padding-top: 4px; }
+.groupe-titre span { color: var(--f-texte-2); font-weight: 400; }
+.rel { display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: start; padding: 8px 6px; border-top: 1px solid var(--f-bord); border-radius: 4px; }
+.rel.choisie { background: #444444; border-top-color: transparent; box-shadow: inset 2px 0 0 #FFFFFF; }
+.rel .qui { display: grid; gap: 1px; min-width: 0; }
+.rel .qui .fr { color: var(--f-texte-2); font-size: 10px; line-height: 13px; }
+.etats { display: flex; gap: 8px; flex-wrap: wrap; }
+.etat { display: grid; gap: 2px; justify-items: center; width: 64px; }
+.etat .spec { width: 64px; height: 26px; border-radius: 4px; display: grid; place-items: center; }
+.etat .n { font: 500 10px/12px "IBM Plex Mono", monospace; color: #E6E6E6; font-variant-numeric: tabular-nums; }
+.etat .r { font-size: 10px; line-height: 12px; font-variant-numeric: tabular-nums; color: var(--f-succes); }
+.etat .r.ko { color: var(--f-danger); font-weight: 600; }
+.etat .quand { font-size: 9px; line-height: 11px; color: #8F8F8F; }
+.mini-btn { height: 18px; padding: 0 8px; border-radius: 3px; display: grid; place-items: center; font-size: 9px; font-weight: 600; }
+.mini-champ { width: 40px; height: 14px; border-radius: 3px; border: 1.5px solid; }
+.mini-focus { width: 36px; height: 12px; border-radius: 3px; outline: 2px solid; outline-offset: 2px; }
+.mini-texte { font-size: 11px; font-weight: 600; }
+.decoratif { color: var(--f-texte-2); font-size: 10px; padding: 6px 6px 0; border-top: 1px solid var(--f-bord); }
+.action { color: var(--f-lien); padding: 0 6px 6px 166px; }
+
+
+/* ——— Fausse interface de la planche (V10.11) ——— */
+.planche { background: #FFFFFF; color: #1E1E1E; border: 1px solid var(--filet); border-radius: 12px; padding: 24px; display: grid; gap: 16px; font: 11px/16px Inter, system-ui, sans-serif; width: max-content; }
+.planche h4 { margin: 0; font-size: 16px; line-height: 20px; font-weight: 600; }
+.planche .note-p { color: #6B6B6B; font-size: 10px; }
+.deux-profils { display: grid; grid-template-columns: repeat(2, 300px); gap: 16px; }
+.theme-f { border: 1px solid #8C8C8C; border-radius: 8px; padding: 16px; display: grid; gap: 10px; }
+.theme-f .titre-p { font-size: 13px; font-weight: 500; }
+.ecran { border-radius: 8px; padding: 14px; display: grid; gap: 12px; }
+.ecran .carte-e { border-radius: 8px; padding: 12px; display: grid; gap: 10px; }
+.ecran .sep { height: 1px; }
+.ecran .ligne-e { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ecran .btn-e { height: 28px; padding: 0 12px; border-radius: 6px; display: grid; place-items: center; font-weight: 600; }
+.ecran .champ-e { height: 28px; flex: 1; min-width: 120px; border-radius: 6px; border: 1.5px solid; padding: 0 8px; display: flex; align-items: center; }
+.ecran .focus-e { outline: 2px solid; outline-offset: 2px; }
+.ecran .lien-e { font-weight: 600; text-decoration: underline; }
+.ann { font: 500 9.5px/12px "IBM Plex Mono", monospace; opacity: .85; }
+.ann-bloc { display: grid; gap: 1px; }
+
+/* ——— Ajuster la référence (V11) ——— */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.duo > div { display: grid; gap: 4px; }
+.grosse-p { height: 44px; border-radius: 6px; }
+.pas { display: flex; align-items: center; gap: 6px; }
+.pas .b { width: 28px; height: 28px; border: 1px solid var(--f-bord); border-radius: 6px; display: grid; place-items: center; }
+.pas .v { font-variant-numeric: tabular-nums; min-width: 44px; text-align: center; }
+.fleche { color: var(--f-succes); font-weight: 600; }
+.alerte-f { border-left: 2px solid var(--f-avert); padding-left: 8px; color: var(--f-texte-2); }
+.boutons-f { display: flex; gap: 8px; }
+.btn-second { height: 32px; border-radius: 6px; border: 1px solid var(--f-bord); display: grid; place-items: center; padding: 0 14px; }
+.ko-f { color: var(--f-danger); font-weight: 600; }
+.ok-f { color: var(--f-succes); font-weight: 600; }
+</style>
+
+<main>
+
+<header class="intro">
+  <span class="sur">UCM Palettes · plan d’ergonomie V2 · V10.11 et V11.1</span>
+  <h1>Une interface d’exemple sur la planche, et l’ajustement de la référence</h1>
+  <p>Deux explorations que le plan demande de te montrer avant tout code. Les couleurs sont celles que le moteur calcule pour <code>#1E6FD9</code> et <code>#16A34A</code> avec la recette par défaut. Les questions sont en bas de page.</p>
+</header>
+
+<!-- ============ V10.11 ============ -->
+<section class="bloc" id="fausse-interface">
+  <div class="tete">
+    <span class="sur">V10.11 · planche générée</span>
+    <h2>Voir les rôles appliqués, sans ouvrir le plugin</h2>
+  </div>
+  <p>Tes retours demandaient si des interfaces d’exemple aideraient, comme sur Radix. Le panneau est écarté ; la planche a la place. La proposition : une petite interface par thème, Soft et Vivid côte à côte, peinte avec la palette. Chaque élément porte son rôle et son numéro, pour relier la planche au design system.</p>
+  <div class="scene"><div class="planche">
+    <h4>Interface d’exemple · Thème Light</h4>
+    <span class="note-p">Chaque élément est peint avec les nuances que son rôle vise. Le fond est celui du thème, <code>on-solid</code>.</span>
+    <div class="deux-profils">
+      <div class="theme-f">
+        <span class="titre-p">Soft</span>
+        <div class="ecran" style="background:#F7F7F7">
+          <div class="carte-e" style="background:#E9EFF6">
+            <div class="ann-bloc"><b style="font-size:12px">Nouvelle commande</b><span class="ann">surface 100</span></div>
+            <div class="sep" style="background:#BCCEE3"></div><span class="ann">border-decorative 300</span>
+            <div class="ligne-e"><div class="champ-e" style="border-color:#577DB3;color:#6B6B6B">Référence client</div></div>
+            <span class="ann">border-control 600 · sur surface 100</span>
+            <div class="ligne-e">
+              <div class="btn-e" style="background:#446493;color:#F7F7F7">Valider</div>
+              <div class="btn-e focus-e" style="background:#344D77;color:#F7F7F7;outline-color:#577DB3">Survol et focus</div>
+            </div>
+            <span class="ann">solid 700 · survol 800 · texte on-solid · anneau focus 600</span>
+            <span class="lien-e" style="color:#446493">Voir le détail</span><span class="ann">text 700</span>
+          </div>
+        </div>
+      </div>
+      <div class="theme-f">
+        <span class="titre-p">Vivid</span>
+        <div class="ecran" style="background:#F7F7F7">
+          <div class="carte-e" style="background:#E3F0FE">
+            <div class="ann-bloc"><b style="font-size:12px">Nouvelle commande</b><span class="ann">surface 100</span></div>
+            <div class="sep" style="background:#A9D0FD"></div><span class="ann">border-decorative 300</span>
+            <div class="ligne-e"><div class="champ-e" style="border-color:#1E6FD9;color:#6B6B6B">Référence client</div></div>
+            <span class="ann">border-control 600 ◆ · sur surface 100</span>
+            <div class="ligne-e">
+              <div class="btn-e" style="background:#0E5DC6;color:#F7F7F7">Valider</div>
+              <div class="btn-e focus-e" style="background:#0846A3;color:#F7F7F7;outline-color:#1E6FD9">Survol et focus</div>
+            </div>
+            <span class="ann">solid 700 · survol 800 · texte on-solid · anneau focus 600 ◆</span>
+            <span class="lien-e" style="color:#0E5DC6">Voir le détail</span><span class="ann">text 700</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h4>Interface d’exemple · Thème Dark</h4>
+    <div class="deux-profils">
+      <div class="theme-f" style="background:#121212;color:#F5F5F5">
+        <span class="titre-p">Soft</span>
+        <div class="ecran" style="background:#121212">
+          <div class="carte-e" style="background:#0F1B32">
+            <div class="ann-bloc"><b style="font-size:12px">Nouvelle commande</b><span class="ann">surface 100</span></div>
+            <div class="sep" style="background:#223557"></div><span class="ann">border-decorative 300</span>
+            <div class="ligne-e"><div class="champ-e" style="border-color:#567CB1;color:#A0A0A0">Référence client</div></div>
+            <span class="ann">border-control 600</span>
+            <div class="ligne-e">
+              <div class="btn-e" style="background:#7498C6;color:#121212">Valider</div>
+              <div class="btn-e focus-e" style="background:#99B4D5;color:#121212;outline-color:#567CB1">Survol et focus</div>
+            </div>
+            <span class="ann">solid 700 · survol 800 · anneau 600</span>
+            <span class="lien-e" style="color:#7498C6">Voir le détail</span><span class="ann">text 700</span>
+          </div>
+        </div>
+      </div>
+      <div class="theme-f" style="background:#121212;color:#F5F5F5">
+        <span class="titre-p">Vivid</span>
+        <div class="ecran" style="background:#121212">
+          <div class="carte-e" style="background:#01154B">
+            <div class="ann-bloc"><b style="font-size:12px">Nouvelle commande</b><span class="ann">surface 100</span></div>
+            <div class="sep" style="background:#032D7B"></div><span class="ann">border-decorative 300</span>
+            <div class="ligne-e"><div class="champ-e" style="border-color:#1E6FD9;color:#A0A0A0">Référence client</div></div>
+            <span class="ann">border-control 600 ◆</span>
+            <div class="ligne-e">
+              <div class="btn-e" style="background:#4596FA;color:#121212">Valider</div>
+              <div class="btn-e focus-e" style="background:#7AB5FB;color:#121212;outline-color:#1E6FD9">Survol et focus</div>
+            </div>
+            <span class="ann">solid 700 · survol 800 · anneau 600 ◆</span>
+            <span class="lien-e" style="color:#4596FA">Voir le détail</span><span class="ann">text 700</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <p class="legende">Une ligne d’annotation par élément ; ◆ marque la couleur de référence exacte. L’interface se place après les garanties du thème, avant les grilles.</p>
+  <div class="faits">
+    <div><b>Environ 120 calques</b><span>quatre écrans d’une trentaine de calques, à ajouter aux 1 898 d’un cadre avec sa grille.</span></div>
+    <div><b>Aucune valeur nouvelle</b><span>chaque couleur vient des rampes déjà dessinées ; l’empreinte du cadre change une fois, puis suit la palette.</span></div>
+    <div><b>Une limite</b><span>les états se montrent l’un à côté de l’autre, pas en interaction : la planche reste une image.</span></div>
+  </div>
+  <div class="options">
+    <div class="option reco"><h3>A · Un écran par thème, Soft et Vivid côte à côte <span class="chip-reco">Recommandé</span></h3><p>La maquette ci-dessus, après les garanties.</p><span class="pour">compare les deux profils dans la même situation</span><span class="contre">une section de plus sur une planche déjà longue</span></div>
+    <div class="option"><h3>B · Un écran dans chaque section de thème</h3><p>Sous les accolades, à côté des rampes qui le peignent.</p><span class="pour">rampes et usages sur le même fond</span><span class="contre">sections plus hautes ; Soft et Vivid moins faciles à comparer</span></div>
+    <div class="option"><h3>C · Pas d’écran</h3><p>Les spécimens des garanties suffisent.</p><span class="pour">rien à maintenir</span><span class="contre">l’usage réel reste à imaginer</span></div>
+  </div>
+</section>
+
+<!-- ============ V11 ============ -->
+<section class="bloc" id="ajuster">
+  <div class="tete">
+    <span class="sur">V11.1 · onglet Palettes</span>
+    <h2>Ajuster la référence d’un pas, sans que le plugin décide à la place</h2>
+  </div>
+  <p>Le cas réel : <code>#16A34A</code> manque deux garanties en thème Light, <code>border-control</code> et <code>focus</code> sur <code>surface</code>, à 2,92:1 pour un minimum de 3:1. Sa couleur exacte tombe au 600, un peu trop claire. Un pas de luminosité plus sombre, <code>#0DA047</code>, les tient toutes et reste au 600. Un pas plus clair ferait passer la référence au 500 en thème Light.</p>
+  <div class="faits">
+    <div><b>Le plan fixe</b><span>originale et proposition visibles, numéro visé, aperçu des garanties, petits pas et saisie, Appliquer seul change la référence, originale restaurable après réouverture.</span></div>
+    <div><b>Le plan interdit</b><span>tout alignement automatique, tout changement imposé par une courbe, tout effet à la simple ouverture.</span></div>
+    <div><b>Mesuré</b><span>de −6 à +6 pas de 0,01 de luminosité, chroma et teinte gardées : chaque pas plus sombre tient au 600 ; chaque pas plus clair passe au 500.</span></div>
+  </div>
+
+  <div class="scene"><div class="scene-rangee">
+    <div>
+      <div class="fp"><div class="fp-corps">
+        <div class="carte-f">
+          <div class="carte-titre">Garanties de contraste <span class="libelle">Thème Light</span></div>
+          <div class="segment petit"><span>Soft ✓</span><span class="on">Vivid ✗ 2</span></div>
+          <div class="rel choisie"><div class="qui"><span class="tok">border-control sur surface</span><span class="fr">bordure de champ sur fond léger</span></div><div class="etats"><div class="etat"><span class="spec" style="background:#CAFED2"><span class="mini-champ" style="border-color:#16A34A"></span></span><span class="n">600 / 100</span><span class="r ko">✗ 2,92</span><span class="quand">repos</span></div></div></div>
+          <div class="action">Intensités de la palette · Dérive de teinte · <b>Ajuster la référence</b></div>
+        </div>
+      </div></div>
+      <p class="legende">1 · Le lien s’ajoute aux réglages qu’une garantie en échec propose. La carte Couleur de base le porte aussi, sous le code.</p>
+    </div>
+    <div>
+      <div class="fp"><div class="fp-corps">
+        <div class="carte-f">
+          <div class="carte-titre">Ajuster la référence <span class="libelle">Vivid · nuance 600</span></div>
+          <div class="duo">
+            <div><span class="libelle">Originale</span><div class="grosse-p" style="background:#16A34A"></div><span class="tok">#16A34A</span></div>
+            <div><span class="libelle">Proposition</span><div class="grosse-p" style="background:#0DA047"></div><span class="tok">#0DA047</span></div>
+          </div>
+          <div class="trois">
+            <div><span class="libelle">Luminosité</span><div class="pas"><span class="b">−</span><span class="v">0,617</span><span class="b">+</span></div></div>
+            <div><span class="libelle">Code</span><div class="champ">#0DA047</div></div>
+            <div><span class="libelle">Nuance visée</span><span>600 en Light, 600 en Dark</span></div>
+          </div>
+          <div><span class="libelle">Garanties</span> Vivid <span class="ko-f">✗ 2</span> <span class="fleche">→ ✓</span> · Soft ✓ inchangé</div>
+          <div class="alerte-f">Un pas de plus vers le clair : la référence passerait au 500 en thème Light.</div>
+          <div class="boutons-f"><div class="btn-marque">Appliquer</div><div class="btn-second">Annuler</div></div>
+        </div>
+      </div></div>
+      <p class="legende">2 · La proposition part de l’originale : rien ne change tant que le designer ne fait pas un pas. Chaque pas vaut 0,01 de luminosité OKLCH ; la chroma et la teinte restent.</p>
+    </div>
+    <div>
+      <div class="fp"><div class="fp-corps">
+        <div class="carte-f">
+          <div class="carte-titre">Couleur de base</div>
+          <div class="trois">
+            <div><span class="libelle">Nom de la palette</span><div class="champ">Vert</div></div>
+            <div><span class="libelle">Couleur de référence</span><div class="champ"><span class="pastille" style="background:#0DA047"></span>#0DA047</div><span class="aide">Ajustée depuis #16A34A · <span style="color:var(--f-lien)">Revenir à l’originale</span></span></div>
+            <div><span class="libelle">Palette de base</span><div class="segment"><span class="on">Auto</span><span>Soft</span><span>Vivid</span></div></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="legende">3 · Après Appliquer, l’originale reste lisible et restaurable, même après réouverture du fichier.</p>
+    </div>
+  </div></div>
+
+  <div class="options">
+    <div class="option reco"><h3>Pas : 0,01 de luminosité <span class="chip-reco">Recommandé</span></h3><p>Un pas visible, qui fait passer <code>#16A34A</code> à <code>#0DA047</code>.</p><span class="pour">deux ou trois pas règlent un cas limite</span><span class="contre">un pas peut sauter une nuance à la frontière</span></div>
+    <div class="option"><h3>Pas : 0,005</h3><p>Moitié plus fin.</p><span class="pour">plus proche de l’originale</span><span class="contre">deux fois plus de clics</span></div>
+    <div class="option"><h3>Luminosité et chroma</h3><p>Deux réglages au lieu d’un.</p><span class="pour">une couleur trop vive se corrige sans l’assombrir</span><span class="contre">deux axes à comprendre</span></div>
+  </div>
+  <div class="options">
+    <div class="option reco"><h3>Garder l’originale dans la palette <span class="chip-reco">Recommandé</span></h3><p>Un champ facultatif, par exemple <code>referenceOriginale</code>. Format 3, migration du format 2 : absent, aucun ajustement.</p><span class="pour">« Revenir à l’originale » tient après réouverture, dans l’export et sur la planche</span><span class="contre">un format de plus, et une revue indépendante avant le code</span></div>
+    <div class="option"><h3>Ne rien garder</h3><p>Appliquer remplace la référence.</p><span class="pour">aucune migration</span><span class="contre">contredit le plan : l’originale se perd à la fermeture</span></div>
+  </div>
+</section>
+
+<section class="bloc" id="questions">
+  <div class="tete">
+    <span class="sur">À répondre</span>
+    <h2>Quatre questions</h2>
+  </div>
+  <div class="recap"><table>
+    <thead><tr><th></th><th>Question</th><th>Recommandé</th></tr></thead>
+    <tbody>
+      <tr><td><span class="decision">Q1</span></td><td>Interface d’exemple sur la planche : un écran par thème, un par section, ou aucun ?</td><td>A · un écran par thème, Soft et Vivid côte à côte</td></tr>
+      <tr><td><span class="decision">Q2</span></td><td>Ajuster la référence : quel pas ?</td><td>0,01 de luminosité</td></tr>
+      <tr><td><span class="decision">Q3</span></td><td>Ajuster la luminosité seule, ou aussi la chroma ?</td><td>Luminosité seule</td></tr>
+      <tr><td><span class="decision">Q4</span></td><td>Garder l’originale dans la palette, au prix d’un format 3 ?</td><td>Oui, champ facultatif</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Après tes réponses, les cases d’implémentation s’écrivent dans le plan ; V11.2 change le format et passe d’abord par une revue indépendante.</p>
+</section>
+
+</main>
