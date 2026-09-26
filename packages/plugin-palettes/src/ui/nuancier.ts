@@ -165,7 +165,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   const tete = document.createElement('div');
   tete.className = 'nuancier-tete';
   const bascule = document.createElement('div');
-  bascule.className = 'bascule onglets-de-theme';
+  bascule.className = 'bascule';
   bascule.setAttribute('role', 'group');
   bascule.setAttribute('aria-label', TEXTES.modesDeLApercu);
   const retour = bouton('bouton-discret');

@@ -10,7 +10,6 @@
  * (E21).
  */
 import {
-  PROFILS,
   boutsDe,
   ecrireArrondi,
   referenceDe,
@@ -26,7 +25,7 @@ import {
 import { lireNombre } from '../../configuration';
 import { appliquerPrereglage, lierLesProfils, prereglageDe, reglerBout } from '../../edition';
 import type { AnalyseDePalette } from '../../analyse';
-import { TEXTES, TEXTES_DES_GARANTIES, TEXTES_DE_LA_DERIVE, repereTailwind, resultatDuProfil, valeurDePoignee } from '../textes';
+import { TEXTES_DE_LA_DERIVE, repereTailwind, valeurDePoignee } from '../textes';
 import { CADRE, HAUTEUR_TOTALE, createGraphe } from './graphe';
 import { angleDuGlisser, echelleDe } from './geometrie';
 
@@ -36,8 +35,6 @@ export interface GestesDeLEditeur {
   previsualiser(palette: Palette): void;
   /** À la fin d'un geste : la palette se range. */
   valider(palette: Palette): void;
-  /** « Voir les garanties » mène à leur carte ([DER-17]). */
-  voirLesGaranties(): void;
 }
 
 export interface EditeurUi {
@@ -305,19 +302,7 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
   const note = document.createElement('p');
   note.className = 'ligne-secondaire';
 
-  // Le résultat des garanties suit le réglage ; il ne s'annonce qu'à la fin du geste, jamais à chaque mouvement ([DER-17]).
-  const bilan = document.createElement('span');
-  bilan.className = 'bilan-de-la-derive';
-  bilan.setAttribute('aria-live', 'polite');
-  const voirLesGaranties = document.createElement('button');
-  voirLesGaranties.type = 'button';
-  voirLesGaranties.className = 'lien-de-constat';
-  voirLesGaranties.textContent = TEXTES_DES_GARANTIES.voirLesGaranties;
-  voirLesGaranties.addEventListener('click', () => gestes.voirLesGaranties());
-  const ligneDuBilan = document.createElement('p');
-  ligneDuBilan.className = 'ligne-du-bilan';
-  ligneDuBilan.append(bilan, voirLesGaranties);
-  element.append(entete, confirmation, svg, zoneDesReglettes, note, ligneDuBilan);
+  element.append(entete, confirmation, svg, zoneDesReglettes, note);
 
   // Ctrl+Z ou Cmd+Z défait le dernier réglage, hors d'un champ texte (E21).
   element.addEventListener('keydown', (evenement) => {
@@ -341,14 +326,6 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     if (lie) profil = ancrage.profil;
     if (!analyse) return;
     graphe.afficher({ recette, palette, profil, rampe: rampes[profil].light, ancrage, grille: analyse.grille, echelle: echelleCourante() });
-    // Une palette libre n'a pas de garantie : son bilan le dit, et le lien vers la carte des garanties se retire.
-    voirLesGaranties.hidden = analyse.libre;
-    if (!glisse) {
-      const suivie = analyse;
-      const [soft, vivid] = PROFILS.map((duProfil) => resultatDuProfil(duProfil, suivie.promesses.filter((promesse) => promesse.profil === duProfil && promesse.verdict === 'manquee').length));
-      bilan.textContent = analyse.libre ? TEXTES.paletteLibre(analyse.grille.crans.length) : TEXTES_DES_GARANTIES.bilan(soft, vivid);
-      bilan.dataset.etat = analyse.manquees > 0 ? 'manque' : 'pret';
-    }
     // Le graphe s'est redessiné : la poignée qui avait le focus le reprend.
     if (focalisee) graphe.poignees()[focalisee]?.focus();
 

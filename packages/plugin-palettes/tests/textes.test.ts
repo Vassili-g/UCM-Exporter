@@ -15,11 +15,13 @@ import {
   dessinInterrompu,
   ecartDePeinture,
   ligneDesValeurs,
-  gesteDeGeneration,
+  genererLesPalettesPasAJour,
+  genererToutesLesPalettes,
   jugementDuSeuil,
   lignesDeNature,
   niveauEcrit,
   nommerChamp,
+  premierGesteDeLaFiche,
   recetteFuture,
   recetteIllisible,
   resultatDuProfil,
@@ -193,12 +195,19 @@ test('[VER-13] Q4.2 : un minimum réglé à 6:1 manque la promesse, et le badge 
   }
 });
 
-test('[UI-05] le geste du titre suit l’état du cadre : Générer, Actualiser, ou À jour inactif', () => {
-  assert.deepEqual(gesteDeGeneration('jamais-dessinee'), { libelle: 'Générer sur Figma', actif: true });
-  assert.deepEqual(gesteDeGeneration('perimee'), { libelle: 'Actualiser sur Figma', actif: true });
-  assert.deepEqual(gesteDeGeneration('a-jour'), { libelle: 'À jour sur Figma', actif: false });
-  assert.deepEqual(gesteDeGeneration('introuvable'), { libelle: 'Générer sur Figma', actif: true });
-  assert.deepEqual(gesteDeGeneration('illisible'), { libelle: 'Générer sur Figma', actif: true });
+test('[UI-05] le premier geste d’une fiche suit l’état du cadre : Générer, Actualiser, ou aucun pour un cadre à jour ou illisible', () => {
+  assert.equal(premierGesteDeLaFiche('jamais-dessinee'), 'Générer sur Figma');
+  assert.equal(premierGesteDeLaFiche('perimee'), 'Actualiser sur Figma');
+  assert.equal(premierGesteDeLaFiche('introuvable'), 'Générer sur Figma');
+  assert.equal(premierGesteDeLaFiche('a-jour'), null);
+  assert.equal(premierGesteDeLaFiche('illisible'), null);
+});
+
+test('Q5.5 : les gestes globaux comptent les palettes en minuscules, au singulier pour une seule', () => {
+  assert.equal(genererLesPalettesPasAJour(2), 'Mettre à jour (2 palettes)');
+  assert.equal(genererLesPalettesPasAJour(1), 'Mettre à jour (1 palette)');
+  assert.equal(genererToutesLesPalettes(7), 'Générer tout (7 palettes)');
+  assert.equal(genererToutesLesPalettes(1), 'Générer tout (1 palette)');
 });
 
 test('l’exception de Figma et l’exemple d’écart se lisent dans le détail, pas dans le message', () => {

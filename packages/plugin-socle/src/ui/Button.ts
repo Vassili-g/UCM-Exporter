@@ -16,6 +16,8 @@ export interface OptionsBouton {
   variant?: VarianteBouton;
   onClick?: (event: MouseEvent) => void;
   disabled?: boolean;
+  /** 24 px de haut au lieu de 32 : un geste posé dans une fiche, à côté de boutons discrets. */
+  compact?: boolean;
 }
 
 /**
@@ -26,11 +28,13 @@ export function createButton({
   variant = 'primary',
   onClick,
   disabled = false,
+  compact = false,
 }: OptionsBouton): BoutonUi {
   const button = document.createElement('button') as BoutonUi;
   button.type = 'button';
   button.className = `btn btn-${variant}`;
   button.disabled = disabled;
+  if (compact) button.classList.add('btn-compact');
 
   const labelNode = document.createElement('span');
   labelNode.textContent = label;

@@ -280,6 +280,12 @@ p {
   cursor: pointer;
 }
 
+/* La taille compacte : la hauteur d'un geste secondaire, pour toutes les variantes. */
+.btn-compact {
+  min-height: var(--hauteur-secondaire);
+  padding: 0 var(--espace-controle);
+}
+
 .btn-primary {
   background: var(--fond-marque);
   color: var(--texte-sur-marque);

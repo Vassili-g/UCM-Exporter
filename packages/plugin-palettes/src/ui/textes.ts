@@ -338,15 +338,6 @@ export function infobulleDuPivot(teinte: number, ancrage: Ancrage): string {
   return `Couleur de référence : teinte ${Math.round(teinte) % 360}°. ${NOM_DU_PROFIL[ancrage.profil]} · nuance ${ancrage.crans.light} en Thème Light, ${ancrage.crans.dark} en Thème Dark.`;
 }
 
-/** L'indication discrète d'enregistrement, au rang 3 (D-D). */
-export const STATUTS_DU_RANGEMENT = {
-  lu: '',
-  'en-cours': 'Enregistrement…',
-  range: 'Enregistré',
-  refuse: 'Non enregistré',
-  invalide: 'Non enregistré',
-} as const;
-
 /** Le nom d'une copie de palette. */
 export function nomDeLaCopie(nom: string): string {
   return `Copie de ${nom}`;
@@ -497,8 +488,6 @@ export const TEXTES_DES_GARANTIES = {
     `État ${NOM_DE_L_ETAT[etat]} : ${contrasteEcrit(contraste)} pour un minimum de ${seuilEcrit(seuil)}:1`,
   numeros: (premier: string, second: string) => `${premier} / ${second}`,
   resultat: (tenue: boolean, contraste: number) => `${tenue ? '✓' : '✗'} ${ecrireContraste(contraste)}`,
-  voirLesGaranties: 'Voir les garanties',
-  bilan: (soft: string, vivid: string) => `Garanties : ${soft} · ${vivid}`,
 } as const;
 
 /** Les textes du détail d'une nuance ([UI-10], N039). */
@@ -965,11 +954,8 @@ export function importFutur(fichier: string, version: number): Constat {
 /** Les libellés de la génération et de l'onglet Planche (section 13.2). */
 export const TEXTES_DU_DESSIN = {
   dessiner: 'Générer sur Figma',
-  // Le geste de la ligne du titre, selon l'état du cadre ([UI-05]).
+  // Le premier geste d'une fiche, selon l'état du cadre ([UI-05]).
   actualiserSurFigma: 'Actualiser sur Figma',
-  aJourSurFigma: 'À jour sur Figma',
-  generationEnCours: 'Génération…',
-  dessinerTout: 'Générer toutes les palettes',
   aJour: 'À jour',
   perimee: 'À mettre à jour',
   redessinerQuandMeme: 'Remplacer le cadre et son contenu',
@@ -982,7 +968,9 @@ export const TEXTES_DU_DESSIN = {
   // N009, N010, puis N043 à N047.
   introuvable: 'Cadre introuvable',
   illisible: 'Lecture impossible',
-  modifier: 'Modifier la palette',
+  // Les deux autres gestes d'une fiche, après le premier (Y1.9).
+  afficher: 'Afficher',
+  modifier: 'Modifier',
   actualiser: 'Actualiser',
   chercherPartout: 'Chercher dans tout le fichier',
   palettesEtReglages: 'Palettes et réglages',
@@ -1005,15 +993,13 @@ export function etatDuCadreEcrit(etat: EtatDuCadre): string {
 }
 
 /**
- * Le geste de génération de la ligne du titre ([UI-05]) : « Générer sur
- * Figma » sans cadre, « Actualiser sur Figma » quand le cadre a changé, et
- * « À jour sur Figma », inactif, quand il est à jour. Un cadre introuvable ou
- * illisible garde « Générer sur Figma » : son état s'écrit sous le titre.
+ * Le premier geste d'une fiche de l'onglet Planches ([UI-05]) : « Générer sur
+ * Figma » sans cadre ou pour un cadre introuvable, « Actualiser sur Figma »
+ * quand le cadre a changé. Un cadre à jour ou illisible n'en a pas : `null`.
  */
-export function gesteDeGeneration(etat: EtatDuCadre): { readonly libelle: string; readonly actif: boolean } {
-  if (etat === 'a-jour') return { libelle: TEXTES_DU_DESSIN.aJourSurFigma, actif: false };
-  if (etat === 'perimee') return { libelle: TEXTES_DU_DESSIN.actualiserSurFigma, actif: true };
-  return { libelle: TEXTES_DU_DESSIN.dessiner, actif: true };
+export function premierGesteDeLaFiche(etat: EtatDuCadre): string | null {
+  if (etat === 'a-jour' || etat === 'illisible') return null;
+  return etat === 'perimee' ? TEXTES_DU_DESSIN.actualiserSurFigma : TEXTES_DU_DESSIN.dessiner;
 }
 
 /** La page d'un cadre rangé hors de la page de la planche (V8.6, N048). */
@@ -1021,9 +1007,19 @@ export function pageDuCadre(nom: string): string {
   return `Page « ${nom} »`;
 }
 
-/** Le geste qui génère les palettes qui ne sont pas à jour (V8.4, N049). */
+/** Le nombre de palettes d'un geste global, au singulier pour une seule (Q5.5). */
+function nombreDePalettes(nombre: number): string {
+  return nombre === 1 ? '1 palette' : `${nombre} palettes`;
+}
+
+/** Le geste qui génère les palettes qui ne sont pas à jour (V8.4, Y1.8). */
 export function genererLesPalettesPasAJour(nombre: number): string {
-  return nombre === 1 ? 'Générer la palette qui n’est pas à jour' : `Générer les ${nombre} palettes qui ne sont pas à jour`;
+  return `Mettre à jour (${nombreDePalettes(nombre)})`;
+}
+
+/** Le geste qui génère toutes les palettes (V8.4, Y1.8). */
+export function genererToutesLesPalettes(nombre: number): string {
+  return `Générer tout (${nombreDePalettes(nombre)})`;
 }
 
 /** La ligne technique de la carte « Palettes et réglages » (V8.5, N050). */

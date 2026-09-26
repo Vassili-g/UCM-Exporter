@@ -103,11 +103,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Rang 3 : « Enregistré » ou « Enregistrement… », à droite du titre de premier rang. */
-.etat-rangement {
-  flex-shrink: 0;
-}
-
 .selecteur {
   position: relative;
   min-width: 0;
@@ -368,7 +363,12 @@
   outline-offset: 1px;
 }
 
-/* Deux segments, comme les onglets : le mode pressé porte le fond des blocs. */
+/*
+ * Les bascules à onglets : thème, profil, vue. L'onglet actif prend un fond
+ * propre, que les cartes ne portent pas : le fond tertiaire de Figma éclairci
+ * vers le texte au thème sombre, assombri au thème clair. Le premier fond sert
+ * au moteur qui ne lit pas `color-mix`.
+ */
 .bascule {
   display: flex;
   gap: var(--espace-serre);
@@ -386,7 +386,8 @@
 }
 
 .bascule-option[aria-pressed='true'] {
-  background: var(--fond-bloc);
+  background: var(--fond-note);
+  background: color-mix(in srgb, var(--fond-note) 85%, var(--texte));
   color: var(--texte);
 }
 
@@ -893,16 +894,21 @@
   gap: var(--espace-controle);
 }
 
+/* « Mettre à jour » et « Générer tout » : 10 px de plus que la pile, au-dessus et au-dessous. */
+.gestes-globaux {
+  margin: 10px 0;
+}
+
 /*
- * Une palette supprimée : la couleur d'avertissement du socle, mêlée au fond
- * et à la bordure des fiches pour rester discrète. Le premier couple sert au
+ * Une palette supprimée : la couleur d'avertissement du socle, mêlée pour un
+ * tiers au fond de la page et pour un quart à la bordure des fiches. Le premier couple sert au
  * moteur qui ne lit pas `color-mix`.
  */
 .carte.carte-supprimee {
   border-color: var(--texte-avertissement);
   background: var(--fond-avertissement);
-  border-color: color-mix(in srgb, var(--texte-avertissement) 45%, var(--bordure));
-  background: color-mix(in srgb, var(--fond-avertissement) 55%, var(--fond-bloc));
+  border-color: color-mix(in srgb, var(--texte-avertissement) 25%, var(--bordure));
+  background: color-mix(in srgb, var(--fond-avertissement) 35%, var(--fond));
 }
 
 .fiche-planche .carte-titre {
@@ -979,22 +985,22 @@
 
 /*
  * Un filet sépare le choix et la création d'une palette de la palette ouverte,
- * avec 5 px de chaque côté.
+ * avec 15 px de chaque côté.
  */
 .choix-de-palette {
   gap: var(--espace-controle);
-  padding-bottom: 5px;
+  padding-bottom: 15px;
   border-bottom: 1px solid var(--bordure);
 }
 
 .vue-de-la-palette {
-  gap: 5px;
+  gap: 15px;
 }
 
 /*
- * La tête de la palette : « Palette [nom] » et le bouton de génération sur une
- * ligne ([UI-05]), puis la ligne secondaire et le résultat. Un nom long se
- * coupe par des points de suspension ; le bouton garde son libellé entier.
+ * La tête de la palette : « Palette [nom] » seul sur sa ligne ([UI-11]), puis
+ * le refus d'un enregistrement. Un nom long se coupe par des points de
+ * suspension.
  */
 .tete-de-la-palette {
   display: grid;
@@ -1002,27 +1008,14 @@
   gap: var(--espace-serre);
 }
 
-.tete-de-configuration {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: var(--espace-controle);
-}
-
 .titre-de-premier-rang {
   min-width: 0;
-  flex: 1 1 auto;
   margin: 0;
   overflow: hidden;
   font-size: 16px;
   font-weight: 600;
   line-height: 24px;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tete-de-configuration .bouton-du-titre {
-  flex-shrink: 0;
   white-space: nowrap;
 }
 
@@ -1183,6 +1176,11 @@
   padding: 0;
 }
 
+/* Un segment de choix d'une valeur n'est pas un onglet : il garde le fond des blocs. */
+.bascule-de-base .bascule-option[aria-pressed='true'] {
+  background: var(--fond-bloc);
+}
+
 .repere-de-la-reference {
   font-weight: 600;
 }
@@ -1199,15 +1197,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--espace-controle);
-}
-
-/*
- * Les onglets de thème sont posés sur le fond des blocs, celui de la carte :
- * l'onglet actif prend le fond tertiaire de Figma pour se détacher dans les
- * deux thèmes.
- */
-.onglets-de-theme .bascule-option[aria-pressed='true'] {
-  background: var(--fond-note);
 }
 
 .nuancier-fond {
@@ -1764,24 +1753,6 @@
   font-weight: 600;
 }
 
-.ligne-du-bilan {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-controle);
-}
-
-.bilan-de-la-derive[data-etat='manque'] {
-  color: var(--texte-danger);
-}
-
-/* « Générer sur Figma » ferme la configuration ; son résultat reste sur la même ligne. */
-.generation-ligne {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--espace-controle);
-}
-
 .etat-du-cadre {
   margin: 0;
   color: var(--texte-second);
@@ -2206,10 +2177,14 @@
   outline: none;
 }
 
-/* La grille des états : une rangée par composant, une colonne par état. */
+/*
+ * La grille des états : une rangée par composant, une colonne par état. Un
+ * anneau de focus déborde de 4 px : 12 px entre deux rangées laissent 4 px de
+ * jour entre deux anneaux voisins.
+ */
 .essai-etats {
   display: grid;
-  gap: var(--espace-controle);
+  gap: 12px;
   padding: var(--espace-bloc);
   border-radius: 8px;
   background: var(--essai-fond);

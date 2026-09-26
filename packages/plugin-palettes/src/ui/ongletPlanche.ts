@@ -2,9 +2,10 @@
  * L'onglet Planches (section 13.2, [UI-02]) : une fiche par palette, dans
  * l'ordre de la recette, avec ses rampes Soft et Vivid dans le thème choisi
  * en tête, sa référence, le résultat de ses garanties et l'état de son cadre
- * (V8.1, V8.2). Chaque fiche porte trois gestes : « Afficher dans Figma » pour
- * un cadre localisé, « Modifier la palette » et « Générer sur Figma » (V8.3).
- * Suivent la génération des palettes qui ne sont pas à jour et celle de toutes
+ * (V8.1, V8.2). Chaque fiche porte ses gestes dans cet ordre : « Générer sur
+ * Figma » ou « Actualiser sur Figma », bouton principal, quand le cadre en
+ * demande un ; « Afficher » pour un cadre localisé ; « Modifier ». Tous ont la
+ * taille compacte du socle. Suivent « Mettre à jour » et « Générer tout »
  * (V8.4), une carte par palette supprimée dont le cadre reste dans Figma
  * ([PLA-27]), les notices, puis la carte repliée « Palettes et réglages »
  * (V8.5).
@@ -34,10 +35,12 @@ import {
   enTeteDeLaPlanche,
   etatDuCadreEcrit,
   genererLesPalettesPasAJour,
+  genererToutesLesPalettes,
   ligneDeLaReference,
   nomDeLaPalette,
   noticeDisplayP3,
   pageDuCadre,
+  premierGesteDeLaFiche,
   progressionDuDessin,
   rechercheBornee,
   recetteFuture,
@@ -140,7 +143,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   let aConfirmer: readonly string[] | null = null;
 
   const genererPasAJour = createButton({ label: genererLesPalettesPasAJour(0), onClick: () => demander(pasAJour) });
-  const genererTout = createButton({ label: TEXTES_DU_DESSIN.dessinerTout, variant: 'secondary', onClick: () => demander(recette?.palettes.map((palette) => palette.id) ?? []) });
+  const genererTout = createButton({ label: genererToutesLesPalettes(0), variant: 'secondary', onClick: () => demander(recette?.palettes.map((palette) => palette.id) ?? []) });
   gestesDeConfirmation.append(
     createButton({ label: TEXTES_DU_DESSIN.confirmer, onClick: () => lancer(aConfirmer ?? []) }),
     createButton({
@@ -153,7 +156,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     }),
   );
   const pied = document.createElement('div');
-  pied.className = 'creation-ligne';
+  pied.className = 'creation-ligne gestes-globaux';
   pied.append(genererPasAJour, genererTout);
 
   // Import, export, rapport et détails techniques, repliés (V8.5).
@@ -218,9 +221,9 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     texte.textContent = TEXTES_DE_LA_PALETTE_SUPPRIMEE.texte;
     const gestesDeLaCarte = document.createElement('div');
     gestesDeLaCarte.className = 'fiche-gestes';
-    const voir = bouton(TEXTES_DU_DESSIN.voirSurLaPlanche, 'bouton-discret', () => gestes.voirSurLaPlanche(cadre.page, [cadre.cadre]));
+    const voir = createButton({ label: TEXTES_DU_DESSIN.voirSurLaPlanche, variant: 'secondary', compact: true, onClick: () => gestes.voirSurLaPlanche(cadre.page, [cadre.cadre]) });
     voir.dataset.geste = 'voir';
-    const supprimer = createButton({ label: TEXTES_DE_LA_PALETTE_SUPPRIMEE.supprimer, variant: 'danger', onClick: () => retirer(cadre, rang) });
+    const supprimer = createButton({ label: TEXTES_DE_LA_PALETTE_SUPPRIMEE.supprimer, variant: 'danger', compact: true, onClick: () => retirer(cadre, rang) });
     supprimer.dataset.geste = 'supprimer';
     gestesDeLaCarte.append(voir, supprimer);
     carte.corps.append(texte, gestesDeLaCarte);
@@ -272,22 +275,22 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
 
     const gestesDeLaFiche = document.createElement('div');
     gestesDeLaFiche.className = 'fiche-gestes';
-    if (cadre.cadre && cadre.page) {
-      const voir = bouton(TEXTES_DU_DESSIN.voirSurLaPlanche, 'bouton-discret', () => gestes.voirSurLaPlanche(cadre.page!, [cadre.cadre!]));
-      voir.dataset.geste = 'voir';
-      gestesDeLaFiche.append(voir);
-    }
-    const modifier = bouton(TEXTES_DU_DESSIN.modifier, 'bouton-discret', () => gestes.modifier(id, mode));
-    modifier.dataset.geste = 'modifier';
-    gestesDeLaFiche.append(modifier);
-    if (!sansGeneration && cadre.etat !== 'illisible') {
-      const libelle = cadre.etat === 'perimee' ? TEXTES_DU_DESSIN.actualiserSurFigma : TEXTES_DU_DESSIN.dessiner;
-      const generer = bouton(libelle, 'bouton-discret', () => lancer([id]));
+    const premier = sansGeneration ? null : premierGesteDeLaFiche(cadre.etat);
+    if (premier) {
+      const generer = createButton({ label: premier, compact: true, onClick: () => lancer([id]) });
       generer.dataset.geste = 'generer';
       generer.disabled = enCours || blocage !== null;
       generer.title = blocage ?? '';
       gestesDeLaFiche.append(generer);
     }
+    if (cadre.cadre && cadre.page) {
+      const voir = createButton({ label: TEXTES_DU_DESSIN.afficher, variant: 'secondary', compact: true, onClick: () => gestes.voirSurLaPlanche(cadre.page!, [cadre.cadre!]) });
+      voir.dataset.geste = 'voir';
+      gestesDeLaFiche.append(voir);
+    }
+    const modifier = createButton({ label: TEXTES_DU_DESSIN.modifier, variant: 'secondary', compact: true, onClick: () => gestes.modifier(id, mode) });
+    modifier.dataset.geste = 'modifier';
+    gestesDeLaFiche.append(modifier);
 
     fiche.corps.append(apercuCompact(lue, analyse, mode), reference, resultatsDesGaranties(analyse, mode), etat, gestesDeLaFiche);
     return fiche.element;
@@ -331,6 +334,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     pied.hidden = palettes.length === 0 || planche.suiviFutur;
     genererPasAJour.hidden = pasAJour.length === 0;
     genererPasAJour.setLabel(genererLesPalettesPasAJour(pasAJour.length));
+    if (!enCours) genererTout.setLabel(genererToutesLesPalettes(palettes.length));
 
     const introuvables = fraicheur.palettes.filter(({ etat }) => etat === 'introuvable').map(({ palette }) => noms()[palette] ?? palette);
     const bornee: HTMLElement[] = [];
@@ -391,7 +395,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     afficherDessin(etat, nomsDuDessin) {
       enCours = etat.phase === 'en-cours';
       actualiser.disabled = enCours;
-      genererTout.setLabel(etat.phase === 'en-cours' ? progressionDuDessin(etat.fait, etat.total, etat.nom) : TEXTES_DU_DESSIN.dessinerTout);
+      genererTout.setLabel(etat.phase === 'en-cours' ? progressionDuDessin(etat.fait, etat.total, etat.nom) : genererToutesLesPalettes(recette?.palettes.length ?? 0));
       rendreLesGestes();
       const resultat = blocDuResultat(etat, nomsDuDessin, gestes);
       zoneDuResultat.replaceChildren(...(resultat ? [resultat] : []));

@@ -126,8 +126,6 @@ const ongletPalettes = createOngletPalettes({
   recharger: () => frontiere.lireLEtat(),
   exporterLeBrouillon: () => demandesDeLaRecette.exporter(),
   tirer: () => crypto.getRandomValues(new Uint32Array(1))[0],
-  dessiner: (palettes, noms) => suivi.dessiner(palettes, AVEC_LA_GRILLE, noms),
-  resultat: gestesDuResultat,
   recetteEnFichier: createGestesDeLaRecette(demandesDeLaRecette),
   ouvrirReglages(cible) {
     ouvrirConfiguration();
@@ -214,7 +212,6 @@ suivi.abonner((etat) => {
   ongletPalettes.element.inert = enCours;
   ongletPlanche.element.inert = enCours;
   settingsButton.disabled = enCours;
-  ongletPalettes.afficherDessin(etat, suivi.noms());
   ongletPlanche.afficherDessin(etat, suivi.noms());
 });
 
@@ -267,7 +264,7 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   const message = event.data.pluginMessage;
   if (!message) return;
   if (message.type === 'etat' && frontiere.accepterEtat(message)) {
-    ongletPalettes.afficher(message.classement, message.profil, message.planche);
+    ongletPalettes.afficher(message.classement);
     panneauDeConfiguration.afficher();
     dernierEtat = message;
     afficherLaPlanche();

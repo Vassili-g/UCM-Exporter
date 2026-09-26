@@ -103,7 +103,8 @@ const ouvrirLaPlanche = { clic: '#onglet-planche' };
 const importer = (contenu) => ({ fichier: { dans: '#panneau-planche input[type="file"]', nom: 'palettes-et-reglages.json', contenu } });
 
 const ouvrirLaConfiguration = { clic: '[aria-label="Ouvrir les réglages communs"]' };
-const dessinerLaPalette = { clic: '.tete-de-configuration .bouton-du-titre' };
+/** Le premier geste de la première fiche de l'onglet Planches, qui doit être ouvert. */
+const dessinerLaPalette = { clic: '#panneau-planche .fiche-planche [data-geste="generer"]' };
 const deplierLInterfaceDeTest = { clic: '[aria-label="Interface de test"] .carte-bascule' };
 const montrerLeThemeDark = { clic: '.nuancier-tete .bascule-option:nth-child(2)' };
 
@@ -205,7 +206,7 @@ const ETATS = [
     id: 'premier-lancement-palette-creee',
     titre: 'Premier lancement, palette créée',
     quand: 'Sur un fichier sans recette, le designer crée sa première palette : la recette se range.',
-    regarder: 'La palette ouverte, son verdict au rang 1, et « rangé » en couleur secondaire.',
+    regarder: 'La palette ouverte, « Palette » suivi de son code seul sur la ligne du titre, sans indication d’enregistrement.',
     existe: true,
     atteinte: [
       etatDuFichier(''),
@@ -226,7 +227,7 @@ const ETATS = [
     id: 'recette-modifiee-ailleurs',
     titre: 'Recette modifiée ailleurs',
     quand: 'Le designer duplique une palette, mais la recette rangée a changé depuis sa lecture.',
-    regarder: 'Le refus en tête, au-dessus de la barre, ses gestes « Exporter mes modifications » et « Recharger les palettes », « Générer sur Figma » inactif avec sa raison en infobulle, et « non rangé ».',
+    regarder: 'Le refus en tête, au-dessus de la barre, et ses gestes « Exporter mes modifications » et « Recharger les palettes ».',
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU])),
@@ -293,13 +294,15 @@ const ETATS = [
   {
     id: 'dessin-en-cours',
     titre: 'Dessin en cours',
-    quand: 'Le designer clique « Générer sur Figma » : le sandbox annonce le premier cadre.',
-    regarder: '« Génération… » inactif à droite du titre, la progression sous le titre, et les deux onglets inertes : aucun geste possible.',
+    quand: 'Le designer clique « Générer sur Figma » dans la fiche de Bleu : le sandbox annonce le premier cadre.',
+    regarder: 'La progression à la place de « Générer tout (1 palette) », et les deux onglets inertes : aucun geste possible.',
     existe: true,
+    // L'ouverture de l'onglet relit l'état (demande 2) : la génération porte la demande 3.
     atteinte: [
       etatDuFichier(rangee([BLEU])),
+      ouvrirLaPlanche,
       dessinerLaPalette,
-      { message: { type: 'progression', demande: 2, fait: 0, total: 1, nom: 'Bleu' } },
+      { message: { type: 'progression', demande: 3, fait: 0, total: 1, nom: 'Bleu' } },
     ],
   },
   {
@@ -310,14 +313,15 @@ const ETATS = [
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU])),
+      ouvrirLaPlanche,
       dessinerLaPalette,
-      { message: { type: 'dessin', demande: 2, resultat: { issue: 'interrompue', palette: BLEU.id, message: 'in set_characters: font not loaded', dessines: 0 } } },
+      { message: { type: 'dessin', demande: 3, resultat: { issue: 'interrompue', palette: BLEU.id, message: 'in set_characters: font not loaded', dessines: 0 } } },
     ],
   },
   {
     id: 'confirmation-six-palettes',
     titre: 'Confirmation au-delà de six palettes',
-    quand: 'Le designer clique « Générer les 7 palettes qui ne sont pas à jour » sur un fichier de sept palettes jamais générées.',
+    quand: 'Le designer clique « Mettre à jour (7 palettes) » sur un fichier de sept palettes jamais générées.',
     regarder: 'La confirmation qui compte les palettes et les calques, sous les fiches, et ses deux gestes.',
     existe: true,
     atteinte: [
@@ -342,15 +346,16 @@ const ETATS = [
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU])),
+      ouvrirLaPlanche,
       dessinerLaPalette,
-      { message: { type: 'dessin', demande: 2, resultat: { issue: 'police', style: 'Inter Medium' } } },
+      { message: { type: 'dessin', demande: 3, resultat: { issue: 'police', style: 'Inter Medium' } } },
     ],
   },
   {
     id: 'planche-a-jour',
     titre: 'Planche à jour',
     quand: 'Bleu et Jaune ont été dessinées, et la recette n’a pas changé depuis.',
-    regarder: 'Deux fiches « À jour », chacune avec ses rampes Soft et Vivid, le ◆ de la référence, le résultat de ses garanties et ses trois gestes ; en pied, « Générer toutes les palettes » seul.',
+    regarder: 'Deux fiches « À jour », chacune avec ses rampes Soft et Vivid, le ◆ de la référence, le résultat de ses garanties, puis « Afficher » et « Modifier » sans premier geste ; en pied, « Générer tout (2 palettes) » seul.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU, JAUNE]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU, JAUNE]), BLEU, '40:2'), cadreDessine(rangee([BLEU, JAUNE]), JAUNE, '40:3')])),
@@ -361,7 +366,7 @@ const ETATS = [
     id: 'planche-perimee',
     titre: 'Planche périmée',
     quand: 'Le cadre de Jaune a été dessiné sur une recette d’avant ; Ardoise n’a jamais été dessinée.',
-    regarder: 'Bleu « À jour », Jaune « À mettre à jour » et son geste « Actualiser sur Figma », Ardoise sans état écrit ni « Afficher dans Figma », et « Générer les 2 palettes qui ne sont pas à jour » en pied.',
+    regarder: 'Bleu « À jour » sans premier geste ; Jaune « À mettre à jour », « Actualiser sur Figma » en bleu puis « Afficher » et « Modifier », tous trois de 24 px ; Ardoise sans état écrit, « Générer sur Figma » et « Modifier » sans « Afficher » ; en pied, « Mettre à jour (2 palettes) » et « Générer tout (3 palettes) », détachés des fiches.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee(TROIS_PALETTES), 'SRGB', plancheLue([cadreDessine(rangee(TROIS_PALETTES), BLEU, '40:2'), cadreDessine(rangee(TROIS_PALETTES), JAUNE, '40:3', { empreinte: '0badc0de' })])),
@@ -372,7 +377,7 @@ const ETATS = [
     id: 'palette-supprimee',
     titre: 'Palette supprimée',
     quand: 'Les palettes Ardoise et Rouge ont été supprimées ; leurs cadres sont restés dans Figma.',
-    regarder: 'Une carte par palette supprimée sous les gestes de génération, teinte d’avertissement discrète : son nom, sa phrase, « Afficher dans Figma » et « Supprimer définitivement ».',
+    regarder: 'Une carte par palette supprimée sous les gestes de génération, d’un orange proche du fond de la page : son nom, sa phrase, « Afficher dans Figma » et « Supprimer définitivement », de la hauteur des gestes des fiches.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2'), ...CADRES_SUPPRIMES])),
@@ -406,16 +411,17 @@ const ETATS = [
   {
     id: 'calques-etrangers',
     titre: 'Calques étrangers',
-    quand: 'Le designer a posé une note et une flèche dans le cadre de Bleu, puis clique « Générer sur Figma ».',
+    quand: 'Le designer a posé une note et une flèche dans le cadre périmé de Bleu, puis clique « Actualiser sur Figma ».',
     regarder: 'La confirmation qui nomme les deux calques, et ses gestes « Redessiner quand même » et « Annuler ».',
     existe: true,
     atteinte: [
-      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2')])),
+      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2', { empreinte: '0badc0de' })])),
+      ouvrirLaPlanche,
       dessinerLaPalette,
       {
         message: {
           type: 'dessin',
-          demande: 2,
+          demande: 3,
           resultat: { issue: 'etrangers', cadres: [{ palette: BLEU.id, calques: [{ id: '40:7', nom: 'Note' }, { id: '40:8', nom: 'Flèche' }] }] },
         },
       },
@@ -487,14 +493,15 @@ const ETATS = [
   {
     id: 'generation-reussie',
     titre: 'Génération réussie',
-    quand: 'La palette ouverte vient d’être générée sur Figma, et l’état du fichier est relu.',
-    regarder: '« Palette Bleu » et « À jour sur Figma » inactif sur une ligne, « Afficher dans Figma » dessous, sans message de succès empilé.',
+    quand: 'Bleu vient d’être générée depuis sa fiche, et l’état du fichier est relu.',
+    regarder: 'La fiche de Bleu « À jour », sans premier geste, avec « Afficher » et « Modifier », sans message de succès empilé.',
     existe: true,
     atteinte: [
       etatDuFichier(rangee([BLEU])),
+      ouvrirLaPlanche,
       dessinerLaPalette,
-      { message: { type: 'dessin', demande: 2, resultat: { issue: 'dessinee', page: PAGE_DE_LA_PLANCHE, cadres: [{ palette: BLEU.id, cadre: '40:2' }], peints: [] } } },
-      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2')]), 3),
+      { message: { type: 'dessin', demande: 3, resultat: { issue: 'dessinee', page: PAGE_DE_LA_PLANCHE, cadres: [{ palette: BLEU.id, cadre: '40:2' }], peints: [] } } },
+      etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2')]), 4),
     ],
   },
   {
@@ -637,18 +644,10 @@ const ETATS = [
     atteinte: [etatDuFichier(rangee([BLEU])), { clic: '[aria-label^="Profil Vivid, nuance 600,"]' }, { clic: '[aria-label^="Profil Vivid, nuance 600,"]' }],
   },
   {
-    id: 'titre-generer',
-    titre: 'Titre et « Générer sur Figma »',
-    quand: 'Bleu n’a jamais été générée.',
-    regarder: '« Palette Bleu » à gauche et « Générer sur Figma » à droite, sur une ligne, sans état écrit dessous.',
-    existe: true,
-    atteinte: [etatDuFichier(rangee([BLEU]))],
-  },
-  {
-    id: 'titre-actualiser',
-    titre: 'Titre et « Actualiser sur Figma »',
+    id: 'titre-seul',
+    titre: 'Titre seul',
     quand: 'Le cadre de Bleu a été dessiné sur une recette d’avant : il a changé depuis.',
-    regarder: '« Palette Bleu » et « Actualiser sur Figma » sur une ligne, « Afficher dans Figma » dessous.',
+    regarder: '« Palette Bleu » seul sur la ligne du titre : ni bouton de génération, ni état du cadre, ni « Afficher dans Figma » ; 15 px de part et d’autre du filet au-dessus.',
     existe: true,
     atteinte: [etatDuFichier(rangee([BLEU]), 'SRGB', plancheLue([cadreDessine(rangee([BLEU]), BLEU, '40:2', { empreinte: '0badc0de' })]))],
   },
@@ -656,7 +655,7 @@ const ETATS = [
     id: 'titre-nom-long',
     titre: 'Titre d’un nom long',
     quand: 'La palette porte un nom de soixante caractères, à la largeur minimale de la fenêtre.',
-    regarder: 'Le nom coupé par des points de suspension, et « Générer sur Figma » entier, dans le panneau.',
+    regarder: 'Le nom coupé par des points de suspension, dans le panneau.',
     existe: true,
     atteinte: [etatDuFichier(rangee([{ ...BLEU, nom: 'Bleu institutionnel des parcours de souscription en ligne' }]))],
   },
@@ -672,7 +671,7 @@ const ETATS = [
     id: 'interface-de-test-etats',
     titre: 'Interface de test, vue États',
     quand: 'Le designer déplie « Interface de test » et choisit « États ».',
-    regarder: 'Une rangée par composant, boutons plein, soft, contour et sans fond, champ, lien et badge, et une colonne par état, default, hover, active et focus ; un tiret pour un état que le composant n’a pas.',
+    regarder: 'Une rangée par composant, boutons plein, soft, contour et sans fond, champ, lien et badge, et une colonne par état, default, hover, active et focus ; un tiret pour un état que le composant n’a pas ; les anneaux de focus de deux rangées voisines séparés par un jour ; l’onglet « États » sur un fond visible.',
     existe: true,
     atteinte: [etatDuFichier(rangee([BLEU])), deplierLInterfaceDeTest, { clic: '.bascule-de-l-essai .bascule-option:nth-child(2)' }],
   },
@@ -683,6 +682,46 @@ const ETATS = [
     regarder: 'La même page sur le fond Dark, peinte des nuances Dark, et le résumé de la carte « Thème Dark · Vivid ».',
     existe: true,
     atteinte: [etatDuFichier(rangee([BLEU])), deplierLInterfaceDeTest, montrerLeThemeDark],
+  },
+  {
+    id: 'palette-une-intensite',
+    titre: 'Palette à une intensité',
+    quand: 'Bleu porte une seule intensité, celle de sa couleur de référence.',
+    regarder: null,
+    existe: false,
+    attendu: 'Y4.1',
+  },
+  {
+    id: 'palette-deux-intensites',
+    titre: 'Palette à deux intensités',
+    quand: 'Bleu porte Soft et Vivid ; « Référence exacte dans » se règle dans la carte « Deux intensités ».',
+    regarder: null,
+    existe: false,
+    attendu: 'Y4.1',
+  },
+  {
+    id: 'fiche-refaite',
+    titre: 'Fiche d’une palette',
+    quand: 'Trois palettes dans l’onglet Planches, à jour, périmée et jamais générée.',
+    regarder: null,
+    existe: false,
+    attendu: 'Y6.1',
+  },
+  {
+    id: 'contenu-des-planches',
+    titre: 'Contenu des planches',
+    quand: 'Le designer déplie la carte « Contenu des planches » des Réglages communs.',
+    regarder: null,
+    existe: false,
+    attendu: 'Y5.3',
+  },
+  {
+    id: 'fonds-sombres',
+    titre: 'Fonds du thème Dark',
+    quand: 'Le designer règle « Fonds du thème Dark » dans la carte Intensités des Réglages communs.',
+    regarder: null,
+    existe: false,
+    attendu: 'Y7.5',
   },
 ];
 

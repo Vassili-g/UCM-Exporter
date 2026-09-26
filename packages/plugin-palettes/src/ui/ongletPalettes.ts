@@ -1,9 +1,10 @@
 /**
  * L'onglet Palettes (section 13.2) : le choix ou la création d'une palette,
- * le titre « Palette [nom] » et le bouton de génération sur la même ligne,
- * puis les cartes : Configuration de la palette, aperçu, Intensités et Dérive
- * de teinte repliables, Garanties de contraste, et l'Interface de test en
- * dernier ([UI-12]). Un message se lit sous la carte qu'il concerne.
+ * le titre « Palette [nom] » seul sur sa ligne, puis les cartes :
+ * Configuration de la palette, aperçu, Intensités et Dérive de teinte
+ * repliables, Garanties de contraste, et l'Interface de test en dernier
+ * ([UI-12]). Un message se lit sous la carte qu'il concerne. La génération
+ * appartient à l'onglet Planches ([UI-05]).
  *
  * Une saisie recalcule l'aperçu dans l'interface ([ENT-02]). La recette
  * s'enregistre à la fin de chaque geste : valider un champ, relâcher un
@@ -42,8 +43,6 @@ import {
   revenirAuModele,
   supprimer,
 } from '../edition';
-import { PLANCHE_SANS_CADRE, type EtatDeLaPlanche, type ProfilDuDocument } from '../lecture';
-import { fraicheurDUnePalette } from '../planche/fraicheur';
 import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction } from '../presentation';
 import { blocDeConstat, listeDesMessages, type Message } from './constats';
 import { createAjustement } from './ajustement';
@@ -53,10 +52,8 @@ import { nuancesProposees } from './couleur/propositions';
 import { createPipette, fermerLeSelecteur } from './couleur/selecteur';
 import { createCreation } from './creation';
 import { createEditeur } from './derive/editeur';
-import type { EtatDuDessin, GestesDuResultat } from './dessin';
 import type { StatutDuRangement } from './frontiere';
 import { createGaranties } from './garanties';
-import { createGeneration, type CadreDeLaPalette } from './generation';
 import type { GestesDeLaRecetteUi } from './gestesDeLaRecette';
 import { createIntensites } from './intensites';
 import { createInterfaceDeTest } from './interfaceDeTest';
@@ -65,7 +62,6 @@ import { messagesDeLaPalette } from './messagesDePalette';
 import { createNuancier } from './nuancier';
 import { createSelecteur } from './selecteur';
 import {
-  STATUTS_DU_RANGEMENT,
   TEXTES,
   TEXTES_DE_L_AJUSTEMENT,
   TEXTES_DE_LA_BASE,
@@ -96,10 +92,6 @@ export interface DemandesDeLOnglet {
   exporterLeBrouillon(): void;
   /** Un entier de 32 bits tiré au hasard, pour les identifiants de palette (D-K). */
   tirer(): number;
-  /** Génère la palette ouverte ([UI-05]). */
-  dessiner(palettes: readonly string[], noms: { readonly [id: string]: string }): void;
-  /** Les gestes du résultat d'une génération. */
-  resultat: GestesDuResultat;
   /** Les gestes de la recette en fichier, que le blocage d'une recette illisible ou future offre ([REC-11]). */
   recetteEnFichier: GestesDeLaRecetteUi;
   /** Ouvre les Réglages communs sur le groupe qu'un message nomme ([VER-15]). */
@@ -108,7 +100,7 @@ export interface DemandesDeLOnglet {
 
 export interface OngletPalettesUi {
   element: HTMLDivElement;
-  afficher(classement: Classement, profil: ProfilDuDocument, planche: EtatDeLaPlanche): void;
+  afficher(classement: Classement): void;
   poserStatut(statut: StatutDuRangement, refus: readonly Refus[]): void;
   /** La recette affichée, `null` quand elle ne se lit pas. */
   recette(): Recette | null;
@@ -120,8 +112,6 @@ export interface OngletPalettesUi {
   appliquer(recette: Recette): void;
   /** Une recette importée, ou la recette par défaut : elle remplace celle du fichier, même illisible, et s'enregistre. */
   importer(recette: Recette): void;
-  /** La génération en cours ou finie, que la ligne de l'action montre. */
-  afficherDessin(etat: EtatDuDessin, noms: { readonly [id: string]: string }): void;
   /** Ouvre une palette dans le thème que sa fiche de l'onglet Planche montrait (V8.3). */
   ouvrirLaPalette(id: string, mode: Mode): void;
 }
@@ -139,24 +129,20 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
 
   let recette: Recette | null = null;
   let classementLu: Classement | null = null;
-  let profil: ProfilDuDocument = 'SRGB';
-  let planche: EtatDeLaPlanche = PLANCHE_SANS_CADRE;
   let idOuvert = '';
   let creationOuverte = false;
   let suppressionDemandee = false;
   let note: Constat | null = null;
   let statut: StatutDuRangement = 'lu';
   let refus: Constat | null = null;
-  let dernierDessin: { etat: EtatDuDessin; noms: { readonly [id: string]: string } } = { etat: { phase: 'repos' }, noms: {} };
 
   // Le choix ou la création d'une palette, en tête de l'onglet : la liste prend la largeur libre ([UI-06]).
   const selecteur = createSelecteur((id) => {
     idOuvert = id;
     suppressionDemandee = false;
-    recalculerLeCadre();
     rendre();
   });
-  // L'action principale de l'onglet : créer une palette. La génération, au titre, est secondaire (X2.4).
+  // L'action principale de l'onglet : créer une palette.
   const plus = createButton({ label: TEXTES.nouvellePalette, onClick: () => ouvrirLaCreation() });
   plus.classList.add('bouton-de-barre');
   plus.setAttribute('aria-expanded', 'false');
@@ -200,31 +186,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   choix.className = 'choix-de-palette';
   choix.append(barre, confirmation, zoneDeLaNote);
 
-  /*
-   * Le titre de premier rang, « Palette [nom] » ([UI-11]), et le geste de
-   * génération à sa droite ([UI-05]) : un nom long se coupe, le bouton garde
-   * son libellé. Dessous, au rang 3, l'état de l'enregistrement, l'état d'un
-   * cadre introuvable, la progression et « Afficher dans Figma ».
-   */
+  // Le titre de premier rang, « Palette [nom] », seul sur sa ligne ([UI-11]) : un nom long se coupe.
   const titreDeConfiguration = document.createElement('h2');
   titreDeConfiguration.className = 'titre-de-premier-rang';
-  const indication = document.createElement('span');
-  indication.className = 'etat-rangement ligne-secondaire';
-  indication.setAttribute('aria-live', 'polite');
-  const generation = createGeneration({
-    ...demandes.resultat,
-    generer: () => {
-      const courante = ouverte();
-      if (courante) demandes.dessiner([courante.id], { [courante.id]: nomDeLaPalette(courante) });
-    },
-  });
-  const teteDeConfiguration = document.createElement('div');
-  teteDeConfiguration.className = 'tete-de-configuration';
-  teteDeConfiguration.append(titreDeConfiguration, generation.bouton);
-  generation.ligne.prepend(indication);
   const teteDeLaPalette = document.createElement('div');
   teteDeLaPalette.className = 'tete-de-la-palette';
-  teteDeLaPalette.append(teteDeConfiguration, generation.ligne, generation.zone);
+  teteDeLaPalette.append(titreDeConfiguration);
 
   // Carte Configuration de la palette ([UI-11]).
   // La pastille ouvre le sélecteur de couleur, qui propose les nuances Vivid du thème montré (W4.1).
@@ -365,11 +332,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     valider: (suivante) => {
       if (recette) valider(remplacerPalette(recette, suivante));
     },
-    voirLesGaranties: () => {
-      garanties.ouvrir();
-      garanties.element.scrollIntoView({ block: 'start' });
-      garanties.element.querySelector<HTMLElement>('.carte-bascule')?.focus({ preventScroll: true });
-    },
   });
   carteDeLaDerive.corps.append(editeur.element);
   // L'éditeur ne se dessine que déplié : l'ouvrir le dessine.
@@ -435,18 +397,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     return recette.palettes.find((candidate) => candidate.id === idOuvert) ?? recette.palettes[0];
   }
 
-  /**
-   * L'état du cadre de la palette ouverte. Le calcul reconstruit le modèle du
-   * cadre : il suit la fin d'un geste et chaque lecture, jamais un glisser.
-   */
-  let cadreOuvert: CadreDeLaPalette = { etat: 'jamais-dessinee', page: null, cadre: null };
-  function recalculerLeCadre(): void {
-    const courante = ouverte();
-    if (!recette || !courante) return;
-    const { etat, page, cadre } = fraicheurDUnePalette(recette, profil, planche, courante.id);
-    cadreOuvert = { etat, page, cadre };
-  }
-
   /** Remplace la recette affichée, sans l'enregistrer : une saisie en cours. */
   function modifier(suivante: Palette): void {
     if (!recette) return;
@@ -457,7 +407,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   /** La fin d'un geste : la recette s'enregistre. */
   function valider(suivante: Recette): void {
     recette = suivante;
-    recalculerLeCadre();
     rendre();
     demandes.ranger(suivante);
   }
@@ -654,9 +603,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     carteDeLaDerive.desactiver(grise ? TEXTES_DE_LA_DERIVE.grisDesactive : null);
     if (carteDeLaDerive.estOuverte()) editeur.afficher(lue, courante, analyse.rampes, analyse.ancrage, analyse);
     interfaceDeTest.afficher(lue, analyse, nuancier.mode());
-
-    generation.afficherLeCadre(cadreOuvert);
-    generation.afficherDessin(dernierDessin.etat, dernierDessin.noms, courante.id);
   }
 
   /**
@@ -669,7 +615,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   }
 
   function rendre(): void {
-    indication.textContent = STATUTS_DU_RANGEMENT[statut];
     rendreRefus();
     if (!classementLu) {
       montrer(vide);
@@ -702,13 +647,10 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
 
   return {
     element,
-    afficher(classement, profilLu, plancheLue) {
+    afficher(classement) {
       classementLu = classement;
-      profil = profilLu;
-      planche = plancheLue;
       recette = classement.etat === 'future' || classement.etat === 'illisible' ? null : classement.recette;
       refus = null;
-      recalculerLeCadre();
       rendre();
     },
     recette: () => recette,
@@ -725,16 +667,9 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       classementLu = { etat: 'courante', recette: suivante };
       valider(suivante);
     },
-    afficherDessin(etat, noms) {
-      dernierDessin = { etat, noms };
-      const courante = ouverte();
-      if (courante) generation.afficherDessin(etat, noms, courante.id);
-    },
     poserStatut(suivant, refusDuSandbox) {
       statut = suivant;
-      const blocage = suivant === 'refuse' ? TEXTES.conflitEnCours : null;
-      generation.bloquer(blocage);
-      demandes.recetteEnFichier.bloquer(blocage);
+      demandes.recetteEnFichier.bloquer(suivant === 'refuse' ? TEXTES.conflitEnCours : null);
       if (suivant === 'refuse') refus = recetteModifieeAilleurs();
       else if (suivant === 'invalide') refus = rangementInvalide(refusDuSandbox);
       rendre();
@@ -743,7 +678,6 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
       idOuvert = id;
       suppressionDemandee = false;
       creationOuverte = false;
-      recalculerLeCadre();
       rendre();
       nuancier.choisirLeTheme(mode);
     },
