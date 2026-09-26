@@ -235,6 +235,9 @@ function documentSimule() {
       if (refus.has(nom)) throw new Error('abonnement refusé');
       if (type === 'nodechange') ecouteurs.set(nom, [...(ecouteurs.get(nom) ?? []), rappel]);
     };
+    cree.off = (_type: string, rappel: () => void) => {
+      ecouteurs.set(nom, (ecouteurs.get(nom) ?? []).filter((courant) => courant !== rappel));
+    };
     pages.push(cree);
     return cree as PageNode;
   };
@@ -249,6 +252,7 @@ function documentSimule() {
     chargements,
     refus,
     echecs,
+    ecouteurs,
     /** Émet un `nodechange` sur la page nommée. */
     changer: (nom: string) => {
       for (const rappel of ecouteurs.get(nom) ?? []) rappel();
@@ -286,6 +290,117 @@ function dependanceSurPage(nom: string, enfantsDuMaitre: unknown[] = [], extra: 
   };
   return { set, maitre, occurrence };
 }
+
+test('un balayage refusé ne rend pas propre une ancienne entrée', async () => {
+  const doc = documentSimule();
+  try {
+    const dependance = dependanceSurPage('Dependance');
+    const regles = conteneurDeRegles('Dependance');
+    const page = doc.page('Maitres', [dependance.set, regles]);
+    const variant = racine('v', 'Variant', [dependance.occurrence()]);
+    await indexContractedNames([variant]);
+    regles.children[0].children[0].characters = 'Autre';
+    doc.changer('Maitres');
+    const lire = page.findAllWithCriteria;
+    page.findAllWithCriteria = () => { throw new Error('page illisible'); };
+    await assert.rejects(indexContractedNames([variant]), /page illisible/);
+    page.findAllWithCriteria = lire;
+    assert.deepEqual([...await indexContractedNames([variant])], []);
+  } finally { doc.restaurer(); }
+});
+
+test('une page salie pendant une autre lecture est reprise avant de rendre les noms', async () => {
+  const doc = documentSimule();
+  try {
+    const a = dependanceSurPage('DependanceA');
+    const b = dependanceSurPage('DependanceB');
+    const regles = conteneurDeRegles('DependanceA');
+    doc.page('A', [a.set, regles]);
+    const pageB = doc.page('B', [b.set, conteneurDeRegles('DependanceB')]);
+    pageB.loadAsync = async () => {
+      regles.children[0].children[0].characters = 'Autre';
+      doc.changer('A');
+    };
+    const variant = racine('v', 'Variant', [a.occurrence(), b.occurrence()]);
+    assert.deepEqual([...await indexContractedNames([variant])], ['dependanceb']);
+  } finally { doc.restaurer(); }
+});
+
+test('le calcul refuse un document qui change pendant ses deux essais', async () => {
+  const doc = documentSimule();
+  try {
+    const a = dependanceSurPage('DependanceA');
+    const b = dependanceSurPage('DependanceB');
+    doc.page('A', [a.set, conteneurDeRegles('DependanceA')]);
+    doc.page('B', [b.set, conteneurDeRegles('DependanceB')]);
+    const variant = racine('v', 'Variant', [a.occurrence(), b.occurrence()]);
+    await assert.rejects(indexContractedNames([variant], {
+      avantChaquePage: async () => { doc.changer('A'); doc.changer('B'); },
+    }));
+  } finally { doc.restaurer(); }
+});
+
+test('un distant homonyme du local contracté reste parcourable', async () => {
+  const doc = documentSimule();
+  try {
+    const local = dependanceSurPage('Dependance');
+    const distant = dependanceSurPage('Dependance', [], { remote: true });
+    doc.page('Locale', [local.set, conteneurDeRegles('Dependance')]);
+    const occurrenceDistante = distant.occurrence();
+    occurrenceDistante.id = 'distant';
+    const variant = racine('v', 'Variant', [local.occurrence(), occurrenceDistante]);
+    const noms = await indexContractedNames([variant]);
+    const scan = await scanComposedInstances(variant, noms);
+    assert.equal(scan.composes.length, 1);
+    assert.equal(scan.composed.has('distant'), false);
+    assert.equal((await indexMasterInstances(variant, noms)).has('1'), true);
+  } finally { doc.restaurer(); }
+});
+
+test('chaque maître rencontré du même propriétaire fournit ses dépendances masquées', async () => {
+  const doc = documentSimule();
+  try {
+    const b = dependanceSurPage('DependanceB');
+    const masquee = { ...b.occurrence(), visible: false };
+    const a = dependanceSurPage('DependanceA');
+    const second = racine('a-second', 'Etat=Second', [masquee]);
+    a.set.children.push(second);
+    doc.page('A', [a.set, conteneurDeRegles('DependanceA')]);
+    doc.page('B', [b.set, conteneurDeRegles('DependanceB')]);
+    const occurrence = { ...a.occurrence(), getMainComponentAsync: async () => second };
+    const variant = racine('v', 'Variant', [a.occurrence(), occurrence]);
+    assert.deepEqual([...await indexContractedNames([variant])].sort(), ['dependancea', 'dependanceb']);
+  } finally { doc.restaurer(); }
+});
+
+test('un maître supprimé pendant sa résolution produit le constat de maître introuvable', async () => {
+  const doc = documentSimule();
+  try {
+    const maitre = { get parent(): never { throw new Error('node supprimé'); } };
+    const enfant = instance('orpheline', 'Occurrence', null, { getMainComponentAsync: async () => maitre });
+    const variant = racine('v', 'Variant', [enfant]);
+    const noms = await indexContractedNames([variant]);
+    const scan = await scanComposedInstances(variant, noms);
+    assert.deepEqual(scan.composes, []);
+    assert.equal(scan.warnings.length, 1);
+    assert.match(scan.warnings[0], /introuvable/);
+  } finally { doc.restaurer(); }
+});
+
+test('un reset et un premier balayage en échec retirent leurs abonnements', async () => {
+  const doc = documentSimule();
+  try {
+    const dependance = dependanceSurPage('Dependance');
+    const page = doc.page('Maitres', [dependance.set, conteneurDeRegles('Dependance')]);
+    const variant = racine('v', 'Variant', [dependance.occurrence()]);
+    await indexContractedNames([variant]);
+    oublierLIndexDuDocument();
+    assert.equal(doc.ecouteurs.get('Maitres')?.length, 0);
+    page.findAllWithCriteria = () => { throw new Error('page illisible'); };
+    await assert.rejects(indexContractedNames([variant]));
+    assert.equal(doc.ecouteurs.get('Maitres')?.length, 0);
+  } finally { doc.restaurer(); }
+});
 
 test('une dépendance dont le conteneur est sur la page de son maître est contractée', async () => {
   const doc = documentSimule();

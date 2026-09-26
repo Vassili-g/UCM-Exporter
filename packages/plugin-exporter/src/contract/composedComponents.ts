@@ -16,7 +16,6 @@
 import {
   COMPONENT_NAME_LAYER,
   compactName,
-  porteLeMarqueur,
   porteLeNom,
   rulesContainerOwner,
 } from './extractRules';
@@ -170,9 +169,7 @@ function proprietaireDuCalque(calque: TextNode): string | null {
     let parent: BaseNode | null = calque.parent;
     while (parent && parent.type !== 'INSTANCE' && parent.type !== 'PAGE') parent = parent.parent;
     if (parent?.type !== 'INSTANCE') return null;
-    const nom = calque.characters;
-    if (porteLeMarqueur(nom)) return null;
-    return compactName(nom) || null;
+    return rulesContainerOwner(parent as InstanceNode, calque.characters);
   } catch {
     // Figma annonce des nodes qu'il ne sert plus : un calque illisible ne
     // déclare aucune dépendance, et n'emporte pas l'index de la page.
@@ -181,7 +178,11 @@ function proprietaireDuCalque(calque: TextNode): string | null {
 }
 
 /** Ce que l'index garde d'une page balayée. */
-type EntreeDePage = { noms: ReadonlySet<string>; sale: boolean; ecoutee: boolean };
+type EntreeDePage = {
+  noms: ReadonlySet<string>;
+  sale: boolean;
+  retirerEcoute?: () => void;
+};
 
 /**
  * Les pages balayées pendant la session, par id de page.
@@ -194,6 +195,9 @@ let pagesGardees = new Map<unknown, EntreeDePage>();
 
 /** Le dernier calcul lancé : le suivant l'attend, puis relit la mémoire des pages. */
 let calculEnVol: Promise<unknown> = Promise.resolve();
+
+/** Une modification pendant les lectures empêche de rendre un index cohérent. */
+export class IndexModifie extends Error {}
 
 export type OptionsDeLIndex = {
   /** Attendu avant de charger et de balayer une page. */
@@ -227,9 +231,19 @@ export function indexContractedNames(
   variants: readonly SceneNode[],
   options: OptionsDeLIndex = {},
 ): Promise<Set<string>> {
+  const memoire = pagesGardees;
   const calcul = calculEnVol
     .catch(() => undefined)
-    .then(() => calculerLIndex(variants, options));
+    .then(async () => {
+      for (let essai = 0; essai < 2; essai += 1) {
+        if (memoire !== pagesGardees) throw new IndexModifie();
+        const consultees = new Set<EntreeDePage>();
+        const noms = await calculerLIndex(variants, options, memoire, consultees);
+        if (memoire !== pagesGardees) throw new IndexModifie();
+        if ([...consultees].every((entree) => !entree.sale)) return noms;
+      }
+      throw new IndexModifie();
+    });
   calculEnVol = calcul;
   return calcul;
 }
@@ -239,26 +253,34 @@ type Proprietaire = ComponentNode | ComponentSetNode;
 async function calculerLIndex(
   variants: readonly SceneNode[],
   options: OptionsDeLIndex,
+  memoire: Map<unknown, EntreeDePage>,
+  consultees: Set<EntreeDePage>,
 ): Promise<Set<string>> {
   const contractes = new Set<string>();
-  const juges = new Set<unknown>();
+  const juges = new Map<unknown, boolean>();
+  const parcourus = new Set<unknown>();
   const nomsParPage = new Map<unknown, ReadonlySet<string>>();
-  let instances = variants.flatMap(instancesRendues);
+  let instances: InstanceNode[] = [];
+  for (const variant of variants) {
+    instances.push(...instancesRendues(variant));
+    if (options.priorite === 'analyse') await respirerSiBesoin();
+  }
   while (instances.length > 0) {
     const maitres = await Promise.all(instances.map(maitreDe));
     const nouveaux: Array<{ proprietaire: Proprietaire; maitre: ComponentNode }> = [];
     for (const maitre of maitres) {
       if (!maitre) continue;
       const proprietaire = componentOwner(maitre);
-      const cle = typeof proprietaire.id === 'string' ? proprietaire.id : proprietaire;
-      if (juges.has(cle)) continue;
-      juges.add(cle);
+      if (!proprietaire || !estLocal(proprietaire, maitre)) continue;
+      const cle = typeof maitre.id === 'string' ? maitre.id : maitre;
+      if (parcourus.has(cle)) continue;
+      parcourus.add(cle);
       nouveaux.push({ proprietaire, maitre });
     }
 
     instances = [];
     for (const { proprietaire, maitre } of nouveaux) {
-      if (proprietaire.remote === true || maitre.remote === true) continue;
+      if (options.priorite === 'analyse') await respirerSiBesoin();
       const page = pageDe(proprietaire);
       if (!page) continue;
       const cleDePage = cleDeLaPage(page);
@@ -267,17 +289,22 @@ async function calculerLIndex(
         // Le nombre de pages n'est connu qu'à la fin : chacune avance la barre
         // de la moitié de ce qui reste.
         avancer(nomsParPage.size, nomsParPage.size + 1, false);
-        noms = await nomsGardesDeLaPage(page, options);
+        const entree = await nomsGardesDeLaPage(page, options, memoire);
+        consultees.add(entree);
+        noms = entree.noms;
         nomsParPage.set(cleDePage, noms);
       }
       const nom = compactName(proprietaire.name);
-      if (!noms.has(nom)) continue;
+      const cle = typeof proprietaire.id === 'string' ? proprietaire.id : proprietaire;
+      const dejaJuge = juges.has(cle);
+      if (!dejaJuge) juges.set(cle, noms.has(nom));
+      if (!juges.get(cle)) continue;
       contractes.add(nom);
       instances.push(...toutesLesInstances(maitre));
       const representatif = proprietaire.type === 'COMPONENT_SET'
         ? proprietaire.defaultVariant ?? maitre
         : proprietaire;
-      if (representatif !== maitre) instances.push(...instancesRendues(representatif));
+      if (!dejaJuge && representatif !== maitre) instances.push(...instancesRendues(representatif));
     }
   }
   compter('tailleIndex', contractes.size);
@@ -328,12 +355,13 @@ function cleDeLaPage(page: PageNode): unknown {
 async function nomsGardesDeLaPage(
   page: PageNode,
   options: OptionsDeLIndex,
-): Promise<ReadonlySet<string>> {
+  memoire: Map<unknown, EntreeDePage>,
+): Promise<EntreeDePage> {
   const cle = cleDeLaPage(page);
-  const gardee = pagesGardees.get(cle);
-  if (gardee && gardee.ecoutee && !gardee.sale) {
+  const gardee = memoire.get(cle);
+  if (gardee && gardee.retirerEcoute && !gardee.sale) {
     compter('pagesReutilisees');
-    return gardee.noms;
+    return gardee;
   }
   if (options.priorite === 'analyse') await respirerSiBesoin();
   await options.avantChaquePage?.();
@@ -341,27 +369,33 @@ async function nomsGardesDeLaPage(
     await page.loadAsync();
     compter('pagesChargees');
   }
-  const entree: EntreeDePage = gardee ?? { noms: new Set(), sale: true, ecoutee: false };
-  if (!entree.ecoutee) entree.ecoutee = ecouter(page, entree);
-  // Le balayage est synchrone : un `nodechange` arrive avant lui ou après lui,
-  // jamais pendant, et une entrée marquée propre ici ne manque aucun geste.
-  entree.sale = false;
-  entree.noms = nomsDeLaPage(page);
-  compter('pagesBalayees');
-  pagesGardees.set(cle, entree);
-  return entree.noms;
+  if (memoire !== pagesGardees) throw new IndexModifie();
+  const entree: EntreeDePage = gardee ?? { noms: new Set(), sale: true };
+  if (!entree.retirerEcoute) entree.retirerEcoute = ecouter(page, entree);
+  try {
+    entree.noms = nomsDeLaPage(page);
+    entree.sale = false;
+    compter('pagesBalayees');
+    memoire.set(cle, entree);
+    return entree;
+  } catch (erreur) {
+    entree.sale = true;
+    if (!gardee) entree.retirerEcoute?.();
+    throw erreur;
+  }
 }
 
 /** Abonne l'entrée aux changements de sa page, et dit si l'abonnement tient. */
-function ecouter(page: PageNode, entree: EntreeDePage): boolean {
-  if (typeof page.on !== 'function') return false;
+function ecouter(page: PageNode, entree: EntreeDePage): (() => void) | undefined {
+  if (typeof page.on !== 'function') return undefined;
   try {
-    page.on('nodechange', () => {
-      entree.sale = true;
-    });
-    return true;
+    const salir = () => { entree.sale = true; };
+    page.on('nodechange', salir);
+    return () => {
+      try { page.off?.('nodechange', salir); } catch { /* La page supprimée n'a plus d'écoute à retirer. */ }
+    };
   } catch {
-    return false;
+    return undefined;
   }
 }
 
@@ -379,6 +413,7 @@ export function oublierLaPage(page: PageNode): void {
 
 /** Oublie toutes les pages gardées ; les tests s'en servent entre deux documents simulés. */
 export function oublierLIndexDuDocument(): void {
+  for (const entree of pagesGardees.values()) entree.retirerEcoute?.();
   pagesGardees = new Map();
 }
 
@@ -400,7 +435,8 @@ async function contractedOwner(
   // l'avertissement « dépendance non située » ne peut pas partir : c'est ici,
   // ou nulle part.
   const main = await maitreDe(instance);
-  if (!main) {
+  const owner = main ? componentOwner(main) : null;
+  if (!main || !owner) {
     pousserLocalise(warnings, 'Layer', instance, {
       manque: `le composant principal de cette instance est introuvable.`,
       impact: `Si ce composant a son propre contrat, le développeur recopiera son contenu `
@@ -411,13 +447,12 @@ async function contractedOwner(
     return { name: null, main: null };
   }
 
-  const owner = main.parent?.type === 'COMPONENT_SET' ? main.parent : main;
-  return { name: contracted.has(compactName(owner.name)) ? owner.name : null, main };
+  return { name: estContracte(owner, contracted, main) ? owner.name : null, main };
 }
 
 /** Nom du composant unifié derrière un maître : celui du SET quand il existe. */
 export function ownerComponentName(main: ComponentNode): string {
-  return main.parent?.type === 'COMPONENT_SET' ? main.parent.name : main.name;
+  return componentOwner(main)?.name ?? '';
 }
 
 /** Une instance rencontrée dans un maître, avec sa position et son nom de calque. */
@@ -465,8 +500,20 @@ function masterInstances(root: SceneNode): MasterInstance[] {
 }
 
 /** Le Component ou Component Set qui possède l'API publique d'un maître. */
-function componentOwner(main: ComponentNode): ComponentNode | ComponentSetNode {
-  return main.parent?.type === 'COMPONENT_SET' ? main.parent : main;
+function componentOwner(main: ComponentNode): ComponentNode | ComponentSetNode | null {
+  try {
+    const parent = main.parent;
+    return parent?.type === 'COMPONENT_SET' ? parent : main;
+  } catch { return null; }
+}
+
+function estLocal(owner: Proprietaire, main: ComponentNode | Proprietaire = owner): boolean {
+  try { return owner.remote !== true && main.remote !== true; } catch { return false; }
+}
+
+/** Les homonymes locaux partagent leur verdict ; un maître distant reste exclu. */
+export function estContracte(owner: Proprietaire, noms: ContractedNames, main: Proprietaire = owner): boolean {
+  try { return estLocal(owner, main) && noms.has(compactName(owner.name)); } catch { return false; }
 }
 
 /**
@@ -486,6 +533,7 @@ async function indexDependencyPropertySurfaces(
   }>();
   for (const main of mains) {
     const owner = componentOwner(main);
+    if (!owner) continue;
     if (representatives.has(owner.id)) continue;
     const component = owner.type === 'COMPONENT_SET'
       ? owner.defaultVariant ?? main
@@ -542,8 +590,10 @@ export async function indexMasterInstances(
     // exporté. Ici son absence retire seulement une position du relevé : aucune
     // comparaison ne s'y fera, donc aucun remplacement ne sera inventé.
     if (!main) return;
+    const owner = componentOwner(main);
+    if (!owner) return;
     const component = ownerComponentName(main);
-    if (contracted.has(compactName(component))) {
+    if (estContracte(owner, contracted, main)) {
       frontieres.add(releve.indexPath);
       return;
     }

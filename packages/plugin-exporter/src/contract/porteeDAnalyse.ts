@@ -12,8 +12,6 @@ import { compter } from './mesure';
 type Portee = {
   /** Le maître de chaque instance déjà demandée, par id d'instance. */
   maitres: Map<string, Promise<ComponentNode | null>>;
-  /** Ouvertures refusées en cours : tant qu'il y en a, la mémoire se tait. */
-  refusees: number;
   /** Rend la main au sandbox, et lève si l'analyse est annulée. */
   respirer?: () => Promise<void>;
   derniereRespiration: number;
@@ -24,11 +22,13 @@ type Portee = {
  *
  * Le sandbox n'a qu'un fil : tant que l'analyse calcule, un changement de
  * sélection n'est pas lu, et l'annulation coopérative de `code.ts` attend la
- * fin de l'étape. Au-delà de ce budget, la boucle en cours rend la main.
+ * fin de l'étape. Ce seuil se vérifie aux points de respiration ; un bloc
+ * synchrone ou un appel Figma peut le dépasser.
  */
 export const BUDGET_DE_CALCUL_MS = 200;
 
 let portee: Portee | null = null;
+let porteesRefusees = 0;
 let desactivee = false;
 
 /**
@@ -36,26 +36,25 @@ let desactivee = false;
  *
  * Une seule portée est ouverte à la fois : `code.ts` refuse déjà une seconde
  * opération. Une ouverture pendant qu'une portée est ouverte exécute `corps`,
- * et la mémoire se tait pour tous tant qu'il court : le sandbox n'a pas de
- * contexte asynchrone qui dirait à `maitreDe` de quel corps vient l'appel.
+ * et la mémoire comme les respirations se taisent pour tous tant qu'il court.
+ * Le sandbox ne fournit aucun contexte asynchrone pour identifier l'appelant.
+ * Le refus persiste même si la première portée se ferme avant lui.
  */
 export async function dansUnePorteeDAnalyse<T>(
   options: { respirer?: () => Promise<void> },
   corps: () => Promise<T>,
 ): Promise<T> {
-  if (portee) {
+  if (portee || porteesRefusees > 0) {
     compter('porteeRefusee');
-    const ouverte = portee;
-    ouverte.refusees += 1;
+    porteesRefusees += 1;
     try {
       return await corps();
     } finally {
-      ouverte.refusees -= 1;
+      porteesRefusees -= 1;
     }
   }
   const ouverte: Portee = {
     maitres: new Map(),
-    refusees: 0,
     respirer: options.respirer,
     derniereRespiration: Date.now(),
   };
@@ -76,7 +75,7 @@ export async function dansUnePorteeDAnalyse<T>(
  * demandé qu'une fois.
  */
 export function maitreDe(instance: InstanceNode): Promise<ComponentNode | null> {
-  const memoire = portee && portee.refusees === 0 && !desactivee && typeof instance.id === 'string'
+  const memoire = portee && porteesRefusees === 0 && !desactivee && typeof instance.id === 'string'
     ? portee.maitres
     : null;
   const deja = memoire?.get(instance.id);
@@ -108,7 +107,7 @@ function lireLeMaitre(instance: InstanceNode): Promise<ComponentNode | null> {
  */
 export async function respirerSiBesoin(): Promise<void> {
   const ouverte = portee;
-  if (!ouverte?.respirer) return;
+  if (!ouverte?.respirer || porteesRefusees > 0) return;
   if (Date.now() - ouverte.derniereRespiration < BUDGET_DE_CALCUL_MS) return;
   compter('respirations');
   await ouverte.respirer();

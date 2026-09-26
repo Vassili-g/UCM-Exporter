@@ -548,6 +548,18 @@ avancement.
   les mêmes compteurs de parcours : `extractVariantSample` rappelle
   `textSlots` sur chaque variant, comme la typographie exacte.
   `msEnRespiration` tombe à 0,86 s, et `plusLongSilenceMs` à 0,84 s.*
+  *Proposé au mainteneur, en attente : garder en mémoire, le temps d'une
+  analyse, le résultat de `getAllNodes` et de `textSlots` par racine
+  (gain estimé de 3 à 5 s), puis tirer la typographie et les échantillons de
+  la lecture de chaque variant. La mémoire vit dans la portée d'analyse, et
+  chaque appel servi par elle émet encore l'avertissement d'un calque masqué
+  porteur de variables.*
+- [ ] **L9.9** `indexContractedNames` lève `IndexModifie` quand le document
+  change pendant deux calculs de suite. L'erreur n'a pas de message, et
+  `analyser` (`code.ts`) la rend telle quelle : le designer verrait une
+  note d'erreur vide. La rattraper comme une annulation reprendrait un
+  message déjà validé, « Export annulé. Rien n'a été écrit. » ; un message
+  propre passe par la validation du mainteneur.
 
 ## Lot L7 : documents
 
