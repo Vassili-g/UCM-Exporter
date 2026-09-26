@@ -14,6 +14,7 @@ import * as prevol from '../src/prevol';
 import * as sources from '../src/template/sources';
 import * as modele from '../src/template/modele';
 import * as imbriques from '../src/contract/imbriques';
+import * as mesure from '../src/contract/mesure';
 import * as termes from '../src/forges/termes';
 import type { ReleveDeSource } from '../src/contract/extractRules';
 import type { ModeleDeRegles } from '../src/template/modele';
@@ -55,6 +56,8 @@ afterEach(() => { globalFigma.figma = figmaInitial; });
 
 function ouvrir() {
   const messages: PluginMessage[] = [];
+  /** Les traces que le routeur imprime dans la console. */
+  const traces: string[] = [];
   const evenements = new Map<string, () => void>();
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
@@ -133,7 +136,13 @@ function ouvrir() {
         return creation.traiter();
       },
     },
-    './contract/exportComponent': { default: handler, getSelectedComponent: () => runtime.currentPage.selection[0] },
+    './contract/exportComponent': {
+      default: handler,
+      getSelectedComponent: () => runtime.currentPage.selection[0],
+      ETAPES_DE_L_ANALYSE: [{ nom: 'regles', poids: 1 }, { nom: 'structure', poids: 1 }],
+    },
+    // La vraie trace : le banc joue ses étapes depuis `exporte.traiter`.
+    './contract/mesure': mesure,
     './tokens/exportTokens': { default: handler, annonceDuFormat: () => null, etatDesTokensDuFichier: async () => { appels.collections += 1; return resumeDesTokens.traiter(); } },
     './forges/forge': { ErreurDeForge: Error },
     './forges/termes': termes,
@@ -155,12 +164,13 @@ function ouvrir() {
   };
   runInNewContext(source, {
     figma: runtime, __html__: '', exports: {}, Error,
+    console: { log: (etiquette: string, trace: string) => { if (etiquette === '[ucm:mesure]') traces.push(trace); } },
     require: (nom: string) => { assert.ok(nom in modules, nom); return modules[nom]; },
     setTimeout: (rappel: () => void) => { const id = temporisations.size + 1; temporisations.set(id, rappel); return id; },
     clearTimeout: (id: number) => temporisations.delete(id),
   });
   return {
-    messages, appels, exporte, publication, connexionDe, temporisations, resumeDesTokens, releve, regles, resolution, creation, runtime, stockage,
+    messages, traces, appels, exporte, publication, connexionDe, temporisations, resumeDesTokens, releve, regles, resolution, creation, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string, parent?: { type: string }) {
       runtime.currentPage.selection = [selectionDe(id, parent)];
@@ -237,6 +247,61 @@ for (const pendant of [true, false]) {
     assert.equal(h.messages.some(({ type }) => type === 'download'), false);
   });
 }
+
+test('une analyse de composant envoie son avancement, puis sa trace au pied de page et à la console', async () => {
+  const h = ouvrir();
+  h.connecter();
+  h.exporte.traiter = async (annoncer) => {
+    mesure.etape('regles');
+    mesure.etape('structure');
+    mesure.avancer(1, 2);
+    (annoncer as (texte: string) => void)('Écriture du contrat…');
+    return resultat('exemple.contract.json');
+  };
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+
+  const avancements = h.messages.flatMap((message) => (message.type === 'avancement' ? [message] : []));
+  // Poids du banc : 1 pour `regles`, 1 pour `structure`, 10 pour `depot`.
+  assert.deepEqual(avancements.map(({ fraction, fait, total }) => ({ fraction, fait, total })), [
+    { fraction: 1.5 / 12, fait: 1, total: 2 },
+    { fraction: 2 / 12, fait: undefined, total: undefined },
+  ]);
+  assert.ok(avancements.every(({ operation }) => operation === 1));
+
+  const rangDuVerdict = h.messages.findIndex(({ type }) => type === 'verdict');
+  const rangDeLaMesure = h.messages.findIndex(({ type }) => type === 'mesure');
+  assert.ok(rangDuVerdict >= 0 && rangDeLaMesure > rangDuVerdict, 'la trace suit le verdict');
+  const envoyee = h.messages[rangDeLaMesure] as Extract<PluginMessage, { type: 'mesure' }>;
+  assert.deepEqual(envoyee.trace.etapes.map(({ nom }) => nom), ['regles', 'structure', 'depot']);
+  assert.deepEqual(h.traces.map((trace) => JSON.parse(trace)), [envoyee.trace]);
+});
+
+test('une analyse annulée ou en échec ne pose aucune trace, et l’analyse des tokens n’a pas de barre', async () => {
+  const h = ouvrir();
+  const attente = differe<ReturnType<typeof resultat>>();
+  h.exporte.traiter = () => attente.promesse;
+  const analyse = h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await tourner();
+  h.selectionner('b');
+  attente.resoudre(resultat('annule.contract.json'));
+  await analyse;
+
+  h.exporte.traiter = async () => {
+    throw new Error('panne');
+  };
+  await h.envoyer({ type: 'analyser-composant', operation: 2 });
+  assert.equal(h.messages.some(({ type }) => type === 'mesure'), false);
+  assert.deepEqual(h.traces, []);
+
+  h.exporte.traiter = async (annoncer) => {
+    mesure.etape('structure');
+    (annoncer as (texte: string) => void)('Lecture des variables…');
+    return resultat('tokens.json');
+  };
+  await h.envoyer({ type: 'analyser-tokens', operation: 3 });
+  assert.equal(h.messages.some(({ type }) => type === 'avancement'), false);
+  assert.equal(h.messages.filter(({ type }) => type === 'mesure').length, 1);
+});
 
 test('chaque commande publie son propre artefact après deux analyses', async () => {
   const h = ouvrir();

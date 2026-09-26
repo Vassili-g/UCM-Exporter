@@ -23,6 +23,8 @@ export interface CarteCommandeUi {
   analyser: BoutonUi;
   compteRendu: CompteRenduUi;
   ecrireNote(etat: EtatNote, texte: string | null): void;
+  /** Avance la barre d'une note en chargement ; sans effet dans un autre état. */
+  ecrireAvancement(fraction: number, fait?: number, total?: number): void;
   proposerPublication(action: string | null): BoutonUi;
   marquerOccupee(occupee: boolean): void;
   reinitialiser(): void;
@@ -76,14 +78,47 @@ export function createCarteCommande({
   note.setAttribute('aria-live', 'polite');
   note.hidden = true;
 
+  const noteTexte = document.createElement('span');
+
+  // Le compte et la barre changent à chaque respiration du moteur : hors de la
+  // région annoncée, un lecteur d'écran ne lit que le texte de l'étape.
+  const noteCompte = document.createElement('span');
+  noteCompte.className = 'note-compte';
+  noteCompte.setAttribute('aria-hidden', 'true');
+  noteCompte.hidden = true;
+
+  const barre = document.createElement('div');
+  barre.className = 'note-barre';
+  barre.setAttribute('aria-hidden', 'true');
+  barre.hidden = true;
+  const barreRemplie = document.createElement('div');
+  barreRemplie.className = 'note-barre-remplie';
+  barre.append(barreRemplie);
+
+  note.append(noteCompte, noteTexte, barre);
+
   const compteRendu = createCompteRendu();
 
   section.append(titre, sujet, analyser, publier, note, compteRendu.element);
 
   function ecrireNote(etat: EtatNote, texte: string | null) {
     note.dataset.state = etat;
-    note.textContent = texte ?? '';
-    note.hidden = !note.textContent;
+    noteTexte.textContent = texte ?? '';
+    note.hidden = !noteTexte.textContent;
+    if (etat !== 'loading') {
+      barre.hidden = true;
+      noteCompte.hidden = true;
+      barreRemplie.style.width = '0%';
+    }
+  }
+
+  function ecrireAvancement(fraction: number, fait?: number, total?: number) {
+    if (note.dataset.state !== 'loading') return;
+    barre.hidden = false;
+    barreRemplie.style.width = `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}%`;
+    const compte = fait !== undefined && total !== undefined ? `${fait} / ${total}` : '';
+    noteCompte.textContent = compte;
+    noteCompte.hidden = !compte;
   }
 
   return {
@@ -92,6 +127,7 @@ export function createCarteCommande({
     analyser,
     compteRendu,
     ecrireNote,
+    ecrireAvancement,
 
     proposerPublication(action: string | null) {
       publier.hidden = !action;

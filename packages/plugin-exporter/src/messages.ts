@@ -11,6 +11,7 @@ import type { EtatConnexion, EtatDeCarte, EtatDuDepot, ResumeDepot } from './con
 import type { Cible } from './cible';
 import type { CodeVerdict } from './prevol';
 import type { Offre } from './template/sources';
+import type { TraceDeMesure } from './contract/mesure';
 
 /**
  * Annonce une étape sans donner au moteur de dépendance vers l'UI.
@@ -192,6 +193,17 @@ export type PluginMessage =
    * n'a donc pas de destination à porter.
    */
   | ({ type: 'phase'; texte: string } & Partial<Provenance>)
+  /**
+   * L'avancement de l'analyse d'un composant, entre 0 et 1, pour la barre de
+   * la note. `fait` et `total` comptent les variants de la boucle en cours,
+   * quand elle en parcourt.
+   */
+  | ({ type: 'avancement'; fraction: number; fait?: number; total?: number } & Partial<Provenance>)
+  /**
+   * La trace de la dernière analyse terminée : durée par étape, compteurs et
+   * empreinte. L'UI la pose en pied de page, à côté de la version de schéma.
+   */
+  | { type: 'mesure'; trace: TraceDeMesure }
 
   /** Résumé des variables locales qui détermine si l'analyse est disponible. */
   | { type: 'tokens'; resume: string; presents: boolean }

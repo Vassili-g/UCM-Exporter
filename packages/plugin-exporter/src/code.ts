@@ -13,7 +13,11 @@ import {
 import { pointsDesImbriques } from './contract/imbriques';
 import type { PointACorriger } from './contract/localisation';
 import type { ExtractedRules, ReleveDeSource } from './contract/extractRules';
-import handleExportComponent, { getSelectedComponent } from './contract/exportComponent';
+import handleExportComponent, { ETAPES_DE_L_ANALYSE, getSelectedComponent } from './contract/exportComponent';
+import {
+  abandonnerLaMesure, avancementCourant, etape, fermerLaMesure, ouvrirLaMesure,
+} from './contract/mesure';
+import type { EtapePrevue } from './contract/mesure';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
 import {
@@ -631,7 +635,32 @@ function verifierAnnulation(): void {
  * l'étape.
  */
 function respirer(): Promise<void> {
+  signalerAvancement();
   return new Promise<void>((resolve) => setTimeout(resolve, 0)).then(verifierAnnulation);
+}
+
+/**
+ * Les étapes d'une analyse de composant, lecture du dépôt comprise. Celles des
+ * tokens ne sont pas pesées : leur carte n'a pas de barre.
+ */
+const ETAPES_DU_COMPOSANT: readonly EtapePrevue[] = [...ETAPES_DE_L_ANALYSE, { nom: 'depot', poids: 10 }];
+
+/** La provenance de l'analyse en cours, et le dernier avancement envoyé. */
+let avancementDeLAnalyse: { provenance: Provenance; envoye: string } | null = null;
+
+/**
+ * Envoie l'avancement à l'interface, au plus une fois par point de
+ * pourcentage ou de compte. Le message part pendant la respiration qui suit :
+ * le sandbox n'a qu'un fil, et l'interface ne le reçoit qu'une fois la main
+ * rendue.
+ */
+function signalerAvancement(): void {
+  const avancement = avancementCourant();
+  if (!avancement || !avancementDeLAnalyse) return;
+  const cle = `${Math.floor(avancement.fraction * 100)}:${avancement.fait ?? ''}/${avancement.total ?? ''}`;
+  if (cle === avancementDeLAnalyse.envoye) return;
+  avancementDeLAnalyse.envoye = cle;
+  versUi({ type: 'avancement', ...avancement, ...avancementDeLAnalyse.provenance });
 }
 
 /** L'artefact tel que le repository le reçoit. */
@@ -686,6 +715,7 @@ async function analyser(
   operationEnCours = artifactKind;
   annulation = null;
   analysesGardees.delete(artifactKind);
+  ouvrirLaMesure(artifactKind === 'component' ? ETAPES_DU_COMPOSANT : null);
   let analyseProduite: AnalyseGardee | null = null;
   // Un stockage illisible n'empêche pas l'extraction : la lecture suivante lève
   // alors, et le fichier produit est téléchargé.
@@ -695,6 +725,7 @@ async function analyser(
     operation,
   };
   destinationDeLAnalyse = provenance.destination;
+  avancementDeLAnalyse = { provenance, envoye: '' };
   try {
     if (depart) suivreLaDestination(depart);
     // Masquer la carte ne suffit pas : une demande peut précéder le réglage.
@@ -703,9 +734,10 @@ async function analyser(
       return;
     }
     postStatus('loading', loadingText, provenance);
-    const result = await handler((etape) => {
+    const result = await handler((texte) => {
       verifierAnnulation();
-      versUi({ type: 'phase', texte: etape, ...provenance });
+      versUi({ type: 'phase', texte, ...provenance });
+      signalerAvancement();
     }, { respirer });
     verifierAnnulation();
 
@@ -759,6 +791,8 @@ async function analyser(
     }
 
     versUi({ type: 'phase', texte: 'Lecture du dépôt…', ...provenance });
+    etape('depot');
+    signalerAvancement();
     const forge = forgeDe(validation.config);
     // Gestion des tokens désactivée, l'analyse ne lit pas l'état des tokens du
     // dépôt et le verdict ne porte aucune consigne à leur sujet.
@@ -804,6 +838,16 @@ async function analyser(
   } finally {
     operationEnCours = null;
     destinationDeLAnalyse = null;
+    avancementDeLAnalyse = null;
+    // Sans contrat produit, l'analyse a été annulée ou a échoué dans le moteur :
+    // sa trace est jetée, et le pied de page garde celle de la précédente.
+    const trace = analyseProduite ? fermerLaMesure(analyseProduite.content) : null;
+    if (trace) {
+      console.log('[ucm:mesure]', JSON.stringify(trace));
+      versUi({ type: 'mesure', trace });
+    } else {
+      abandonnerLaMesure();
+    }
   }
 }
 

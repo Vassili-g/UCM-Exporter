@@ -628,7 +628,7 @@ const ETATS = [
     quand:
       "Le balayage des pages, la phase la plus longue et celle qui fige l'écran le plus longtemps.",
     regarder:
-      "L'étape est nommée par ce que le code FAIT, sans durée ni pourcentage : la mesure n'existe pas.",
+      "L'étape est nommée par ce que le code FAIT. La barre sous le texte avance d'après le poids des étapes, sans compte : l'index ne connaît pas son nombre de pages.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -636,6 +636,62 @@ const ETATS = [
       { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'phase', texte: 'Lecture des composants imbriqués…' } },
+      { message: { type: 'avancement', fraction: 0.2 } },
+    ],
+  },
+  {
+    id: 'analyse-boucle-des-variants',
+    titre: 'Analyse en cours, boucle des variants',
+    quand:
+      "L'écriture du contrat parcourt les variants un à un ; chaque respiration du moteur envoie où il en est.",
+    regarder:
+      'Le compte « 12 / 40 » flotte à droite du texte de l’étape, et la barre avance avec lui. Le texte de l’étape ne bouge pas quand le compte change.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      { message: { type: 'phase', texte: 'Écriture du contrat…' } },
+      { message: { type: 'avancement', fraction: 0.62, fait: 12, total: 40 } },
+    ],
+  },
+  {
+    id: 'mesure-de-l-analyse',
+    titre: 'Durée de la dernière analyse, dépliée',
+    quand:
+      'Après le verdict d’une analyse, le pied de page porte sa durée ; un clic déplie le détail par étape.',
+    regarder:
+      'La durée suit la version de schéma sur la même ligne. Le détail aligne les durées à droite, et « Copier la trace » reste lisible sans être un bouton plein.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { message: { type: 'schema-version', version: VERSION_CONTRAT } },
+      {
+        message: {
+          type: 'mesure',
+          trace: {
+            totalMs: 4210,
+            etapes: [
+              { nom: 'regles', ms: 912 },
+              { nom: 'variants', ms: 64 },
+              { nom: 'index', ms: 1630 },
+              { nom: 'composition', ms: 402 },
+              { nom: 'wrapper', ms: 18 },
+              { nom: 'variables', ms: 95 },
+              { nom: 'structure', ms: 588 },
+              { nom: 'echantillons', ms: 21 },
+              { nom: 'compaction', ms: 9 },
+              { nom: 'serialisation', ms: 4 },
+              { nom: 'depot', ms: 467 },
+            ],
+            compteurs: { pagesChargees: 2, appelsGetMainComponentAsync: 48 },
+            empreinte: '3fa0c1d2',
+          },
+        },
+      },
+      { clic: '.pied-mesure > summary' },
     ],
   },
   {

@@ -155,24 +155,19 @@ designer ait besoin de lire.
 
 ## Mesurer une analyse
 
-Le build courant ne mesure rien. Pour relever le temps d'une analyse, construire
-le plugin avec la trace :
+Chaque analyse se mesure, sans build dédié. Après le verdict, le pied de page
+affiche « Analyse en 4,2 s » à côté de la version de schéma. Un clic déplie la
+durée de chaque étape, et « Copier la trace » copie l'objet JSON complet. La
+même trace part dans la console du plugin
+(`Plugins > Development > Open console`), sur une ligne `[ucm:mesure]` :
 
-```sh
-cd packages/plugin-exporter
-npm run build:code:mesure
-```
-
-Relancer le plugin dans Figma Desktop, ouvrir sa console
-(`Plugins > Development > Open console`), puis analyser un composant. Chaque
-analyse imprime une ligne `[ucm:mesure]` suivie d'un objet JSON :
-
-- `totalMs` : la durée de l'analyse, de la lecture des règles à la
-  sérialisation ;
-- `etapes` : la durée de chaque étape, dans l'ordre. Les étapes à phrase sont
-  celles que l'interface annonce ; `index`, `composition`, `wrapper`,
-  `structure`, `echantillons`, `compaction` et `serialisation` découpent le
-  reste ;
+- `totalMs` : la durée de l'analyse, du clic au verdict, lecture du dépôt
+  comprise ;
+- `etapes` : la durée de chaque étape, dans l'ordre : `regles`, `variants`,
+  `index`, `composition`, `wrapper`, `variables`, `structure`,
+  `echantillons`, `compaction`, `serialisation`, puis `depot` quand un
+  dépôt est configuré. L'écart entre leur somme et `totalMs` est la lecture
+  des réglages avant la première étape ;
 - `compteurs` : pages chargées, balayées et reprises de la mémoire, nodes
   parcourus, appels à `getAllNodes`, à `findAllWithCriteria` et à
   `getMainComponentAsync`, maîtres repris de la mémoire, respirations et
@@ -181,7 +176,7 @@ analyse imprime une ligne `[ucm:mesure]` suivie d'un objet JSON :
   analyses du même composant qui donnent deux empreintes ont produit deux
   contrats différents.
 
-`npm run build` rend ensuite le build courant, sans trace. Le protocole de mesure
+Une analyse annulée ou en échec ne laisse aucune trace. Le protocole de mesure
 et les sondes sont dans
 [Performance de l'analyse](../../docs/notes/Recherches/Performance%20de%20l'analyse/PLAN-IMPLEMENTATION-PERFORMANCE-ANALYSE.md).
 

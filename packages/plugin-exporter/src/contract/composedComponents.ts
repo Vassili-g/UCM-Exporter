@@ -27,7 +27,7 @@ import { buildContractPropertySurface } from './propertySurface';
 import type { ContractPropertySurface } from './propertySurface';
 import type { ComposedDependency } from '@ucm-kit/core/format';
 import { pousserLocalise, reporterLocalisations } from './localisation';
-import { compter } from './mesure';
+import { avancer, compter } from './mesure';
 import { maitreDe, respirerSiBesoin } from './porteeDAnalyse';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
@@ -264,6 +264,9 @@ async function calculerLIndex(
       const cleDePage = cleDeLaPage(page);
       let noms = nomsParPage.get(cleDePage);
       if (!noms) {
+        // Le nombre de pages n'est connu qu'à la fin : chacune avance la barre
+        // de la moitié de ce qui reste.
+        avancer(nomsParPage.size, nomsParPage.size + 1, false);
         noms = await nomsGardesDeLaPage(page, options);
         nomsParPage.set(cleDePage, noms);
       }
@@ -653,6 +656,7 @@ export async function scanComposedMatrix(
   // `roots`.
   const scans: ComposedInstancesScan[] = [];
   for (let debut = 0; debut < roots.length; debut += TRANCHE_DE_VARIANTS) {
+    avancer(debut, roots.length);
     if (debut > 0) await respirerSiBesoin();
     const tranche = roots.slice(debut, debut + TRANCHE_DE_VARIANTS);
     scans.push(...await Promise.all(tranche.map((root) => scanComposedInstances(root, contracted))));

@@ -70,16 +70,20 @@ Avant de toucher à un message destiné au designer, charger aussi
 | M1 | Mesure après L1 à L4 **[mainteneur]** | L2, L4 | |
 | L5 | Accélérations conditionnelles | M1 | Seuils de la conception, section 5.7 |
 | L7 | Documents | chaque lot | |
+| L8 | Mesure dans le build courant, barre d'avancement | L4 | |
 
 L4 ne dépend que de L1 et peut passer avant L2.
 
-## État au 2026-09-25
+## État au 2026-09-26
 
-L0, L1, L2 et L4 sont faits et poussés sur `main`, avec L7.1 à L7.3. Le
-plugin de la copie de travail est reconstruit. Le reste attend le
-mainteneur :
+L0, L1, L2, L4 et L8 sont faits et poussés sur `main`, avec L7.1 à L7.3. Le
+plugin de la copie de travail est reconstruit. Le mainteneur a testé L1 à L4
+dans Figma sans voir d'analyse plus rapide. L8 rend la mesure visible dans le
+plugin, à chaque analyse : c'est elle qui dira où le temps passe. Le reste
+attend le mainteneur :
 
 1. M0, la mesure de départ, sur le commit `97095bb` (L0 seul, voir M0.2) ;
+   à défaut, les traces de L8 sur `main` suffisent à décider L5 ;
 2. S6, qui décide L2.8 ;
 3. le choix d'une des deux rédactions de L2.9 ;
 4. S2 (L3.0), qui ouvre ou retire L3 ;
@@ -150,7 +154,9 @@ L7.4 se fait en fin de plan.
   qui ne porte que la trace. Extraire ce commit dans un worktree, y lancer
   `npm ci`, puis dans `packages/plugin-exporter` `npm run build:code:mesure`,
   `npm run build:ui` et `npm run build:manifest`, et importer ce manifeste
-  dans Figma. M1 se mesure ensuite sur `main`.*
+  dans Figma. M1 se mesure ensuite sur `main`, où L8 a retiré
+  `build:code:mesure` : la trace y court dans le build courant, et « Copier la
+  trace » du pied de page la rend.*
 - [ ] **M0.3** **[mainteneur]** Lancer S1, S5 et S6, et consigner les constats
   dans le même fichier. S2 se lance après L2.
   *Les scripts sont dans `sondes/`, chacun avec son déroulé en tête.*
@@ -389,6 +395,50 @@ seuil.
   un `nodechange` ; relecture après un changement de sélection.
 - [ ] **L5.3** Si M1 attribue plus d'un cinquième du temps au calcul pur,
   écrire un constat qui rouvre P7. Ne rien implémenter.
+
+## Lot L8 : mesure dans le build courant, barre d'avancement
+
+Demandé par le mainteneur après un test de L1 à L4 dans Figma : une mesure qui
+ne demande ni build dédié ni console, et un retour visuel pendant l'analyse.
+Les deux dispositions ont été validées sur maquette avant le code : durée en
+pied de page avec détail dépliable, barre fine sous la note avec le compte des
+variants.
+
+- [x] **L8.1** Vérifier L0 à L4 : suite complète, typecheck et bundle de la
+  copie de travail.
+  *Fait. 2 078 tests verts sur `dc30dd0`. `dist/code.js` date d'après L4, sans
+  `loadAllPagesAsync`, avec le budget de respiration. Trois coûts restent hors
+  du plan, que la trace de L8 départagera : le parcours des sources lancé à
+  l'ouverture du plugin charge déjà les pages une à une jusqu'à trouver
+  `.componentRules` ; `candidatsDeRegles` (`extractRules.ts`) balaie toute la
+  page active deux fois, calques masqués d'instance compris ; la lecture du
+  dépôt est un aller-retour réseau que l'ancienne trace ne mesurait pas.*
+- [x] **L8.2** Retirer `__UCM_MESURE__`, `build:code:mesure` et
+  `src/build.d.ts`. `code.ts` ouvre la trace au clic, ajoute l'étape
+  `depot`, la ferme au verdict, l'imprime et l'envoie à l'interface (message
+  `mesure`). Une analyse sans contrat produit jette sa trace.
+  *Fait. Les étapes sont nommées par `ETAPES_DE_L_ANALYSE`
+  (`exportComponent.ts`) : les annonces ne font plus d'étape.*
+- [x] **L8.3** Avancement : poids par étape, `avancer(fait, total)` dans la
+  boucle des variants de `extractStructure`, les tranches de
+  `scanComposedMatrix` et les pages de l'index (sans compte affiché). `code.ts`
+  envoie le message `avancement` à chaque annonce et à chaque respiration, au
+  plus une fois par point de pourcentage. L'analyse des tokens n'a pas de barre.
+- [x] **L8.4** Interface : barre de 3 px et compte « 12 / 40 » dans la note en
+  chargement, hors de la région annoncée aux lecteurs d'écran ; pied de page
+  « Analyse en 4,2 s », détail par étape, « Copier la trace ». Trois états de
+  galerie : `analyse-par-phase` mis à jour, `analyse-boucle-des-variants`,
+  `mesure-de-l-analyse`.
+- [x] **L8.5** Tests : trace et avancement dans `mesure.test.ts`, compte des
+  variants à chaque respiration dans `paritePerformance.test.ts`, messages
+  `avancement` puis `mesure` après le verdict dans `code.test.ts`.
+  *Vus rouges : avancement non envoyé à l'annonce, `avancer` retiré de la
+  boucle des variants, barre qui recule, étapes pesées pour les tokens. La
+  mutation qui retirait la garde d'annulation est restée verte : une
+  annulation lève avant que le contrat existe, et la garde a été retirée.*
+- [ ] **L8.6** **[mainteneur]** Analyser trois composants du corpus, copier
+  chaque trace et la coller dans `MESURES-PERFORMANCE-ANALYSE.md`. Les durées
+  par étape corrigent les poids de `ETAPES_DE_L_ANALYSE` et décident L5.
 
 ## Lot L7 : documents
 

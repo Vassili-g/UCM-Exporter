@@ -25,6 +25,7 @@ import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNo
 import { declarerLesImbriquesSansRegles } from './imbriques';
 import type { ReleveDesImbriques } from './imbriques';
 import { declarerLesRacinesDeVariants, pousserSansNode } from './localisation';
+import { avancer } from './mesure';
 import { respirerSiBesoin } from './porteeDAnalyse';
 import type { DiscoveredRoles } from './semantics';
 import type {
@@ -259,7 +260,8 @@ export async function extractStructure(
   // Seules les vues exactes collectent les calques à effets : la projection de
   // référence n'a pas de vue où situer un usage.
   const effectCarriers = new Map<ComponentNode, EffectCarrier[]>();
-  for (const entry of matrix.variants) {
+  for (const [rang, entry] of matrix.variants.entries()) {
+    avancer(rang, matrix.variants.length);
     await respirerSiBesoin();
     const exactPlaced: PlacedDependencies = new Map();
     const exactPaths: PublishedNodePaths = new Map();

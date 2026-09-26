@@ -14,7 +14,8 @@ import {
 import { indexContractedNames, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
 import { contientUneInstanceRendue } from './exportableNodes';
-import { etape, fermerLaMesure, ouvrirLaMesure } from './mesure';
+import { etape } from './mesure';
+import type { EtapePrevue } from './mesure';
 import { dansUnePorteeDAnalyse } from './porteeDAnalyse';
 import { pousserLesImbriques, releverLesImbriques } from './imbriques';
 import type { ReleveDesImbriques } from './imbriques';
@@ -194,15 +195,32 @@ export function componentContractFilename(name: string): string {
 }
 
 /**
+ * Les étapes de l'analyse d'un composant, dans leur ordre, et leur part
+ * supposée du temps total. La barre de chargement avance d'après ces poids ;
+ * la trace de mesure (`mesure.ts`) relève les durées réelles, qui servent à
+ * les corriger.
+ */
+export const ETAPES_DE_L_ANALYSE: readonly EtapePrevue[] = [
+  { nom: 'regles', poids: 10 },
+  { nom: 'variants', poids: 2 },
+  { nom: 'index', poids: 25 },
+  { nom: 'composition', poids: 15 },
+  { nom: 'wrapper', poids: 3 },
+  { nom: 'variables', poids: 5 },
+  { nom: 'structure', poids: 30 },
+  { nom: 'echantillons', poids: 3 },
+  { nom: 'compaction', poids: 2 },
+  { nom: 'serialisation', poids: 1 },
+];
+
+/**
  * Point d'entrée de la commande : crée le contrat du composant sélectionné.
  *
  * `annoncer` nomme les étapes traversées, il n'en décide aucune. Quand le
  * composant porte des instances, cet export résout leurs maîtres et charge la
- * page de chacun, une fois par session et par page tant qu'elle ne change pas :
- * un coût pendant lequel un « Analyse du composant… » figé se lit comme un
- * plantage. Les étapes portent le nom de ce que le code fait, jamais une durée
- * ni un pourcentage : le temps d'une étape dépend du fichier, et seule la trace
- * du build de mesure le relève, après coup.
+ * page de chacun, une fois par session et par page tant qu'elle ne change pas.
+ * Les étapes que la trace de mesure relève (`etape`) sont celles de
+ * `ETAPES_DE_L_ANALYSE`, et `code.ts` ouvre et ferme cette trace.
  *
  * `options.respirer` rend la main au sandbox dans les boucles longues, une
  * fois le budget de calcul écoulé ; `code.ts` y lit l'annulation.
@@ -211,18 +229,13 @@ export async function handleExportComponent(
   annoncer: Annonce = () => {},
   options: { respirer?: () => Promise<void> } = {},
 ): Promise<ComponentExport> {
-  ouvrirLaMesure();
-  const resultat = await dansUnePorteeDAnalyse(options, () => exporterLaSelection((texte) => {
-    etape(texte);
-    annoncer(texte);
-  }));
-  fermerLaMesure(resultat.content);
-  return resultat;
+  return dansUnePorteeDAnalyse(options, () => exporterLaSelection(annoncer));
 }
 
 async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> {
   const componentSet = getSelectedComponent();
   annoncer('Lecture des règles d’usage…');
+  etape('regles');
 
   // Les règles enrichissent l'intention et la documentation, mais ne sont plus
   // une précondition d'export. Leur absence reste visible dans les diagnostics.
@@ -283,6 +296,7 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   // La liste exacte porte cet écart : il ne manque rien à la projection v8.
   warningCursor = warnings.length;
   annoncer('Lecture des variants…');
+  etape('variants');
   const { matrix, warnings: matrixWarnings } = buildVariantMatrix(
     componentSet,
     propertyModel.publicVariantKeyByRawKey,
@@ -393,6 +407,7 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   // lit les chemins sans un aller-retour par variable, et il sait quelles
   // variables partagent un nom, les seules qu'un contrat ne doit jamais citer.
   annoncer('Écriture du contrat…');
+  etape('variables');
   const [collections, variables] = await Promise.all([
     figma.variables.getLocalVariableCollectionsAsync(),
     figma.variables.getLocalVariablesAsync(),

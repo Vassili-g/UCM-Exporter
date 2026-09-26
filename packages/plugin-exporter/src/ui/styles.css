@@ -285,6 +285,32 @@
   color: var(--texte-marque);
 }
 
+/*
+ * Le compte de la boucle en cours et la barre d'avancement n'existent que
+ * pendant une analyse de composant. Le compte flotte à droite du texte de
+ * l'étape ; ses chiffres à chasse fixe ne font pas bouger la ligne.
+ */
+.note-compte {
+  float: right;
+  margin-left: var(--espace-serre);
+  font-variant-numeric: tabular-nums;
+}
+
+.note-barre {
+  height: 3px;
+  margin-top: var(--espace-serre);
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--bordure);
+}
+
+.note-barre-remplie {
+  width: 0%;
+  height: 100%;
+  background: var(--texte-marque);
+  transition: width 150ms linear;
+}
+
 .note[data-state='success'] {
   color: var(--texte-succes);
 }
@@ -308,6 +334,50 @@
   margin-top: auto;
   color: var(--texte-second);
   text-align: right;
+}
+
+/*
+ * La durée de la dernière analyse suit la version, sur la même ligne. Son
+ * détail se déplie dessous, une étape par ligne.
+ */
+.pied-mesure {
+  display: inline;
+}
+
+.pied-mesure::before {
+  content: ' · ';
+}
+
+.pied-mesure > summary {
+  display: inline;
+  cursor: pointer;
+}
+
+.pied-mesure[open] > summary {
+  color: var(--texte);
+}
+
+.pied-etapes {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 var(--espace-controle);
+  margin: var(--espace-serre) 0;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.pied-etapes dd {
+  margin: 0;
+  text-align: right;
+}
+
+.pied-copie {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texte-marque);
+  font: inherit;
+  cursor: pointer;
 }
 
 /*

@@ -12,6 +12,7 @@ import { createConfigurationPage } from './components/ConfigurationPage';
 import type { OngletConfiguration } from './components/ConfigurationPage';
 import { createCarteComposant } from './components/CarteComposant';
 import { createCarteTokens } from './components/CarteTokens';
+import { createPiedDePage } from './components/PiedDePage';
 import { createResizeGrip } from 'ucm-plugin-socle/src/ui/ResizeGrip';
 import { versSandbox } from './pont';
 
@@ -174,13 +175,12 @@ function updateConnection({ state, pastille }: Extract<PluginMessage, { type: 'c
 }
 
 /**
- * Le pied de page porte la version de schéma que ce bundle produit.
+ * Le pied de page porte la version de schéma que ce bundle produit, et la durée
+ * de la dernière analyse.
  */
-const footer = document.createElement('footer');
-footer.className = 'app-footer';
-footer.hidden = true;
+const piedDePage = createPiedDePage();
 
-app.append(header.element, exportPage, configPage, footer, createResizeGrip(versSandbox));
+app.append(header.element, exportPage, configPage, piedDePage.element, createResizeGrip(versSandbox));
 versSandbox({ type: 'ui-ready' });
 
 onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
@@ -214,6 +214,12 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
 
   if (message.type === 'phase' && resultatActuel(message)) active.ecrireNote('loading', message.texte);
 
+  if (message.type === 'avancement' && resultatActuel(message)) {
+    active.ecrireAvancement(message.fraction, message.fait, message.total);
+  }
+
+  if (message.type === 'mesure') piedDePage.afficherMesure(message.trace);
+
   if (message.type === 'verdict') {
     if (finDeLOperation(message)) occuper(false);
     if (resultatActuel(message)) {
@@ -241,8 +247,7 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   }
 
   if (message.type === 'schema-version') {
-    footer.textContent = `Schéma de contrat ${message.version}`;
-    footer.hidden = false;
+    piedDePage.afficherVersion(message.version);
   }
 
   if (message.type === 'status') {

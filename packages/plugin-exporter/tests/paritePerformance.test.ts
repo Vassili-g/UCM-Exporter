@@ -8,7 +8,9 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import exporterLeComposant from '../src/contract/exportComponent';
+import exporterLeComposant, { ETAPES_DE_L_ANALYSE } from '../src/contract/exportComponent';
+import { abandonnerLaMesure, avancementCourant, ouvrirLaMesure } from '../src/contract/mesure';
+import type { Avancement } from '../src/contract/mesure';
 import { respirerSiBesoin } from '../src/contract/porteeDAnalyse';
 import { conteneurDeRegles, handleExportComponent, node } from './aides/figmaFaux';
 import { sansDate } from './aides/parite';
@@ -182,6 +184,31 @@ test('quarante variants donnent le même contrat et les mêmes avertissements, a
   } finally {
     fichier.restaurer();
   }
+});
+
+test('à chaque respiration, l’avancement compte les variants de la boucle et ne recule jamais', async () => {
+  const fichier = monterLeSet(8);
+  const remettre = horlogeRapide();
+  const releves: Avancement[] = [];
+  ouvrirLaMesure(ETAPES_DE_L_ANALYSE);
+  try {
+    await exporterLeComposant(() => {}, {
+      respirer: async () => {
+        const avancement = avancementCourant();
+        if (avancement) releves.push(avancement);
+      },
+    });
+  } finally {
+    abandonnerLaMesure();
+    remettre();
+    fichier.restaurer();
+  }
+  const comptes = releves.filter(({ total }) => total === 8).map(({ fait }) => fait);
+  assert.deepEqual(comptes, [0, 1, 2, 3, 4, 5, 6, 7]);
+  for (let rang = 1; rang < releves.length; rang += 1) {
+    assert.ok(releves[rang].fraction >= releves[rang - 1].fraction, 'la barre a reculé');
+  }
+  assert.ok(releves.at(-1)!.fraction < 1);
 });
 
 test('hors portée, respirerSiBesoin ne rend jamais la main', async () => {

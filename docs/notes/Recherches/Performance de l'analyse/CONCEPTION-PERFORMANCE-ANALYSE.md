@@ -104,9 +104,9 @@ document, comme aujourd'hui.
 
 Nouveau module `src/contract/mesure.ts`. Il tient, pour une analyse :
 
-- un chronomètre par étape : chaque annonce de `handleExportComponent`, plus
-  `index`, `composition`, `wrapper`, `structure`, `echantillons`,
-  `compaction` et `serialisation` ;
+- un chronomètre par étape : les étapes de `ETAPES_DE_L_ANALYSE`
+  (`exportComponent.ts`), plus `depot`, la lecture du dépôt que `code.ts`
+  ajoute ;
 - des compteurs : `pagesChargees`, `pagesBalayees`, `pagesReutilisees`,
   `nodesParcourus` (somme des longueurs rendues par `findAll` dans
   `getAllNodes`), `appelsGetAllNodes`, `appelsFindAllWithCriteria`,
@@ -115,15 +115,19 @@ Nouveau module `src/contract/mesure.ts`. Il tient, pour une analyse :
 - une empreinte du contrat : FNV-1a 32 bits de `content`, dont la valeur de
   `exportedAt` est remplacée par une chaîne fixe.
 
-La trace est activée à la compilation. `build:code` passe
-`--define:__UCM_MESURE__=false` et `--minify-syntax` à esbuild, qui retire alors
-le code de mesure du bundle ; sans `--minify-syntax`, il garde un `if (false)`
-et sa chaîne. Un script `build:code:mesure` passe `true`. Chaque fonction du
-module lit la constante en ligne par
-`typeof __UCM_MESURE__ !== 'undefined' && __UCM_MESURE__ === true`, ce qui garde
-les tests sous Node sans définition. La trace part en un seul
-`console.log('[ucm:mesure]', …)` en fin d'analyse, jamais dans
-`meta.diagnostics` ni vers l'interface.
+La trace court à chaque analyse, dans le build courant, sans build dédié. `code.ts` l'ouvre
+au clic et la ferme au verdict. Il l'imprime alors en un seul
+`console.log('[ucm:mesure]', …)` et l'envoie à l'interface, qui pose la durée
+totale en pied de page et déplie le détail par étape. Elle n'entre jamais dans
+`meta.diagnostics`. Une analyse annulée ou en échec avant le contrat jette sa
+trace.
+
+La même trace porte l'avancement de la barre de chargement. Chaque étape de
+`ETAPES_DE_L_ANALYSE` a un poids, et les boucles longues (pages de l'index,
+tranches de la composition, variants de la structure) disent où elles en sont
+par `avancer`. `code.ts` envoie l'avancement à chaque annonce et à chaque
+respiration, au plus une fois par point de pourcentage. Les poids sont une
+estimation à corriger d'après les traces relevées.
 
 ### 5.2. La portée d'analyse et le résolveur de maîtres (L1)
 

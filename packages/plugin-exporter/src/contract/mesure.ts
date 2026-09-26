@@ -1,17 +1,14 @@
 /**
- * La trace de mesure d'une analyse : durée de chaque étape, compteurs et
- * empreinte du contrat.
+ * La trace de mesure d'une analyse : durée de chaque étape, compteurs,
+ * empreinte du contrat, et l'avancement que la barre de chargement affiche.
  *
- * Elle n'existe que dans le build de mesure (`build:code:mesure`). Le build
- * courant définit `__UCM_MESURE__` à `false`, et `--minify-syntax` retire alors
- * le corps de chaque fonction : sans cette option, esbuild garde un
- * `if (false)` et la chaîne de la trace. La garde s'écrit donc en ligne dans
- * chaque fonction, car esbuild ne replie pas l'appel d'une fonction qui rend
- * `false`. Sans définition, sous Node, la constante se lit sur `globalThis` à
- * chaque appel : un test l'active et la retire à volonté.
+ * Elle court à chaque analyse, sans build dédié : une étape coûte un
+ * `Date.now()`, un compteur une addition. `code.ts` l'ouvre au clic, la ferme
+ * au verdict, l'imprime dans la console et l'envoie au pied de page. Elle
+ * n'entre jamais dans le contrat, ni dans `meta.diagnostics`.
  *
- * La trace part en un seul `console.log` à la fin de l'analyse. Elle n'entre
- * jamais dans le contrat, ni dans `meta.diagnostics`, ni dans l'interface.
+ * Hors d'une trace ouverte, chaque fonction est sans effet : la création des
+ * règles appelle le moteur sans rien mesurer.
  */
 
 /** Les compteurs de la trace, décrits dans la conception, section 5.1. */
@@ -28,19 +25,51 @@ export type Compteur =
   | 'tailleIndex'
   | 'porteeRefusee';
 
+/** Une étape attendue de l'analyse, et sa part du temps total supposé. */
+export type EtapePrevue = { nom: string; poids: number };
+
+/** Ce que la trace rend à sa fermeture. */
+export type TraceDeMesure = {
+  totalMs: number;
+  etapes: Array<{ nom: string; ms: number }>;
+  compteurs: Partial<Record<Compteur, number>>;
+  empreinte: string;
+};
+
+/** L'avancement d'une analyse, entre 0 et 1, et le compte de la boucle en cours. */
+export type Avancement = { fraction: number; fait?: number; total?: number };
+
 type Trace = {
   debut: number;
   etapes: Array<{ nom: string; ms: number }>;
   enCours: { nom: string; debut: number } | null;
   compteurs: Partial<Record<Compteur, number>>;
+  prevues: readonly EtapePrevue[] | null;
+  /** Rang dans `prevues` de la dernière étape prévue ouverte, -1 avant la première. */
+  rang: number;
+  /** Où en est la boucle de l'étape en cours. */
+  boucle: { fait: number; total: number; montrer: boolean } | null;
+  /** La plus grande fraction rendue : la barre ne recule jamais. */
+  atteinte: number;
 };
 
 let trace: Trace | null = null;
 
-/** Ouvre la trace d'une analyse ; une trace restée ouverte par un échec est jetée. */
-export function ouvrirLaMesure(): void {
-  if (!(typeof __UCM_MESURE__ !== 'undefined' && __UCM_MESURE__ === true)) return;
-  trace = { debut: Date.now(), etapes: [], enCours: null, compteurs: {} };
+/**
+ * Ouvre la trace d'une analyse ; une trace restée ouverte par un échec est
+ * jetée. Sans `prevues`, la trace ne rend aucun avancement.
+ */
+export function ouvrirLaMesure(prevues: readonly EtapePrevue[] | null = null): void {
+  trace = {
+    debut: Date.now(),
+    etapes: [],
+    enCours: null,
+    compteurs: {},
+    prevues,
+    rang: -1,
+    boucle: null,
+    atteinte: 0,
+  };
 }
 
 function clore(ouverte: Trace, maintenant: number): void {
@@ -49,20 +78,57 @@ function clore(ouverte: Trace, maintenant: number): void {
   ouverte.enCours = null;
 }
 
-/** Ouvre l'étape `nom` et clôt la précédente. */
+/**
+ * Ouvre l'étape `nom` et clôt la précédente. Une étape absente des étapes
+ * prévues compte dans la trace et laisse l'avancement où il est.
+ */
 export function etape(nom: string): void {
-  if (!(typeof __UCM_MESURE__ !== 'undefined' && __UCM_MESURE__ === true)) return;
   if (!trace) return;
   const maintenant = Date.now();
   clore(trace, maintenant);
   trace.enCours = { nom, debut: maintenant };
+  const rang = trace.prevues?.findIndex((prevue) => prevue.nom === nom) ?? -1;
+  if (rang > trace.rang) {
+    trace.rang = rang;
+    trace.boucle = null;
+  }
+}
+
+/**
+ * Dit où en est la boucle de l'étape en cours. `montrer` à faux garde le
+ * compte hors de l'interface : un total qui grandit en route, comme les pages
+ * de l'index, ne se lit pas comme « 3 / 4 ».
+ */
+export function avancer(fait: number, total: number, montrer = true): void {
+  if (!trace || total <= 0) return;
+  trace.boucle = { fait: Math.min(fait, total), total, montrer };
 }
 
 /** Ajoute `n` au compteur ; sans effet hors d'une trace ouverte. */
 export function compter(nom: Compteur, n = 1): void {
-  if (!(typeof __UCM_MESURE__ !== 'undefined' && __UCM_MESURE__ === true)) return;
   if (!trace) return;
   trace.compteurs[nom] = (trace.compteurs[nom] ?? 0) + n;
+}
+
+/**
+ * L'avancement de l'analyse, ou `null` hors trace ou sans étapes prévues.
+ *
+ * Les étapes closes comptent pour leur poids entier, l'étape en cours pour la
+ * part que sa boucle a faite.
+ */
+export function avancementCourant(): Avancement | null {
+  if (!trace?.prevues) return null;
+  const { prevues, rang, boucle } = trace;
+  const total = prevues.reduce((somme, prevue) => somme + prevue.poids, 0);
+  if (total <= 0) return null;
+  let fait = 0;
+  for (let index = 0; index < rang; index += 1) fait += prevues[index].poids;
+  if (rang >= 0 && boucle) fait += prevues[rang].poids * (boucle.fait / boucle.total);
+  trace.atteinte = Math.max(trace.atteinte, Math.min(1, fait / total));
+  return {
+    fraction: trace.atteinte,
+    ...(boucle?.montrer ? { fait: boucle.fait, total: boucle.total } : {}),
+  };
 }
 
 /**
@@ -79,18 +145,22 @@ export function empreinteDuContrat(content: string): string {
   return hash.toString(16).padStart(8, '0');
 }
 
-/** Clôt la trace et l'imprime, avec l'empreinte du contrat produit. */
-export function fermerLaMesure(content: string): void {
-  if (!(typeof __UCM_MESURE__ !== 'undefined' && __UCM_MESURE__ === true)) return;
-  if (!trace) return;
+/** Clôt la trace et la rend, avec l'empreinte du contrat produit ; `null` hors trace. */
+export function fermerLaMesure(content: string): TraceDeMesure | null {
+  if (!trace) return null;
   const maintenant = Date.now();
   const { debut, etapes, compteurs } = trace;
   clore(trace, maintenant);
   trace = null;
-  console.log('[ucm:mesure]', JSON.stringify({
+  return {
     totalMs: maintenant - debut,
     etapes,
     compteurs,
     empreinte: empreinteDuContrat(content),
-  }));
+  };
+}
+
+/** Jette la trace ouverte sans rien imprimer : l'analyse a échoué ou a été annulée. */
+export function abandonnerLaMesure(): void {
+  trace = null;
 }
