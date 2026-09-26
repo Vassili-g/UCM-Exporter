@@ -32,8 +32,9 @@ Lire dans cet ordre :
    conservés sans modification ;
 2. l’[avis sur la question de fond](#avis-sur-la-question-de-fond) et les
    décisions ci-dessous ;
-3. les maquettes du lot Y2, une fois validées ; d’ici là, les [maquettes du
-   quatrième tour](./MAQUETTES-RECETTE-V4.html) ;
+3. les [maquettes du lot Y2](./MAQUETTES-RECETTE-V5.html), une fois
+   validées ; d’ici là, les [maquettes du quatrième
+   tour](./MAQUETTES-RECETTE-V4.html) ;
 4. le [quatrième plan](./PLAN-ERGONOMIE-PALETTES-V4.md), la
    [conception du format 3](./CONCEPTION-NUANCES-ET-FORMAT-3.md), les
    [décisions de rédaction](./DECISIONS-REDACTION-PALETTES.md) et
@@ -286,7 +287,7 @@ couleurs et ratios calculés par le moteur pour `#1E6FD9`, `#16A34A`,
 `#DC2626` et `#A0B599`. Chaque maquette montre la disposition en place quand
 elle existe, au moins une autre, puis ses questions avec une recommandation.
 
-- [ ] **Y2.1** Choix des intensités, dans la carte de création et dans la
+- [x] **Y2.1** Choix des intensités, dans la carte de création et dans la
   configuration alignée sur elle. Au moins trois formes : segments « Une
   intensité · Deux intensités » ; un interrupteur « Soft et Vivid » ; deux
   cartes qui montrent chacune une rampe d’aperçu. Des libellés qui disent
@@ -294,26 +295,50 @@ elle existe, au moins une autre, puis ses questions avec une recommandation.
   Vivid » du profil qui porte la référence (Q5.4). Ce que l’aperçu, les
   Intensités, la Dérive, les Garanties et l’interface de test montrent dans
   chaque cas ; pour une intensité, ce que la carte Intensités garde, puisque
-  la part est celle de la référence.
-- [ ] **Y2.2** Fiche d’une palette dans l’onglet Planches : hiérarchie entre
+  la part est celle de la référence. Produite : F1 segments « Intensités :
+  Une · Deux » sous le Modèle, F2 interrupteur, F3 deux cartes avec leur
+  rampe ; l’onglet entier à une et à deux intensités ; la carte Intensités
+  retirée (I1) ou en lecture seule (I2). Recommandé : F1, libellés a, « Une »
+  par défaut, I1, une bascule Soft et Vivid dans l’interface de test, pas de
+  confirmation au passage de deux à une, choix caché pour une palette libre.
+  En attente de validation.
+- [x] **Y2.2** Fiche d’une palette dans l’onglet Planches : hiérarchie entre
   nom, état du cadre, aperçu, référence et garanties, et les trois gestes
   dans l’ordre de Y1.9. Deux dispositions au moins, dont une plus compacte.
   Chaque état du cadre, dont « À jour », sans premier geste ou avec un
-  geste inactif.
-- [ ] **Y2.3** Carte « Contenu des planches » des Réglages communs : un
+  geste inactif. Produite : A0 en place, gestes réordonnés ; A, l’état en
+  pastille à côté du nom ; B, une ligne par palette ; C, B regroupé par
+  état ; les cinq états en A et en B. Recommandé : A ; « À jour » et
+  « Lecture impossible » sans premier geste ; « Pas encore sur Figma » pour
+  un cadre jamais généré. En attente de validation.
+- [x] **Y2.3** Carte « Contenu des planches » des Réglages communs : un
   interrupteur par partie du cadre (rampes, note sous les rampes, usages,
   grilles de contrastes, thème Light, thème Dark), et les règles qui les
   lient. Proposer ce qui ne se désactive pas, par exemple l’en-tête et au
   moins un thème. Montrer l’effet annoncé : les cadres passeront « À mettre
-  à jour », et le nombre de calques d’un cadre.
-- [ ] **Y2.4** Cadre de la planche pour une palette à une intensité et à
+  à jour », et le nombre de calques d’un cadre. Produite : C1, une liste
+  d’interrupteurs avec le nombre de calques de chaque partie ; C2, la même
+  liste et un schéma du cadre. En-tête et rampes toujours générés, au moins
+  un thème. Recommandé : C1, repliée en dernière carte. En attente de
+  validation.
+- [x] **Y2.4** Cadre de la planche pour une palette à une intensité et à
   deux. Pour deux, au moins deux dispositions des usages : une section par
   profil, ou deux colonnes Soft et Vivid par état. Nombre de calques de
-  chacune pour Bleu.
-- [ ] **Y2.5** Fonds sombres : les règles de Y7.2 appliquées aux crans 50 à
+  chacune pour Bleu. Produite sur le modèle de planche du plugin, rendu en
+  HTML : une intensité, 1 008 calques grilles comprises ; D1, une section
+  par profil, 1 964 ; D2, deux colonnes par état, 1 918 ; D3, deux lignes
+  par usage, 1 936. Le cadre d’aujourd’hui en compte 1 662 (496 sans les
+  grilles), et non plus 1 632 comme au lot X5.1. Recommandé : D1, Soft puis
+  Vivid quel que soit le porteur. En attente de validation.
+- [x] **Y2.5** Fonds sombres : les règles de Y7.2 appliquées aux crans 50 à
   300 du thème Dark, sur les quatre références, en alerte, en encart et en
   carte, à côté des couleurs actuelles. Le réglage qui les porte dans les
-  Réglages communs, et sa valeur par défaut.
+  Réglages communs, et sa valeur par défaut. Produite, avec Rouge en Soft en
+  plus du profil porteur de chaque référence, le pire cas des garanties sur
+  360 teintes et les nuances où ≈ apparaîtrait. Recommandé : R3 à 0,30, un
+  curseur « Fonds du thème Dark » dans la carte Intensités, et l’alerte
+  « Profils confondus » muette sur les nuances 50 à 300 du thème Dark. En
+  attente de validation.
 
 Critère : le mainteneur valide ou corrige chaque maquette sans avoir à
 imaginer une interaction.
@@ -436,14 +461,48 @@ Réponse du mainteneur à Q5.6 : maintenant. Les crans de fond du thème Dark,
 une intensité. Les accents, 500 à 800, gardent la leur. Le thème Light ne
 change pas.
 
-- [ ] **Y7.1** Mesurer la chroma des crans 50 à 300 du thème Dark, par
+- [x] **Y7.1** Mesurer la chroma des crans 50 à 300 du thème Dark, par
   profil, sur les 360 teintes, et la comparer aux crans 1 à 5 des échelles
   sombres de Radix et aux tons de surface de Material 3 en sombre. Rapporter
-  les chiffres dans ce plan avant la maquette.
-- [ ] **Y7.2** Écrire au moins trois règles candidates pour la maquette
+  les chiffres dans ce plan avant la maquette. Fait par
+  [`mesurer-fonds-sombres.mjs`](./mesurer-fonds-sombres.mjs) ; chroma
+  absolue, médiane puis maximum sur les teintes :
+
+  | Nuance Dark | L | Soft | Vivid | Radix, même clarté | Part Radix |
+  |---|---|---|---|---|---|
+  | 50 | 0,180 | 0,022 / 0,056 | 0,047 / 0,117 | pas 1 : 0,014 / 0,026 | 0,24 |
+  | 100 | 0,225 | 0,028 / 0,070 | 0,058 / 0,147 | pas 2 : 0,019 / 0,032 | 0,32 |
+  | 200 | 0,275 | 0,034 / 0,085 | 0,071 / 0,179 | pas 3 : 0,047 / 0,071 | 0,57 |
+  | 300 | 0,330 | 0,040 / 0,102 | 0,085 / 0,215 | pas 4 : 0,070 / 0,102 | 0,76 |
+
+  Radix : les 25 échelles sombres colorées de `@radix-ui/colors` 3.0.0. Sa
+  part de chroma monte du fond le plus sombre vers les accents ; celle du
+  moteur est constante, 0,45 ou 0,95. Material 3 (`material-color-utilities`
+  0.3.0, schéma TonalSpot en sombre) peint `surface` à L 0,19 et ses
+  conteneurs de surface à L 0,24 à 0,29 d’un neutre à chroma 0,010 à 0,016,
+  et `primaryContainer` à L 0,40, chroma 0,09 ; le schéma Vibrant monte ses
+  surfaces à 0,02. Nos fonds Vivid ont deux à trois fois la chroma de Radix
+  aux mêmes clartés.
+- [x] **Y7.2** Écrire au moins trois règles candidates pour la maquette
   Y2.5 : un plafond de chroma absolue sous une clarté donnée ; une part de
   chroma propre aux fonds sombres ; une part qui décroît vers le bout sombre
   de la courbe Dark. Pour chacune, le réglage que le designer manipule.
+  Fait, sur les nuances 50 à 300 du thème Dark, dans chaque profil, la
+  référence exacte gardée :
+  R1, la chroma bornée à une valeur absolue, réglage « Chroma maximale des
+  fonds sombres », 0,045 ;
+  R2, la part du profil multipliée par un facteur, réglage « Intensité des
+  fonds sombres », 0,5 ;
+  R3, la part multipliée par un facteur qui vaut sa valeur au cran 50 et
+  remonte linéairement en clarté jusqu’à 1 au cran 400, réglage « Fonds du
+  thème Dark », 0,30 : Vivid y prend 0,28, 0,42, 0,57 et 0,74, près des
+  parts de Radix.
+  Sur les 360 teintes et les deux profils, les trois règles tiennent les
+  neuf paires qui touchent `surface` et `surface-card` : le pire cas passe
+  de 5,04:1 à 4,93:1 au plus bas (4,95:1 avec R3) pour `text` sur `surface`, et de 3,53:1 à
+  3,44:1 pour `border-control` et `focus` sur `surface`. R3 fait
+  apparaître ≈ aux nuances 50 (et 100 pour Vert et Sauge) des quatre
+  références.
 - [ ] **Y7.3** Moteur et recette : la règle retenue en Y2.5, son réglage et
   sa valeur par défaut, dans le même passage au format 4 que Y3. Une recette
   de format 3 prend la valeur par défaut : aucune variable ne dépend encore
