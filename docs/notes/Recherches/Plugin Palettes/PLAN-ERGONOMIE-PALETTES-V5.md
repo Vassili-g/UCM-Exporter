@@ -433,11 +433,15 @@ Après la validation de Y2.1. Fichiers : `packages/couleur/src/*`,
 - [x] **Y3.5** Rapport, export de la recette et empreinte : ils ne listent
   que les rampes présentes, sous les noms de la décision « Noms des
   tokens ». L’empreinte d’un cadre change avec le nombre d’intensités. Fait : rapport au format 3 (`intensites`, crans sans profil pour une intensité), pastilles `{mode}/{cran}`, empreinte du cadre recalculée sur l’arbre. L’export de la recette reste le JSON canonique.
-- [ ] **Y3.6** Spécification : `[MOT-17]`, `[ENT-11]`, section 11 et les
+- [x] **Y3.6** Spécification : `[MOT-17]`, `[ENT-11]`, section 11 et les
   alertes touchées. Architecture multi-marques : sections 1 à 4, chemin
   d’une couleur à une intensité, comptes de `theme` et de `brand`, exemples
   d’exceptions ; la [vue illustrée](../Archi%20Tokens%20Multi-marques/VUE-ILLUSTREE-MULTIMARQUES.html)
-  suit. Reste à faire.
+  suit. Fait : `[ENT-14]`, `[VER-17]`, le glossaire, `[MOT-16]` à `[MOT-18]`, le
+  compte des paires, `[VER-06]`, la recette au format 4 et le rapport au
+  format 3 dans la spécification ; le chemin sans segment de profil, `theme`
+  à 121 variables et `brand` à 45, les exceptions et la section 3.5 dans
+  l’architecture ; la vue illustrée suit.
 - [x] **Y3.7** Tests : une recette de format 3 relue avec deux intensités par
   palette ; une palette à une intensité sans seconde rampe, sans seconde
   série de garanties, sans alerte « Profils confondus », et dont la rampe
@@ -515,9 +519,9 @@ Après Y3, et la validation de Y2.3 et Y2.7.
 - [x] **Y5.1** Rampes et grilles : celles des intensités présentes. Une
   palette à une intensité nomme ses pastilles `{mode}/{cran}` (`[PLA-14]`).
   La note sous les rampes n’explique ≈ qu’avec deux intensités. Fait.
-- [ ] **Y5.2** Usages : ceux de chaque profil présent, disposés selon Y2.7.
+- [x] **Y5.2** Usages : ceux de chaque profil présent, disposés selon Y2.7.
   Récrire `[PLA-18]`. L’en-tête nomme le profil porteur seulement avec deux
-  intensités. Fait dans le modèle : une section d’usages par profil présent, Soft puis Vivid, et « Fond léger ». `[PLA-18]` reste à récrire dans la spécification.
+  intensités. Fait dans le modèle : une section d’usages par profil présent, Soft puis Vivid, et « Fond léger ». `[PLA-18]` récrit, `[PLA-28]` ajouté pour le contenu des planches.
 - [x] **Y5.3** Contenu des planches : le modèle reçoit les parties à
   dessiner, à la place de l’option `grille`. Le réglage se range dans la
   recette. Une partie retirée change l’empreinte, et les cadres passent
@@ -601,13 +605,13 @@ change pas.
   sa valeur par défaut, dans le même passage au format 4 que Y3. Une recette
   de format 3 prend la valeur par défaut : aucune variable ne dépend encore
   de ces couleurs, et tous les cadres passent « À mettre à jour ». Fait : `facteurSombre` dans `fabriquerRampe`, réglage `intensiteDesFondsSombres` à 0,30. Les bornes se lisent à la courbe Dark commune aux numéros 50 et 400, ou à la courbe par défaut quand la liste ne porte pas le numéro : passer à neuf nuances ne change ainsi aucune couleur gardée.
-- [ ] **Y7.4** Garanties : une baisse de chroma à clarté égale change la
+- [x] **Y7.4** Garanties : une baisse de chroma à clarté égale change la
   luminance relative. Rejouer `verifier-courbes.mjs` et la garantie des
   courbes : `text` sur `surface` à ses trois états, `text` et
   `border-control` sur `surface-card`, sur les 360 teintes. Reporter les
-  minimums dans l’architecture, section 4. Mesures faites : avec R3, `verifier-courbes.mjs` donne 4,95:1 pour text sur surface et 3,45:1 pour border-control et focus sur surface ; sa nouvelle section 9, sur les parts de 0 à 1, donne 4,90:1 et 3,41:1. `architecture.test.ts` suit R3. Le report dans l’architecture, section 4, reste à faire.
-- [ ] **Y7.5** Interface et documents : le réglage à la place que Y2.5 fixe ;
-  spécification, architecture section 3.2, CONTRIBUTING.md. Réglage fait : ligne « Fonds du thème Dark » dans la carte Intensités des Réglages communs. Spécification, architecture et CONTRIBUTING.md restent à faire.
+  minimums dans l’architecture, section 4. Mesures faites : avec R3, `verifier-courbes.mjs` donne 4,95:1 pour text sur surface et 3,45:1 pour border-control et focus sur surface ; sa nouvelle section 9, sur les parts de 0 à 1, donne 4,90:1 et 3,41:1. `architecture.test.ts` suit R3. Minimums reportés dans l’architecture, section 4, avec ceux de la section 9.
+- [x] **Y7.5** Interface et documents : le réglage à la place que Y2.5 fixe ;
+  spécification, architecture section 3.2, CONTRIBUTING.md. Réglage fait : ligne « Fonds du thème Dark » dans la carte Intensités des Réglages communs. Fait aussi : `[MOT-28]` et `[ENT-12]` dans la spécification, section 3.2 de l’architecture, carte Intensités des Réglages communs dans CONTRIBUTING.md. Les textes de Y3 à Y7 entrent dans l’inventaire, N119 à N129.
 - [x] **Y7.6** Tests : le thème Light identique à l’octet ; en Dark, les
   crans 50 à 300 sous la règle et les crans 500 à 800 inchangés ; les
   garanties tenues ; une recette de format 3 relue avec la valeur par
@@ -619,10 +623,15 @@ boutons gardent leur vivacité, et toutes les garanties tiennent.
 ## Lot Y8 : recette et clôture
 
 - [ ] **Y8.1** Reprendre les tests d’interface que Y1 à Y7 cassent, en
-  gardant ce que chacun protégeait encore.
-- [ ] **Y8.2** Mettre à jour AGENTS.md si la carte du code change, la
+  gardant ce que chacun protégeait encore. Au mainteneur : à sa demande, les
+  tests d’interface sous Chromium ne tournent pas dans la session de clôture.
+- [x] **Y8.2** Mettre à jour AGENTS.md si la carte du code change, la
   spécification et les liens des plans. Marquer le quatrième plan comme
-  remplacé pour ses cases ouvertes.
+  remplacé pour ses cases ouvertes. Fait : la carte perd `ui/generation.ts`,
+  gagne `nuances.ts` et `ajustement.ts`, et décrit les intensités ; deux
+  invariants du moteur, `intensitesDe` et `facteurSombre`, que
+  `inventaireInvariants.test.ts` tient désormais, vu rouge sur leur retrait.
+  Le quatrième plan renvoie au cinquième.
 - [ ] **Y8.3** (ex-X8.2) Constater dans Figma qu’un seul Ctrl+Z après
   « Supprimer définitivement » rend le cadre et son suivi. Au mainteneur.
 - [ ] **Y8.4** (ex-X8.3) Construire code et interface, recharger le plugin

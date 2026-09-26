@@ -47,16 +47,17 @@ critique](./REVUE-CRITIQUE-PLUGIN-PALETTES.md).
 |---|---|
 | Palette | Une couleur de référence et ses réglages. Elle produit quatre rampes |
 | Couleur de référence | L'hexa que le designer saisit. Elle ne change jamais ; la palette se construit autour d'elle |
-| Rampe | Onze crans, de 50 à 950, pour un profil et un mode |
+| Rampe | Onze crans, de 50 à 950, pour une intensité et un mode |
 | Cran | Une couleur de la rampe, désignée par son numéro |
 | Profil | `soft` ou `vivid` : la part de la vivacité maximale que l'écran affiche, 0,45 ou 0,95 par défaut |
+| Intensité | Une rampe par mode qu'une palette porte : `soft` et `vivid` pour une palette à deux intensités, la rampe unique, sans nom de profil, pour une palette à une intensité (`[ENT-14]`) |
 | Mode | `light` ou `dark` : la courbe de clarté employée |
 | Dérive de teinte | La rotation de teinte, en degrés, entre la couleur de référence et chaque bout de la rampe |
 | Fond de référence | L'hexa contre lequel se mesurent les contrastes d'un mode |
 | Emploi | Un usage d'un cran, `text` ou `solid` par exemple. La table des emplois de l'architecture lui fixe un cran, et un cran par état |
 | Recette | Tous les nombres qui fabriquent les palettes du fichier |
 | Planche | Les cadres que le plugin dessine dans Figma |
-| Profil porteur | Le profil dont les rampes contiennent la couleur de référence exacte, dans les deux modes (`[MOT-17]`) |
+| Profil porteur | Le profil dont les rampes contiennent la couleur de référence exacte, dans les deux modes (`[MOT-17]`). Une palette à une intensité n'en a pas : sa rampe unique contient la référence |
 | Promesse | Une relation d'usage entre deux couleurs, `on-solid` sur `solid` par exemple, que son contraste mesuré vérifie contre un minimum |
 
 L'interface et la planche emploient le vocabulaire d'affichage de
@@ -174,12 +175,12 @@ dans l'iframe du plugin et dans le sandbox Figma.
 
 ### 6.3 Fabriquer un cran
 
-Pour une palette, un profil, un mode et un cran d'indice `i` :
+Pour une palette, une intensité, un mode et un cran d'indice `i` :
 
 ```text
 L = courbes[mode][i]
 H = teinte(L)                       section 6.4
-C = part(profil) × plafond(L, H, gamut)
+C = part(intensité) × facteur(mode, L) × plafond(L, H, gamut)   [MOT-28]
 rgbLinéaire = oklchVersSrgbLinéaire(L, C, H)
 rgb8 = round(255 × encoder(clamp(rgbLinéaire, 0, 1)))   par canal
 hexa = format(rgb8)
@@ -196,6 +197,18 @@ hexa = format(rgb8)
   référence ne remplace qu'un cran par mode.
 - `[MOT-13]` Une palette de 44 crans se calcule en moins de 5 ms dans
   l'interface, pour que l'éditeur de dérive suive le pointeur.
+- `[MOT-28]` Les fonds du thème Dark perdent de la part. `facteur` vaut 1 en
+  `light` ; en `dark`, il vaut `intensiteDesFondsSombres` (0,30 par défaut)
+  jusqu'à la clarté `L50`, puis remonte linéairement en clarté jusqu'à 1 à
+  `L400`, et au-delà. `L50` et `L400` sont les clartés Dark des numéros 50 et
+  400 de la liste commune, ou celles de la courbe par défaut des onze nuances
+  quand la liste ne porte pas le numéro : passer à neuf nuances, qui retire le
+  400, ne change aucune couleur gardée. Le facteur se lit sur la clarté que la
+  courbe vise. Il vaut pour chaque intensité, et pour les palettes libres par
+  leur clarté. La référence exacte garde ses octets (`[MOT-17]`). Les accents,
+  400 et au-delà, gardent leur part, et le thème `light` ne change pas.
+  `facteurSombre` et `fondsSombresDe` (`packages/couleur`) en sont
+  l'autorité.
 
 ### 6.4 La teinte d'un cran
 
@@ -226,9 +239,13 @@ normaliser(h) = ((h mod 360) + 360) mod 360
   tourne dans le sens des teintes croissantes : du bleu vers le violet, du
   jaune vers le vert.
 - `[MOT-16]` Chaque profil a sa propre dérive. Par défaut, `soft` et `vivid`
-  partagent la même ([section 12](#12-léditeur-de-dérive)).
+  partagent la même ([section 12](#12-léditeur-de-dérive)). Une palette à une
+  intensité garde ses deux dérives liées, donc égales, et sa rampe unique lit
+  celle de `vivid`.
 - `[MOT-17]` La couleur de référence ne se recalcule jamais : ses octets
-  entrent tels quels dans les rampes de son profil porteur, un cran par mode.
+  entrent tels quels dans les rampes de son intensité porteuse, un cran par
+  mode : la rampe unique d'une palette à une intensité (`[ENT-14]`), le
+  profil porteur d'une palette à deux.
   - Une palette de base Soft ou Vivid (`[ENT-11]`) désigne le profil porteur.
     Sans elle, le classement automatique compare la part de chroma de la
     référence aux parts **communes** de `soft` et `vivid`, au millième : le
@@ -302,6 +319,8 @@ dérive du côté sombre, une référence foncée du côté clair.
   s'affiche : la teinte d'un gris n'a pas de sens. La palette reçoit aussi des
   parts propres égales à la part de chroma de la référence, d'origine `grise`
   (`[ENT-09]`) : sans elles, `#6B7280` produirait `#0E44F7` en `vivid.700`.
+  Une palette à une intensité n'a pas de parts propres : sa rampe unique
+  prend déjà la part de la référence, et reste grise.
 - `[MOT-19]` Une seule évaluation de `dériveTailwind`, sur `Ha`. Deux
   implémentations rendent ainsi le même préréglage.
 - `[MOT-20]` La recette garde les deux angles retenus et le nom du préréglage
@@ -406,6 +425,8 @@ Deux outils qui la lisent produisent les mêmes hexas.
 | `fonds` | `light` et `dark`, un hexa chacun | Contrastes, et texte posé sur un fond plein |
 | `seuils` | `texte` 4,5 ; `nonTexte` 3 ; `profilsConfondus` 0,02 ; `palettesProches` 0,05 ; `chromaGrise` 0,03 | Vérifications |
 | `derives` | Les dix-sept paires de Tailwind | Préréglage |
+| `intensiteDesFondsSombres` | Nombre dans `[0, 1]`, 0,30 par défaut : le facteur de la part des fonds du thème Dark au numéro 50 (`[MOT-28]`) | Toutes les palettes, thème Dark |
+| `contenuDesPlanches` | `note`, `usages`, `grilles`, `light`, `dark` : les parties qu'un cadre dessine, toutes vraies par défaut, un thème au moins (`[PLA-28]`) | Planche |
 | `palettes` | Une entrée par palette, dans l'ordre d'affichage | Palettes |
 
 La table des emplois n'entre pas dans la recette : elle est fixe, et la
@@ -429,12 +450,13 @@ Une palette porte :
 | `base` | Facultatif : `soft` ou `vivid`, la palette de base qui force le profil porteur (`[ENT-11]`). Absent, le classement automatique décide |
 | `crans` | Facultatif : la liste d’une palette libre, 4 à 13 multiples de 50, de 50 à 1050, croissants. Chaque numéro suit les courbes communes. Absent, la palette suit la liste commune |
 | `originale` | Facultatif : le code de la référence avant le premier ajustement, en majuscules, différent de `reference`. Absent, aucun ajustement |
+| `intensites` | Facultatif : `1` pour une palette à une intensité (`[ENT-14]`), sans `base`, sans `parts`, sans `crans`, dérive liée. Absent, la palette porte Soft et Vivid |
 
 ### 7.2 Exemple
 
 ```json
 {
-  "formatVersion": 3,
+  "formatVersion": 4,
   "crans": [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950],
   "courbes": {
     "light": [0.975, 0.95, 0.905, 0.845, 0.76, 0.67, 0.585, 0.5, 0.42, 0.34, 0.27],
@@ -448,11 +470,14 @@ Une palette porte :
     "palettesProches": 0.05, "chromaGrise": 0.03
   },
   "derives": [["rose", 12.422, 12.094], ["red", 17.38, 26.042]],
+  "intensiteDesFondsSombres": 0.3,
+  "contenuDesPlanches": { "note": true, "usages": true, "grilles": true, "light": true, "dark": true },
   "palettes": [
     {
       "id": "p-3fa2c91e",
       "nom": "Bleu",
       "reference": "#1E6FD9",
+      "intensites": 1,
       "derive": {
         "lien": true,
         "soft": { "clair": -7.53, "sombre": 5.11, "origine": "tailwind" },
@@ -507,9 +532,15 @@ dix-sept paires.
   celles que la section 7.1 énumère ; `base` vaut `soft` ou `vivid` ; un
   identifiant a la forme `p-` et huit chiffres hexadécimaux. Une palette libre
   porte 4 à 13 numéros, multiples de 50 de 50 à 1050, croissants, et pas de
-  `base` ; `originale` est un hexa différent de `reference`. La version 2 de
-  la recette ajoute `base`, la version 3 `crans` et `originale` ; une recette
-  de version antérieure se migre sans autre changement du texte. La validation rend tous ses refus, chacun avec sa
+  `base` ; `originale` est un hexa différent de `reference`. `intensites` ne
+  vaut que 1, et refuse à côté de lui `base`, `parts`, `crans` et une dérive
+  déliée ; `intensiteDesFondsSombres` est dans `[0, 1]` ;
+  `contenuDesPlanches` garde un thème au moins. La version 2 de la recette
+  ajoute `base`, la version 3 `crans` et `originale`, la version 4
+  `intensites`, `intensiteDesFondsSombres` et `contenuDesPlanches`. Une
+  recette de version 1 à 3 se migre sans changer ses palettes : chacune garde
+  ses deux intensités, et la version 4 ajoute les deux réglages communs à leur
+  valeur par défaut, si bien que ses fonds du thème Dark changent de couleur. La validation rend tous ses refus, chacun avec sa
   règle et le chemin du champ, et ne rédige aucune phrase.
 - `[REC-06]` La recette se range automatiquement à la fin de chaque geste :
   relâcher une poignée, valider un champ, créer, dupliquer, réordonner ou
@@ -537,8 +568,9 @@ dix-sept paires.
 | Couleur de référence | Hexa, avec le sélecteur de couleur embarqué (`[UI-13]`) | aucun |
 | Nom | Texte libre, facultatif | l'hexa de référence |
 | Dérive de teinte | Deux angles par profil, dans l'éditeur de la [section 12](#12-léditeur-de-dérive) | préréglage Tailwind |
-| Part de chroma par profil | Nombre dans `[0, 1]`, facultatif, dans la carte « Intensités » | celle de la recette |
-| Palette de base | Auto, Soft ou Vivid, dans la carte « Couleur de base » | Auto |
+| Intensités | « Une intensité » ou « Deux intensités », deux cartes de la configuration et de la création (`[ENT-14]`) | Une |
+| Part de chroma par profil | Nombre dans `[0, 1]`, facultatif, dans la carte « Intensités », pour deux intensités | celle de la recette |
+| Référence exacte dans | Auto, Soft ou Vivid, dans la carte « Deux intensités » (`[ENT-11]`) | Auto |
 
 - `[ENT-01]` Changer la couleur de référence recalcule le préréglage Tailwind.
   Une dérive d'origine `tailwind` suit ce nouveau calcul ; une dérive `libre` ou
@@ -572,7 +604,20 @@ dix-sept paires.
   restent, et une référence presque grise garde ses deux profils égaux.
   Revenir à Auto retire `base` : la palette reprend les parts communes. Quand
   les deux profils se rejoignent, l'alerte « Profils confondus » le dit et
-  mène aux intensités de la palette.
+  mène aux intensités de la palette. Ce choix, libellé « Référence exacte
+  dans », ne paraît qu'avec deux intensités, dans leur carte.
+- `[ENT-14]` Une palette porte une intensité ou deux, au choix du designer à
+  la création, « Une » par défaut, et dans la configuration. À une intensité,
+  elle a une seule rampe par thème, sans nom de profil : celle que le profil
+  porteur forcé donnerait, à la part de chroma de la référence, référence
+  exacte à son cran. Elle n'a ni palette de base, ni parts propres, ni
+  seconde dérive, ni carte Intensités, et ses tokens n'ont pas de segment de
+  profil : `theme.primary.700`. Passer de deux à une ne demande pas de
+  confirmation : la palette garde la dérive de son intensité porteuse et
+  perd `base` et ses parts. Passer de une à deux rend Soft et Vivid. Une
+  palette libre n'a pas ce choix ; la rendre au modèle la remet à une
+  intensité. `intensitesDe` (`packages/couleur`) en est l'autorité : toute
+  vue parcourt les intensités qu'elle rend.
 
 ### 8.2 Les fonds de référence
 
@@ -590,7 +635,7 @@ dix-sept paires.
 ### 8.3 La recette commune
 
 La configuration de la recette règle ce qui touche toutes les palettes :
-courbes, parts, fonds, seuils. Le bouton en forme d'engrenage
+courbes, parts, fonds du thème Dark, fonds, seuils et contenu des planches. Le bouton en forme d'engrenage
 de l'en-tête l'ouvre, comme la configuration d'UCM Exporter, et le même
 composant du socle la porte (`[UI-02]`).
 
@@ -603,9 +648,12 @@ composant du socle la porte (`[UI-02]`).
   ne se range qu'à « Passer à N nuances » ; « Annuler » ne range rien. Une
   liste importée se dit « Liste importée ». Au-delà de onze nuances, les
   champs de la table se resserrent pour tenir à la largeur minimale.
-- `[ENT-12]` Les Réglages communs se rangent en cinq cartes : Couleurs de
+- `[ENT-12]` Les Réglages communs se rangent en six cartes : Couleurs de
   fond, Intensités, Luminosité des nuances, puis, repliées, Minimums des
-  promesses et Détection des couleurs proches. « Rétablir » remet une carte
+  promesses, Détection des couleurs proches et Contenu des planches
+  (`[PLA-28]`). La carte Intensités porte, sous Soft et Vivid, « Fonds du
+  thème Dark », un curseur et un champ de 0 à 1 (`[MOT-28]`), qui touche
+  toutes les palettes ; « Rétablir » le remet à 0,30 avec les parts. « Rétablir » remet une carte
   aux valeurs de la recette par défaut, sans toucher aux autres cartes ni aux
   palettes : leurs parts propres, du designer ou d'une palette de base
   forcée, restent. Le seuil de gris rétabli recalcule les parts `grise`, comme
@@ -720,9 +768,10 @@ côte.
 
 Le cadre répond à la question que le designer se pose en posant un
 composant : quelle nuance pour quel usage, et est-elle lisible (récit R1,
-maquette W3.6). Chaque thème se lit de haut en bas : les deux rampes, les
-usages du profil porteur dans leurs états, puis les contrastes nuance par
-nuance. L'écran de réglages qui essaie la palette est dans l'onglet Palettes
+maquette W3.6). Chaque thème se lit de haut en bas : les rampes des
+intensités de la palette, les usages de chacune dans leurs états, puis les
+contrastes nuance par nuance ; la recette dit quelles parties se dessinent
+(`[PLA-28]`). L'écran de réglages qui essaie la palette est dans l'onglet Palettes
 (`[UI-14]`).
 
 ```text
@@ -735,9 +784,9 @@ nuance. L'écran de réglages qui essaie la palette est dans l'onglet Palettes
 │ Soft   [≈]    [≈]    …    [  ]   …    [  ]    codes sous chaque pastille   │
 │ Vivid  [≈]    [≈]    …    [◆]    …    [  ]                                 │
 │ ◆ : la couleur de référence exacte. ≈ : Soft et Vivid presque identiques…  │
-│ Quelle nuance pour quel usage · Vivid                                      │
+│ Quelle nuance pour quel usage · Soft, puis la même section · Vivid        │
 │                    default           hover             active             │
-│ Fonds légers       [Soft] 100        [Soft] 200        [Soft] 300         │
+│ Fonds légers       [Fond léger] 100  [Fond léger] 200  [Fond léger] 300   │
 │ surface            ✓ text 700 dessus : 5,34:1 …                            │
 │ Textes colorés     Lien coloré 700   …                                     │
 │ Fonds pleins · Bordures de champ · Anneau de focus · Séparateurs           │
@@ -747,10 +796,10 @@ nuance. L'écran de réglages qui essaie la palette est dans l'onglet Palettes
 ```
 
 - `[PLA-07]` L'en-tête donne le nom de la palette, puis la couleur de
-  référence avec son profil porteur et son numéro de nuance. Chaque thème
-  ouvre sur son fond et son verdict : « ✓ Toutes les garanties tenues », ou le
-  nombre de garanties manquées du thème, les deux profils comptés, dans la
-  couleur de danger. La version de la recette, l'empreinte du modèle
+  référence avec son numéro de nuance, et son profil porteur pour une palette
+  à deux intensités. Chaque thème ouvre sur son fond et son verdict : « ✓
+  Toutes les garanties tenues », ou le nombre de garanties manquées du thème,
+  chaque intensité comptée, dans la couleur de danger. La version de la recette, l'empreinte du modèle
   (`[PLA-19]`) et l'espace de couleur du document restent dans les données de
   plugin du cadre et dans le rapport ; aucun texte du cadre ne les imprime. Le
   cadre ne porte pas d'avertissement permanent sur son remplacement : la
@@ -767,10 +816,11 @@ nuance. L'écran de réglages qui essaie la palette est dans l'onglet Palettes
   garde 4,5:1, et la couleur de danger est celle des deux qui s'y lit le mieux.
 - `[PLA-10]` « Les deux rampes » ouvre chaque thème : les numéros de nuance,
   puis une rangée Soft et une rangée Vivid, chacune nommée à gauche, sans la
-  part de chroma. Chaque pastille porte son code dessous. La nuance qui porte
+  part de chroma. Une palette à une intensité a « La rampe », une rangée sans
+  nom. Chaque pastille porte son code dessous. La nuance qui porte
   la référence exacte montre ◆ dans sa pastille, comme l'aperçu.
 - `[PLA-11]` Une note sous les rampes explique ◆, et ≈ quand une pastille le
-  porte. La légende des grilles tient en une ligne à droite de leur titre. Ni
+  porte, ce qu'une palette à une intensité ne connaît pas. La légende des grilles tient en une ligne à droite de leur titre. Ni
   l'une ni l'autre ne nomme un seuil par son nom interne.
 
 ### 9.3 Les pastilles des rampes
@@ -781,7 +831,8 @@ nuance. L'écran de réglages qui essaie la palette est dans l'onglet Palettes
 - `[PLA-13]` Un repère posé sur une pastille, ◆ ou ≈, prend le noir ou le
   blanc, celui des deux qui contraste le plus avec elle.
 - `[PLA-14]` Le calque de la pastille se nomme `{profil}/{mode}/{cran}`,
-  `vivid/light/700` par exemple, sous le cadre de sa palette. Ce nom permet de
+  `vivid/light/700` par exemple, sous le cadre de sa palette ; `{mode}/{cran}`
+  pour la rampe d'une palette à une intensité. Ce nom permet de
   retrouver chaque couleur dans le panneau des calques, et sert de clé à
   l'option de la [section 17](#17-option-ultérieure--créer-les-variables).
   Aucun autre calque ne porte ce nom : les pastilles des grilles se nomment
@@ -807,7 +858,7 @@ l'état, son numéro, puis ses garanties.
 | Usage | Spécimen |
 |---|---|
 | `surface-card` | une carte bordée de `border-decorative`, « Carte » écrit en `text` |
-| `surface` | un aplat, « Soft » écrit en `text` |
+| `surface` | un aplat, « Fond léger » écrit en `text` |
 | `text` | « Lien coloré » |
 | `solid` | un bouton plein, son libellé du fond du thème |
 | `border-control` | un champ bordé |
@@ -822,13 +873,25 @@ l'état, son numéro, puis ses garanties.
   chacun de ses membres qui a une ligne. Une garantie manquée prend la
   couleur de danger. `border-decorative` n'a aucune promesse, et aucune ligne
   ne lui en invente une.
-- `[PLA-18]` Les usages montrent le profil porteur, que leur titre nomme ;
-  l'autre profil se lit dans les rampes.
+- `[PLA-18]` Une palette à deux intensités a une section d'usages par
+  profil, « · Soft » puis « · Vivid », quel que soit le porteur : deux
+  palettes de même configuration donnent deux cadres de même structure,
+  quelle que soit la saturation de leur référence. Une palette à une
+  intensité a une section, sans nom de profil. Le cadre de Bleu compte
+  1 966 calques à deux intensités et 1 008 à une, toutes parties dessinées.
+- `[PLA-28]` `contenuDesPlanches` choisit les parties qu'un cadre dessine :
+  la note sous les rampes, les usages, les grilles de contrastes, et chaque
+  thème, un au moins. L'en-tête et les rampes se dessinent toujours : leurs
+  pastilles sont ce que la [section 17](#17-option-ultérieure--créer-les-variables)
+  lira. Une partie retirée change l'empreinte du modèle : les cadres générés
+  passent « À mettre à jour ». La carte « Contenu des planches », repliée en
+  dernier dans les Réglages communs, porte un interrupteur par partie et le
+  nombre de calques qu'elle pèse dans le cadre de la palette ouverte.
 
 ### 9.5 Les contrastes, nuance par nuance
 
-Chaque génération les dessine, sans option dans l'interface. Pour chaque
-profil de chaque thème, une grille sous une rangée de pastilles, dans les
+Chaque génération les dessine quand `contenuDesPlanches.grilles` le demande
+(`[PLA-28]`). Pour chaque intensité de chaque thème, une grille sous une rangée de pastilles, dans les
 colonnes des rampes : la ligne donne le fond, la colonne le texte. Une paire
 qui atteint le minimum des éléments visibles se peint telle qu'elle se lira :
 le fond de sa ligne, le ratio écrit dans la couleur de sa colonne, en gras à
@@ -908,7 +971,9 @@ toutes les nuances : ses cases ne sont pas des promesses.
   de celle de la recette. Un champ ajouté la garde ; un champ ou un code
   d'alerte retiré ou renommé la monte. La version 2 ajoute l'ancrage de chaque
   palette (`[MOT-17]`) et le profil de couleur du document, et retire l'alerte
-  de la référence plus claire que le bouton. Le rapport garde toutes les
+  de la référence plus claire que le bouton. La version 3 ajoute `intensites`,
+  1 ou 2, et donne les crans d'une palette à une intensité en une liste par
+  mode, sans clé de profil, et son ancrage sans profil. Le rapport garde toutes les
   alertes du moteur, y compris celles que l'interface montre ailleurs que dans
   la liste des messages.
 
@@ -927,8 +992,8 @@ référence de la recette.
 
 ### 11.2 Promesses des emplois
 
-Pour chaque palette, chaque mode et chaque profil, seize paires, sur la
-table des emplois de l'architecture ; quatorze dans une liste sans 50. `R+1` désigne le cran suivant celui que
+Pour chaque palette, chaque mode et chaque intensité présente, seize paires,
+sur la table des emplois de l'architecture ; quatorze dans une liste sans 50. `R+1` désigne le cran suivant celui que
 l'emploi `R` vise, dans la même rampe : l'architecture fait avancer un état
 d'un cran. `on-solid` est le fond de référence du mode.
 
@@ -970,8 +1035,9 @@ carte a la clarté du fond de page, un peu plus sombre que lui en Dark : elle
 se borde de `border-decorative`. L'anneau de focus, au cran de
 `border-control`, n'a pas de paire propre sur une carte.
 
-Une palette compte 64 paires : seize par mode et par profil, ou 56 dans une
-liste sans 50. Les deux
+Une palette à deux intensités compte 64 paires : seize par mode et par
+profil, ou 56 dans une liste sans 50. Une palette à une intensité en compte
+32, ou 28 sans 50. Les deux
 profils partagent leurs clartés, mais pas leur chroma : leurs contrastes
 diffèrent un peu, et les composants citent l'un comme l'autre.
 
@@ -998,10 +1064,10 @@ composants : `default`, puis `hover` à une nuance, `active` à deux.
   n'en contient pas un, la 50 exceptée : une liste importée sans 50 reste
   lisible, et les paires 15 et 16 ne s'y jugent pas.
 - `[VER-06]` Une promesse manquée nomme l'association (section 11.2), le mode,
-  l'état, le profil, son contraste mesuré et le minimum demandé. L'onglet
+  l'état, le profil pour une palette à deux intensités, son contraste mesuré et le minimum demandé. L'onglet
   Palettes la porte sur la ligne de son association, dans la carte des
   garanties (`[UI-09]`), et non dans la liste des messages. Le compte reste
-  celui des contrôles évalués, un par paire, mode et profil. Aucun cran ne se
+  celui des contrôles évalués, un par paire, mode et intensité. Aucun cran ne se
   propose : la table est commune à toutes les palettes. Le geste mène au
   réglage qui peut agir (section 11.4).
 - `[VER-07]` Une promesse manquée n'empêche pas la génération. Le résultat de
@@ -1046,13 +1112,19 @@ composants : `default`, puis `hover` à une nuance, `active` à deux.
 
 | Alerte | Mesure | Seuil | Portée |
 |---|---|---|---|
-| Profils confondus | ΔEok entre `soft` et `vivid`, même cran et même mode, sur les crans de la table des emplois, états `+1` et `+2` compris | `profilsConfondus` | chaque palette du modèle, sauf parts `grise` (`[ENT-09]`) |
-| Palettes proches | ΔEok moyen sur les crans 500, 600 et 700 de `vivid`, en clair, chaque palette lue sur sa liste | `palettesProches` | chaque paire de palettes dont les deux listes portent ces trois crans |
+| Profils confondus | ΔEok entre `soft` et `vivid`, même cran et même mode, sur les crans de la table des emplois, états `+1` et `+2` compris, hors des fonds du thème Dark atténués (`[MOT-28]`) | `profilsConfondus` | chaque palette du modèle à deux intensités, sauf parts `grise` (`[ENT-09]`) |
+| Palettes proches | ΔEok moyen sur les crans 500, 600 et 700, en clair, chaque palette lue sur sa liste, sur les rampes de `[VER-17]` | `palettesProches` | chaque paire de palettes dont les deux listes portent ces trois crans |
 | Couleur presque grise | chroma de la référence | `chromaGrise` | chaque palette |
-| Référence plus terne que `soft` | part de chroma de la référence inférieure à la part de `soft` | sans seuil | chaque palette |
+| Référence plus terne que `soft` | part de chroma de la référence inférieure à la part de `soft` | sans seuil | chaque palette à deux intensités |
 | Référence hors de la rampe | clarté de la référence hors de l’étendue de la liste de la palette, en clair | sans seuil | chaque palette |
 | Fond hors de la courbe | [section 8.2](#82-les-fonds-de-référence) | sans seuil | chaque fond |
 
+- `[VER-17]` « Palettes proches » compare Vivid à Vivid entre deux palettes à
+  deux intensités, comme au format 3, et la rampe unique à la rampe unique
+  entre deux palettes à une intensité. Entre une palette à une intensité et
+  une à deux, la plus petite des distances de la rampe unique à Soft et à
+  Vivid l'emporte : la part d'une rampe unique est quelconque, et elle
+  ressemble au profil le plus proche d'elle.
 - `[VER-08]` Une alerte n'empêche rien. Elle dit ce qui ressemble, manque ou
   change, et mène au réglage qui la lève. La mesure, sa valeur et le seuil se
   lisent dans le détail et dans le rapport.
@@ -1251,9 +1323,17 @@ Onglet Palettes, une palette ouverte, à 600 × 720 :
 │   la création s'ouvre ici, en carte, seulement après [Nouvelle …]     │
 │ Palette Bleu marque                                                   │
 │ ┌ Configuration de la palette ────────────────────────────────────┐  │
-│ │ Nom de la palette    Couleur de référence   Palette de base     │  │
-│ │ [Bleu marque     ]   [■ #1E6FD9        ]    [Auto|Soft|Vivid]   │  │
-│ │ Ajuster la référence                        Auto a choisi Vivid │  │
+│ │ Nom de la palette               Couleur de référence            │  │
+│ │ [Bleu marque                ]   [■ #1E6FD9     ]                 │  │
+│ │                                 Ajuster la référence            │  │
+│ │ Modèle      [Standard|Libre]                                    │  │
+│ │ Intensités                                                      │  │
+│ │ ┌ ○ Une intensité ─────────┐ ┌ ● Deux intensités ────────────┐ │  │
+│ │ │ rampe                    │ │ Soft et Vivid                 │ │  │
+│ │ │                          │ │ Référence exacte dans         │ │  │
+│ │ │                          │ │ [Auto|Soft|Vivid]             │ │  │
+│ │ │                          │ │ Auto a choisi Vivid           │ │  │
+│ │ └──────────────────────────┘ └───────────────────────────────┘ │  │
 │ └─────────────────────────────────────────────────────────────────┘  │
 │ ┌ [Thème Light|Thème Dark] ─────────────────────────── Fond [■] ──┐  │
 │ │ ┌ surface peinte du fond du thème ──────────────────────────┐  │  │
@@ -1300,7 +1380,8 @@ palette » gardent leurs libellés au-dessus des champs.
   commun `fonds`, que les Réglages communs montrent aussi. L'étiquette
   accessible du bouton nomme le thème et la valeur. Sous la surface, la ligne
   « ◆ Référence : Vivid · nuance 600 » nomme le profil porteur et la nuance du
-  thème montré. La surface est peinte du fond du thème choisi,
+  thème montré ; une palette à une intensité écrit « ◆ Référence : nuance
+  600 ». La surface est peinte du fond du thème choisi,
   et ses textes, bordures, sélection et focus prennent des couleurs lisibles
   sur ce fond ; le reste du panneau garde le thème de Figma. Chaque colonne
   porte son numéro de nuance, aligné entre Soft et Vivid. Une pastille
@@ -1343,8 +1424,10 @@ palette » gardent leurs libellés au-dessus des champs.
   montre le thème que l'aperçu a choisi, qu'elle nomme dans son en-tête.
   Repliée à l'ouverture, comme toutes les cartes repliables de l'onglet, elle
   garde son état pendant la session ; repliée, son en-tête garde le
-  résultat des deux profils sur les deux thèmes. Une bascule Soft/Vivid choisit
-  le profil affiché. Chaque segment porte le résultat de son profil dans le
+  résultat des intensités de la palette sur les deux thèmes. Une bascule
+  Soft/Vivid choisit le profil affiché ; une palette à une intensité n'en a
+  pas, et son résultat s'écrit « Garanties ✓ » ou « Garanties ✗ 2 »
+  (`[ENT-14]`). Chaque segment porte le résultat de son profil dans le
   thème montré : ✓, ou ✗ suivi du nombre de contrôles manqués (`[VER-06]`). À
   l'ouverture d'une palette, le profil porteur est choisi. Quand l'autre thème
   a des garanties manquées, une ligne les compte et bascule l'aperçu sur ce
@@ -1394,17 +1477,21 @@ palette » gardent leurs libellés au-dessus des champs.
   la saisie, sans retirer le focus du champ. Dessous ne se lisent que le refus
   d'un enregistrement et le conflit, avec leurs gestes ; un enregistrement
   réussi ne s'annonce pas. La carte « Configuration de la palette » ouvre la
-  configuration, en trois colonnes égales, libellé au-dessus du champ : Nom
-  de la palette, Couleur de référence (pastille cliquable et code
-  hexadécimal), Modèle (Standard ou Libre). Dans le modèle, la palette de base
-  (Auto, Soft ou Vivid) se règle sous le choix du modèle. En Auto, une ligne
-  sous le sélecteur dit le profil que le classement a choisi : « Auto a choisi Vivid ». Soft ou Vivid force le profil
-  porteur (`[MOT-17]`). L'erreur d'un code invalide reste sous son champ.
+  configuration, disposée comme la création (maquette Y2.6, P2) : Nom de la
+  palette et Couleur de référence (pastille cliquable et code hexadécimal)
+  en deux colonnes, libellé au-dessus du champ ; puis la rangée Modèle
+  (Standard ou Libre) ; puis la rangée Intensités, deux cartes, « Une
+  intensité » et « Deux intensités » (`[ENT-14]`), chacune avec la rampe
+  qu'elle donnerait en Thème Light. La carte choisie porte la suite du
+  choix : la part de la référence pour une intensité ; pour deux,
+  « Référence exacte dans » (Auto, Soft ou Vivid), et en Auto une ligne qui
+  dit le profil que le classement a choisi : « Auto a choisi Vivid ». Soft
+  ou Vivid force le profil porteur (`[MOT-17]`). L'erreur d'un code invalide reste sous son champ.
   Sous le code, « Ajuster la référence » ouvre le sélecteur de couleur de la
   référence sur son onglet « Ajuster » (`[UI-15]`) ; une référence ajustée
   ajoute « Ajustée depuis #16A34A · Revenir à l'originale ».
-  Libre retire la palette de base, dit « Sans rôles ni garanties », et montre
-  sous les trois colonnes une puce par multiple de 50, de 50 à 1050, allumée
+  Libre retire le choix des intensités, dit « Sans rôles ni garanties », et
+  montre une puce par multiple de 50, de 50 à 1050, allumée
   quand la palette porte ce numéro. Une puce allumée ne s'éteint pas sous
   quatre numéros ; une puce éteinte ne s'allume pas au-delà de treize. Une
   palette libre n'a ni accolades, ni pastille `on-solid`, ni carte des
@@ -1415,7 +1502,9 @@ palette » gardent leurs libellés au-dessus des champs.
   repliables de même forme, repliées à l'ouverture, qui gardent leur état
   pendant la session. Leur en-tête est un bouton : chevron, titre et résumé
   aligné à droite. Le résumé des intensités donne leur origine et les deux
-  valeurs ; celui de la dérive, le préréglage et la synchronisation. Repliée,
+  valeurs ; celui de la dérive, le préréglage et la synchronisation. Une
+  palette à une intensité n'a pas la carte Intensités, et sa dérive n'a qu'un
+  tracé, sans synchronisation ni profil à choisir (`[ENT-14]`). Repliée,
   une carte annonce dans son résumé le point à vérifier qui la concerne, des
   profils confondus par exemple. Un lien de message qui vise un réglage déplie
   sa carte avant de focaliser le contrôle. Les deux cartes suivent l'aperçu,
@@ -1424,8 +1513,10 @@ palette » gardent leurs libellés au-dessus des champs.
   (`[UI-14]`) ferme l'onglet.
 - `[UI-14]` L'Interface de test est la dernière carte de l'onglet Palettes,
   repliée à l'ouverture. Elle montre la palette ouverte, peinte dans le thème
-  de l'aperçu et le profil porteur, en deux vues qu'une bascule choisit, et
-  la vue choisie dure la session. « Écran » : une page « Membres de
+  de l'aperçu, en deux vues qu'une bascule choisit, et la vue choisie dure la
+  session. Une palette à deux intensités a une seconde bascule, Soft et
+  Vivid, au bord droit de la première, ouverte sur le profil porteur ; une
+  palette à une intensité est peinte de sa rampe unique. « Écran » : une page « Membres de
   l'équipe » sur le modèle de Radix Themes, en HTML, avec une navigation dont
   l'entrée active est en `surface`, un encart en `surface`, un tableau dont
   une ligne se choisit, des badges `surface` et `solid`, un champ bordé de
@@ -1447,7 +1538,7 @@ palette » gardent leurs libellés au-dessus des champs.
   peint les propositions voisines et marque d'un trait le passage d'une
   nuance à la suivante. Suivent la luminosité, le code de la proposition
   saisissable, la nuance visée dans chaque thème, et les garanties avant et
-  après : le bilan de chaque profil, puis chaque garantie manquée d'un côté,
+  après : le bilan de chaque intensité, puis chaque garantie manquée d'un côté,
   avec sa pastille. Une phrase ne s'ajoute que lorsque le pas voisin
   franchit une frontière de nuance. Seul « Appliquer » range : la
   proposition devient la référence de la palette courante, et `originale`
@@ -1481,11 +1572,12 @@ palette » gardent leurs libellés au-dessus des champs.
   suspension. « Nouvelle palette » et « … » gardent leur largeur naturelle
   et prennent la hauteur de la liste. « Nouvelle palette » ouvre la création
   sous le sélecteur, dans une carte de même forme que « Configuration de la
-  palette » : trois colonnes, libellé au-dessus du champ, pour Nom de la
-  palette, Couleur de référence (pastille et code) et Modèle (Standard ou
-  Libre, Standard par défaut), avec la palette de base dessous (Auto, Soft ou
-  Vivid, Auto par défaut). En Libre, les puces des numéros viennent sous les
-  colonnes, allumées sur la liste commune. Puis, à gauche : « Créer la
+  palette » (`[UI-11]`) : Nom de la palette et Couleur de référence (pastille
+  et code), puis Modèle (Standard par défaut), puis les deux cartes
+  d'intensités, « Une intensité » par défaut ; leurs rampes paraissent dès
+  qu'un code se lit, et « Référence exacte dans » dit « Auto choisira
+  Vivid ». En Libre, les puces des numéros remplacent les intensités,
+  allumées sur la liste commune. Puis, à gauche : « Créer la
   palette » et « Annuler ». Entrée crée ;
   Échap annule quand « Annuler » est offert. Après création, la palette est
   ouverte ; après annulation, le focus revient à « Nouvelle palette ».
@@ -1495,11 +1587,11 @@ Onglet Planches :
 ```text
 ┌──────────────────────────────────────────────────────────────┐
 │ 3 palettes             [Thème Light] [Thème Dark] [Actualiser] │
-│ ┌ Bleu ────────────────────────────────────────────────────┐ │
+│ ┌ Bleu ───────────────────────────────── (À mettre à jour) ┐ │
 │ │ Soft  ▪▪▪▪▪▪▪▪▪▪▪                                        │ │
-│ │ Vivid ▪▪▪▪▪▪◆▪▪▪▪   Référence : Vivid · nuance 600        │ │
-│ │ Soft ✓  Vivid ✗ 2                                   À jour │ │
-│ │ [Générer sur Figma] [Afficher] [Modifier]                │ │
+│ │ Vivid ▪▪▪▪▪▪◆▪▪▪▪                                        │ │
+│ │ ■ #1E6FD9 ◆ Vivid · nuance 600         Soft ✓  Vivid ✗ 2 │ │
+│ │ [Actualiser sur Figma] [Afficher] [Modifier]             │ │
 │ └──────────────────────────────────────────────────────────┘ │
 │ … une fiche par palette                                       │
 │ [Mettre à jour (2 palettes)] [Générer tout (3 palettes)]      │
@@ -1543,11 +1635,13 @@ qui le créera.
 |---|---|
 | Premier lancement | Aucune recette rangée, recette par défaut proposée, aucune palette |
 | Premier lancement, palette créée | La première palette ouverte, recette rangée |
-| Création ouverte | La carte de création sous le sélecteur : nom, couleur de référence, palette de base en Auto, « Créer la palette » et « Annuler » |
+| Création ouverte | La carte de création sous le sélecteur, en P2 : nom et couleur de référence, Modèle, « Une intensité » choisie, « Créer la palette » et « Annuler » |
+| Palette à une intensité | La carte « Une intensité » choisie, une rangée par thème sans nom de profil, ni carte Intensités, ni bascule des garanties |
+| Palette à deux intensités | La carte « Deux intensités » choisie, « Référence exacte dans » et « Auto a choisi Vivid » dans la carte |
 | Palette en saisie | Aperçu à jour, rien de généré |
 | Référence Soft | Une référence peu intense, portée par Soft, avec son repère et sa nuance |
 | Référence Vivid | Une référence intense, portée par Vivid, nuance différente en Light et en Dark |
-| Palette de base forcée | Soft forcé sur une couleur saturée : même code, repère Soft, intensité propre dans « Intensités » |
+| Palette de base forcée | Soft forcé sous « Référence exacte dans » sur une couleur saturée : même code, repère Soft, intensité propre dans « Intensités » |
 | Garanties respectées | Bascule ✓ sur les deux profils, `text` sur `surface` choisie et ses trois arcs |
 | Garantie en échec | Bascule ✗ sur le profil, première ligne en échec choisie, arc de danger, lien vers le réglage |
 | Garantie de l'autre thème | Ligne qui compte les garanties manquées de l'autre thème, aperçu basculé, « Revenir au thème » |
@@ -1580,7 +1674,10 @@ qui le créera.
 | Confirmation au-delà de six palettes | « Générer tout » demande confirmation |
 | Onglet Planches sans palette | Aucune palette à générer, geste vers l'onglet Palettes |
 | Planche à jour | Chaque fiche dit « À jour » |
-| Planche à mettre à jour | Fiches à mettre à jour, ou jamais générées et sans état écrit, génération groupée |
+| Planche à mettre à jour | Fiches à mettre à jour, ou « Pas encore sur Figma », génération groupée |
+| Fiche d’une palette | Disposition A : nom et état en pastille, rampes, référence et garanties sur une ligne, gestes |
+| Contenu des planches | Un interrupteur par partie d’un cadre et par thème, ses calques, l’effet sur le cadre de la palette ouverte |
+| Fonds du thème Dark | Le réglage sous Soft et Vivid dans la carte Intensités des Réglages communs |
 | Cadre déplacé | Un cadre rangé dans une section ou sur une autre page, retrouvé par son identité |
 | Palette supprimée | Une carte par cadre resté dans Figma, teinte d'avertissement, « Supprimer définitivement » |
 | Copie de cadre | Information, la copie n'est pas réécrite |

@@ -22,6 +22,11 @@ disposition est la proposition A des [maquettes du quatrième
 tour](./MAQUETTES-RECETTE-V4.html), et elle se reprend selon la réponse du
 mainteneur. Il fait lui-même les tests d’interface et la recette dans Figma.
 
+Ses cases encore ouvertes sont reprises par le
+[cinquième plan](./PLAN-ERGONOMIE-PALETTES-V5.md), qui porte aussi le
+round 5 de la recette. X4 y est défait : la génération appartient à
+l’onglet Planches.
+
 ## Autorités
 
 Lire dans cet ordre :

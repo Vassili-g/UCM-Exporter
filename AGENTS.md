@@ -185,14 +185,16 @@ packages/adapter-typescript/  l'adaptateur opt-in : parité TS/TSX et types gén
 packages/couleur/        le moteur de couleur d'UCM Palettes : ucm-couleur, privé, lu en source
   src/conversions.ts       hexa, sRGB, linéaire, Oklab, OKLCH et Display P3
   src/plafond.ts           la plus grande chroma que sRGB porte, mémorisée
-  src/rampe.ts             un cran, la teinte pivotée, les quatre rampes d'une palette
+  src/rampe.ts             un cran, la teinte pivotée, le facteur des fonds du thème Dark, les rampes des deux profils
   src/tailwind.ts          le préréglage Tailwind et son relevé
   src/contraste.ts         contraste WCAG 2, ΔEok, part de chroma, écriture à virgule
   src/emplois.ts           la table fixe des emplois et les crans que la recette doit porter
   src/recette.ts           la forme de la recette, sa validation, son classement à la lecture
   src/empreinte.ts         JSON canonique, encodeur UTF-8 et FNV-1a
-  src/palette.ts           une palette lue contre sa recette : ses parts grises, l'ancrage de sa référence et ses rampes ancrées
-  src/promesses.ts         les seize paires, jugées par mode et par profil, et les emplois d'un cran
+  src/palette.ts           une palette lue contre sa recette : ses intensités, ses parts grises, l'ancrage de sa référence, ses rampes ancrées et les bornes des fonds du thème Dark
+  src/nuances.ts           les trois préréglages de nuances, la luminosité d'un numéro absent de la liste, la liste d'une palette libre
+  src/ajustement.ts        la proposition d'un ajustement de la référence, par pas de luminosité
+  src/promesses.ts         les seize paires, jugées par mode et par intensité présente, et les emplois d'un cran
   src/alertes.ts           les alertes de conception et la notice
   src/garantie.ts          la garantie des courbes : crans 600 et 700 contre le cran 50 gris, sur 360 teintes
   src/constats.ts          les sévérités et leur ordre d'affichage
@@ -224,7 +226,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/importation.ts       un fichier importé, classé comme la recette rangée, son écart avec elle, champ par champ, et la nature de cet écart
   src/rapport.ts           le rapport de vérification : crans, promesses, alertes, empreinte et écarts du dernier dessin
   src/presentation.ts      les promesses manquées groupées, la place de chaque alerte, le réglage que chaque message ouvre, les accolades de l'aperçu
-  src/planche/modele.ts    le modèle pur d'un cadre de planche : par thème, rampes, usages et leurs garanties avec leur niveau WCAG, grilles ; styles nommés, empreinte
+  src/planche/modele.ts    le modèle pur d'un cadre de planche : par thème, rampes, usages de chaque intensité et leurs garanties avec leur niveau WCAG, grilles, selon les parties choisies ; styles nommés, empreinte
   src/planche/fraicheur.ts chaque cadre à jour, périmé, jamais dessiné, introuvable ou illisible, les cadres orphelins et copiés, et l'effet d'un import
   src/planche/peints.ts    les couleurs relues sur la planche, comparées à celles de l'aperçu
   src/ecriture/recette.ts  le rangement de la recette : validation, empreinte lue, commitUndo
@@ -232,26 +234,25 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/navigation.ts        « Afficher dans Figma » : ouvre la page du cadre et le cadre, sans toucher au document
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planches, la configuration
-  src/ui/ongletPalettes.ts le sélecteur, le titre « Palette [nom] » et la génération, puis les cartes, chaque message sous la sienne
-  src/ui/champs.ts         le libellé au-dessus de ses saisies, et le choix de la palette de base
+  src/ui/ongletPalettes.ts le sélecteur, le titre « Palette [nom] », puis les cartes, chaque message sous la sienne
+  src/ui/champs.ts         le libellé au-dessus de ses saisies, le choix du modèle, les deux cartes des intensités et le choix du profil porteur
   src/ui/carte.ts          une carte de la configuration, fixe ou repliable, avec son résumé
   src/ui/couleur/          le sélecteur de couleur embarqué, ses formats Hex, RGB et HSL, et les pastilles qu'il propose
   src/ui/nuancier.ts       l'aperçu peint du fond du thème : pastille on-solid, pastilles en grille, accolades des rôles, choix et relâche d'une nuance, détail d'une nuance
   src/ui/badge.ts          le badge d'un niveau WCAG, AAA, AA ou AA ✗, et ce qu'il juge pour l'assistance technique
-  src/ui/garanties.ts      la carte des garanties : bascule Soft/Vivid, réglette et arcs, une ligne par association
+  src/ui/garanties.ts      la carte des garanties : bascule Soft/Vivid pour deux intensités, réglette et arcs, une ligne par association
   src/ui/specimens.ts      le spécimen d'un rôle : bouton, texte, champ, anneau, trait ou aplat
   src/ui/selecteur.ts      la palette ouverte, en liste déroulante avec la pastille de chaque référence
-  src/ui/creation.ts       une palette neuve, en carte : nom, référence, palette de base
+  src/ui/creation.ts       une palette neuve, en carte : nom, référence, modèle, intensités
   src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
   src/ui/frontiere.ts      la numérotation des demandes, un seul rangement en vol, le dessin après lui
-  src/ui/ongletPlanche.ts  une fiche par palette : rampes, garanties, état du cadre, trois gestes ; génération groupée, une carte par palette supprimée, notices, recette repliée
+  src/ui/ongletPlanche.ts  une fiche par palette : nom et état du cadre en pastille, rampes, référence et garanties, trois gestes ; génération groupée, une carte par palette supprimée, notices, recette repliée
   src/ui/dessin.ts         le suivi d'un dessin : progression, résultat, confirmation des calques étrangers, écarts de peinture
-  src/ui/configuration.ts  les Réglages communs en cartes : aperçu de la palette ouverte, fonds, intensités, courbes, seuils repliés
+  src/ui/configuration.ts  les Réglages communs en cartes : aperçu de la palette ouverte, fonds, intensités et fonds du thème Dark, courbes ; seuils et contenu des planches repliés
   src/ui/traceDesCourbes.ts le tracé des deux courbes au-dessus de leur table, et le ◆ de la référence insérée
-  src/ui/apercuCompact.ts  les rampes Soft et Vivid d'une palette et le résultat de ses garanties, pour une fiche ou les réglages
+  src/ui/apercuCompact.ts  les rampes présentes d'une palette et le résultat de ses garanties, pour une fiche ou les réglages
   src/ui/intensites.ts     les intensités de la palette : curseurs, repère de la référence, origine, retour aux réglages communs
   src/ui/messagesDePalette.ts les messages de la palette ouverte : ceux de la liste, et ceux des intensités
-  src/ui/generation.ts     le bouton de génération à droite du titre, son libellé selon l'état du cadre ; la ligne dessous et le résultat
   src/ui/ajustement.ts     le panneau « Ajuster la référence » : originale et proposition, pas, code, garanties avant et après, Appliquer
   src/ui/interfaceDeTest.ts la dernière carte de l'onglet : l'écran de réglages E2 peint de la palette ouverte, par emploi et par état
   src/ui/gestesDeLaRecette.ts exporter la recette ou le rapport, importer avec l'écart, repartir de la recette par défaut
@@ -927,7 +928,7 @@ La spécification en lien porte le raisonnement.
   quelle que soit la dérive. `teinteA` (`packages/couleur/src/rampe.ts`) en est
   l'unique autorité, et `proprietes.test.ts` l'éprouve sur vingt mille tirages.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#64-la-teinte-dun-cran)
-- Dans son profil porteur, chaque mode d'une palette contient les octets
+- Dans son intensité porteuse, chaque mode d'une palette contient les octets
   exacts de sa couleur de référence, au cran de clarté la plus proche. Les
   autres crans gardent le calcul commun, et aucune vue ne recalcule une
   référence : promesses, alertes, planche, rapport et éditeur de dérive lisent
@@ -935,7 +936,8 @@ La spécification en lien porte le raisonnement.
   l'unique autorité. `packages/couleur/tests/ancrage.test.ts` l'éprouve sur deux
   mille tirages. Borne : l'ancrage ne promet pas qu'une promesse reste tenue.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#64-la-teinte-dun-cran)
-- Une palette de base Soft ou Vivid désigne le profil porteur, et ce profil
+- À deux intensités, une palette de base Soft ou Vivid, que l'interface
+  appelle « Référence exacte dans », désigne le profil porteur, et ce profil
   prend la part de chroma de la référence ; l'autre garde la part commune,
   bornée pour que soft ne dépasse pas vivid. Ces parts se calculent à la
   lecture et ne se rangent jamais : `partsDe` et `profilPorteur`
@@ -943,6 +945,26 @@ La spécification en lien porte le raisonnement.
   propres passent avant elles. `packages/couleur/tests/base.test.ts` l'éprouve
   sur des teintes, des clartés et des parts communes variées.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#81-une-palette)
+- Une palette porte une intensité ou deux. À une intensité, elle n'a qu'une
+  rampe par mode, sans nom de profil, égale à celle du profil porteur forcé :
+  la part de la référence, la référence exacte à son cran. Aucune vue ne
+  suppose Soft et Vivid : rampes, promesses, alertes, planche, rapport et
+  interface parcourent la liste que rend `intensitesDe`
+  (`packages/couleur/src/palette.ts`), unique autorité.
+  `packages/couleur/tests/intensites.test.ts` le tient, sur cinq cents
+  références pour l'égalité au profil forcé.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#81-une-palette)
+- En Dark, les nuances de fond, 50 à 300, prennent la part de leur intensité
+  multipliée par un facteur réglé dans la recette ; les nuances 400 et
+  au-delà, et tout le thème Light, restent identiques à l'octet. Le facteur
+  se lit sur la clarté que la courbe vise, jamais sur un rang, et la
+  référence exacte garde ses octets. `facteurSombre`
+  (`packages/couleur/src/rampe.ts`) en est l'unique autorité : `fabriquerRampe`
+  l'applique, et « Profils confondus » le lit pour se taire sur les nuances
+  atténuées. `fabriquerCran`, que la garantie des courbes, l'ajustement et la
+  bande de la dérive appellent, ne l'applique pas. `packages/couleur/tests/fondsSombres.test.ts`
+  le tient.
+  → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#63-fabriquer-un-cran)
 
 ### Écriture d'UCM Palettes
 

@@ -181,7 +181,7 @@ ol.ladder li{margin-bottom:10px}
 <body>
 <main>
 <h1>Tokens multi-marques : l'architecture cible</h1>
-<p class="lede">Six marques, clair et sombre, deux profils de couleur <code>soft</code> et <code>vivid</code>. Cette page reprend <a href="./ARCHITECTURE-FINALE-MULTIMARQUES.md">ARCHITECTURE-FINALE-MULTIMARQUES.md</a>, la montre telle qu'elle apparaîtra dans Figma et liste ce qu'il faut changer dans le <span class="m">tokens.json</span> actuel.</p>
+<p class="lede">Six marques, clair et sombre, deux profils de couleur <code>soft</code> et <code>vivid</code> pour les utilitaires, une seule intensité pour les rampes de marque. Cette page reprend <a href="./ARCHITECTURE-FINALE-MULTIMARQUES.md">ARCHITECTURE-FINALE-MULTIMARQUES.md</a>, la montre telle qu'elle apparaîtra dans Figma et liste ce qu'il faut changer dans le <span class="m">tokens.json</span> actuel.</p>
 <nav class="jump" aria-label="Raccourcis">
   <a href="#figma">Vue Figma</a>
   <a href="#memo">Aide-mémoire</a>
@@ -228,11 +228,11 @@ ol.ladder li{margin-bottom:10px}
   <rect class="node" x="210" y="32" width="260" height="32" rx="4"/>
   <text class="nt" x="340" y="52" text-anchor="middle">button.primary.background</text>
   <rect class="node-acc" x="210" y="118" width="260" height="32" rx="4"/>
-  <text class="nt" x="340" y="138" text-anchor="middle">primary.vivid.700</text>
+  <text class="nt" x="340" y="138" text-anchor="middle">primary.700</text>
   <rect class="node" x="210" y="206" width="260" height="32" rx="4"/>
-  <text class="nt" x="340" y="226" text-anchor="middle">palette.primary.vivid.light.700</text>
+  <text class="nt" x="340" y="226" text-anchor="middle">palette.primary.light.700</text>
   <rect class="node-alt" x="520" y="206" width="260" height="32" rx="4"/>
-  <text class="nt-alt" x="650" y="226" text-anchor="middle">palette.primary.vivid.dark.700</text>
+  <text class="nt-alt" x="650" y="226" text-anchor="middle">palette.primary.dark.700</text>
   <rect class="node" x="210" y="276" width="120" height="32" rx="4"/>
   <text class="nt" x="270" y="296" text-anchor="middle">hexa de A</text>
   <rect class="node-alt" x="350" y="276" width="120" height="32" rx="4"/>
@@ -275,7 +275,7 @@ ol.ladder li{margin-bottom:10px}
 <p class="prose">Une seule collection « marque × thème » compterait douze modes, alors que Figma Professional plafonne à dix modes par collection. Avec deux collections, chacune reste sous le plafond (6 et 2 modes), et une maquette peut poser un encart sombre sans toucher à la marque. Tout ce qui dépend de la marque reste dans <code>brand</code> : si les réglages vivaient dans une autre collection à six modes, Figma pourrait afficher la palette de A avec les réglages de B. L'export dérive l'attribut HTML du nom de la collection : <code>brand</code> donne <code>data-brand</code>, <code>theme</code> donne <code>data-theme</code>.</p>
 
 <h2 id="figma">Ce que tu verras dans Figma</h2>
-<p class="prose">Le panneau des variables, collection par collection. Dans Figma, les points d'un chemin deviennent des groupes : <code>theme.primary.vivid.700</code> s'affiche <code>primary/vivid/700</code> dans la collection <code>theme</code>. Clique sur une collection à gauche.</p>
+<p class="prose">Le panneau des variables, collection par collection. Dans Figma, les points d'un chemin deviennent des groupes : <code>theme.primary.700</code> s'affiche <code>primary/700</code> dans la collection <code>theme</code>. Clique sur une collection à gauche.</p>
 
 <figure>
 <div class="fig">
@@ -355,7 +355,7 @@ ol.ladder li{margin-bottom:10px}
 </figure>
 
 <h3>Les deux profils</h3>
-<p class="prose"><code>soft</code> et <code>vivid</code> ont la même clarté, donc les mêmes contrastes : seule la vivacité change (45 % et 95 % du maximum que l'écran affiche). <code>soft</code> sert à un élément répété ou secondaire, comme un badge présent vingt fois à l'écran ; <code>vivid</code> sert à ce qui doit se remarquer. Les rampes de marque et les quatre utilitaires ont les deux profils, le neutre n'en a qu'un. Aux crans 50, 100 et 950, l'écran n'affiche presque pas de vivacité : les deux profils s'y ressemblent.</p>
+<p class="prose"><code>soft</code> et <code>vivid</code> ont la même clarté, donc les mêmes contrastes : seule la vivacité change (45 % et 95 % du maximum que l'écran affiche). <code>soft</code> sert à un élément répété ou secondaire, comme un badge présent vingt fois à l'écran ; <code>vivid</code> sert à ce qui doit se remarquer. Les quatre utilitaires ont les deux profils. Une rampe de marque n'a qu'une intensité, celle de la couleur de marque, qui reste exacte à son cran ; le neutre n'a qu'un profil. Aucun profil ne se lie à un thème. Aux crans 50, 100 et 950, l'écran n'affiche presque pas de vivacité : les deux profils s'y ressemblent.</p>
 
 <h2>Les emplois et les états</h2>
 <p class="prose">Un composant cite un cran fixe, le même dans toutes les marques. Aucune marque ne choisit un autre cran : chaque cran garantit son contraste, et chaque état avance d'un cran, écrit une seule fois dans <code>components</code>. La table vaut pour toutes les rampes et les deux profils.</p>
@@ -374,11 +374,11 @@ ol.ladder li{margin-bottom:10px}
 </tbody></table></div>
 
 <p class="prose">Le bouton actuel cite <code>color-brand-tokens.primary.default</code> pour trois emplois qui n'ont pas le même seuil. Il devient :</p>
-<div class="pre"><span class="x">button…contained.default.background</span>  → theme.primary.vivid.700
-<span class="x">button…contained.hover.background</span>    → theme.primary.vivid.800
-<span class="x">button…contained.press.background</span>    → theme.primary.vivid.900
+<div class="pre"><span class="x">button…contained.default.background</span>  → theme.primary.700
+<span class="x">button…contained.hover.background</span>    → theme.primary.800
+<span class="x">button…contained.press.background</span>    → theme.primary.900
 <span class="x">button…contained.*.foreground</span>       → theme.neutral.50
-<span class="x">button…outlined.default.border</span>       → theme.primary.vivid.600</div>
+<span class="x">button…outlined.default.border</span>       → theme.primary.600</div>
 
 <p class="prose" style="margin-top:14px"><strong>La couleur de charte</strong> se place au cran dont elle est la plus proche, et le plugin l'affiche. Elle reste disponible telle quelle (<code>brand.identity.primary</code>) pour le logo et les aplats de charte. Le bouton, lui, est toujours au 700 : une couleur plus claire que le 700 donne un bouton plus foncé qu'elle, et le plugin le signale. Material 3 fait de même : la couleur choisie donne la teinte, et le bouton prend toujours le même ton.</p>
 <p class="prose"><strong>Une marque qui mène avec sa deuxième couleur</strong> la place dans sa palette <code>primary</code> au moment de la générer. <code>primary</code> désigne la couleur des actions, pas l'ordre de la charte.</p>
@@ -407,8 +407,8 @@ ol.ladder li{margin-bottom:10px}
 <tr>
   <td><code>color-brands</code> (une marque par dossier, 44)<br><code>color-brand-tokens</code> (axe marque, 10 rôles)</td>
   <td><code>brand</code>, <span class="b">6 modes</span></td>
-  <td>Fusionner les deux. Les dossiers <code>intencial</code> et <code>marque-2</code> disparaissent : la marque devient une colonne. On y range :<br>• <code>palette</code> : primaire et secondaire × <code>soft</code> et <code>vivid</code> × clair et sombre × 11 crans ;<br>• <code>identity.primary</code>, la couleur exacte ;<br>• <code>params</code> et <code>exception</code>, réservés et vides.<br>Les 10 rôles de <code>color-brand-tokens</code> disparaissent, sans remplaçant.</td>
-  <td class="n">89 × 6</td>
+  <td>Fusionner les deux. Les dossiers <code>intencial</code> et <code>marque-2</code> disparaissent : la marque devient une colonne. On y range :<br>• <code>palette</code> : primaire et secondaire × clair et sombre × 11 crans, une intensité chacune ;<br>• <code>identity.primary</code>, la couleur exacte ;<br>• <code>params</code> et <code>exception</code>, réservés et vides.<br>Les 10 rôles de <code>color-brand-tokens</code> disparaissent, sans remplaçant.</td>
+  <td class="n">45 × 6</td>
 </tr>
 <tr>
   <td><code>color-utilities</code> (54 : neutre sur 14 crans, 4 utilitaires sur 10)<br><code>primitives.colors</code> (9 teintes brutes)</td>
@@ -419,8 +419,8 @@ ol.ladder li{margin-bottom:10px}
 <tr>
   <td>—</td>
   <td><code>theme</code>, <span class="t">light · dark</span></td>
-  <td>Nouvelle collection. Chaque nom pointe vers sa valeur claire ou sombre :<br>• <code>neutral.*</code> (11) ;<br>• <code>success</code>, <code>warning</code>, <code>info</code>, <code>danger</code> × <code>soft</code> et <code>vivid</code> (88) ;<br>• <code>primary</code> et <code>secondary</code> × <code>soft</code> et <code>vivid</code> (44) ;<br>• <code>exception.*</code>, réservé et vide.</td>
-  <td class="n">143 × 2</td>
+  <td>Nouvelle collection. Chaque nom pointe vers sa valeur claire ou sombre :<br>• <code>neutral.*</code> (11) ;<br>• <code>success</code>, <code>warning</code>, <code>info</code>, <code>danger</code> × <code>soft</code> et <code>vivid</code> (88) ;<br>• <code>primary</code> et <code>secondary</code>, sans segment de profil (22) ;<br>• <code>exception.*</code>, réservé et vide.</td>
+  <td class="n">121 × 2</td>
 </tr>
 <tr>
   <td><code>components</code> (306 couleurs)</td>
@@ -469,6 +469,7 @@ ol.ladder li{margin-bottom:10px}
   <span>Profils <code>soft</code> et <code>vivid</code></span>
   <span>Sortie en sRGB</span>
   <span>Utilitaires communs, deux profils, commutés par le thème</span>
+  <span>Rampes de marque à une intensité</span>
   <span>Chemin : famille, profil, thème, cran</span>
   <span><code>params</code> et <code>exception</code> réservés</span>
   <span>Aucun rôle câblé : table des emplois fixe</span>
@@ -499,7 +500,7 @@ ol.ladder li{margin-bottom:10px}
     <ul>
       <li>Dans une maquette : une variable de <code>theme</code>.</li>
       <li>Dans un composant : une variable de <code>components</code>, qui pointe vers <code>theme</code>.</li>
-      <li>Toujours famille, profil, cran : <code>primary/vivid/700</code>, <code>danger/soft/100</code>.</li>
+      <li>Toujours famille, profil quand la famille en a deux, cran : <code>primary/700</code>, <code>danger/soft/100</code>.</li>
       <li>Le cran vient de la table des emplois, le même pour toutes les marques.</li>
     </ul>
   </section>
@@ -614,22 +615,20 @@ ol.ladder li{margin-bottom:10px}
       {g:'dimensions, fontsize, fontweight…',res:true},
       {more:'inchangés'}
     ]},
-    brand:{modes:['Marque A','Marque B','Marque C'],info:'6 modes · 89 variables par marque',rows:[
-      {g:'palette / primary / vivid / light'},
+    brand:{modes:['Marque A','Marque B','Marque C'],info:'6 modes · 45 variables par marque',rows:[
+      {g:'palette / primary / light'},
       {n:'100',c:['A','B','C'].map(function(b){return V(P(b,'primary','vivid','light',100));})},
       {n:'700',c:['A','B','C'].map(function(b){return V(P(b,'primary','vivid','light',700));})},
-      {g:'palette / primary / soft / light'},
-      {n:'700',c:['A','B','C'].map(function(b){return V(P(b,'primary','soft','light',700));})},
-      {g:'palette / primary / vivid / dark'},
+      {g:'palette / primary / dark'},
       {n:'700',c:['A','B','C'].map(function(b){return V(P(b,'primary','vivid','dark',700));})},
-      {more:'+ les autres crans, primary/soft/dark et secondary : 88 couleurs par marque'},
+      {more:'+ les autres crans, primary/dark et secondary : 44 couleurs par marque'},
       {g:'identity'},
       {n:'primary',c:[V(P('A','primary','vivid','light',600)),V(P('B','primary','vivid','light',500)),V(IDC)]},
       {more:'la couleur exacte de la charte : logo et aplats, jamais citée par un composant'},
       {g:'params · réservé, aucune variable',res:true},
       {g:'exception / light · exception / dark · réservé, aucune variable',res:true}
     ]},
-    theme:{modes:['Light','Dark'],info:'2 modes · 143 variables',rows:[
+    theme:{modes:['Light','Dark'],info:'2 modes · 121 variables',rows:[
       {g:'neutral'},
       {n:'50',c:[A('neutral/light/50',N('light',50)),A('neutral/dark/50',N('dark',50))]},
       {n:'700',c:[A('neutral/light/700',N('light',700)),A('neutral/dark/700',N('dark',700))]},
@@ -640,21 +639,21 @@ ol.ladder li{margin-bottom:10px}
       {g:'success / vivid'},
       {n:'700',c:[A('success/vivid/light/700',U('success','vivid','light',700)),A('success/vivid/dark/700',U('success','vivid','dark',700))]},
       {more:'+ warning, info, danger : 88 variables pour les utilitaires'},
-      {g:'primary / vivid'},
-      {n:'700',c:[A('palette/primary/vivid/light/700',P('A','primary','vivid','light',700)),A('palette/primary/vivid/dark/700',P('A','primary','vivid','dark',700))]},
-      {n:'800',c:[A('palette/primary/vivid/light/800',P('A','primary','vivid','light',800)),A('palette/primary/vivid/dark/800',P('A','primary','vivid','dark',800))]},
-      {more:'+ les autres crans, primary/soft et secondary : 44 variables de marque'},
+      {g:'primary'},
+      {n:'700',c:[A('palette/primary/light/700',P('A','primary','vivid','light',700)),A('palette/primary/dark/700',P('A','primary','vivid','dark',700))]},
+      {n:'800',c:[A('palette/primary/light/800',P('A','primary','vivid','light',800)),A('palette/primary/dark/800',P('A','primary','vivid','dark',800))]},
+      {more:'+ les autres crans et secondary : 22 variables de marque'},
       {g:'exception · réservé, aucune variable',res:true}
     ]},
     components:{modes:['Valeur'],info:'aucun mode · cite theme',rows:[
       {g:'button / primary / contained'},
-      {n:'default/background',c:[A('primary/vivid/700',P('A','primary','vivid','light',700))]},
-      {n:'hover/background',c:[A('primary/vivid/800',P('A','primary','vivid','light',800))]},
-      {n:'press/background',c:[A('primary/vivid/900',P('A','primary','vivid','light',900))]},
+      {n:'default/background',c:[A('primary/700',P('A','primary','vivid','light',700))]},
+      {n:'hover/background',c:[A('primary/800',P('A','primary','vivid','light',800))]},
+      {n:'press/background',c:[A('primary/900',P('A','primary','vivid','light',900))]},
       {n:'foreground',c:[A('neutral/50',N('light',50))]},
       {g:'button / primary / outlined'},
-      {n:'default/border',c:[A('primary/vivid/600',P('A','primary','vivid','light',600))]},
-      {n:'default/foreground',c:[A('primary/vivid/700',P('A','primary','vivid','light',700))]},
+      {n:'default/border',c:[A('primary/600',P('A','primary','vivid','light',600))]},
+      {n:'default/foreground',c:[A('primary/700',P('A','primary','vivid','light',700))]},
       {g:'badge / success'},
       {n:'background',c:[A('success/soft/100',U('success','soft','light',100))]},
       {n:'foreground',c:[A('success/soft/700',U('success','soft','light',700))]},

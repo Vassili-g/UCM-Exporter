@@ -256,12 +256,19 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
   Figma, bordure du socle, rayon de 8 px, sans ombre. Trois niveaux de titre,
   pas davantage : le titre de premier rang, le titre de carte et le libellé de
   champ ;
-- la création d’une palette s’ouvre sous le sélecteur, dans une carte sur le
-  modèle de « Configuration de la palette » : trois colonnes, libellé au-dessus
-  du champ, puis ses gestes sur une ligne ;
+- la création d’une palette s’ouvre sous le sélecteur, dans une carte
+  disposée comme « Configuration de la palette » : le nom et la couleur de
+  référence sur une ligne, libellé au-dessus du champ, puis une rangée pour
+  le Modèle et une pour les Intensités, puis ses gestes sur une ligne ;
+- le choix des intensités tient en deux cartes côte à côte, chacune avec la
+  rampe qu’elle donnerait. La carte choisie prend la bordure de marque, et
+  porte la suite de son choix : « Référence exacte dans » ne paraît que dans
+  « Deux intensités » ;
 - les cartes se suivent dans cet ordre : Configuration de la palette, carte
   d’aperçu, Intensités, Dérive de teinte, Garanties de contraste, puis
-  Interface de test. La palette se règle avant de se juger. Toutes les
+  Interface de test. La palette se règle avant de se juger. Une palette à une
+  intensité n’a pas la carte Intensités, ni de bascule Soft et Vivid : aucune
+  surface ne montre un profil que la palette ne porte pas. Toutes les
   cartes, sauf Configuration et aperçu, se replient et sont repliées à
   l’ouverture ; leur en-tête est un bouton qui
   porte le chevron, le titre et un résumé aligné à droite ;
@@ -277,7 +284,7 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
   enregistrement et le conflit ; un enregistrement réussi ne s’annonce pas ;
 - toutes les bascules à onglets, thème, profil et vue, donnent à l’onglet
   actif le même fond, distinct de la carte aux deux thèmes de Figma. Un
-  segment qui choisit une valeur, modèle, palette de base ou préréglage,
+  segment qui choisit une valeur, modèle, référence exacte ou préréglage,
   garde le fond des blocs ;
 - un geste destructif prend la variante `danger` du bouton du socle : fond et
   survol de danger, jamais la couleur de marque ;
@@ -288,9 +295,14 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
 - à la taille minimale, aucun élément fixe ne recouvre l’aperçu ou un champ ;
 - les Réglages communs reprennent les mêmes cartes : l’aperçu compact de la
   palette ouverte en tête, puis Couleurs de fond, Intensités, Luminosité des
-  nuances, et deux cartes repliées de seuils. Une carte fixe porte son compte
-  de palettes et « Rétablir » à droite de son titre ;
-- dans l’onglet Planches, les gestes d’une fiche prennent la taille compacte
+  nuances, puis trois cartes repliées : les deux cartes de seuils et Contenu
+  des planches. Le réglage « Fonds du thème Dark » vit dans la carte
+  Intensités, sous Soft et Vivid, parce qu’il agit sur la part de chroma de
+  toutes les palettes. Une carte fixe porte son compte de palettes et
+  « Rétablir » à droite de son titre ;
+- dans l’onglet Planches, une fiche porte sur sa première ligne le nom de la
+  palette et l’état de son cadre en pastille, puis l’aperçu, puis la
+  référence et les garanties sur une ligne, puis ses gestes. Les gestes prennent la taille compacte
   du bouton du socle, 24 px : le premier geste, quand le cadre en demande un,
   est le bouton principal, puis « Afficher » et « Modifier ». Une palette
   supprimée dont le cadre reste dans Figma a sa carte, de même facture que

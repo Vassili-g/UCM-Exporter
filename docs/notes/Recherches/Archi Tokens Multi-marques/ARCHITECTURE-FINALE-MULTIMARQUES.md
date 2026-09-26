@@ -1,8 +1,9 @@
 # L'architecture de tokens multi-marques
 
 Ce document propose la forme des tokens du nouveau design system : six marques,
-un thème clair et un thème sombre, deux profils de couleur par rampe, `soft` et
-`vivid`. Le détail des arguments est dans [la
+un thème clair et un thème sombre, deux profils de couleur, `soft` et
+`vivid`, pour les utilitaires, et une seule intensité pour les rampes de
+marque. Le détail des arguments est dans [la
 recherche](./RECHERCHE-ARCHI-MULTIMARQUES.md) et [la revue
 critique](./SYNTHESE-CRITIQUE-ARCHI-MULTIMARQUES.md), qui emploient encore
 l'ancien nom `scheme` de la collection `theme`. L'outil qui fabrique les
@@ -38,14 +39,14 @@ Ces bornes valent sur les 360 teintes, les deux profils et les deux thèmes,
 calculées en flottant à teinte constante. Avec la dérive de Tailwind et
 l'arrondi à 8 bits, les minimums baissent d'au plus 0,02 : 3,62 pour le 600,
 7,44 pour le 800. Aucun ne franchit un seuil. Un composant peut citer
-`theme.primary.vivid.700` ou `theme.success.soft.700` pour un texte dans toutes
+`theme.primary.700` ou `theme.success.soft.700` pour un texte dans toutes
 les marques.
 
 Le thème sombre a sa propre courbe, avec les mêmes numéros. Le cran 50 est le
 fond de page dans les deux thèmes : le plus clair en clair, le plus sombre en
 sombre. Il sert aussi de surface de carte (`surface-card`, section 4) : une
 carte a la clarté du fond, un peu plus sombre que lui en sombre, et se borde
-du cran 300. Un texte lié une fois à `theme.primary.vivid.700` reste lisible dans les
+du cran 300. Un texte lié une fois à `theme.primary.700` reste lisible dans les
 deux thèmes.
 
 | Cran | 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 950 |
@@ -92,18 +93,20 @@ donne `data-brand` et `theme` donne `data-theme`, sans réglage dans
 
 ### Le chemin d'une couleur
 
-Une couleur se nomme dans cet ordre : famille, profil, thème, cran.
+Une couleur se nomme dans cet ordre : famille, profil, thème, cran. Une
+famille à une intensité n'a pas de segment de profil.
 
 ```text
 primitives.neutral.light.700              le neutre, un seul profil
-primitives.success.soft.light.700         un utilitaire
-brand.palette.primary.vivid.dark.700      une rampe de marque
+primitives.success.soft.light.700         un utilitaire, deux intensités
+brand.palette.primary.dark.700            une rampe de marque, une intensité
 ```
 
 **Le neutre est une palette fixe et grise**, commune aux marques, avec un seul
 profil. **Les quatre utilitaires**, `success`, `warning`, `info` et `danger`,
-sont communs aux marques et portent les deux profils. Chaque rampe existe en
-deux jeux, un par courbe.
+sont communs aux marques et portent les deux profils. **Les rampes de marque**
+portent une seule intensité, celle de la couleur de marque (section 3.2).
+Chaque rampe existe en deux jeux, un par courbe.
 
 **Tout ce qui dépend de la marque va dans `brand`.** Deux collections à six
 modes pourraient afficher la palette de la marque A avec les réglages de la
@@ -118,12 +121,12 @@ cite `theme`.
 |---|---|---|---|
 | Neutre | `theme.neutral.700` | `primitives.neutral.light.700` | 11 |
 | Utilitaires | `theme.danger.vivid.700` | `primitives.danger.vivid.light.700` | 88 |
-| Rampes de marque | `theme.primary.soft.100` | `brand.palette.primary.soft.light.100` | 44 |
+| Rampes de marque | `theme.primary.100` | `brand.palette.primary.light.100` | 22 |
 | Exceptions | `theme.exception.…` | `brand.exception.light.…` | 0 |
 
-En sombre, la cible remplace `light` par `dark`. `theme` compte 143 variables à
+En sombre, la cible remplace `light` par `dark`. `theme` compte 121 variables à
 deux colonnes. `primitives` compte 198 couleurs : 22 pour le neutre, 176 pour
-les utilitaires. `brand` en compte 89 par marque : 88 crans et la couleur exacte.
+les utilitaires. `brand` en compte 45 par marque : 44 crans et la couleur exacte.
 
 ### Les réglages et les exceptions de marque
 
@@ -146,8 +149,8 @@ identique aux autres en clair. `brand` porte les deux valeurs de chaque marque,
 et `theme` choisit la claire ou la sombre :
 
 ```text
-brand.exception.light.button.primary.background   A et B → brand.palette.primary.vivid.light.700
-brand.exception.dark.button.primary.background    A      → brand.palette.primary.vivid.dark.700
+brand.exception.light.button.primary.background   A et B → brand.palette.primary.light.700
+brand.exception.dark.button.primary.background    A      → brand.palette.primary.dark.700
                                                   B      → primitives.neutral.dark.200
 theme.exception.button.primary.background         light → brand.exception.light.button.primary.background
                                                   dark  → brand.exception.dark.button.primary.background
@@ -187,8 +190,10 @@ diffèrent.
 
 Les deux profils ont la même clarté, donc les mêmes contrastes. Ils diffèrent
 par la part de chroma, 0,45 pour `soft` et 0,95 pour `vivid`, valeurs à régler
-à l'œil. Les rampes de marque et les utilitaires portent les deux profils ; le
-neutre n'en a qu'un.
+à l'œil. Les utilitaires portent les deux profils ; une rampe de marque n'en a
+qu'une, à la part de chroma de la couleur de marque, qui reste exacte à son
+cran ; le neutre n'en a qu'un. Aucun profil ne se lie à un thème : une
+couleur douce ou vive sert dans les deux.
 
 Un profil règle l'insistance d'un élément. `soft` sert à un élément répété ou
 secondaire, comme un badge présent vingt fois à l'écran. `vivid` sert à un
@@ -197,6 +202,13 @@ secondaire, comme un badge présent vingt fois à l'écran. `vivid` sert à un
 **Chaque profil peut avoir sa propre teinte.** Un bleu `vivid` peut tirer vers
 le violet quand le bleu `soft` reste neutre. Les contrastes de la section 1 sont
 mesurés sur les 360 teintes, donc ce choix ne les change pas.
+
+**Les fonds du thème Dark perdent de la chroma.** Aux crans 50 à 300 du thème
+Dark, la part de chaque intensité est multipliée par un facteur qui vaut 0,30
+au cran 50 et remonte linéairement en clarté jusqu'à 1 au cran 400. Un fond
+teinté sombre sature sinon deux à trois fois plus que les échelles sombres de
+Radix aux mêmes clartés. Les accents, 400 et au-delà, et tout le thème clair
+gardent leur part. Le facteur est un réglage commun de la recette.
 
 Aux crans 50, 100 et 950, l'écart de chroma entre les deux profils descend sous
 0,02 pour certaines teintes, et les deux profils s'y confondent. Un fond pâle
@@ -282,8 +294,9 @@ Deux outils qui lisent ce fichier produisent les mêmes hexas, et une palette
 régénérée plus tard reste identique. Il contient :
 
 - la liste des crans et les deux courbes de clarté ;
-- les parts de chroma des deux profils ;
-- pour chaque rampe, la couleur de départ et ses teintes aux bouts, par profil ;
+- les parts de chroma des deux profils, et le facteur des fonds du thème Dark ;
+- pour chaque rampe, la couleur de départ, une intensité ou deux, et ses
+  teintes aux bouts, par profil ;
 - le gamut de sortie, sRGB ;
 - la liste des crans retouchés à la main, que la régénération n'écrase pas.
 
@@ -306,14 +319,18 @@ profils.
 |---|---|---|---|---|---|
 | `solid`, fond plein d'un bouton, d'un badge | 700 | 800 | 900 | `neutral.50` sur le fond, 4,5:1 | 5,23 · 7,45 · 10,50 |
 | `text`, texte de marque sur le fond de page | 700 | | | contre le fond de page, 4,5:1 | 5,23 |
-| `surface`, fond teinté discret | 100 | 200 | 300 | texte 700, 800, 900 sur le fond, 4,5:1 | 4,99 · 6,32 · 7,28 |
+| `surface`, fond teinté discret | 100 | 200 | 300 | texte 700, 800, 900 sur le fond, 4,5:1 | 4,95 · 6,32 · 7,28 |
 | `surface-card`, surface d'une carte, d'un panneau | 50 | | | texte 700 sur la carte, 4,5:1 ; `border-control` 600 sur la carte, 3:1 | 5,30 · 3,68 |
-| `border-control`, contour d'un champ, d'une case | 600 | 700 | 800 | contre `surface` au même état, 3:1 | 3,46 · 4,46 · 5,25 |
+| `border-control`, contour d'un champ, d'une case | 600 | 700 | 800 | contre `surface` au même état, 3:1 | 3,45 · 4,36 · 5,25 |
 | `border-decorative`, séparateur, filet | 300 | | | aucune | |
 | `focus`, anneau de focus | 600 | | | contre le fond de page, 3:1 | 3,63 |
 
-Les minimums valent sur 360 teintes, les deux profils et les deux thèmes ; la
-section 5 de `verifier-courbes.mjs` les produit. Une relecture indépendante a
+Les minimums valent sur 360 teintes, les deux profils et les deux thèmes, fonds
+du thème Dark atténués ; la section 5 de `verifier-courbes.mjs` les produit.
+Sa section 9 les mesure sur toutes les parts de 0 à 1 par pas de 0,05, celles
+qu'une rampe de marque peut prendre : le pire cas descend à 4,90 pour `text`
+sur `surface` et à 3,41 pour `border-control` sur `surface`, au-dessus des
+seuils. Une relecture indépendante a
 vérifié que chaque paire tient encore son seuil quand ses deux membres prennent
 des teintes différentes : la garantie ne dépend pas de la dérive.
 
