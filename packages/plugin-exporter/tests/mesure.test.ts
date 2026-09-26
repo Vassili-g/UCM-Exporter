@@ -7,10 +7,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import handleExportComponent, { ETAPES_DE_L_ANALYSE } from '../src/contract/exportComponent';
 import {
-  abandonnerLaMesure, avancementCourant, avancer, empreinteDuContrat, etape, fermerLaMesure, ouvrirLaMesure,
+  abandonnerLaMesure, avancementCourant, avancer, compter, empreinteDuContrat, etape, fermerLaMesure,
+  ouvrirLaMesure,
   retenirLeMaximum,
 } from '../src/contract/mesure';
 import { node } from './aides/figmaFaux';
+import { tempsRestant } from '../src/ui/components/CarteCommande';
 
 /** Un composant seul, un texte, et le strict nécessaire du faux `figma`. */
 function monterUnComposant(texte = 'Suivant') {
@@ -90,6 +92,89 @@ test('l’avancement pèse les étapes prévues, compte la boucle en cours et ne
     abandonnerLaMesure();
   }
   assert.equal(avancementCourant(), null);
+});
+
+test('le temps restant s’estime après 2 s et 5 % d’avancement, d’après le temps écoulé', () => {
+  ouvrirLaMesure([{ nom: 'a', poids: 1 }, { nom: 'b', poids: 1 }, { nom: 'c', poids: 98 }]);
+  const debut = Date.now();
+  try {
+    etape('a');
+    etape('b');
+    // 1 % fait : trop peu pour extrapoler, même après 10 s.
+    assert.equal(avancementCourant(debut + 10_000)?.resteMs, undefined);
+    etape('c');
+    avancer(48, 98);
+    // 50 % fait : avant 2 s, rien ; à 4 s, il reste autant que fait.
+    assert.equal(avancementCourant(debut + 1_500)?.resteMs, undefined);
+    const reste = avancementCourant(debut + 4_000)?.resteMs ?? 0;
+    assert.ok(reste >= 3_900 && reste <= 4_100, `${reste} ms`);
+  } finally {
+    abandonnerLaMesure();
+  }
+});
+
+test('le rythme du temps restant se mesure depuis l’étape qui en marque l’origine', () => {
+  ouvrirLaMesure([
+    { nom: 'a', poids: 50 },
+    { nom: 'b', poids: 0, origineDuRythme: true },
+    { nom: 'c', poids: 50 },
+  ]);
+  try {
+    etape('a');
+    avancer(1, 2);
+    // 25 % fait, mais avant l'origine : aucune estimation, même après 10 s.
+    assert.equal(avancementCourant(Date.now() + 10_000)?.resteMs, undefined);
+    etape('b');
+    const origine = Date.now();
+    etape('c');
+    avancer(25, 50);
+    // 75 % fait, dont 25 % depuis l'origine en 4 s : il reste 25 %, donc 4 s.
+    const reste = avancementCourant(origine + 4_000)?.resteMs ?? 0;
+    assert.ok(reste >= 3_900 && reste <= 4_100, `${reste} ms`);
+  } finally {
+    abandonnerLaMesure();
+  }
+});
+
+test('une étape prévue sans compte tait celui de sa boucle', () => {
+  ouvrirLaMesure([{ nom: 'a', poids: 1, compte: false }, { nom: 'b', poids: 1 }]);
+  try {
+    etape('a');
+    avancer(1, 4);
+    assert.deepEqual(avancementCourant(), { fraction: 0.125 });
+    etape('b');
+    avancer(1, 4);
+    assert.deepEqual(avancementCourant(), { fraction: 0.625, fait: 1, total: 4 });
+  } finally {
+    abandonnerLaMesure();
+  }
+});
+
+test('le temps restant s’écrit en secondes, par pas de 5 au-delà de 20, puis en minutes', () => {
+  assert.equal(tempsRestant(300), 'Environ 1 s restante');
+  assert.equal(tempsRestant(7_200), 'Environ 8 s restantes');
+  assert.equal(tempsRestant(23_000), 'Environ 25 s restantes');
+  assert.equal(tempsRestant(58_500), 'Environ 1 min restante');
+  assert.equal(tempsRestant(61_000), 'Environ 1 min restante');
+  assert.equal(tempsRestant(150_000), 'Environ 3 min restantes');
+});
+
+test('chaque étape porte ce que les compteurs additifs ont gagné pendant elle, sans les maximums', () => {
+  ouvrirLaMesure();
+  compter('respirations');
+  etape('a');
+  compter('respirations', 2);
+  retenirLeMaximum('plusLongSilenceMs', 5);
+  etape('b');
+  etape('c');
+  compter('respirations');
+  const trace = fermerLaMesure('{}');
+  assert.deepEqual(trace?.etapes.map((entree) => entree.compteurs), [
+    { respirations: 2 },
+    undefined,
+    { respirations: 1 },
+  ]);
+  assert.equal(trace?.compteurs.respirations, 4);
 });
 
 test('un maximum retient le plus grand relevé, et se tait hors d’une trace ouverte', () => {

@@ -28,6 +28,7 @@ import { declarerLesRacinesDeVariants, pousserSansNode } from './localisation';
 import { avancer, etape } from './mesure';
 import { respirerSiBesoin } from './porteeDAnalyse';
 import type { DiscoveredRoles } from './semantics';
+import type { Annonce } from '../messages';
 import type {
   ComposedDependency,
   ContractStructure,
@@ -118,6 +119,7 @@ export async function extractStructure(
   iconNames: readonly string[] = [],
   // Les imbriqués sans règles : leurs dessins internes se taisent.
   imbriques?: ReleveDesImbriques,
+  annoncer: Annonce = () => {},
 ): Promise<{
   structure: ContractStructure;
   textStyles: Record<string, TextStyleDefinition>;
@@ -154,6 +156,7 @@ export async function extractStructure(
    */
   targetedLayers: Set<string>;
 }> {
+  await annoncer('Lecture des couleurs…');
   etape('structure.couleurs');
   const warnings = [...matrixWarnings];
   if (imbriques) declarerLesImbriquesSansRegles(warnings, imbriques);
@@ -187,6 +190,7 @@ export async function extractStructure(
   // une autre racine (le variant plutôt que son wrapper) désigne parfois un
   // autre node, et les slots des icônes comme les chemins de la typographie
   // cesseraient alors de décrire ceux du contrat.
+  await annoncer('Lecture de la mise en page…');
   etape('structure.election');
   const layoutNodes = await electVariantLayoutNodes(
     matrix.variants.map((entry) => entry.component),
@@ -264,6 +268,7 @@ export async function extractStructure(
   // Seules les vues exactes collectent les calques à effets : la projection de
   // référence n'a pas de vue où situer un usage.
   const effectCarriers = new Map<ComponentNode, EffectCarrier[]>();
+  await annoncer('Lecture de chaque variant…');
   etape('structure.vues');
   for (const [rang, entry] of matrix.variants.entries()) {
     avancer(rang, matrix.variants.length);
@@ -293,6 +298,7 @@ export async function extractStructure(
     exactLayouts.map(({ entry, paths }) => [entry.component, paths] as const),
   );
 
+  await annoncer('Lecture de la typographie…');
   etape('structure.typographie');
   const referenceTextSlotPaths = new Set(
     referenceLayout

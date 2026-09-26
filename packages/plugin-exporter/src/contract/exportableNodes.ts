@@ -128,6 +128,21 @@ export function getAllNodes(
   warnings: string[] = [],
   composed: ComposedInstances = new Map(),
 ): SceneNode[] {
+  // `Date.now()` rend des millisecondes entières : un appel de 0,1 ms compte
+  // 0 ou 1. Sur des milliers d'appels, la somme reste une estimation sans biais.
+  const debut = Date.now();
+  try {
+    return releverLesNodes(root, warnings, composed);
+  } finally {
+    compter('msGetAllNodes', Date.now() - debut);
+  }
+}
+
+function releverLesNodes(
+  root: SceneNode,
+  warnings: string[],
+  composed: ComposedInstances,
+): SceneNode[] {
   // La racine elle-même peut être un composant unifié : c'est la forme d'un
   // slot qui rend directement sa dépendance. `hasAncestorIn` ne teste que les
   // ancêtres stricts et ne la couvre donc pas ; sans cette ligne, le parent

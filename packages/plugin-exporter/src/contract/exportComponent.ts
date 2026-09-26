@@ -14,9 +14,9 @@ import {
 import { indexContractedNames, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
 import { contientUneInstanceRendue } from './exportableNodes';
-import { etape } from './mesure';
+import { avancer, etape } from './mesure';
 import type { EtapePrevue } from './mesure';
-import { dansUnePorteeDAnalyse } from './porteeDAnalyse';
+import { dansUnePorteeDAnalyse, respirerSiBesoin } from './porteeDAnalyse';
 import { pousserLesImbriques, releverLesImbriques } from './imbriques';
 import type { ReleveDesImbriques } from './imbriques';
 import { TAGS_D_INTENTION } from './rulesModel';
@@ -198,26 +198,27 @@ export function componentContractFilename(name: string): string {
  * Les étapes de l'analyse d'un composant, dans leur ordre, et leur part
  * supposée du temps total. La barre de chargement avance d'après ces poids ;
  * la trace de mesure (`mesure.ts`) relève les durées réelles, qui servent à
- * les corriger. Les poids viennent d'un set de 140 variants, en pour cent ;
- * ceux de `structure.*` se partagent ses 74 % au jugé, jusqu'à la trace qui
- * les distingue. Les étapes `structure.*` s'ouvrent dans `extractStructure`.
+ * les corriger. Les poids viennent de la trace d'un set de 140 variants, en
+ * pour cent. Une étape mesurée sous 1 % pèse 1. `regles` pèse sa durée
+ * habituelle, 0,1 s ; une lecture de 6,5 s a été mesurée une fois, sans cause
+ * connue. Les étapes `structure.*` s'ouvrent dans `extractStructure`.
  */
 export const ETAPES_DE_L_ANALYSE: readonly EtapePrevue[] = [
   { nom: 'regles', poids: 1 },
   { nom: 'variants', poids: 1 },
-  { nom: 'index', poids: 2 },
+  { nom: 'index', poids: 3 },
   { nom: 'composition', poids: 1 },
-  { nom: 'wrapper', poids: 4 },
+  { nom: 'wrapper', poids: 4, origineDuRythme: true },
   { nom: 'variables', poids: 1 },
-  { nom: 'structure.couleurs', poids: 8 },
+  { nom: 'structure.couleurs', poids: 4 },
   { nom: 'structure.election', poids: 4 },
-  { nom: 'structure.icones', poids: 4 },
-  { nom: 'structure.reference', poids: 2 },
-  { nom: 'structure.vues', poids: 36 },
-  { nom: 'structure.effets', poids: 2 },
-  { nom: 'structure.typographie', poids: 8 },
-  { nom: 'structure.typographie-exacte', poids: 8 },
-  { nom: 'structure.tailles', poids: 2 },
+  { nom: 'structure.icones', poids: 1 },
+  { nom: 'structure.reference', poids: 1 },
+  { nom: 'structure.vues', poids: 46 },
+  { nom: 'structure.effets', poids: 1 },
+  { nom: 'structure.typographie', poids: 6, compte: false },
+  { nom: 'structure.typographie-exacte', poids: 12 },
+  { nom: 'structure.tailles', poids: 1 },
   { nom: 'echantillons', poids: 12 },
   { nom: 'compaction', poids: 1 },
   { nom: 'serialisation', poids: 1 },
@@ -244,7 +245,7 @@ export async function handleExportComponent(
 
 async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> {
   const componentSet = getSelectedComponent();
-  annoncer('Lecture des règles d’usage…');
+  await annoncer('Lecture des règles d’usage…');
   etape('regles');
 
   // Les règles enrichissent l'intention et la documentation, mais ne sont plus
@@ -305,7 +306,7 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   }
   // La liste exacte porte cet écart : il ne manque rien à la projection v8.
   warningCursor = warnings.length;
-  annoncer('Lecture des variants…');
+  await annoncer('Lecture des variants…');
   etape('variants');
   const { matrix, warnings: matrixWarnings } = buildVariantMatrix(
     componentSet,
@@ -325,7 +326,7 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   // La composition se relève avant toute extraction : un composant unifié
   // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
   // conditionne tout ce qui suit.
-  annoncer('Lecture des composants imbriqués…');
+  await annoncer('Lecture des composants imbriqués…');
   etape('index');
   const contientDesInstances = matrix.variants.some(({ component }) =>
     contientUneInstanceRendue(component));
@@ -360,6 +361,7 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   addProjectionWarnings(compositionWarnings);
   warningCursor = warnings.length;
 
+  await annoncer('Lecture des variables…');
   etape('wrapper');
   const wrapper = referenceComponent
     ? await findWrapperReference(referenceComponent, warnings, composed)
@@ -416,7 +418,6 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   // Le résolveur reçoit l'index des variables locales pour deux raisons : il y
   // lit les chemins sans un aller-retour par variable, et il sait quelles
   // variables partagent un nom, les seules qu'un contrat ne doit jamais citer.
-  annoncer('Écriture du contrat…');
   etape('variables');
   const [collections, variables] = await Promise.all([
     figma.variables.getLocalVariableCollectionsAsync(),
@@ -434,6 +435,7 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
     composed,
     rules.iconRules.map((rule) => rule.iconName),
     imbriques,
+    annoncer,
   );
   markProjectionWarningsSince(warningCursor);
   addProjectionWarnings(extracted.warnings);
@@ -524,9 +526,12 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   // L'échantillon se pose ici, une fois l'arbre exact connu et les valeurs
   // appliquées relevées : il ne recalcule ni chemin de slot, ni reconnaissance
   // de dépendance, il assemble ce que les deux extractions savent déjà.
+  await annoncer('Préparation des exemples…');
   etape('echantillons');
   const componentsById = new Map(matrix.variants.map(({ component }) => [component.id, component]));
-  for (const variant of extracted.variants) {
+  for (const [rang, variant] of extracted.variants.entries()) {
+    avancer(rang, extracted.variants.length);
+    await respirerSiBesoin();
     const component = componentsById.get(variant.nodeId);
     if (!component) continue;
     const sample = extractVariantSample(
@@ -541,6 +546,7 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
     if (Object.keys(sample).length > 0) variant.sample = sample;
   }
 
+  await annoncer('Écriture du contrat…');
   etape('compaction');
   const compacted = compactVariants(extracted.variants, propertyBindings);
 

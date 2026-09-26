@@ -18,6 +18,7 @@ export type Compteur =
   | 'pagesReutilisees'
   | 'nodesParcourus'
   | 'appelsGetAllNodes'
+  | 'msGetAllNodes'
   | 'appelsFindAllWithCriteria'
   | 'appelsGetMainComponentAsync'
   | 'maitresReutilises'
@@ -27,24 +28,45 @@ export type Compteur =
   | 'tailleIndex'
   | 'porteeRefusee';
 
-/** Une étape attendue de l'analyse, et sa part du temps total supposé. */
-export type EtapePrevue = { nom: string; poids: number };
+/**
+ * Une étape attendue de l'analyse, et sa part du temps total supposé.
+ *
+ * `compte` à faux tait le compte de sa boucle : deux boucles de 0 à 140 à la
+ * suite se liraient comme une boucle qui recommence. `origineDuRythme` marque
+ * l'étape d'où se mesure le rythme du temps restant : les étapes d'avant
+ * dépendent du document et de ses caches, pas du composant, et une lecture
+ * lente y ferait annoncer plusieurs minutes.
+ */
+export type EtapePrevue = { nom: string; poids: number; compte?: false; origineDuRythme?: true };
 
 /** Ce que la trace rend à sa fermeture. */
 export type TraceDeMesure = {
   totalMs: number;
-  etapes: Array<{ nom: string; ms: number }>;
+  etapes: EtapeMesuree[];
   compteurs: Partial<Record<Compteur, number>>;
   empreinte: string;
 };
 
-/** L'avancement d'une analyse, entre 0 et 1, et le compte de la boucle en cours. */
-export type Avancement = { fraction: number; fait?: number; total?: number };
+/** Une étape close, et ce que chaque compteur additif a gagné pendant elle. */
+export type EtapeMesuree = { nom: string; ms: number; compteurs?: Partial<Record<Compteur, number>> };
+
+/**
+ * L'avancement d'une analyse, entre 0 et 1, le compte de la boucle en cours,
+ * et le temps restant estimé en millisecondes.
+ */
+export type Avancement = { fraction: number; fait?: number; total?: number; resteMs?: number };
+
+/**
+ * Depuis l'origine du rythme, le temps et l'avancement à mesurer avant
+ * d'estimer : plus tôt, l'estimation extrapole trop peu de mesure.
+ */
+const ESTIMATION_APRES_MS = 2000;
+const ESTIMATION_APRES_FRACTION = 0.05;
 
 type Trace = {
   debut: number;
-  etapes: Array<{ nom: string; ms: number }>;
-  enCours: { nom: string; debut: number } | null;
+  etapes: EtapeMesuree[];
+  enCours: { nom: string; debut: number; compteurs: Partial<Record<Compteur, number>> } | null;
   compteurs: Partial<Record<Compteur, number>>;
   prevues: readonly EtapePrevue[] | null;
   /** Rang dans `prevues` de la dernière étape prévue ouverte, -1 avant la première. */
@@ -53,6 +75,8 @@ type Trace = {
   boucle: { fait: number; total: number; montrer: boolean } | null;
   /** La plus grande fraction rendue : la barre ne recule jamais. */
   atteinte: number;
+  /** Où se mesure le rythme ; null tant que l'étape qui le marque n'est pas ouverte. */
+  origine: { instant: number; fraction: number } | null;
 };
 
 let trace: Trace | null = null;
@@ -62,8 +86,9 @@ let trace: Trace | null = null;
  * jetée. Sans `prevues`, la trace ne rend aucun avancement.
  */
 export function ouvrirLaMesure(prevues: readonly EtapePrevue[] | null = null): void {
+  const debut = Date.now();
   trace = {
-    debut: Date.now(),
+    debut,
     etapes: [],
     enCours: null,
     compteurs: {},
@@ -71,12 +96,30 @@ export function ouvrirLaMesure(prevues: readonly EtapePrevue[] | null = null): v
     rang: -1,
     boucle: null,
     atteinte: 0,
+    origine: prevues?.some((prevue) => prevue.origineDuRythme) ? null : { instant: debut, fraction: 0 },
   };
 }
 
+function poidsTotal(prevues: readonly EtapePrevue[]): number {
+  return prevues.reduce((somme, prevue) => somme + prevue.poids, 0);
+}
+
+/** Les maximums ne se découpent pas par étape : une différence n'y dit rien. */
+const MAXIMUMS: ReadonlySet<Compteur> = new Set(['plusLongSilenceMs']);
+
 function clore(ouverte: Trace, maintenant: number): void {
   if (!ouverte.enCours) return;
-  ouverte.etapes.push({ nom: ouverte.enCours.nom, ms: maintenant - ouverte.enCours.debut });
+  const { nom, debut, compteurs: auDebut } = ouverte.enCours;
+  const gagnes: Partial<Record<Compteur, number>> = {};
+  for (const [cle, valeur] of Object.entries(ouverte.compteurs) as Array<[Compteur, number]>) {
+    const gain = valeur - (auDebut[cle] ?? 0);
+    if (gain > 0 && !MAXIMUMS.has(cle)) gagnes[cle] = gain;
+  }
+  ouverte.etapes.push({
+    nom,
+    ms: maintenant - debut,
+    ...(Object.keys(gagnes).length > 0 ? { compteurs: gagnes } : {}),
+  });
   ouverte.enCours = null;
 }
 
@@ -88,11 +131,16 @@ export function etape(nom: string): void {
   if (!trace) return;
   const maintenant = Date.now();
   clore(trace, maintenant);
-  trace.enCours = { nom, debut: maintenant };
+  trace.enCours = { nom, debut: maintenant, compteurs: { ...trace.compteurs } };
   const rang = trace.prevues?.findIndex((prevue) => prevue.nom === nom) ?? -1;
   if (rang > trace.rang) {
     trace.rang = rang;
     trace.boucle = null;
+    const prevues = trace.prevues!;
+    if (prevues[rang].origineDuRythme && poidsTotal(prevues) > 0) {
+      const avant = poidsTotal(prevues.slice(0, rang));
+      trace.origine = { instant: maintenant, fraction: avant / poidsTotal(prevues) };
+    }
   }
 }
 
@@ -122,20 +170,28 @@ export function retenirLeMaximum(nom: Compteur, n: number): void {
  * L'avancement de l'analyse, ou `null` hors trace ou sans étapes prévues.
  *
  * Les étapes closes comptent pour leur poids entier, l'étape en cours pour la
- * part que sa boucle a faite.
+ * part que sa boucle a faite. Le temps restant prolonge le rythme mesuré
+ * depuis l'origine, et suppose que les poids disent la vraie part de chaque
+ * étape.
  */
-export function avancementCourant(): Avancement | null {
+export function avancementCourant(maintenant = Date.now()): Avancement | null {
   if (!trace?.prevues) return null;
-  const { prevues, rang, boucle } = trace;
-  const total = prevues.reduce((somme, prevue) => somme + prevue.poids, 0);
+  const { prevues, rang, boucle, origine } = trace;
+  const total = poidsTotal(prevues);
   if (total <= 0) return null;
   let fait = 0;
   for (let index = 0; index < rang; index += 1) fait += prevues[index].poids;
   if (rang >= 0 && boucle) fait += prevues[rang].poids * (boucle.fait / boucle.total);
   trace.atteinte = Math.max(trace.atteinte, Math.min(1, fait / total));
+  const fraction = trace.atteinte;
+  const montrer = boucle?.montrer && prevues[rang]?.compte !== false;
+  const ecoule = origine ? maintenant - origine.instant : 0;
+  const progres = origine ? fraction - origine.fraction : 0;
+  const estimable = ecoule >= ESTIMATION_APRES_MS && progres >= ESTIMATION_APRES_FRACTION;
   return {
-    fraction: trace.atteinte,
-    ...(boucle?.montrer ? { fait: boucle.fait, total: boucle.total } : {}),
+    fraction,
+    ...(montrer ? { fait: boucle.fait, total: boucle.total } : {}),
+    ...(estimable ? { resteMs: Math.round(ecoule * (1 - fraction) / progres) } : {}),
   };
 }
 

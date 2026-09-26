@@ -17,6 +17,8 @@ import { normalizePropValue } from './parsers';
 import { publishedSlots, publishesChildren } from './structureTree';
 import { composedSlotDependencies } from './slotRelations';
 import { insertVariantLeaf } from './extractVariantTokens';
+import { avancer } from './mesure';
+import { respirerSiBesoin } from './porteeDAnalyse';
 import type {
   TextStyleDefinition,
   TextStyleUse,
@@ -288,7 +290,9 @@ export async function extractVariantTypography(
   const typographyByComponent = new Map<ComponentNode, TextStyleUse[]>();
   const axes = matrix.axes.length > 0 ? matrix.axes : ['variant'];
 
-  for (const entry of matrix.variants) {
+  for (const [rang, entry] of matrix.variants.entries()) {
+    avancer(rang, matrix.variants.length);
+    await respirerSiBesoin();
     const layoutNode = layoutNodes.get(entry.component) ?? entry.component;
     const uses: TextStyleUse[] = [];
     for (const { slotPath, textNode } of textSlots(layoutNode, iconNames, composed)) {

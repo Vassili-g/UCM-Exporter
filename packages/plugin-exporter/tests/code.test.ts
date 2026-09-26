@@ -261,10 +261,10 @@ test('une analyse de composant envoie son avancement, puis sa trace au pied de p
   await h.envoyer({ type: 'analyser-composant', operation: 1 });
 
   const avancements = h.messages.flatMap((message) => (message.type === 'avancement' ? [message] : []));
-  // Poids du banc : 1 pour `regles`, 1 pour `structure`, 5 pour `depot`.
+  // Poids du banc : 1 pour `regles`, 1 pour `structure`, 6 pour `depot`.
   assert.deepEqual(avancements.map(({ fraction, fait, total }) => ({ fraction, fait, total })), [
-    { fraction: 1.5 / 7, fait: 1, total: 2 },
-    { fraction: 2 / 7, fait: undefined, total: undefined },
+    { fraction: 1.5 / 8, fait: 1, total: 2 },
+    { fraction: 2 / 8, fait: undefined, total: undefined },
   ]);
   assert.ok(avancements.every(({ operation }) => operation === 1));
 

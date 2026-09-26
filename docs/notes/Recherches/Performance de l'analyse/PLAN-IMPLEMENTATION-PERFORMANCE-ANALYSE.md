@@ -7,7 +7,7 @@ dépendances du composant, sous réserve de la sonde S6. Elle y cherche les
 conteneurs de règles sans descendre dans les calques masqués d'instance. Le
 contrat ne dépend que du fichier Figma. Chaque maître d'instance est
 résolu une fois par analyse. Une retouche ne fait rebalayer que sa page. Un
-changement de sélection arrête l'analyse après au plus 30 ms de calcul, plus
+changement de sélection arrête l'analyse après au plus 200 ms de calcul, plus
 la durée de l'appel Figma en cours. Si la sonde S2 le permet, l'index est prêt
 avant le clic.
 
@@ -472,18 +472,67 @@ avancement.
   Le second est un maximum, pas une somme.
   *Fait, par `retenirLeMaximum` (`mesure.ts`). Vus rouges : le maximum
   muet, l'annonce qui ne compte plus comme contact.*
-- [ ] **L9.3** **[mainteneur]** Analyser le même set de 140 variants et coller
+- [x] **L9.3** **[mainteneur]** Analyser le même set de 140 variants et coller
   la trace sous cette tâche.
-- [ ] **L9.4** Rédactions de la note de chargement, étape par étape, soumises
+  *Fait. Total 27,6 s, même empreinte que la trace précédente :*
+
+  | Étape | ms |
+  |---|---|
+  | `regles` | 6 524 |
+  | `index` | 590 |
+  | `wrapper` | 816 |
+  | `structure.couleurs` | 918 |
+  | `structure.election` | 764 |
+  | `structure.vues` | 9 606 |
+  | `structure.typographie` | 1 267 |
+  | `structure.typographie-exacte` | 2 431 |
+  | `echantillons` | 2 472 |
+  | `depot` | 1 254 |
+  | les neuf autres | 537 |
+
+  *`plusLongSilenceMs` vaut 6 524 : toute l'étape `regles`, qui prenait
+  105 ms dans la trace précédente. `msEnRespiration` vaut 1 241 pour 151
+  respirations, soit 8,2 ms par `setTimeout(0)`. `structure.vues` coûte
+  69 ms par variant. Les compteurs de parcours sont identiques à la trace
+  précédente.*
+- [x] **L9.4** Rédactions de la note de chargement, étape par étape, soumises
   au mainteneur sous cette tâche, au moins deux par étape.
-- [ ] **L9.5** Maquettes des rédactions retenues, dans la galerie, face à
+  *Retenu : le texte de la passe, le compte à droite pendant une boucle, et
+  le temps restant estimé dès 2 s d'analyse. Le nom du variant en cours et le
+  numéro d'étape sont écartés. Textes : « Lecture des variables… »
+  (`wrapper`), « Lecture des couleurs… », « Lecture de la mise en page… »
+  (`structure.election`), « Lecture de chaque variant… », « Lecture de la
+  typographie… », « Préparation des exemples… », « Écriture du contrat… »
+  (`compaction`). Les étapes d'avant `wrapper` et la lecture du dépôt
+  gardent leur texte.*
+- [x] **L9.5** Maquettes des rédactions retenues, dans la galerie, face à
   l'affichage actuel.
-- [ ] **L9.6** Revue indépendante de L9.7 et L9.8 avant le code : elles
+  *Fait. État `analyse-temps-restant`. Le temps restant placé après le compte
+  fait passer le texte de la passe sur deux lignes à 320 px, la largeur
+  minimale du plugin. Il est donc codé sous la barre, en texte secondaire :
+  « Environ 12 s restantes ». En attente de la validation du mainteneur.*
+- [x] **L9.6** Revue indépendante de L9.7 et L9.8 avant le code : elles
   touchent au moteur.
-- [ ] **L9.7** Chaque passe longue appelle `avancer` et `respirerSiBesoin`,
-  et annonce son texte validé. L'intervalle entre deux respirations ne sert
-  qu'à envoyer l'avancement : il se règle sur `plusLongSilenceMs` et
-  `msEnRespiration`, pas sur la fluidité de Figma.
+  *Faite pour L9.7. Retenu : une annonce rend la main aussitôt, et seul ce
+  moment compte comme contact ; le rythme du temps restant se mesure depuis
+  `wrapper`, parce que `regles` et `index` dépendent du document ; les
+  horloges des tests suivent `BUDGET_DE_CALCUL_MS` ; la conception dit le
+  budget ; le compte tu se déclare sur l'étape prévue ; « 60 s » s'écrit
+  « 1 min ». Écarté : respirer dans le `Promise.all` de
+  `extractVariantTokens`. Tout son calcul précède le premier `await`, et
+  des tranches pourraient changer l'ordre des avertissements du résolveur,
+  pour 0,9 s de note immobile. Écarté aussi : porter `annoncer` par la
+  portée d'analyse, dont le fichier porte le travail non commité d'une autre
+  session.*
+- [x] **L9.7** Chaque passe longue appelle `avancer` et `respirerSiBesoin`,
+  et annonce son texte validé.
+  *Fait. `extractStructure` reçoit `annoncer` en dernier paramètre ;
+  l'élection, les deux passes de typographie et les échantillons avancent et
+  respirent à chaque variant ; `structure.typographie` tait son compte
+  (`compte: false`) ; `wrapper` marque l'origine du rythme
+  (`origineDuRythme`) ; `BUDGET_DE_CALCUL_MS` vaut 200 ms. Vus rouges :
+  la boucle de l'élection sans avancement, le compte de la typographie de
+  référence affiché, une annonce que le moteur n'attend plus.*
 - [ ] **L9.8** Accélérer ce que L9.3 désigne. Deux pistes sont écrites
   d'avance. Si les petits parcours dominent : le relevé par variant de L5.1.
   Si les lectures de propriétés dominent : chaque variant est lu par cinq

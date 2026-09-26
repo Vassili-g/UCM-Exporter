@@ -15,8 +15,12 @@ import type { TraceDeMesure } from './contract/mesure';
 
 /**
  * Annonce une étape sans donner au moteur de dépendance vers l'UI.
+ *
+ * Le message ne part que lorsque le sandbox rend la main. L'analyse d'un
+ * composant la rend aussitôt, et la promesse se résout ensuite : le moteur
+ * l'attend pour que le texte paraisse avant le calcul qu'il annonce.
  */
-export type Annonce = (etape: string) => void;
+export type Annonce = (etape: string) => void | Promise<void>;
 
 /** Niveau d'une ligne de compte rendu : il décide de sa couleur et de son marqueur. */
 export type LogLevel = 'info' | 'success' | 'error';
@@ -196,9 +200,11 @@ export type PluginMessage =
   /**
    * L'avancement de l'analyse d'un composant, entre 0 et 1, pour la barre de
    * la note. `fait` et `total` comptent les variants de la boucle en cours,
-   * quand elle en parcourt.
+   * quand elle en parcourt. `resteMs` estime le temps restant, absent tant
+   * que l'analyse n'a pas assez avancé pour l'estimer.
    */
-  | ({ type: 'avancement'; fraction: number; fait?: number; total?: number } & Partial<Provenance>)
+  | ({ type: 'avancement'; fraction: number; fait?: number; total?: number; resteMs?: number }
+    & Partial<Provenance>)
   /**
    * La trace de la dernière analyse terminée : durée par étape, compteurs et
    * empreinte. L'UI la pose en pied de page, à côté de la version de schéma.

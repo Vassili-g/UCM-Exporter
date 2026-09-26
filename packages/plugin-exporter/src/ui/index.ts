@@ -215,7 +215,7 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   if (message.type === 'phase' && resultatActuel(message)) active.ecrireNote('loading', message.texte);
 
   if (message.type === 'avancement' && resultatActuel(message)) {
-    active.ecrireAvancement(message.fraction, message.fait, message.total);
+    active.ecrireAvancement(message.fraction, message.fait, message.total, message.resteMs);
   }
 
   if (message.type === 'mesure') piedDePage.afficherMesure(message.trace);

@@ -637,18 +637,29 @@ function verifierAnnulation(): void {
  */
 function respirer(): Promise<void> {
   signalerAvancement();
+  return rendreLaMain().then(verifierAnnulation);
+}
+
+/**
+ * Laisse partir les messages en attente vers l'interface. Un `setTimeout(0)`
+ * coûte environ 8 ms dans Figma.
+ *
+ * La promesse ne lève jamais : une annonce que le moteur n'attend pas ne
+ * produit aucun rejet non géré, et l'annulation se lit à la respiration ou à
+ * l'annonce suivante.
+ */
+function rendreLaMain(): Promise<void> {
   noterUnContact();
   const debut = Date.now();
   return new Promise<void>((resolve) => setTimeout(resolve, 0)).then(() => {
     compter('msEnRespiration', Date.now() - debut);
     dernierContact = Date.now();
-    verifierAnnulation();
   });
 }
 
 /**
- * Le dernier moment où l'analyse a parlé à l'interface, annonce ou
- * respiration. Le plus long intervalle entre deux contacts est le plus long
+ * Le dernier moment où l'analyse a rendu la main, donc laissé partir ses
+ * messages. Le plus long intervalle entre deux contacts est le plus long
  * moment où la note de chargement n'a pas bougé.
  */
 let dernierContact = 0;
@@ -663,7 +674,7 @@ function noterUnContact(): void {
  * Les étapes d'une analyse de composant, lecture du dépôt comprise. Celles des
  * tokens ne sont pas pesées : leur carte n'a pas de barre.
  */
-const ETAPES_DU_COMPOSANT: readonly EtapePrevue[] = [...ETAPES_DE_L_ANALYSE, { nom: 'depot', poids: 5 }];
+const ETAPES_DU_COMPOSANT: readonly EtapePrevue[] = [...ETAPES_DE_L_ANALYSE, { nom: 'depot', poids: 6 }];
 
 /** La provenance de l'analyse en cours, et le dernier avancement envoyé. */
 let avancementDeLAnalyse: { provenance: Provenance; envoye: string } | null = null;
@@ -677,7 +688,8 @@ let avancementDeLAnalyse: { provenance: Provenance; envoye: string } | null = nu
 function signalerAvancement(): void {
   const avancement = avancementCourant();
   if (!avancement || !avancementDeLAnalyse) return;
-  const cle = `${Math.floor(avancement.fraction * 100)}:${avancement.fait ?? ''}/${avancement.total ?? ''}`;
+  const secondes = avancement.resteMs === undefined ? '' : Math.ceil(avancement.resteMs / 1000);
+  const cle = `${Math.floor(avancement.fraction * 100)}:${avancement.fait ?? ''}/${avancement.total ?? ''}:${secondes}`;
   if (cle === avancementDeLAnalyse.envoye) return;
   avancementDeLAnalyse.envoye = cle;
   versUi({ type: 'avancement', ...avancement, ...avancementDeLAnalyse.provenance });
@@ -759,7 +771,7 @@ async function analyser(
       verifierAnnulation();
       versUi({ type: 'phase', texte, ...provenance });
       signalerAvancement();
-      noterUnContact();
+      return rendreLaMain();
     }, { respirer });
     verifierAnnulation();
 

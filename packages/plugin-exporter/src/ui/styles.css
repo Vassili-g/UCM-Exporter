@@ -311,6 +311,12 @@
   transition: width 150ms linear;
 }
 
+.note-reste {
+  margin-top: var(--espace-serre);
+  color: var(--texte-second);
+  font-variant-numeric: tabular-nums;
+}
+
 .note[data-state='success'] {
   color: var(--texte-succes);
 }

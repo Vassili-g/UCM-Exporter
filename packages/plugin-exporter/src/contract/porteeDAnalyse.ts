@@ -26,7 +26,7 @@ type Portee = {
  * sélection n'est pas lu, et l'annulation coopérative de `code.ts` attend la
  * fin de l'étape. Au-delà de ce budget, la boucle en cours rend la main.
  */
-export const BUDGET_DE_CALCUL_MS = 30;
+export const BUDGET_DE_CALCUL_MS = 200;
 
 let portee: Portee | null = null;
 let desactivee = false;

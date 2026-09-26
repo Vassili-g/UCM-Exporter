@@ -24,7 +24,7 @@ export interface CarteCommandeUi {
   compteRendu: CompteRenduUi;
   ecrireNote(etat: EtatNote, texte: string | null): void;
   /** Avance la barre d'une note en chargement ; sans effet dans un autre état. */
-  ecrireAvancement(fraction: number, fait?: number, total?: number): void;
+  ecrireAvancement(fraction: number, fait?: number, total?: number, resteMs?: number): void;
   proposerPublication(action: string | null): BoutonUi;
   marquerOccupee(occupee: boolean): void;
   reinitialiser(): void;
@@ -37,6 +37,20 @@ export interface CarteCommandeUi {
 export interface OptionsCarteConcrete {
   onAnalyser: () => void;
   onPublier: () => void;
+}
+
+/**
+ * « Environ 8 s restantes », « Environ 1 min restante ». Au-delà de 20 s,
+ * l'estimation s'arrondit à 5 s : elle bouge à chaque respiration, et un
+ * chiffre qui saute d'une seconde à l'autre se lit comme une erreur.
+ */
+export function tempsRestant(ms: number): string {
+  const secondes = Math.max(1, Math.ceil(ms / 1000));
+  const arrondies = secondes > 20 ? Math.round(secondes / 5) * 5 : secondes;
+  const [valeur, unite] = arrondies >= 60
+    ? [Math.round(secondes / 60), 'min']
+    : [arrondies, 's'];
+  return `Environ ${valeur} ${unite} ${valeur > 1 ? 'restantes' : 'restante'}`;
 }
 
 /** Construit une carte dont l'appelant fournit le sujet et les opérations. */
@@ -95,7 +109,12 @@ export function createCarteCommande({
   barreRemplie.className = 'note-barre-remplie';
   barre.append(barreRemplie);
 
-  note.append(noteCompte, noteTexte, barre);
+  const noteReste = document.createElement('div');
+  noteReste.className = 'note-reste';
+  noteReste.setAttribute('aria-hidden', 'true');
+  noteReste.hidden = true;
+
+  note.append(noteCompte, noteTexte, barre, noteReste);
 
   const compteRendu = createCompteRendu();
 
@@ -108,17 +127,20 @@ export function createCarteCommande({
     if (etat !== 'loading') {
       barre.hidden = true;
       noteCompte.hidden = true;
+      noteReste.hidden = true;
       barreRemplie.style.width = '0%';
     }
   }
 
-  function ecrireAvancement(fraction: number, fait?: number, total?: number) {
+  function ecrireAvancement(fraction: number, fait?: number, total?: number, resteMs?: number) {
     if (note.dataset.state !== 'loading') return;
     barre.hidden = false;
     barreRemplie.style.width = `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}%`;
     const compte = fait !== undefined && total !== undefined ? `${fait} / ${total}` : '';
     noteCompte.textContent = compte;
     noteCompte.hidden = !compte;
+    noteReste.textContent = resteMs !== undefined ? tempsRestant(resteMs) : '';
+    noteReste.hidden = !noteReste.textContent;
   }
 
   return {

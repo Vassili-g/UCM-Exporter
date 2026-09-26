@@ -657,6 +657,23 @@ const ETATS = [
     ],
   },
   {
+    id: 'analyse-temps-restant',
+    titre: 'Analyse en cours, temps restant estimé',
+    quand:
+      "Après 2 s d'analyse, chaque avancement porte le temps restant, estimé d'après le poids des étapes.",
+    regarder:
+      'Le temps restant tient sa propre ligne sous la barre, en texte secondaire : à 320 px, le texte de la passe et le compte restent sur une ligne. Le texte nomme la passe en cours.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      { message: { type: 'phase', texte: 'Lecture de chaque variant…' } },
+      { message: { type: 'avancement', fraction: 0.48, fait: 64, total: 140, resteMs: 11200 } },
+    ],
+  },
+  {
     id: 'mesure-de-l-analyse',
     titre: 'Durée de la dernière analyse, dépliée',
     quand:

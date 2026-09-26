@@ -111,7 +111,8 @@ Nouveau module `src/contract/mesure.ts`. Il tient, pour une analyse :
   `nodesParcourus` (somme des longueurs rendues par `findAll` dans
   `getAllNodes`), `appelsGetAllNodes`, `appelsFindAllWithCriteria`,
   `appelsGetMainComponentAsync`, `maitresReutilises`, `respirations`,
-  `msEnRespiration`, `tailleIndex` ;
+  `msEnRespiration`, `msGetAllNodes`, `tailleIndex`. Chaque étape close
+  porte aussi ce que ces compteurs ont gagné pendant elle ;
 - un maximum : `plusLongSilenceMs`, le plus long intervalle entre deux
   contacts de l'analyse avec l'interface, annonce ou respiration. C'est le plus
   long moment où la note de chargement reste immobile ;
@@ -129,8 +130,15 @@ La même trace porte l'avancement de la barre de chargement. Chaque étape de
 `ETAPES_DE_L_ANALYSE` a un poids, et les boucles longues (pages de l'index,
 tranches de la composition, variants de la structure) disent où elles en sont
 par `avancer`. `code.ts` envoie l'avancement à chaque annonce et à chaque
-respiration, au plus une fois par point de pourcentage. Les poids sont une
-estimation à corriger d'après les traces relevées.
+respiration, au plus une fois par point de pourcentage ou par seconde de
+temps restant. Les poids sont une estimation à corriger d'après les traces
+relevées.
+
+Le temps restant vaut le temps écoulé multiplié par `(1 - fraction) /
+fraction`. Il n'est rendu qu'après 2 s d'analyse et 5 % d'avancement : plus
+tôt, une première étape lente ferait annoncer plusieurs minutes. L'interface
+l'écrit sous la barre, « Environ 12 s restantes », arrondi à 5 s au-delà de
+20 s.
 
 ### 5.2. La portée d'analyse et le résolveur de maîtres (L1)
 
@@ -269,14 +277,26 @@ aucune page.
 ### 5.6. Rendre la main (L4)
 
 `respirer`, passé par `code.ts`, fait un `setTimeout(0)` puis
-`verifierAnnulation()`. `respirerSiBesoin` ne l'appelle que si 30 ms au moins
-se sont écoulées depuis la dernière respiration.
+`verifierAnnulation()`. `respirerSiBesoin` ne l'appelle que si
+`BUDGET_DE_CALCUL_MS`, 200 ms, se sont écoulées depuis la dernière
+respiration. Dans Figma, un `setTimeout(0)` coûte environ 8 ms : à 200 ms, les
+respirations coûtent 4 % du calcul, et la note de chargement bouge cinq fois
+par seconde. Figma reste figé pendant l'analyse ; le mainteneur l'accepte, et
+le budget ne se règle que sur l'envoi de l'avancement et sur l'annulation.
 
-Trois boucles l'appellent : `scanComposedMatrix` entre deux tranches de 16
-variants, la boucle par variant de `extractStructure` à chaque tour, et le
-calcul de l'index entre deux pages. Une annulation lève `ExportAnnule` depuis
-la respiration ; le `catch` d'`analyser` la traite déjà, et la portée se ferme
+Ces boucles l'appellent : `scanComposedMatrix` entre deux tranches de 16
+variants, le calcul de l'index entre deux pages, et chaque boucle par variant
+séquentielle, c'est-à-dire l'élection des nodes de layout, les vues exactes de
+`extractStructure`, les deux passes de typographie et les échantillons.
+`extractVariantTokens` ne respire pas : son `Promise.all` fait tout son calcul
+avant le premier `await`, et le découper pourrait changer l'ordre des
+avertissements du résolveur. Une annulation lève `ExportAnnule` depuis la
+respiration ; le `catch` d'`analyser` la traite déjà, et la portée se ferme
 dans son `finally`.
+
+Chaque annonce rend aussi la main, sans lire l'annulation : sans cela, son
+texte n'atteindrait l'interface qu'à la respiration suivante, souvent après le
+calcul qu'elle annonce. Le moteur attend l'annonce.
 
 ### 5.7. Accélérations conditionnelles (L5)
 

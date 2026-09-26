@@ -25,6 +25,7 @@ const SOURCES = [
   '../src/prevol.ts',
   '../src/template/ecriture.ts',
   '../src/template/sources.ts',
+  '../src/ui/components/CarteCommande.ts',
   '../src/ui/components/CarteComposant.ts',
   '../src/ui/components/ConfigurationPage.ts',
   '../src/ui/components/CarteDepot.ts',

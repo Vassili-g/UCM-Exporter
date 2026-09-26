@@ -11,7 +11,7 @@ import test from 'node:test';
 import exporterLeComposant, { ETAPES_DE_L_ANALYSE } from '../src/contract/exportComponent';
 import { abandonnerLaMesure, avancementCourant, ouvrirLaMesure } from '../src/contract/mesure';
 import type { Avancement } from '../src/contract/mesure';
-import { respirerSiBesoin } from '../src/contract/porteeDAnalyse';
+import { BUDGET_DE_CALCUL_MS, respirerSiBesoin } from '../src/contract/porteeDAnalyse';
 import { conteneurDeRegles, handleExportComponent, node } from './aides/figmaFaux';
 import { sansDate } from './aides/parite';
 
@@ -113,13 +113,13 @@ test('dans la portée, chaque instance ne demande son maître qu’une fois', as
 });
 
 /**
- * Une horloge qui avance de 31 ms à chaque lecture : chaque appel à
- * `respirerSiBesoin` trouve son budget écoulé.
+ * Une horloge qui avance d'un budget de calcul à chaque lecture : chaque appel
+ * à `respirerSiBesoin` trouve son budget écoulé.
  */
 function horlogeRapide(): () => void {
   const vraie = Date.now;
   let instant = vraie();
-  Date.now = () => (instant += 31);
+  Date.now = () => (instant += BUDGET_DE_CALCUL_MS + 1);
   return () => {
     Date.now = vraie;
   };
@@ -130,12 +130,12 @@ test('une annulation pendant la boucle des variants arrête l’analyse avant le
   const remettre = horlogeRapide();
   try {
     class Annulee extends Error {}
-    // Après « Écriture du contrat… », seule la boucle par variant de
-    // `extractStructure` respire : le compte dit où l'analyse en est.
+    // Entre « Lecture de chaque variant… » et l'annonce suivante, seule la
+    // boucle des vues exactes respire : le compte dit où l'analyse en est.
     let ecriture = false;
     let dansLaBoucle = 0;
     const annoncer = (etape: string) => {
-      if (etape.startsWith('Écriture')) ecriture = true;
+      ecriture = etape === 'Lecture de chaque variant…';
     };
     await exporterLeComposant(annoncer, {
       respirer: async () => {
@@ -158,6 +158,30 @@ test('une annulation pendant la boucle des variants arrête l’analyse avant le
     remettre();
     fichier.restaurer();
   }
+});
+
+test('le moteur attend chaque annonce avant le calcul qu’elle annonce', async () => {
+  const fichier = monterLeSet(8);
+  const remettre = horlogeRapide();
+  let enAttente: string | null = null;
+  const devancees: string[] = [];
+  try {
+    await exporterLeComposant((texte) => {
+      enAttente = texte;
+      return new Promise<void>((resolve) => setTimeout(() => {
+        enAttente = null;
+        resolve();
+      }, 0));
+    }, {
+      respirer: async () => {
+        if (enAttente) devancees.push(enAttente);
+      },
+    });
+  } finally {
+    remettre();
+    fichier.restaurer();
+  }
+  assert.deepEqual(devancees, []);
 });
 
 test('quarante variants donnent le même contrat et les mêmes avertissements, avec ou sans respirations', async () => {
@@ -186,16 +210,23 @@ test('quarante variants donnent le même contrat et les mêmes avertissements, a
   }
 });
 
-test('à chaque respiration, l’avancement compte les variants de la boucle et ne recule jamais', async () => {
+test('à chaque respiration, l’avancement compte les variants de chaque passe annoncée et ne recule jamais', async () => {
   const fichier = monterLeSet(8);
   const remettre = horlogeRapide();
   const releves: Avancement[] = [];
+  const comptesParPasse = new Map<string, number[]>();
+  let passe = '';
   ouvrirLaMesure(ETAPES_DE_L_ANALYSE);
   try {
-    await exporterLeComposant(() => {}, {
+    await exporterLeComposant((texte) => {
+      passe = texte;
+    }, {
       respirer: async () => {
         const avancement = avancementCourant();
-        if (avancement) releves.push(avancement);
+        if (!avancement) return;
+        releves.push(avancement);
+        if (avancement.total !== 8) return;
+        comptesParPasse.set(passe, [...comptesParPasse.get(passe) ?? [], avancement.fait!]);
       },
     });
   } finally {
@@ -203,8 +234,15 @@ test('à chaque respiration, l’avancement compte les variants de la boucle et 
     remettre();
     fichier.restaurer();
   }
-  const comptes = releves.filter(({ total }) => total === 8).map(({ fait }) => fait);
-  assert.deepEqual(comptes, [0, 1, 2, 3, 4, 5, 6, 7]);
+  // La typographie de référence tait son compte : seule la passe exacte compte
+  // sous « Lecture de la typographie… ».
+  const unParVariant = [0, 1, 2, 3, 4, 5, 6, 7];
+  assert.deepEqual(Object.fromEntries(comptesParPasse), {
+    'Lecture de la mise en page…': unParVariant,
+    'Lecture de chaque variant…': unParVariant,
+    'Lecture de la typographie…': unParVariant,
+    'Préparation des exemples…': unParVariant,
+  });
   for (let rang = 1; rang < releves.length; rang += 1) {
     assert.ok(releves[rang].fraction >= releves[rang - 1].fraction, 'la barre a reculé');
   }

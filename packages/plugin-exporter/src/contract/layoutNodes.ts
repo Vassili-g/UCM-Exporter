@@ -17,7 +17,8 @@
 import { findWrapperReference } from './componentTree';
 import type { WrapperReference } from './componentTree';
 import { getAllNodes } from './exportableNodes';
-import { maitreDe } from './porteeDAnalyse';
+import { avancer } from './mesure';
+import { maitreDe, respirerSiBesoin } from './porteeDAnalyse';
 import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, hasCompleteBinding } from './nodeBindings';
 import { pousserLocalise } from './localisation';
@@ -135,7 +136,9 @@ export async function electVariantLayoutNodes(
   // propriété pour un appelant qui construirait la référence autrement.
   const racineDeLaReference = wrapperOwnerId ? wrapperInstance : null;
 
-  for (const variant of variants) {
+  for (const [rang, variant] of variants.entries()) {
+    avancer(rang, variants.length);
+    await respirerSiBesoin();
     // Le variant de référence part du wrapper déjà trouvé pour lui.
     if (variant === reference?.component) {
       nodes.set(variant, findLayoutNode(racineDeLaReference ?? variant, warnings, composed));
