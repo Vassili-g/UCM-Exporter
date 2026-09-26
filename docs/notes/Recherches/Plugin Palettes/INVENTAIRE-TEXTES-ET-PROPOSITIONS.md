@@ -725,6 +725,9 @@ Le plan d’ergonomie crée des contrôles et des états que l’inventaire ne c
 | N114 | Onglets du sélecteur de la couleur de référence (X2.7, R3) ; détail d’une nuance, encadrés (X2.8) | Choisir ou ajuster la couleur · Choisir · Ajuster · Aucun rôle du modèle ne vise cette nuance. · Contrastes de la nuance | Maquettes X2.7 et X2.8 |
 | N115 | Emploi `surface-card` (X6) : nom du rôle, ligne d’usage de la planche, spécimens ; réécrit les exemples des fonds légers de N094 | fond de carte · Fonds de carte · carte, panneau, en-tête de tableau · Carte · bouton soft, badge, encart | À valider |
 | N112 | Pastille d’un niveau WCAG : forme B des maquettes X2.3, teintes adoucies | AAA · AA · AA ✗ | Mainteneur, retour sur X2.3 |
+| N116 | Gestes d’une fiche de l’onglet Planches (plan V5, Y1.9), après « Générer sur Figma » ou « Actualiser sur Figma » de N105 ; remplace N010 | Afficher · Modifier | Mainteneur, round 5 |
+| N117 | Gestes globaux de l’onglet Planches (plan V5, Y1.8) ; remplace N049 et T300 | Mettre à jour ({nombre} palettes) · Générer tout ({nombre} palettes) · (1 palette) au singulier | Mainteneur, round 5 et Q5.5 |
+| N118 | Textes retirés avec la génération de l’onglet Palettes et le bilan de la dérive (plan V5, Y1.2 et Y1.3) : T100 et les autres statuts d’enregistrement, « À jour sur Figma » et « Génération… » de N105, N042 | — | Retiré |
 
 ## Points à conserver lors de l’application
 

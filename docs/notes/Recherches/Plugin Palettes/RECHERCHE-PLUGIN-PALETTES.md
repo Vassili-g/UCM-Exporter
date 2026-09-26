@@ -1122,7 +1122,6 @@ titre et, à droite, le résumé du préréglage et de la synchronisation.
 ├────────────────────────────────────────────────────────────────────────────────┤
 │ Nuances claires  [ −7,5 ]°  ◂━━━━━━━━●━━━━━━━━▸   ┊ Tailwind −7,5°             │
 │ Nuances sombres  [ +5,1 ]°  ◂━━━━━━━━━━●━━━━━━▸   ┊ Tailwind +5,1°             │
-│ Garanties : Soft ✓ · Vivid ✗ 2                    Voir les garanties           │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1168,10 +1167,8 @@ titre et, à droite, le résumé du préréglage et de la synchronisation.
 - `[DER-06]` Sur chaque réglette, un repère fin marque la valeur du préréglage
   Tailwind, même quand la dérive est libre. Le designer voit ainsi l'écart avec
   Tailwind sans changer de préréglage.
-- `[DER-17]` Sous les réglettes, une ligne donne le résultat des garanties de
-  chaque profil, comme la bascule de `[UI-09]`, et « Voir les garanties » mène
-  à leur carte. Elle suit le réglage. Les annonces assistives se regroupent à
-  la fin du geste, sans lecture de chaque valeur pendant un glisser.
+- `[DER-17]` L'éditeur ne redit pas le résultat des garanties : la carte des
+  garanties le porte (`[UI-09]`), et son en-tête replié le résume.
 
 ### 12.2 Ce que le designer fait
 
@@ -1216,20 +1213,22 @@ titre et, à droite, le résumé du préréglage et de la synchronisation.
 
 ### 13.1 Fenêtre et onglets
 
-- `[UI-01]` Taille par défaut 600 × 720, minimale 500 × 520, rangée sous une
+- `[UI-01]` Taille par défaut 650 × 720, minimale 500 × 520, rangée sous une
   clé propre au plugin par la fenêtre du socle. La poignée de
   redimensionnement ne descend pas sous la largeur minimale, et une taille
-  rangée plus étroite s'ouvre à 500 px. Le designer peut élargir la fenêtre.
+  rangée plus étroite s'ouvre à 500 px. Une taille rangée égale à l'ancien
+  défaut, 600 × 720, s'ouvre à 650 × 720 ; toute autre taille rangée se
+  garde. Le designer peut élargir la fenêtre.
 - `[UI-02]` Deux onglets, **Palettes** et **Planches**, et un bouton en forme
   d'engrenage dans l'en-tête, qui ouvre les Réglages communs (section 8.3)
-  comme celui d'UCM Exporter ouvre sa configuration. L'onglet Palettes génère
-  la palette ouverte. L'onglet Planches montre chaque palette, dans l'ordre de
-  la recette : son nom, ses rampes Soft et Vivid dans le thème choisi en tête
-  de l'onglet, sa référence, le résultat Soft et Vivid de ses garanties et
-  l'état de son cadre, avec trois gestes, « Afficher dans Figma »,
-  « Modifier la palette » et « Générer sur Figma ». Il propose aussi de générer
-  les palettes à mettre à jour, ou toutes, et range dans une section
-  secondaire l'export et l'import des palettes et réglages et l'export du
+  comme celui d'UCM Exporter ouvre sa configuration. L'onglet Palettes ne
+  génère rien : la génération appartient à l'onglet Planches (`[UI-05]`), qui
+  montre chaque palette, dans l'ordre de la recette : son nom, ses rampes Soft
+  et Vivid dans le thème choisi en tête de l'onglet, sa référence, le résultat
+  Soft et Vivid de ses garanties et l'état de son cadre, avec ses gestes. Il
+  propose aussi « Mettre à jour (2 palettes) », qui génère les palettes à
+  mettre à jour, et « Générer tout (3 palettes) », au singulier pour une
+  palette. Il range dans une section secondaire l'export et l'import des palettes et réglages et l'export du
   rapport. Chaque palette supprimée dont le cadre reste dans Figma a sa
   carte : son nom, une phrase, « Afficher dans Figma » et « Supprimer
   définitivement » (`[PLA-27]`).
@@ -1250,8 +1249,7 @@ Onglet Palettes, une palette ouverte, à 600 × 720 :
 ┌──────────────────────────────────────────────────────────────────────┐
 │ [● Bleu marque                            ▾] [Nouvelle palette] [⋯]  │
 │   la création s'ouvre ici, en carte, seulement après [Nouvelle …]     │
-│ Palette Bleu marque                             [Générer sur Figma]   │
-│ Enregistré · Afficher dans Figma                                      │
+│ Palette Bleu marque                                                   │
 │ ┌ Configuration de la palette ────────────────────────────────────┐  │
 │ │ Nom de la palette    Couleur de référence   Palette de base     │  │
 │ │ [Bleu marque     ]   [■ #1E6FD9        ]    [Auto|Soft|Vivid]   │  │
@@ -1287,14 +1285,15 @@ Onglet Palettes, une palette ouverte, à 600 × 720 :
 ```
 
 À 500 × 520, la même disposition tient en largeur : le nom de la palette se
-coupe avant le bouton de génération, les noms de profil
+coupe, les noms de profil
 restent à gauche des rangées, et les trois colonnes de « Configuration de la
 palette » gardent leurs libellés au-dessus des champs.
 
 - `[UI-04]` L'aperçu occupe la largeur utile de sa carte : ses colonnes se
   calculent après les espacements et les bordures réels. La carte n'a pas de
   titre. Son en-tête porte à gauche les onglets Light et Dark ; l'onglet actif
-  prend un fond plus foncé, lisible aux deux thèmes de Figma, et garde
+  prend le fond que toutes les bascules à onglets du plugin donnent à leur
+  onglet actif, distinct de la carte aux deux thèmes de Figma, et garde
   `aria-pressed`. À droite, la pastille du fond du thème est un bouton : elle
   ouvre le sélecteur de couleur sur ce fond, et une ligne sous le sélecteur
   dit que le fond vaut pour toutes les palettes. La saisie change le réglage
@@ -1325,19 +1324,21 @@ palette » gardent leurs libellés au-dessus des champs.
   referme le détail, et le focus reste sur elle ; le survol signale la
   cible sans déplacer la page. Les flèches, Origine et Fin déplacent le focus ;
   une copie de code est un geste distinct de la sélection.
-- `[UI-05]` Le geste de génération, un bouton secondaire, se pose à droite du
-  titre « Palette [nom] », sur la même ligne. « Nouvelle palette » est le seul
-  bouton principal de l'onglet, et un filet sépare la barre du sélecteur et la
-  création de la palette ouverte. Il enregistre la palette si un geste est en
-  attente, puis génère son cadre, grille des contrastes comprise : la
-  génération n'a pas d'option. Son libellé dit l'état du cadre : « Générer
-  sur Figma » sans cadre, « Actualiser sur Figma » quand le cadre a changé,
-  « À jour sur Figma », inactif, quand il est à jour. Un cadre introuvable ou
-  illisible garde « Générer sur Figma », et son état s'écrit sous le titre.
-  Cette ligne de rang 3 porte aussi l'état de l'enregistrement, la
-  progression pendant la génération, où le bouton dit « Génération… », et
-  « Afficher dans Figma » quand le cadre est localisé. L'erreur ou les écarts
-  de peinture viennent dessous : un nouveau résultat remplace le précédent.
+- `[UI-05]` La génération appartient à l'onglet Planches. Le premier geste
+  d'une fiche dit l'état du cadre : « Générer sur Figma » sans cadre ou pour
+  un cadre introuvable, « Actualiser sur Figma » quand le cadre a changé. Un
+  cadre à jour ou illisible n'en a pas. Ce geste est le bouton principal de la
+  fiche ; suivent « Afficher » quand le cadre est localisé, puis « Modifier ».
+  Les trois prennent la taille compacte du bouton du socle, 24 px, comme les
+  gestes de la carte d'une palette supprimée. Le geste enregistre la palette
+  si un rangement est en attente, puis génère son cadre, grille des contrastes
+  comprise : la génération n'a pas d'option. Pendant la génération, les deux
+  onglets sont inertes et la progression prend la place de « Générer tout ».
+  L'erreur, la confirmation des calques étrangers ou les écarts de peinture se
+  lisent en tête de l'onglet Planches : un nouveau résultat remplace le
+  précédent. L'onglet Palettes n'en montre aucun. « Nouvelle palette » est le
+  seul bouton principal de l'onglet Palettes, et un filet sépare la barre du
+  sélecteur et la création de la palette ouverte, à 15 px de chacune.
 - `[UI-09]` La carte « Garanties de contraste » suit la Dérive de teinte et
   montre le thème que l'aperçu a choisi, qu'elle nomme dans son en-tête.
   Repliée à l'ouverture, comme toutes les cartes repliables de l'onglet, elle
@@ -1389,9 +1390,10 @@ palette » gardent leurs libellés au-dessus des champs.
   s'écrit deux fois, et aucun ratio ne s'affiche sans le nom de ce qu'il
   compare.
 - `[UI-11]` Le titre de premier rang est « Palette [nom] », avec le nom que le
-  sélecteur affiche, et le geste de génération à sa droite (`[UI-05]`) ; il
-  suit un changement de nom pendant la saisie, sans retirer le focus du
-  champ. La carte « Configuration de la palette » ouvre la
+  sélecteur affiche, seul sur sa ligne ; il suit un changement de nom pendant
+  la saisie, sans retirer le focus du champ. Dessous ne se lisent que le refus
+  d'un enregistrement et le conflit, avec leurs gestes ; un enregistrement
+  réussi ne s'annonce pas. La carte « Configuration de la palette » ouvre la
   configuration, en trois colonnes égales, libellé au-dessus du champ : Nom
   de la palette, Couleur de référence (pastille cliquable et code
   hexadécimal), Modèle (Standard ou Libre). Dans le modèle, la palette de base
@@ -1497,10 +1499,10 @@ Onglet Planches :
 │ │ Soft  ▪▪▪▪▪▪▪▪▪▪▪                                        │ │
 │ │ Vivid ▪▪▪▪▪▪◆▪▪▪▪   Référence : Vivid · nuance 600        │ │
 │ │ Soft ✓  Vivid ✗ 2                                   À jour │ │
-│ │ [Afficher dans Figma] [Modifier la palette] [Générer…]   │ │
+│ │ [Générer sur Figma] [Afficher] [Modifier]                │ │
 │ └──────────────────────────────────────────────────────────┘ │
 │ … une fiche par palette                                       │
-│ [Générer les 2 palettes qui ne sont pas à jour] [Générer toutes] │
+│ [Mettre à jour (2 palettes)] [Générer tout (3 palettes)]      │
 │ ┌ Ardoise ──────────────────────────── teinte d'avertissement ┐ │
 │ │ phrase courte : palette supprimée, cadre resté dans Figma  │ │
 │ │ [Afficher dans Figma] [Supprimer définitivement]           │ │
@@ -1570,12 +1572,12 @@ qui le créera.
 | Référence hors de la rampe | Une poignée masquée et sa note, la référence à l'extrémité |
 | Couleur presque grise | Éditeur désactivé, alerte |
 | Palette avec points à vérifier seuls | Garanties respectées, points à vérifier sous la carte qu'ils concernent |
-| Génération en cours | Progression, aucun geste possible |
-| Génération réussie | « À jour sur Figma » inactif à droite du titre, « Afficher dans Figma » dessous |
-| Titre et génération | « Générer sur Figma » sans cadre, « Actualiser sur Figma » sur un cadre périmé, un nom long coupé devant le bouton |
+| Génération en cours | Progression à la place de « Générer tout », aucun geste possible |
+| Génération réussie | La fiche « À jour » sans premier geste, « Afficher » et « Modifier » |
+| Titre seul | « Palette [nom] » seul sur sa ligne, un nom long coupé |
 | Génération partielle | Palettes déjà créées nommées, palette fautive, reprise possible |
 | Génération interrompue | Arrêt nommé, cadre précédent conservé, détail technique replié, « Réessayer » |
-| Confirmation au-delà de six palettes | « Générer toutes les palettes » demande confirmation |
+| Confirmation au-delà de six palettes | « Générer tout » demande confirmation |
 | Onglet Planches sans palette | Aucune palette à générer, geste vers l'onglet Palettes |
 | Planche à jour | Chaque fiche dit « À jour » |
 | Planche à mettre à jour | Fiches à mettre à jour, ou jamais générées et sans état écrit, génération groupée |

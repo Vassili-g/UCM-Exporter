@@ -248,11 +248,10 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
 - la barre du sélecteur vient en tête : la liste déroulante prend toute la
   largeur libre, « Nouvelle palette » et « … » gardent leur largeur
   naturelle et la hauteur de la liste. Suit un seul titre de premier rang,
-  « Palette [nom] », avec le nom que le sélecteur affiche, et le bouton de
-  génération à sa droite, sur la même ligne : un nom long se coupe, le bouton
-  garde son libellé entier. « Nouvelle palette » est le bouton principal de
-  l'onglet ; la génération est un bouton secondaire. Un filet sépare la barre
-  et la carte de création de la palette ouverte. Chaque sous-section
+  « Palette [nom] », avec le nom que le sélecteur affiche, seul sur sa
+  ligne : un nom long se coupe. « Nouvelle palette » est le bouton principal
+  de l’onglet, qui ne génère rien. Un filet sépare la barre et la carte de
+  création de la palette ouverte, à 15 px de chacune. Chaque sous-section
   de la configuration est une carte de même facture : fond secondaire de
   Figma, bordure du socle, rayon de 8 px, sans ombre. Trois niveaux de titre,
   pas davantage : le titre de premier rang, le titre de carte et le libellé de
@@ -267,15 +266,19 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
   l’ouverture ; leur en-tête est un bouton qui
   porte le chevron, le titre et un résumé aligné à droite ;
 - la carte d’aperçu n’a pas de titre : son en-tête porte à gauche les onglets
-  Light et Dark, l’onglet actif sur un fond plus foncé, et à droite la
+  Light et Dark, et à droite la
   pastille du fond, qui ouvre le sélecteur de couleur. L’aperçu est une
   surface peinte du fond du thème choisi, à l’intérieur de sa carte. Il peut
   occuper la plus grande part du panneau. La ligne « ◆ Référence » se lit sous
   lui ;
-- la génération n’a pas de carte. Sous le titre, une ligne de rang 3 porte
-  l’état de l’enregistrement, la progression et l’accès au cadre ; l’erreur
-  ou les écarts de peinture viennent dessous, et un nouveau résultat remplace
-  le précédent au même endroit ;
+- la génération appartient à l’onglet Planches : sa progression et son
+  résultat s’y lisent, et un nouveau résultat remplace le précédent au même
+  endroit. Sous le titre de l’onglet Palettes ne se lisent que le refus d’un
+  enregistrement et le conflit ; un enregistrement réussi ne s’annonce pas ;
+- toutes les bascules à onglets, thème, profil et vue, donnent à l’onglet
+  actif le même fond, distinct de la carte aux deux thèmes de Figma. Un
+  segment qui choisit une valeur, modèle, palette de base ou préréglage,
+  garde le fond des blocs ;
 - un geste destructif prend la variante `danger` du bouton du socle : fond et
   survol de danger, jamais la couleur de marque ;
 - un message qui n’est pas une garantie de contraste n’a pas de carte : il
@@ -287,10 +290,13 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
   palette ouverte en tête, puis Couleurs de fond, Intensités, Luminosité des
   nuances, et deux cartes repliées de seuils. Une carte fixe porte son compte
   de palettes et « Rétablir » à droite de son titre ;
-- dans l’onglet Planches, une palette supprimée dont le cadre reste dans Figma
-  a sa carte, de même facture que les fiches, avec un fond et une bordure
-  dérivés de la couleur d’avertissement du socle. La couleur de danger ne s’y
-  applique pas : aucun geste n’y a échoué.
+- dans l’onglet Planches, les gestes d’une fiche prennent la taille compacte
+  du bouton du socle, 24 px : le premier geste, quand le cadre en demande un,
+  est le bouton principal, puis « Afficher » et « Modifier ». Une palette
+  supprimée dont le cadre reste dans Figma a sa carte, de même facture que
+  les fiches, avec des gestes de même taille, et un fond et une bordure
+  dérivés de la couleur d’avertissement du socle, mêlée au fond de la page.
+  La couleur de danger ne s’y applique pas : aucun geste n’y a échoué.
 
 Le bleu de marque signale une action ou une sélection, jamais une section.
 

@@ -202,23 +202,32 @@ interaction ni une sauvegarde.
   crans 600 et 700 de chaque profil en Light et en Dark, avec le moteur.
   Fait, avec `#DC2626` en plus : les chiffres sont dans les faits et dans
   l’avis. La mesure a ajouté le constat des fonds sombres, repris en Y7.
-- [ ] **Y0.3** Mettre à jour « Les surfaces d’UCM Palettes » dans
+- [x] **Y0.3** Mettre à jour « Les surfaces d’UCM Palettes » dans
   CONTRIBUTING.md : génération dans l’onglet Planches seul, style unique des
-  onglets, taille compacte des gestes d’une fiche.
-- [ ] **Y0.4** Mettre à jour la spécification : `[UI-05]` et `[UI-11]`
+  onglets, taille compacte des gestes d’une fiche. Fait, avec le filet à
+  15 px et la carte d’une palette supprimée mêlée au fond de la page.
+- [x] **Y0.4** Mettre à jour la spécification : `[UI-05]` et `[UI-11]`
   (ligne du titre sans génération), `[UI-01]` (taille par défaut), et les
   marqueurs des onglets et des fiches. Les intensités d’une palette,
   `[ENT-11]`, `[MOT-17]`, `[PLA-14]`, `[PLA-18]`, les fonds sombres et le
-  contenu des planches entrent avec leurs lots.
-- [ ] **Y0.5** Inventaire des textes : « Afficher », « Modifier », « Mettre à
+  contenu des planches entrent avec leurs lots. Fait : `[UI-01]`, `[UI-02]`,
+  `[UI-04]`, `[UI-05]` récrit autour de la fiche, `[UI-11]`, `[DER-17]`
+  (plus de bilan dans la dérive), les deux schémas et la table des états.
+- [x] **Y0.5** Inventaire des textes : « Afficher », « Modifier », « Mettre à
   jour (N palettes) » et « Générer tout (N palettes) », dictés ; les
   libellés retirés de la ligne du titre et de la carte Dérive marqués
-  retirés. Les textes nouveaux des lots entrent « À valider ».
-- [ ] **Y0.6** Déclarer dans `galerie/etats.cjs` les états de ce plan :
+  retirés. Les textes nouveaux des lots entrent « À valider ». Fait : N116,
+  N117 et N118.
+- [x] **Y0.6** Déclarer dans `galerie/etats.cjs` les états de ce plan :
   palette à une intensité, à deux ; fiche refaite ; carte « Contenu des
   planches » ; grille des États ; fonds sombres. Retirer ou remplacer les
   états « Titre et Générer sur Figma » et « Titre et Actualiser sur Figma ».
-  Chaque état annoncé nomme la case qui le rendra atteignable.
+  Chaque état annoncé nomme la case qui le rendra atteignable. Fait : cinq
+  états annoncés (Y4.1 deux fois, Y6.1, Y5.3, Y7.5), la grille des États
+  portée par l’état existant « Interface de test, vue États », et un état
+  « Titre seul » à la place des deux titres. Les états qui généraient depuis
+  le titre ouvrent l’onglet Planches et cliquent le geste de la fiche ; le
+  test de la galerie accepte les cases `Y`.
 
 Critère : l’agent place chaque élément de Y1 sans relire ce plan, à partir de
 la spécification et de CONTRIBUTING.md.
@@ -229,52 +238,69 @@ Fichiers : `styles.css`, `ongletPalettes.ts`, `derive/editeur.ts`,
 `ongletPlanche.ts`, `interfaceDeTest.ts`, `textes.ts`, `fenetre.ts`,
 `plugin-socle/src/ui/socle.css` et son `Button`.
 
-- [ ] **Y1.1** 15 px au-dessus et au-dessous du filet qui sépare la zone de
+- [x] **Y1.1** 15 px au-dessus et au-dessous du filet qui sépare la zone de
   création de la palette ouverte.
-- [ ] **Y1.2** Retirer de la ligne du titre le bouton de génération, la ligne
+- [x] **Y1.2** Retirer de la ligne du titre le bouton de génération, la ligne
   de rang 3 (« Enregistré », état d’un cadre introuvable ou illisible,
   progression, « Afficher dans Figma »). Garder sous le titre les constats
   d’un enregistrement refusé ou d’un conflit. Pendant une génération lancée
   depuis l’onglet Planches, les onglets restent neutralisés. Retirer
   `gesteDeGeneration` s’il n’a plus d’appelant, et récrire le test `[UI-03]`
-  sans le bouton.
-- [ ] **Y1.3** Retirer de la carte Dérive de teinte la ligne « Garanties :
+  sans le bouton. Fait : `ui/generation.ts` supprimé, `gesteDeGeneration`
+  remplacé par `premierGesteDeLaFiche`, `STATUTS_DU_RANGEMENT` retiré ;
+  l’onglet Palettes ne reçoit plus ni le profil ni la planche. Le résultat
+  d’une génération se lit dans l’onglet Planches seul.
+- [x] **Y1.3** Retirer de la carte Dérive de teinte la ligne « Garanties :
   Soft ✓ · Vivid ✓ » et le lien « Voir les garanties ». Vérifier que le
   nombre de nuances d’une palette libre se lit encore dans la configuration ;
-  sinon, le garder dans la carte.
-- [ ] **Y1.4** Un seul style d’onglet actif pour les bascules Thème Light et
+  sinon, le garder dans la carte. Fait : les puces allumées de « Configuration
+  de la palette » et l’aperçu compact des Réglages communs (« Palette libre ·
+  N nuances ») le disent ; la ligne part entière.
+- [x] **Y1.4** Un seul style d’onglet actif pour les bascules Thème Light et
   Thème Dark, Soft et Vivid des Garanties, Écran et États de l’interface de
   test : un fond visible sur la carte, un peu plus clair que `--fond-note`
   au thème sombre de Figma. Vérifier aux deux thèmes de Figma que l’onglet
-  actif se distingue de la carte et du survol.
-- [ ] **Y1.5** Grille des États : espacer les rangées d’au moins 12 px, pour
+  actif se distingue de la carte et du survol. Fait : `--fond-note` mêlé à
+  15 % de `--texte`, pour toutes les `.bascule-option` ; les segments
+  `.bascule-de-base` (modèle, palette de base, préréglage) gardent le fond
+  des blocs. Vérifié sur le décalque aux deux thèmes ; le rendu dans Figma
+  reste à la recette Y8.4.
+- [x] **Y1.5** Grille des États : espacer les rangées d’au moins 12 px, pour
   que deux anneaux de focus de 4 px gardent un jour entre eux. Vérifier sur
-  la rangée la plus haute.
-- [ ] **Y1.6** Ajouter au socle une taille compacte de 24 px à
+  la rangée la plus haute. Fait : 12 px ; le test mesure chaque paire de
+  rangées.
+- [x] **Y1.6** Ajouter au socle une taille compacte de 24 px à
   `createButton`, pour toutes ses variantes. La donner à « Supprimer
   définitivement » et à « Afficher dans Figma » de la carte d’une palette
   supprimée. Le socle sert aussi UCM Exporter : vérifier que sa galerie ne
-  change pas.
-- [ ] **Y1.7** Carte d’une palette supprimée : baisser la part du fond
+  change pas. Fait : option `compact`, classe `btn-compact`. UCM Exporter
+  ne la pose nulle part, ses 1 045 tests restent verts.
+- [x] **Y1.7** Carte d’une palette supprimée : baisser la part du fond
   d’avertissement et de sa bordure, pour une teinte proche du fond de la
   page, orange encore reconnaissable. Vérifier aux deux thèmes de Figma.
-- [ ] **Y1.8** Gestes globaux de l’onglet Planches : 10 px au-dessus et
+  Fait : 35 % du fond d’avertissement dans le fond de la page, 25 % de sa
+  couleur dans la bordure. Le jugement dans Figma reste à la recette Y8.4.
+- [x] **Y1.8** Gestes globaux de l’onglet Planches : 10 px au-dessus et
   au-dessous ; libellés « Mettre à jour (N palettes) » et « Générer tout (N
   palettes) », « (1 palette) » au singulier. La progression garde son
-  libellé actuel.
-- [ ] **Y1.9** Gestes d’une fiche, dans cet ordre : « Générer sur Figma » ou
+  libellé actuel. Fait : 10 px de marge en plus de l’espacement de la pile.
+- [x] **Y1.9** Gestes d’une fiche, dans cet ordre : « Générer sur Figma » ou
   « Actualiser sur Figma », bouton principal compact ; « Afficher » ;
   « Modifier ». Un cadre à jour ou illisible n’a pas de premier geste,
   jusqu’à Y6. `data-geste` se garde : les tests visent les gestes par lui.
-- [ ] **Y1.10** Fenêtre à 650 × 720 par défaut ; une taille rangée de
+  Fait ; « Afficher » et « Modifier » sont des boutons secondaires compacts.
+- [x] **Y1.10** Fenêtre à 650 × 720 par défaut ; une taille rangée de
   600 × 720 s’ouvre à 650 × 720. Reprendre les tests de `fenetre.ts` et la
-  taille de la recette visuelle.
-- [ ] **Y1.11** Tests : ligne du titre sans génération ; fond de l’onglet
+  taille de la recette visuelle. Fait : `tailleALOuverture`, et la galerie
+  par défaut à 650 × 720.
+- [x] **Y1.11** Tests : ligne du titre sans génération ; fond de l’onglet
   actif distinct de la carte, par sa couleur calculée, pour les trois
   bascules ; écart entre deux anneaux de la grille des États ; hauteur égale
   des gestes d’une fiche et d’une carte supprimée ; ordre des gestes ;
   taille par défaut et reprise de l’ancien défaut. Chaque test vu rouge sur
-  une mutation de ce qu’il protège.
+  une mutation de ce qu’il protège. Fait : huit tests vus rouges puis verts ;
+  les dix-sept tests d’interface qui générèrent depuis le titre passent par
+  la fiche. 90 tests d’interface et 214 tests unitaires verts.
 
 Critère : aux deux thèmes de Figma, tous les onglets actifs se lisent de la
 même façon, et les gestes d’une fiche ont une hauteur.
