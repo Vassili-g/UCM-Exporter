@@ -140,7 +140,7 @@ et dans les palettes à une intensité.
 
 | Sujet | Décision |
 |---|---|
-| Intensités d’une palette | Une ou deux, choisies à la création et modifiables dans la configuration. Une recette de format 3 se lit avec deux intensités pour chaque palette. Deux cartes, « Une intensité » et « Deux intensités », chacune avec sa rampe ; libellé « Intensités » ; « Une » par défaut ; choix caché pour une palette libre ; passage de deux à une sans confirmation (Y2.1). Disposition P2 : nom et couleur de référence sur une ligne, puis une rangée pour le Modèle et une pour les Intensités. Textes des cartes : « Une seule variante, à l’intensité de la couleur de référence. » et « Une variante douce « Soft » et une variante vive « Vivid ». » (Y2.6) |
+| Intensités d’une palette | Une ou deux, choisies à la création et modifiables dans la configuration. Une recette de format 3 se lit avec deux intensités pour chaque palette. À la création, deux cartes, « Une intensité » et « Deux intensités », chacune avec sa rampe ; dans la configuration, un interrupteur « Deux intensités » (Y8.6) ; libellé « Intensités » ; « Une » par défaut ; choix caché pour une palette libre ; passage de deux à une sans confirmation (Y2.1). Disposition P2 : nom et couleur de référence sur une ligne, puis une rangée pour le Modèle et une pour les Intensités. Textes des cartes : « Une seule variante, à l’intensité de la couleur de référence. » et « Une variante douce « Soft » et une variante vive « Vivid ». » (Y2.6) |
 | Palette à une intensité | Elle se calcule comme le profil porteur forcé d’aujourd’hui (`[ENT-11]`) : la part de chroma de la référence, la référence exacte à son cran. Seule cette rampe se garde, en Light et en Dark. Elle n’a ni nom de profil, ni dérive propre à un profil, ni alerte « Profils confondus » |
 | Palette de base | Remplacée par le choix des intensités. Pour une palette à deux intensités, un choix « Auto, Soft, Vivid » du profil qui porte la référence, affiché seulement dans ce cas, libellé « Référence exacte dans », avec « Auto a choisi Vivid » dessous, posé dans la carte « Deux intensités » (Q5.4, Y2.1, Y2.6) |
 | Noms des tokens | `theme.{famille}.{cran}` pour une palette à une intensité, `theme.{famille}.{profil}.{cran}` pour deux. Pastilles de la planche : `{mode}/{cran}` et `{profil}/{mode}/{cran}` |
@@ -631,6 +631,17 @@ boutons gardent leur vivacité, et toutes les garanties tiennent.
   focus au code quand le lien disparaît. `[UI-11]` le dit, et un test
   d’interface le tient, écrit sans être lancé : les tests sous Chromium
   restent au mainteneur (Y8.1).
+
+- [x] **Y8.6** Retour du mainteneur en cours de recette : dans
+  « Configuration de la palette », le choix des intensités devient un simple
+  interrupteur ; le module complet, deux cartes avec leur rampe, ne reste
+  qu’à la création. Fait : `createInterrupteurDesIntensites`, libellé
+  « Intensités » au-dessus comme « Modèle », l’interrupteur « Deux
+  intensités » à gauche de son libellé, l’aide « Une variante douce « Soft »
+  et une variante vive « Vivid ». » ; dessous, « Intensité : 0,89 » pour une
+  intensité, « Référence exacte dans » pour deux. La configuration ne
+  calcule plus les deux rampes d’aperçu à chaque rendu. Les deux tests Y4.8
+  passent par l’interrupteur ; suite d’interface verte sous Chromium.
 
 - [ ] **Y8.1** Reprendre les tests d’interface que Y1 à Y7 cassent, en
   gardant ce que chacun protégeait encore. Au mainteneur : à sa demande, les

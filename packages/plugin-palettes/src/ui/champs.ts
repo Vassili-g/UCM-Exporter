@@ -1,11 +1,12 @@
 /**
  * Les champs que la configuration d'une palette, sa création et les Réglages
  * communs partagent : un libellé au-dessus de ses saisies ([UI-11]), le
- * choix des intensités en deux cartes ([ENT-14]), le choix du profil qui
- * porte la référence en trois segments, le choix du modèle et les numéros
- * d'une palette libre (W6.5).
+ * choix des intensités en deux cartes à la création et en interrupteur dans
+ * la configuration ([ENT-14]), le choix du profil qui porte la référence en
+ * trois segments, le choix du modèle et les numéros d'une palette libre (W6.5).
  */
 import { BORNES_DES_CRANS_LIBRES, type Profil } from 'ucm-couleur';
+import { createInterrupteur } from 'ucm-plugin-socle/src/ui/Interrupteur';
 
 import { NOM_DU_PROFIL, TEXTES_DE_LA_BASE, TEXTES_DES_INTENSITES_DE_PALETTE, TEXTES_DU_MODELE } from './textes';
 
@@ -65,13 +66,17 @@ export function createChoixDeBase(surChoix: (choix: ChoixDeBase) => void): Choix
   };
 }
 
-/** Ce que les deux cartes du choix des intensités montrent. */
-export interface EtatDuChoixDesIntensites {
+/** Ce que l'interrupteur des intensités montre. */
+export interface EtatDeLInterrupteurDesIntensites {
   readonly intensites: 1 | 2;
-  /** La rampe que chaque choix donnerait, en Thème Light ; `null` avant une couleur de référence lisible. */
-  readonly apercu: ((intensites: 1 | 2) => HTMLElement) | null;
   /** La part de la couleur de référence, écrite ; `null` avant une couleur lisible. */
   readonly part: string | null;
+}
+
+/** Ce que les deux cartes du choix des intensités montrent. */
+export interface EtatDuChoixDesIntensites extends EtatDeLInterrupteurDesIntensites {
+  /** La rampe que chaque choix donnerait, en Thème Light ; `null` avant une couleur de référence lisible. */
+  readonly apercu: ((intensites: 1 | 2) => HTMLElement) | null;
 }
 
 export interface ChoixDesIntensitesUi {
@@ -142,6 +147,44 @@ export function createChoixDesIntensites(surChoix: (intensites: 1 | 2) => void, 
       part.hidden = intensites !== 1 || partEcrite === null;
       une.carte.append(part);
       deux.carte.append(base.element);
+      base.element.hidden = intensites !== 2;
+    },
+  };
+}
+
+export interface InterrupteurDesIntensitesUi {
+  /** La rangée entière : l'interrupteur « Deux intensités », puis la suite du choix. */
+  readonly element: HTMLDivElement;
+  /** Le choix du profil qui porte la référence, sous l'interrupteur activé. */
+  readonly base: ChoixDeBaseUi;
+  poser(etat: EtatDeLInterrupteurDesIntensites): void;
+}
+
+/**
+ * Le choix des intensités dans la configuration d'une palette : un
+ * interrupteur « Deux intensités ». Les deux cartes et leurs rampes restent à
+ * la création. Sous l'interrupteur, la suite du choix : la part de la
+ * référence pour une intensité, « Référence exacte dans » pour deux.
+ */
+export function createInterrupteurDesIntensites(surChoix: (intensites: 1 | 2) => void, surBase: (choix: ChoixDeBase) => void): InterrupteurDesIntensitesUi {
+  const t = TEXTES_DES_INTENSITES_DE_PALETTE;
+  const interrupteur = createInterrupteur('intensites-de-la-palette', t.deux.titre, t.deux.texte, (active) => surChoix(active ? 2 : 1));
+  const base = createChoixDeBase(surBase);
+  const part = document.createElement('span');
+  part.className = 'ligne-secondaire';
+  const libelle = document.createElement('span');
+  libelle.className = 'libelle-de-champ';
+  libelle.textContent = t.libelle;
+  const element = document.createElement('div');
+  element.className = 'champ-colonne interrupteur-des-intensites';
+  element.append(libelle, interrupteur.element, part, base.element);
+  return {
+    element,
+    base,
+    poser({ intensites, part: partEcrite }) {
+      interrupteur.poser(intensites === 2);
+      part.textContent = partEcrite === null ? '' : t.partDeLaReference(partEcrite);
+      part.hidden = intensites !== 1 || partEcrite === null;
       base.element.hidden = intensites !== 2;
     },
   };

@@ -2160,7 +2160,7 @@ async function intensitesMontrees(page) {
   };
 }
 
-test('Y4.8 [ENT-14] : passer de deux intensités à une change l’aperçu, les garanties, l’interface de test, la carte Intensités et la dérive ; le retour les rend', async () => {
+test('Y4.8 [ENT-14] : désactiver l’interrupteur « Deux intensités » change l’aperçu, les garanties, l’interface de test, la carte Intensités et la dérive ; le retour les rend', async () => {
   const page = await ouvrirSur('palette-deux-intensites');
   try {
     await deplierLaCarte(page, 'Garanties de contraste');
@@ -2168,15 +2168,22 @@ test('Y4.8 [ENT-14] : passer de deux intensités à une change l’aperçu, les 
     await deplierLaCarte(page, 'Dérive de teinte');
     const configuration = carteDeLOnglet(page, 'Configuration de la palette');
     assert.deepEqual(await intensitesMontrees(page), { apercu: ['soft', 'vivid'], basculeDesGaranties: true, basculeDeLEssai: true, carteIntensites: true, synchronisation: true });
+    // La configuration choisit par un interrupteur ; les deux cartes et leurs rampes restent à la création.
+    const interrupteur = configuration.getByRole('switch', { name: 'Deux intensités' });
+    assert.equal(await interrupteur.getAttribute('aria-checked'), 'true');
+    assert.equal(await configuration.getByRole('radio').count(), 0);
+    assert.equal(await configuration.getByRole('group', { name: 'Référence exacte dans' }).isVisible(), true);
     const avant = await compte(page);
-    await configuration.getByRole('radio', { name: /^Une intensité/ }).click();
+    await interrupteur.click();
     const rangement = await prochaineDuType(page, 'ranger-recette', avant);
     assert.equal(rangement.recette.palettes[0].intensites, 1);
     assert.deepEqual(await intensitesMontrees(page), { apercu: ['unique'], basculeDesGaranties: false, basculeDeLEssai: false, carteIntensites: false, synchronisation: false });
     assert.equal(await page.locator('.repere-de-la-reference').textContent(), '◆ Référence : nuance 600', 'la référence ne nomme plus de profil');
+    assert.equal(await configuration.getByRole('group', { name: 'Référence exacte dans' }).isVisible(), false);
+    assert.match(await configuration.getByText(/^Intensité : /).textContent(), /^Intensité : 0,\d+$/);
     await envoyer(page, rangee(rangement.demande));
     const suivant = await compte(page);
-    await configuration.getByRole('radio', { name: /^Deux intensités/ }).click();
+    await interrupteur.click();
     assert.equal((await prochaineDuType(page, 'ranger-recette', suivant)).recette.palettes[0].intensites, undefined);
     assert.deepEqual((await intensitesMontrees(page)).apercu, ['soft', 'vivid']);
   } finally {
@@ -2191,7 +2198,7 @@ test('Y4.8 [PLA-20] : changer le nombre d’intensités d’une palette génér�
     assert.deepEqual(await etatsDesLignes(page), ['a-jour', 'a-jour']);
     await page.getByRole('tab', { name: 'Palettes', exact: true }).click();
     const avant = await compte(page);
-    await carteDeLOnglet(page, 'Configuration de la palette').getByRole('radio', { name: /^Une intensité/ }).click();
+    await carteDeLOnglet(page, 'Configuration de la palette').getByRole('switch', { name: 'Deux intensités' }).click();
     await envoyer(page, rangee((await prochaineDuType(page, 'ranger-recette', avant)).demande));
     await ouvrirLaPlanche(page);
     assert.deepEqual(await etatsDesLignes(page), ['perimee', 'a-jour']);

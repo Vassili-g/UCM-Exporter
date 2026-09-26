@@ -260,10 +260,11 @@ d’UCM Exporter ; l’onglet Palettes applique celles-ci :
   disposée comme « Configuration de la palette » : le nom et la couleur de
   référence sur une ligne, libellé au-dessus du champ, puis une rangée pour
   le Modèle et une pour les Intensités, puis ses gestes sur une ligne ;
-- le choix des intensités tient en deux cartes côte à côte, chacune avec la
-  rampe qu’elle donnerait. La carte choisie prend la bordure de marque, et
-  porte la suite de son choix : « Référence exacte dans » ne paraît que dans
-  « Deux intensités » ;
+- à la création, le choix des intensités tient en deux cartes côte à côte,
+  chacune avec la rampe qu’elle donnerait. La carte choisie prend la bordure
+  de marque, et porte la suite de son choix : « Référence exacte dans » ne
+  paraît que dans « Deux intensités ». Dans la configuration, un
+  interrupteur « Deux intensités » le remplace, la suite du choix dessous ;
 - les cartes se suivent dans cet ordre : Configuration de la palette, carte
   d’aperçu, Intensités, Dérive de teinte, Garanties de contraste, puis
   Interface de test. La palette se règle avant de se juger. Une palette à une

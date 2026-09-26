@@ -235,7 +235,7 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/fenetre.ts           les bornes et la clé de la fenêtre ; le socle la lit et la range
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planches, la configuration
   src/ui/ongletPalettes.ts le sélecteur, le titre « Palette [nom] », puis les cartes, chaque message sous la sienne
-  src/ui/champs.ts         le libellé au-dessus de ses saisies, le choix du modèle, les deux cartes des intensités et le choix du profil porteur
+  src/ui/champs.ts         le libellé au-dessus de ses saisies, le choix du modèle, les deux cartes des intensités de la création, l'interrupteur des intensités de la configuration et le choix du profil porteur
   src/ui/carte.ts          une carte de la configuration, fixe ou repliable, avec son résumé
   src/ui/couleur/          le sélecteur de couleur embarqué, ses formats Hex, RGB et HSL, et les pastilles qu'il propose
   src/ui/nuancier.ts       l'aperçu peint du fond du thème : pastille on-solid, pastilles en grille, accolades des rôles, choix et relâche d'une nuance, détail d'une nuance

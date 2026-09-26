@@ -53,7 +53,7 @@ import { blocDeConstat, listeDesMessages, type Message } from './constats';
 import { createAjustement } from './ajustement';
 import { createCarte } from './carte';
 import { apercuCompact } from './apercuCompact';
-import { champEnColonne, createChoixDesIntensites, createChoixDuModele, createPuces, type ChoixDeBase } from './champs';
+import { champEnColonne, createChoixDuModele, createInterrupteurDesIntensites, createPuces, type ChoixDeBase } from './champs';
 import { nuancesProposees } from './couleur/propositions';
 import { createPipette, fermerLeSelecteur } from './couleur/selecteur';
 import { createCreation, type ApercuDeLaSaisie } from './creation';
@@ -276,12 +276,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     valider(remplacerPalette(recette, ajustee));
   }, () => fermerLeSelecteur(true));
   /*
-   * Les intensités, en deux cartes ([ENT-14], maquette Y2.6) ; le profil qui
-   * porte la référence, Auto, Soft ou Vivid, se choisit dans la carte « Deux
-   * intensités » ([ENT-11]). Passer de deux à une ne demande pas de
+   * Les intensités, en un interrupteur « Deux intensités » ([ENT-14]) ; le
+   * profil qui porte la référence, Auto, Soft ou Vivid, se choisit dessous
+   * quand il est activé ([ENT-11]). Passer de deux à une ne demande pas de
    * confirmation (Y2.1).
    */
-  const choixDesIntensites = createChoixDesIntensites((nombre) => {
+  const choixDesIntensites = createInterrupteurDesIntensites((nombre) => {
     const courante = ouverte();
     if (recette && courante) valider(remplacerPalette(recette, choisirLesIntensites(recette, courante, nombre)));
   }, (valeur) => {
@@ -604,14 +604,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre(nomDeLaPalette(courante));
     choixDuModele.poser(analyse.libre ? 'libre' : 'modele');
     const une = aUneIntensite(courante);
-    choixDesIntensites.poser({
-      intensites: une ? 1 : 2,
-      apercu: (nombre) => {
-        const variante = choisirLesIntensites(lue, courante, nombre);
-        return apercuCompact(lue, variante === courante ? analyse : analyserPalette(lue, variante), 'light');
-      },
-      part: ecrireArrondi(partDeLaReference(lue, courante), 2),
-    });
+    choixDesIntensites.poser({ intensites: une ? 1 : 2, part: ecrireArrondi(partDeLaReference(lue, courante), 2) });
     choixDesIntensites.element.hidden = analyse.libre;
     choixDeBase.poser(courante.base ?? 'auto');
     puces.element.hidden = !analyse.libre;

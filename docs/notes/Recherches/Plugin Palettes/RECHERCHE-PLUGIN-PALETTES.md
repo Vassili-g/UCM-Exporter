@@ -568,9 +568,9 @@ dix-sept paires.
 | Couleur de référence | Hexa, avec le sélecteur de couleur embarqué (`[UI-13]`) | aucun |
 | Nom | Texte libre, facultatif | l'hexa de référence |
 | Dérive de teinte | Deux angles par profil, dans l'éditeur de la [section 12](#12-léditeur-de-dérive) | préréglage Tailwind |
-| Intensités | « Une intensité » ou « Deux intensités », deux cartes de la configuration et de la création (`[ENT-14]`) | Une |
+| Intensités | « Une intensité » ou « Deux intensités », deux cartes à la création ; un interrupteur « Deux intensités » dans la configuration (`[ENT-14]`) | Une |
 | Part de chroma par profil | Nombre dans `[0, 1]`, facultatif, dans la carte « Intensités », pour deux intensités | celle de la recette |
-| Référence exacte dans | Auto, Soft ou Vivid, dans la carte « Deux intensités » (`[ENT-11]`) | Auto |
+| Référence exacte dans | Auto, Soft ou Vivid, dans la carte « Deux intensités » à la création, sous l'interrupteur activé dans la configuration (`[ENT-11]`) | Auto |
 
 - `[ENT-01]` Changer la couleur de référence recalcule le préréglage Tailwind.
   Une dérive d'origine `tailwind` suit ce nouveau calcul ; une dérive `libre` ou
@@ -605,7 +605,8 @@ dix-sept paires.
   Revenir à Auto retire `base` : la palette reprend les parts communes. Quand
   les deux profils se rejoignent, l'alerte « Profils confondus » le dit et
   mène aux intensités de la palette. Ce choix, libellé « Référence exacte
-  dans », ne paraît qu'avec deux intensités, dans leur carte.
+  dans », ne paraît qu'avec deux intensités : dans leur carte à la création,
+  sous l'interrupteur « Deux intensités » dans la configuration.
 - `[ENT-14]` Une palette porte une intensité ou deux, au choix du designer à
   la création, « Une » par défaut, et dans la configuration. À une intensité,
   elle a une seule rampe par thème, sans nom de profil : celle que le profil
@@ -1480,10 +1481,10 @@ palette » gardent leurs libellés au-dessus des champs.
   configuration, disposée comme la création (maquette Y2.6, P2) : Nom de la
   palette et Couleur de référence (pastille cliquable et code hexadécimal)
   en deux colonnes, libellé au-dessus du champ ; puis la rangée Modèle
-  (Standard ou Libre) ; puis la rangée Intensités, deux cartes, « Une
-  intensité » et « Deux intensités » (`[ENT-14]`), chacune avec la rampe
-  qu'elle donnerait en Thème Light. La carte choisie porte la suite du
-  choix : la part de la référence pour une intensité ; pour deux,
+  (Standard ou Libre) ; puis la rangée Intensités, un interrupteur « Deux
+  intensités » (`[ENT-14]`) : les deux cartes et leurs rampes restent à la
+  création. Sous l'interrupteur, la suite du choix : la part de la
+  référence pour une intensité ; pour deux,
   « Référence exacte dans » (Auto, Soft ou Vivid), et en Auto une ligne qui
   dit le profil que le classement a choisi : « Auto a choisi Vivid ». Soft
   ou Vivid force le profil porteur (`[MOT-17]`). L'erreur d'un code invalide reste sous son champ.

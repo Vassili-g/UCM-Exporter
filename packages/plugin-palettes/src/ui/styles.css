@@ -1171,10 +1171,21 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-/* Les segments du modèle gardent leur largeur naturelle sur leur rangée. */
-.carte-corps > .champ-colonne > .bascule-de-base {
+/* Les segments du modèle et du profil porteur gardent leur largeur naturelle sur leur rangée. */
+.carte-corps > .champ-colonne > .bascule-de-base,
+.interrupteur-des-intensites .bascule-de-base {
   justify-self: start;
   min-width: 200px;
+}
+
+/* L'interrupteur des intensités de la configuration précède son libellé, à gauche, comme les segments voisins. */
+.interrupteur-des-intensites .reglage-ligne {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.interrupteur-des-intensites .field-label {
+  font-weight: 400;
 }
 
 .champ-colonne {
