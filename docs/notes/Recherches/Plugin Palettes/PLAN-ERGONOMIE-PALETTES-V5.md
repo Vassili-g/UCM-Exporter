@@ -140,23 +140,23 @@ et dans les palettes à une intensité.
 
 | Sujet | Décision |
 |---|---|
-| Intensités d’une palette | Une ou deux, choisies à la création et modifiables dans la configuration. Une recette de format 3 se lit avec deux intensités pour chaque palette. Forme du choix et libellés sur maquette (Y2.1) |
+| Intensités d’une palette | Une ou deux, choisies à la création et modifiables dans la configuration. Une recette de format 3 se lit avec deux intensités pour chaque palette. Deux cartes, « Une intensité » et « Deux intensités », chacune avec sa rampe ; libellé « Intensités » ; « Une » par défaut ; choix caché pour une palette libre ; passage de deux à une sans confirmation (Y2.1). Disposition de la carte et texte de la carte « Une intensité » en Y2.6 |
 | Palette à une intensité | Elle se calcule comme le profil porteur forcé d’aujourd’hui (`[ENT-11]`) : la part de chroma de la référence, la référence exacte à son cran. Seule cette rampe se garde, en Light et en Dark. Elle n’a ni nom de profil, ni dérive propre à un profil, ni alerte « Profils confondus » |
-| Palette de base | Remplacée par le choix des intensités. Pour une palette à deux intensités, un choix « Auto, Soft, Vivid » du profil qui porte la référence, affiché seulement dans ce cas ; la maquette Y2.1 le confirme (Q5.4) |
+| Palette de base | Remplacée par le choix des intensités. Pour une palette à deux intensités, un choix « Auto, Soft, Vivid » du profil qui porte la référence, affiché seulement dans ce cas, libellé « Référence exacte dans », avec « Auto a choisi Vivid » dessous (Q5.4, Y2.1) |
 | Noms des tokens | `theme.{famille}.{cran}` pour une palette à une intensité, `theme.{famille}.{profil}.{cran}` pour deux. Pastilles de la planche : `{mode}/{cran}` et `{profil}/{mode}/{cran}` |
 | Architecture | Les utilitaires gardent deux profils ; les rampes de marque passent à une intensité. `theme` compte 121 variables, `brand` 45 par marque |
-| Fonds sombres | Les crans de fond du thème Dark perdent de la chroma, dans chaque profil. Règle, réglage et valeur par défaut sur maquette (Y2.5). Le thème Light ne change pas |
+| Fonds sombres | Les crans 50 à 300 du thème Dark perdent de la chroma, dans chaque profil, selon R3 : la part du profil multipliée par un facteur qui vaut 0,30 au cran 50 et remonte linéairement en clarté jusqu’à 1 au cran 400. Un curseur « Fonds du thème Dark » dans la carte Intensités des Réglages communs. L’alerte « Profils confondus » ignore ces crans ; une référence exacte qui y tombe garde ses octets (Y2.5). Le thème Light ne change pas |
 | Onglet Palettes | La ligne du titre ne porte plus que « Palette [nom] ». Le bouton de génération, « Enregistré », « Afficher dans Figma », l’état du cadre et la progression la quittent. Les erreurs d’enregistrement et le conflit restent affichés : ce sont des constats, pas l’indication d’enregistrement |
 | Configuration de la palette | Mêmes champs, même ordre et même disposition que la carte de création (Y2.1) |
 | Dérive de teinte | La ligne de bilan et « Voir les garanties » se retirent de la carte |
 | Onglets | Un seul style pour toutes les bascules à onglets : l’onglet actif a un fond, un peu plus clair que `--fond-note` au thème sombre de Figma, et distinct de la carte au thème clair. Les segments de choix d’une valeur (préréglage, modèle) gardent le leur |
 | Interface de test | Les rangées de la grille des États s’espacent assez pour que deux anneaux de focus ne se touchent plus |
-| Planche | Les rampes, les usages et les grilles des intensités de la palette, et d’elles seules. Avec deux profils, les usages des deux, disposés selon Y2.4. `[PLA-18]` se récrit |
-| Fiche d’une palette | Gestes dans l’ordre dicté : « Générer sur Figma » ou « Actualiser sur Figma », bouton principal bleu ; « Afficher » ; « Modifier ». Le reste de la fiche sur maquette (Y2.2) |
+| Planche | Les rampes, les usages et les grilles des intensités de la palette, et d’elles seules. Avec deux profils, les usages des deux, disposés selon Y2.7. `[PLA-18]` se récrit |
+| Fiche d’une palette | Gestes dans l’ordre dicté : « Générer sur Figma » ou « Actualiser sur Figma », bouton principal bleu ; « Afficher » ; « Modifier ». Disposition A : le nom et l’état en pastille sur la première ligne, l’aperçu, la référence et les garanties sur une ligne, les gestes. « À jour » et « Lecture impossible » n’ont pas de premier geste ; un cadre jamais généré porte « Pas encore sur Figma » (Y2.2) |
 | Taille des gestes d’une fiche | Le socle gagne une taille compacte de 24 px pour `createButton`. Les gestes d’une fiche et d’une carte supprimée la prennent, « Supprimer définitivement » et le bouton principal compris |
 | Palette supprimée | Fond et bordure plus proches du fond de la page, teinte d’avertissement gardée |
 | Gestes globaux | 10 px au-dessus et au-dessous. « Mettre à jour (2 palettes) » et « Générer tout (2 palettes) », en minuscules, au singulier pour une palette (Q5.5) |
-| Contenu des planches | Une carte des Réglages communs, un interrupteur par partie du cadre, rangée dans la recette et comptée dans l’empreinte (Q5.3). Parties et règles sur maquette (Y2.3) |
+| Contenu des planches | Une carte des Réglages communs, un interrupteur par partie du cadre, rangée dans la recette et comptée dans l’empreinte (Q5.3). Disposition C1, repliée en dernière carte : l’en-tête et les rampes toujours générés, la note, les usages et les grilles au choix, au moins un thème ; le nombre de calques de chaque partie et l’effet sur les cadres écrits dans la carte (Y2.3) |
 | Fenêtre | 650 × 720 par défaut. Le plus petit format reste 500 × 520. Une taille rangée égale à l’ancien défaut, 600 × 720, s’ouvre à 650 × 720 ; toute autre taille rangée se garde |
 
 ## Reprise du quatrième plan
@@ -182,7 +182,7 @@ repliées à l’ouverture, bouton danger du socle, badges AA et AAA.
 | Maquettes à valider | Y2 | Y0 ; en parallèle de Y1 |
 | Moteur : une ou deux intensités | Y3 | Y2.1 validée, revue indépendante (Y3.1) |
 | Interface : le choix des intensités partout | Y4 | Y3 |
-| Planche : intensités et contenu | Y5 | Y3, Y2.3 et Y2.4 validées |
+| Planche : intensités et contenu | Y5 | Y3, Y2.3 et Y2.7 validées |
 | Onglet Planches : fiches | Y6 | Y2.2 validée, Y1.9 |
 | Fonds sombres | Y7 | Y7.1 dès maintenant ; le reste après Y2.5 validée et la revue Y3.1, qui couvre aussi ce lot |
 | Recette et clôture | Y8 | Parcours finis |
@@ -301,7 +301,11 @@ elle existe, au moins une autre, puis ses questions avec une recommandation.
   retirée (I1) ou en lecture seule (I2). Recommandé : F1, libellés a, « Une »
   par défaut, I1, une bascule Soft et Vivid dans l’interface de test, pas de
   confirmation au passage de deux à une, choix caché pour une palette libre.
-  En attente de validation.
+  Réponse : F3, avec le texte « Une variante douce "Soft" et une variante
+  vive "Vivid" » pour la carte « Deux intensités » ; libellés a ; porteur,
+  « Une » par défaut, I1, pas de confirmation et palette libre acceptés. La
+  réponse à la question 6 vise la disposition des éléments, empilés dans la
+  troisième colonne. Second passage en Y2.6.
 - [x] **Y2.2** Fiche d’une palette dans l’onglet Planches : hiérarchie entre
   nom, état du cadre, aperçu, référence et garanties, et les trois gestes
   dans l’ordre de Y1.9. Deux dispositions au moins, dont une plus compacte.
@@ -310,7 +314,8 @@ elle existe, au moins une autre, puis ses questions avec une recommandation.
   pastille à côté du nom ; B, une ligne par palette ; C, B regroupé par
   état ; les cinq états en A et en B. Recommandé : A ; « À jour » et
   « Lecture impossible » sans premier geste ; « Pas encore sur Figma » pour
-  un cadre jamais généré. En attente de validation.
+  un cadre jamais généré. Réponse : A, et les quatre autres recommandations.
+  Validée.
 - [x] **Y2.3** Carte « Contenu des planches » des Réglages communs : un
   interrupteur par partie du cadre (rampes, note sous les rampes, usages,
   grilles de contrastes, thème Light, thème Dark), et les règles qui les
@@ -319,8 +324,8 @@ elle existe, au moins une autre, puis ses questions avec une recommandation.
   à jour », et le nombre de calques d’un cadre. Produite : C1, une liste
   d’interrupteurs avec le nombre de calques de chaque partie ; C2, la même
   liste et un schéma du cadre. En-tête et rampes toujours générés, au moins
-  un thème. Recommandé : C1, repliée en dernière carte. En attente de
-  validation.
+  un thème. Recommandé : C1, repliée en dernière carte. Réponse : les quatre
+  recommandations. Validée.
 - [x] **Y2.4** Cadre de la planche pour une palette à une intensité et à
   deux. Pour deux, au moins deux dispositions des usages : une section par
   profil, ou deux colonnes Soft et Vivid par état. Nombre de calques de
@@ -329,7 +334,8 @@ elle existe, au moins une autre, puis ses questions avec une recommandation.
   par profil, 1 964 ; D2, deux colonnes par état, 1 918 ; D3, deux lignes
   par usage, 1 936. Le cadre d’aujourd’hui en compte 1 662 (496 sans les
   grilles), et non plus 1 632 comme au lot X5.1. Recommandé : D1, Soft puis
-  Vivid quel que soit le porteur. En attente de validation.
+  Vivid quel que soit le porteur. Réponse : maquette incomprise, à
+  restructurer. Second passage en Y2.7.
 - [x] **Y2.5** Fonds sombres : les règles de Y7.2 appliquées aux crans 50 à
   300 du thème Dark, sur les quatre références, en alerte, en encart et en
   carte, à côté des couleurs actuelles. Le réglage qui les porte dans les
@@ -337,8 +343,29 @@ elle existe, au moins une autre, puis ses questions avec une recommandation.
   plus du profil porteur de chaque référence, le pire cas des garanties sur
   360 teintes et les nuances où ≈ apparaîtrait. Recommandé : R3 à 0,30, un
   curseur « Fonds du thème Dark » dans la carte Intensités, et l’alerte
-  « Profils confondus » muette sur les nuances 50 à 300 du thème Dark. En
-  attente de validation.
+  « Profils confondus » muette sur les nuances 50 à 300 du thème Dark.
+  Réponse : les cinq recommandations. Validée.
+
+Second passage, après les [retours du
+mainteneur](#retours-du-mainteneur-sur-les-maquettes-y2), dans le même
+fichier. Chaque question y a son bloc, ses écrans lettrés au-dessus de ses
+choix :
+
+- [x] **Y2.6** Choix des intensités, F3 retenue : la disposition de la carte
+  (P1, trois colonnes puis les cartes ; P2, une rangée par choix ; P3,
+  libellés à gauche), la disposition retenue à une et à deux intensités en
+  création et en configuration, le texte de la carte « Une intensité », et
+  l’interface de test à deux intensités, avec ou sans bascule Soft et
+  Vivid. Recommandé : P2 ; « Une seule variante, à l’intensité de la
+  couleur de référence. » ; guillemets français ; la bascule. En attente de
+  validation.
+- [x] **Y2.7** Cadre de la planche, restructuré : le constat de
+  l’alternance en schéma (Bleu en Vivid, Sauge en Soft), le cadre à une
+  intensité, puis D1, D2 et D3, chacune en schéma et en extrait du vrai
+  cadre à taille réelle, avec ses calques. Une question ajoutée : le
+  spécimen de `surface` s’écrit « Soft » et se lit comme le profil dans la
+  section « · Vivid ». Recommandé : le cadre à une intensité tel quel ; D1 ;
+  « Fond léger ». En attente de validation.
 
 Critère : le mainteneur valide ou corrige chaque maquette sans avoir à
 imaginer une interaction.
@@ -390,7 +417,7 @@ profil.
 
 ## Lot Y4 : interface, le choix des intensités partout
 
-Après Y3. Disposition de Y2.1 validée.
+Après Y3. Disposition de Y2.6 validée.
 
 - [ ] **Y4.1** Carte de création et configuration de la palette : le choix
   des intensités, et la configuration alignée sur la création. « Palette de
@@ -406,7 +433,7 @@ Après Y3. Disposition de Y2.1 validée.
 - [ ] **Y4.5** Garanties de contraste : la bascule Soft et Vivid se retire
   pour une palette à une intensité. Le détail d’une nuance ne cite que les
   rampes présentes.
-- [ ] **Y4.6** Interface de test : la rampe peinte selon Y2.1.
+- [ ] **Y4.6** Interface de test : la rampe peinte selon Y2.6.
 - [ ] **Y4.7** Aperçu compact d’une fiche de l’onglet Planches : les rampes
   présentes.
 - [ ] **Y4.8** Tests d’interface : chaque choix change l’aperçu, les
@@ -418,12 +445,12 @@ Critère : le designer ne voit jamais un profil que sa palette ne porte pas.
 
 ## Lot Y5 : planche, intensités et contenu
 
-Après Y3, et la validation de Y2.3 et Y2.4.
+Après Y3, et la validation de Y2.3 et Y2.7.
 
 - [ ] **Y5.1** Rampes et grilles : celles des intensités présentes. Une
   palette à une intensité nomme ses pastilles `{mode}/{cran}` (`[PLA-14]`).
   La note sous les rampes n’explique ≈ qu’avec deux intensités.
-- [ ] **Y5.2** Usages : ceux de chaque profil présent, disposés selon Y2.4.
+- [ ] **Y5.2** Usages : ceux de chaque profil présent, disposés selon Y2.7.
   Récrire `[PLA-18]`. L’en-tête nomme le profil porteur seulement avec deux
   intensités.
 - [ ] **Y5.3** Contenu des planches : le modèle reçoit les parties à
@@ -721,4 +748,41 @@ Tokens Multi-marques" Lis les docs de ce sujet puis considère ça :
 
   Réfléchis à tout ça, quel es ton avis, qu'en dis la littérature à ce sujet
   ?
+```
+
+## Retours du mainteneur sur les maquettes Y2
+
+Texte d’origine.
+
+```text
+Y2.1 · Choix des intensités
+1. -> F3 mais revoir les textes "Une douce, Soft, et une vive, Vivid ; chaque composant choisit. Pour les couleurs d’état : succès, erreur." en juste "Une variante douce "Soft" et une variante vive "Vivid"
+2. a
+3.ok
+4.ok
+5. ok
+6. il faut revoir la disposition des éléments, tout est dans une colonne sur la droite, c'est étrange
+7. ok
+8. ok
+
+mais recommence ton layout car je suis pas sur d'avoir bien répondu, on comprend pas le lien entre les questions et les écrans
+
+Y2.2 · Fiche d’une palette
+1. A
+2. ok
+3. ok
+4.ok
+5.ok
+
+Y2.3 · Contenu des planches
+1. ok
+2. ok
+3. ok
+4. ok
+
+Y2.4 · Cadre de la planche
+j'ai pas compris, à restructurer
+
+Y2.5 · Fonds sombres
+ok pour tout
 ```

@@ -846,13 +846,259 @@ function medianeDuPlafond(rang) {
   return valeurs[180];
 }
 
+/* Second passage : une question par bloc, ses écrans au-dessus de ses choix */
+
+/** Un bloc de question : le titre, ce qui est demandé, les écrans, puis les choix. */
+function blocDeQuestion(numero, titre, explication, ecrans, choix) {
+  return `<div class="qbloc"><div class="qtete"><span class="qnum">Question ${numero}</span><h3>${titre}</h3></div>${explication ? `<p>${explication}</p>` : ''}${ecrans ? `<div class="scene"><div class="scene-rangee">${ecrans}</div></div>` : ''}<div class="qchoix">${choix}</div></div>`;
+}
+const ecran = (contenu, lettre, legende) => `<div class="qecran"><span class="qlettre">${lettre}</span>${contenu}<p class="legende">${legende}</p></div>`;
+
+/* Y2.6 : choix des intensités, second passage */
+
+const TEXTES_Y26 = {
+  une: { titre: 'Une intensité', a: 'L’intensité de la couleur de référence. Pour une couleur de marque.', b: 'Une seule variante, à l’intensité de la couleur de référence.' },
+  deux: { titre: 'Deux intensités', texte: 'Une variante douce « Soft » et une variante vive « Vivid ».' },
+};
+
+/** Les deux cartes de F3 ; `porteurDedans` pose le choix du porteur dans la carte Deux. */
+function cartesF3(lu, intensites, { creation, texteUne = 'b', porteurDedans = false }) {
+  const carte = (n) => {
+    const on = intensites === n;
+    const titre = n === 1 ? TEXTES_Y26.une.titre : TEXTES_Y26.deux.titre;
+    const texte = n === 1 ? TEXTES_Y26.une[texteUne] : TEXTES_Y26.deux.texte;
+    const suite = on && n === 1 ? `<span class="aide">Intensité : ${virgule(lu.partUne)}</span>` : on && n === 2 && porteurDedans ? `<div class="choix-porteur">${choixDuPorteur(lu, { creation })}</div>` : '';
+    return `<div class="choix-carte${on ? ' on' : ''}"><div class="choix-tete"><span class="radio${on ? ' on' : ''}"></span><b>${titre}</b></div><span class="aide">${texte}</span>${nuancier(lu, n, 'light', { onSolid: false, numeros: false })}${suite}</div>`;
+  };
+  return `<div class="choix-cartes">${carte(1)}${carte(2)}</div>`;
+}
+
+/**
+ * La carte de création ou de configuration avec F3, selon trois dispositions :
+ * P1, trois colonnes puis les cartes ; P2, deux colonnes puis une rangée par
+ * choix ; P3, les libellés à gauche.
+ */
+function carteF3(lu, disposition, intensites, { creation }) {
+  const titre = creation ? 'Nouvelle palette' : 'Configuration de la palette';
+  const gestes = creation ? `<div class="gestes-4 a-droite">${bouton('Annuler')}${bouton('Créer la palette', 'principal')}</div>` : '';
+  const modele = segment(['Standard', 'Libre'], 'Standard');
+  const porteur = `${segment(['Auto', 'Soft', 'Vivid'], 'Auto')}<span class="aide">${creation ? `Auto choisira ${NOMS_DE_PROFIL[lu.deux.ancrage.profil]}` : TEXTES_Y21.auto(NOMS_DE_PROFIL[lu.deux.ancrage.profil])}</span>`;
+  const reference = `<div class="champ-ligne"><span class="pipette-f" style="background:${lu.palette.reference}"></span><div class="champ">${lu.palette.reference}</div></div>${creation ? '' : '<span class="lien petit souligne">Ajuster la référence</span>'}`;
+  if (disposition === 'P1') {
+    return `<div class="carte-f"><div class="carte-titre">${titre}</div><div class="trois">${colonneNom(lu.nom)}<div><span class="libelle">Couleur de référence</span>${reference}</div><div><span class="libelle">Modèle</span>${modele}</div></div>${cartesF3(lu, intensites, { creation, porteurDedans: true })}${gestes}</div>`;
+  }
+  const rangeePorteur = intensites === 2 ? { libelle: TEXTES_Y21.porteur, controle: `<div class="controle-court">${porteur}</div>` } : null;
+  if (disposition === 'P2') {
+    const rangee = (libelle, controle) => `<div class="rangee-p2"><span class="libelle">${libelle}</span>${controle}</div>`;
+    return `<div class="carte-f"><div class="carte-titre">${titre}</div><div class="deux-col">${colonneNom(lu.nom)}<div><span class="libelle">Couleur de référence</span>${reference}</div></div>
+      ${rangee('Modèle', `<div class="controle-court">${modele}</div>`)}${rangee(TEXTES_Y21.intensites, cartesF3(lu, intensites, { creation }))}${rangeePorteur ? rangee(rangeePorteur.libelle, rangeePorteur.controle) : ''}${gestes}</div>`;
+  }
+  const ligne = (libelle, controle) => `<span class="libelle p3-libelle">${libelle}</span><div class="p3-controle">${controle}</div>`;
+  return `<div class="carte-f"><div class="carte-titre">${titre}</div><div class="p3">${ligne('Nom de la palette', `<div class="champ">${esc(lu.nom)}</div>`)}${ligne('Couleur de référence', reference)}${ligne('Modèle', `<div class="controle-court">${modele}</div>`)}${ligne(TEXTES_Y21.intensites, cartesF3(lu, intensites, { creation }))}${rangeePorteur ? ligne(rangeePorteur.libelle, rangeePorteur.controle) : ''}</div>${gestes}</div>`;
+}
+
+function interfaceBis(lu, variante) {
+  const a = lu.deux;
+  const soft = { ...a, ancrage: { ...a.ancrage, profil: 'soft' } };
+  const peinte = variante === 'soft' ? soft : a;
+  const resume = variante === 'sans' ? `Thème Light · ${NOMS_DE_PROFIL[a.ancrage.profil]}` : `Thème Light · ${NOMS_DE_PROFIL[peinte.ancrage.profil]}`;
+  const bascules = variante === 'sans' ? onglets(['Écran', 'États'], 'Écran') : `<div class="deux-bascules">${onglets(['Écran', 'États'], 'Écran')}${onglets(['Soft', 'Vivid'], NOMS_DE_PROFIL[peinte.ancrage.profil])}</div>`;
+  return panneau('Palettes', `${accordeon('Interface de test', resume, { ouvert: true })}<div class="carte-f corps-ouvert">${bascules}${ecranDeTest(peinte, 'light')}</div>`);
+}
+
+function sectionIntensitesBis() {
+  const vert = P.Vert;
+  const bleu = P.Bleu;
+  const reco = (texte) => `<span class="reco">${texte}</span>`;
+  const q1 = blocDeQuestion(1, 'Où poser les éléments dans la carte',
+    'Tu as retenu F3, les deux cartes. Ton retour « tout est dans une colonne sur la droite » vise la troisième colonne : Modèle, Intensités et le choix du porteur y étaient empilés. Trois dispositions, en création, avec deux intensités choisies : c’est le cas le plus chargé.',
+    [
+      ecran(panneau('Palettes', teteDePalette(bleu, carteF3(vert, 'P1', 2, { creation: true }))), 'P1', '<b>Trois colonnes, puis les cartes.</b> Nom, couleur de référence et Modèle sur une ligne ; les deux cartes dessous ; le choix du porteur dans la carte « Deux intensités ». C’est F3 tel que montré au premier passage.'),
+      ecran(panneau('Palettes', teteDePalette(bleu, carteF3(vert, 'P2', 2, { creation: true }))), 'P2', '<b>Une rangée par choix.</b> Nom et couleur de référence sur une ligne ; puis Modèle, Intensités et le porteur, chacun sur sa rangée, le libellé au-dessus. Plus rien ne s’empile à droite.'),
+      ecran(panneau('Palettes', teteDePalette(bleu, carteF3(vert, 'P3', 2, { creation: true }))), 'P3', '<b>Libellés à gauche.</b> Même ordre que P2, les libellés dans une colonne de 130 px : chaque réglage se lit sur sa ligne.'),
+    ].join(''),
+    `<ol><li><b>P1</b> garde la carte compacte, mais le Modèle reste seul à droite et le porteur s’enfonce dans une carte.</li><li><b>P2</b> ${reco('Recommandé.')} Chaque choix a sa rangée, dans l’ordre où on le fait ; le porteur n’apparaît qu’avec deux intensités, sous les cartes.</li><li><b>P3</b> se lit comme un formulaire, mais les libellés prennent 130 px à gauche des cartes, qui se serrent à 500 px.</li></ol>`);
+  const q1bis = blocDeQuestion('1 bis', 'La même disposition, dans chaque cas',
+    'P2, pour vérifier qu’elle tient partout : la création à une intensité, et la configuration de Bleu dans les deux cas. La configuration est la carte de création, sans les gestes, avec « Ajuster la référence ».',
+    [
+      ecran(panneau('Palettes', teteDePalette(bleu, carteF3(vert, 'P2', 1, { creation: true }))), 'P2', '<b>Création, une intensité.</b> Pas de choix du porteur ; l’intensité retenue s’écrit dans la carte choisie.'),
+      ecran(panneau('Palettes', `${teteDePalette(bleu)}${carteF3(bleu, 'P2', 1, { creation: false })}`), 'P2', '<b>Configuration, une intensité.</b>'),
+      ecran(panneau('Palettes', `${teteDePalette(bleu)}${carteF3(bleu, 'P2', 2, { creation: false })}`), 'P2', '<b>Configuration, deux intensités.</b> « Auto a choisi Vivid » sous le choix du porteur.'),
+    ].join(''),
+    `<p>${reco('Recommandé')} si P2 est retenue à la question 1 ; sinon, la disposition choisie se déclinera de la même façon.</p>`);
+  const cartesSeules = (texteUne) => panneau('Palettes', `<div class="carte-f">${cartesF3(vert, 1, { creation: true, texteUne })}</div>`);
+  const q2 = blocDeQuestion(2, 'Le texte de la carte « Une intensité »',
+    'Ta réécriture de la carte « Deux intensités » est appliquée, avec des guillemets français : « Une variante douce « Soft » et une variante vive « Vivid ». » La carte « Une intensité » disait encore à quoi elle sert ; deux textes pour elle.',
+    [
+      ecran(cartesSeules('a'), 'a', '<b>Texte actuel.</b> « L’intensité de la couleur de référence. Pour une couleur de marque. »'),
+      ecran(cartesSeules('b'), 'b', '<b>Même forme que ta réécriture.</b> « Une seule variante, à l’intensité de la couleur de référence. »'),
+    ].join(''),
+    `<ol><li><b>a</b> garde l’usage conseillé, que la carte voisine n’a plus.</li><li><b>b</b> ${reco('Recommandé.')} Les deux cartes disent la même chose : combien de variantes, et laquelle.</li><li><b>Les guillemets.</b> « Soft » en guillemets français, comme le reste du plugin, plutôt que "Soft". ${reco('Recommandé.')}</li></ol>`);
+  const q3 = blocDeQuestion(3, 'L’interface de test d’une palette à deux intensités',
+    'C’était la question 6 du premier passage ; ta réponse semblait viser la disposition de la carte, reprise à la question 1. Aujourd’hui, l’interface de test ne peint que le profil porteur. Avec deux intensités, la rampe Soft ne s’essaie nulle part.',
+    [
+      ecran(interfaceBis(bleu, 'sans'), 'a', '<b>Sans bascule.</b> L’écran est peint du profil porteur, Vivid pour Bleu, comme aujourd’hui.'),
+      ecran(interfaceBis(bleu, 'vivid'), 'b', '<b>Avec une bascule Soft et Vivid, sur Vivid.</b> À droite d’Écran et États, ouverte sur le profil porteur.'),
+      ecran(interfaceBis(bleu, 'soft'), 'b', '<b>La même bascule, sur Soft.</b> Le bouton, l’encart, la case et l’interrupteur prennent la rampe douce.'),
+    ].join(''),
+    `<ol><li><b>a</b> garde l’interface simple, mais la rampe Soft ne s’essaie pas.</li><li><b>b</b> ${reco('Recommandé.')} Une palette à une intensité n’a pas la bascule.</li></ol>`);
+  return `<section class="bloc" id="y2-6">
+  <div class="tete"><span class="sur">Y2.6 · Choix des intensités, second passage</span><h2>F3, et ce qui restait à trancher</h2></div>
+  <p>Tes réponses au premier passage, retenues : F3, les deux cartes ; libellés a, « Intensités : Une · Deux » ; « Référence exacte dans : Auto · Soft · Vivid » avec deux intensités ; « Une » par défaut ; pas de carte Intensités pour une palette à une intensité (I1) ; pas de confirmation au passage de deux à une ; choix caché pour une palette libre. Ci-dessous, une question par bloc, ses écrans juste au-dessus de ses choix.</p>
+  ${q1}${q1bis}${q2}${q3}
+</section>`;
+}
+
+/* Y2.7 : cadre de la planche, second passage */
+
+/** Trois usages et leurs trois états, en pastilles, peints d'une rampe Light. */
+const USAGES_DU_SCHEMA = [['Fonds légers', 100], ['Textes colorés', 700], ['Fonds pleins', 700]];
+function pastillesDUsage(rampe, depart, usage) {
+  return [0, 1, 2].map((decalage) => {
+    const hexa = rampe[cran(depart) + decalage].hexa;
+    if (usage === 'Textes colorés') return `<i class="sch-texte" style="color:${hexa}">Lien</i>`;
+    return `<i class="sch-pastille" style="background:${hexa};color:${usage === 'Fonds pleins' ? FONDS.light : rampe[cran(700) + decalage].hexa}">Aa</i>`;
+  }).join('');
+}
+
+/** Un bloc d'usages du schéma : une rangée par usage, ou deux (Soft, Vivid) par usage, ou deux pastilles par état. */
+function blocDUsages(lu, forme, profils, titre) {
+  const rampes = Object.fromEntries(profils.map((p) => [p, forme === 'une' ? lu.une.rampes[p].light : lu.deux.rampes[p].light]));
+  const lignes = USAGES_DU_SCHEMA.map(([usage, depart]) => {
+    if (forme === 'D2') {
+      const cellules = [0, 1, 2].map((decalage) => `<span class="sch-duo">${profils.map((p) => {
+        const hexa = rampes[p][cran(depart) + decalage].hexa;
+        return usage === 'Textes colorés' ? `<i class="sch-texte" style="color:${hexa}">Lien</i>` : `<i class="sch-pastille" style="background:${hexa};color:${usage === 'Fonds pleins' ? FONDS.light : rampes[p][cran(700) + decalage].hexa}">${NOMS_DE_PROFIL[p][0]}</i>`;
+      }).join('')}</span>`).join('');
+      return `<div class="sch-ligne"><span class="sch-usage">${usage}</span>${cellules}</div>`;
+    }
+    if (forme === 'D3') {
+      return `<div class="sch-groupe"><span class="sch-usage">${usage}</span><div>${profils.map((p) => `<div class="sch-ligne sous"><span class="sch-profil">${NOMS_DE_PROFIL[p]}</span>${pastillesDUsage(rampes[p], depart, usage)}</div>`).join('')}</div></div>`;
+    }
+    return `<div class="sch-ligne"><span class="sch-usage">${usage}</span>${pastillesDUsage(rampes[profils[0]], depart, usage)}</div>`;
+  }).join('');
+  return `<div class="sch-bloc"><span class="sch-nom">${titre}</span>${lignes}<span class="sch-suite">… et quatre autres usages</span></div>`;
+}
+
+/** Le schéma d'un cadre : l'en-tête, puis le thème Light en blocs ; le thème Dark répète la même structure. */
+function schemaDuCadre(lu, forme) {
+  const deux = forme !== 'une';
+  const porteur = deux ? lu.deux.ancrage.profil : lu.porteur;
+  const profils = deux ? ['soft', 'vivid'] : [lu.porteur];
+  const rampe = (p) => (deux ? lu.deux.rampes[p].light : lu.une.rampes[p].light);
+  const rampes = `<div class="sch-bloc"><span class="sch-nom">${deux ? 'Les deux rampes' : 'La rampe'}</span>${profils.map((p) => `<div class="sch-rampe">${deux ? `<span class="sch-profil">${NOMS_DE_PROFIL[p]}</span>` : ''}${rampe(p).map((c) => `<i style="background:${c.hexa}"></i>`).join('')}</div>`).join('')}</div>`;
+  let usages;
+  if (forme === 'actuel') usages = blocDUsages(lu, forme, [porteur], `Quelle nuance pour quel usage · ${NOMS_DE_PROFIL[porteur]}`);
+  else if (forme === 'une') usages = blocDUsages(lu, forme, [porteur], 'Quelle nuance pour quel usage');
+  else if (forme === 'D1') usages = ['soft', 'vivid'].map((p) => blocDUsages(lu, forme, [p], `Quelle nuance pour quel usage · ${NOMS_DE_PROFIL[p]}`)).join('');
+  else usages = blocDUsages(lu, forme, ['soft', 'vivid'], 'Quelle nuance pour quel usage');
+  const grilles = `<div class="sch-bloc sch-grilles">${profils.map((p) => `<div><span class="sch-nom">Grille${deux ? ` ${NOMS_DE_PROFIL[p]}` : ''}</span><span class="sch-damier"></span></div>`).join('')}</div>`;
+  const entete = deux ? `Couleur de référence ${lu.palette.reference} · ${NOMS_DE_PROFIL[porteur]} · …` : `Couleur de référence ${lu.palette.reference} · …`;
+  return `<div class="sch-cadre"><b class="sch-titre">${esc(lu.nom)}</b><span class="sch-entete">${entete}</span>
+    <div class="sch-theme"><span class="sch-nom-theme">Thème Light</span>${rampes}${usages}${grilles}</div>
+    <div class="sch-theme sombre"><span class="sch-nom-theme">Thème Dark · la même structure, peinte des rampes Dark</span></div></div>`;
+}
+
+/** Un extrait du vrai cadre : le titre des usages, l'en-tête des états et la ligne « Fonds légers », à taille réelle. */
+function extraitDesUsages(racine) {
+  const theme = trouver(racine, (n) => n.nom === 'thème light');
+  const sections = theme.enfants.filter((e) => e.nom === NOM_DES_USAGES).map((section) => ({
+    ...section,
+    largeur: undefined,
+    enfants: section.enfants.filter((e) => e.type === 'texte' || e.nom === 'états' || e.nom === 'usage surface'),
+  }));
+  const extrait = { ...theme, enfants: sections };
+  return vueDuCadre(extrait, { zoom: 0.85 });
+}
+
+function sectionCadreBis() {
+  const bleu = P.Bleu;
+  const sauge = P.Sauge;
+  const reco = (texte) => `<span class="reco">${texte}</span>`;
+  const calquesDe = (construire) => milliers(compterCalques(construire(true)));
+  const probleme = `<div class="qbloc"><div class="qtete"><span class="qnum">Le constat</span><h3>Pourquoi les planches alternent entre Soft et Vivid</h3></div>
+    <p>Aujourd’hui, un cadre montre les deux rampes, mais les usages d’un seul profil : celui qui porte la couleur de référence. Bleu est saturé, ses usages sont peints en Vivid ; Sauge est douce, ses usages sont peints en Soft. D’un cadre à l’autre, la même section change de profil sans le dire.</p>
+    <div class="scene"><div class="scene-rangee">${ecran(schemaDuCadre(bleu, 'actuel'), 'Bleu', '<b>Bleu, aujourd’hui.</b> Usages en Vivid.')}${ecran(schemaDuCadre(sauge, 'actuel'), 'Sauge', '<b>Sauge, aujourd’hui.</b> Usages en Soft.')}</div></div>
+    <p class="legende">Schémas : le cadre réduit à ses blocs, trois usages sur sept, le thème Light seul. Les couleurs sont celles du moteur.</p></div>`;
+  const q1 = blocDeQuestion(1, 'Le cadre d’une palette à une intensité',
+    'Une seule rampe, donc une seule section d’usages et une seule grille par thème, sans nom de profil. Le problème disparaît : il n’y a qu’une variante à montrer.',
+    [
+      ecran(schemaDuCadre(bleu, 'une'), 'Bleu', `<b>Bleu, une intensité.</b> ${calquesDe((g) => cadreAUneIntensite(bleu, g))} calques, grilles comprises.`),
+      ecran(schemaDuCadre(sauge, 'une'), 'Sauge', `<b>Sauge, une intensité.</b> Même structure ; seule la saturation change.`),
+    ].join(''),
+    `<p>${reco('Recommandé')} tel quel. Le titre de la section des rampes devient « La rampe », et l’en-tête du cadre ne nomme plus de profil.</p>`);
+  const options = [
+    ['D1', 'Une section par profil', 'Deux sections l’une sous l’autre, « · Soft » puis « · Vivid », chacune identique à celle d’aujourd’hui.'],
+    ['D2', 'Deux colonnes par état', 'Une section ; sous default, hover et active, la pastille Soft et la pastille Vivid côte à côte.'],
+    ['D3', 'Deux lignes par usage', 'Une section ; sous chaque usage, une ligne Soft et une ligne Vivid.'],
+  ];
+  const q2 = blocDeQuestion(2, 'Le cadre d’une palette à deux intensités : où poser les usages de Soft et de Vivid',
+    'Avec deux intensités, le cadre montre les usages des deux profils, toujours Soft puis Vivid : Bleu et Sauge donnent alors le même cadre. Trois façons de les ranger. En haut le schéma, en dessous un extrait du vrai cadre à taille réelle : la ligne « Fonds légers » en thème Light.',
+    options.map(([cle, titre, texte]) => `<div class="qecran"><span class="qlettre">${cle}</span>${schemaDuCadre(bleu, cle)}${extraitDesUsages(cadreADeuxIntensites(bleu, cle, false))}<p class="legende"><b>${titre}.</b> ${texte} ${calquesDe((g) => cadreADeuxIntensites(bleu, cle, g))} calques pour Bleu, grilles comprises, contre ${calquesDe((g) => cadreADeuxIntensites(bleu, 'actuel', g))} aujourd’hui.</p></div>`).join(''),
+    `<ol><li><b>D1</b> ${reco('Recommandé.')} Chaque section se lit comme aujourd’hui ; le thème s’allonge d’une section.</li><li><b>D2</b> compare Soft et Vivid d’un coup d’œil, mais le cadre passe de 752 à environ 1 260 px de large, plus large que ses rampes.</li><li><b>D3</b> rapproche aussi les deux profils, en doublant la hauteur de chaque usage.</li></ol>`);
+  const q3 = blocDeQuestion(3, 'Le libellé du spécimen des fonds légers',
+    'Dans le cadre, le spécimen de <code>surface</code> porte le mot « Soft », pour « bouton soft ». Avec D1, la section « · Vivid » montre donc un spécimen écrit « Soft » : on le lit comme le profil. On le voit dans les extraits de D1 et de D2 ci-dessus.',
+    '',
+    `<ol><li><b>a</b> garder « Soft ».</li><li><b>b</b> « Fond léger », le titre de l’usage au singulier. ${reco('Recommandé.')}</li><li><b>c</b> « Badge », l’un des composants que l’usage habille.</li></ol>`);
+  return `<section class="bloc" id="y2-7">
+  <div class="tete"><span class="sur">Y2.7 · Cadre de la planche, second passage</span><h2>Ce que montre le cadre, selon le nombre d’intensités</h2></div>
+  <p>Le premier passage montrait les cadres entiers, trop réduits pour se lire. Ici, un schéma par cadre, et pour la question 2 un extrait à taille réelle.</p>
+  ${probleme}${q1}${q2}${q3}
+</section>`;
+}
+
+const STYLE_BIS = `
+.qbloc { background: var(--papier); border: 1px solid var(--filet); border-radius: 12px; padding: 18px 20px; display: grid; gap: 14px; min-width: 0; }
+.qtete { display: grid; gap: 4px; }
+.qnum { font: 600 12px/1 var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
+.qecran { display: grid; gap: 8px; align-content: start; position: relative; }
+.qlettre { justify-self: start; font: 600 13px/1 var(--sans); padding: 4px 8px; border-radius: 6px; background: var(--accent-fond); color: var(--accent); }
+.qbloc .scene { overflow: visible; }
+.qbloc .scene-rangee { flex-wrap: wrap; width: auto; }
+.qchoix { border-top: 1px solid var(--filet); padding-top: 12px; }
+.qchoix ol { display: grid; gap: 4px; }
+.deux-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.deux-col > div { display: grid; gap: 4px; align-content: start; }
+.rangee-p2 { display: grid; gap: 4px; }
+.controle-court { display: grid; gap: 4px; justify-items: start; }
+.controle-court .segment { min-width: 220px; }
+.p3 { display: grid; grid-template-columns: 130px 1fr; gap: 10px 12px; align-items: start; }
+.p3-libelle { padding-top: 6px; }
+.p3-controle { display: grid; gap: 4px; min-width: 0; }
+.sch-cadre { width: 470px; background: #fff; color: #1E1E1E; border: 1px solid var(--filet); border-radius: 8px; padding: 14px; display: grid; gap: 6px; font: 11px/1.3 Inter, sans-serif; }
+.sch-titre { font-size: 15px; }
+.sch-entete { color: #6B6B6B; }
+.sch-theme { background: #F7F7F7; border: 1px solid #8C8C8C; border-radius: 8px; padding: 10px; display: grid; gap: 8px; }
+.sch-theme.sombre { background: #121212; color: #B3B3B3; }
+.sch-nom-theme { font-weight: 600; color: #6B6B6B; }
+.sch-theme.sombre .sch-nom-theme { color: #B3B3B3; }
+.sch-bloc { border: 1px dashed #B8B8B8; border-radius: 6px; padding: 8px; display: grid; gap: 5px; background: #fff; }
+.sch-nom { font-weight: 600; }
+.sch-rampe { display: grid; grid-template-columns: 40px repeat(${CRANS.length}, 1fr); gap: 2px; align-items: center; }
+.sch-rampe:not(:has(.sch-profil)) { grid-template-columns: repeat(${CRANS.length}, 1fr); }
+.sch-rampe i { height: 14px; border-radius: 2px; }
+.sch-profil { font-weight: 600; font-size: 10px; }
+.sch-ligne { display: grid; grid-template-columns: 90px repeat(3, 1fr); gap: 6px; align-items: center; }
+.sch-ligne.sous { grid-template-columns: 40px repeat(3, 1fr); }
+.sch-groupe { display: grid; grid-template-columns: 90px 1fr; gap: 6px; align-items: start; }
+.sch-groupe > div { display: grid; gap: 3px; }
+.sch-usage { color: #444; }
+.sch-pastille { font-style: normal; height: 18px; border-radius: 4px; display: grid; place-items: center; font-size: 9px; font-weight: 600; }
+.sch-texte { font-style: normal; font-weight: 600; text-decoration: underline; }
+.sch-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.sch-suite { color: #8C8C8C; font-size: 10px; }
+.sch-grilles { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+.sch-grilles > div { display: grid; gap: 4px; }
+.sch-damier { height: 36px; border-radius: 4px; background: repeating-linear-gradient(90deg, #DADADA 0 10px, #EFEFEF 10px 12px), #EEE; opacity: .8; }
+`;
+
 /* La page */
 
 const lireStyle = (fichier, motif) => motif.exec(fs.readFileSync(path.join(ICI, fichier), 'utf8'))[1];
 const STYLE_V3 = lireStyle('generer-maquettes-v3.mjs', /const STYLE = `([\s\S]*?)`;\n/);
 const STYLE_V4 = lireStyle('generer-maquettes-v4.mjs', /const STYLE_SECOND = `([\s\S]*?)`;\n/);
 const STYLE_V4_BIS = lireStyle('generer-maquettes-v4.mjs', /\$\{STYLE_SECOND\}\n([\s\S]*?)`;\n/);
-const STYLE = `${STYLE_V3}${STYLE_V4}${STYLE_V4_BIS}
+const STYLE = `${STYLE_V3}${STYLE_V4}${STYLE_V4_BIS}${STYLE_BIS}
 main { max-width: 1400px; }
 .fp { --f-onglet: #505050; }
 .fp-haut { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
@@ -990,11 +1236,16 @@ ${STYLE}</style>
 <section class="intro">
   <span class="sur">UCM Palettes · plan d’ergonomie, cinquième tour · lot Y2</span>
   <h1>Maquettes à valider</h1>
-  <p>Cinq maquettes, dans l’ordre des lots qui les attendent : Y2.1 débloque le moteur (Y3), Y2.4 et Y2.3 la planche (Y5), Y2.2 les fiches (Y6), Y2.5 les fonds sombres (Y7). Le panneau est à 650 px, dans le thème sombre de Figma, et montre déjà les corrections dictées de Y1 : ligne du titre sans génération, filet à 15 px, onglet actif sur fond, gestes compacts. Les couleurs, les ratios et les nombres de calques sont calculés par le moteur et le modèle de planche pour Bleu #1E6FD9, Vert #16A34A, Rouge #DC2626 et Sauge #A0B599.</p>
+  <p><b>Second passage</b>, après tes retours sur le premier : Y2.6 reprend le choix des intensités, Y2.7 le cadre de la planche, en tête de page. Chaque question y a son bloc, ses écrans juste au-dessus de ses choix, et une lettre sur chaque écran que les choix reprennent. Y2.2 (fiche A), Y2.3 (C1) et Y2.5 (R3 à 0,30) sont validées. Le premier passage, répondu, suit.</p>
+  <p>Premier passage. Cinq maquettes, dans l’ordre des lots qui les attendent : Y2.1 débloque le moteur (Y3), Y2.4 et Y2.3 la planche (Y5), Y2.2 les fiches (Y6), Y2.5 les fonds sombres (Y7). Le panneau est à 650 px, dans le thème sombre de Figma, et montre déjà les corrections dictées de Y1 : ligne du titre sans génération, filet à 15 px, onglet actif sur fond, gestes compacts. Les couleurs, les ratios et les nombres de calques sont calculés par le moteur et le modèle de planche pour Bleu #1E6FD9, Vert #16A34A, Rouge #DC2626 et Sauge #A0B599.</p>
   <p>Chaque maquette montre la disposition en place quand elle existe, au moins une autre, puis ses questions avec une recommandation ; « recommandé » vaut accord si la question reste sans réponse. Les libellés sont des propositions : ils entreront dans l’inventaire des textes « À valider ».</p>
   <p class="note">Page écrite par <code>generer-maquettes-v5.mjs</code>. Pour la régénérer : <code>node --import tsx "docs/notes/Recherches/Plugin Palettes/generer-maquettes-v5.mjs"</code>.</p>
-  <nav class="sommaire"><a href="#y2-1">Y2.1 Choix des intensités</a><a href="#y2-2">Y2.2 Fiche d’une palette</a><a href="#y2-3">Y2.3 Contenu des planches</a><a href="#y2-4">Y2.4 Cadre de la planche</a><a href="#y2-5">Y2.5 Fonds sombres</a></nav>
+  <nav class="sommaire"><a href="#y2-6">Y2.6 Choix des intensités, second passage</a><a href="#y2-7">Y2.7 Cadre de la planche, second passage</a></nav>
+  <nav class="sommaire"><span>Premier passage :</span><a href="#y2-1">Y2.1 Choix des intensités</a><a href="#y2-2">Y2.2 Fiche d’une palette</a><a href="#y2-3">Y2.3 Contenu des planches</a><a href="#y2-4">Y2.4 Cadre de la planche</a><a href="#y2-5">Y2.5 Fonds sombres</a></nav>
 </section>
+${sectionIntensitesBis()}
+${sectionCadreBis()}
+<section class="intro"><span class="sur">Premier passage · répondu</span><h2>Les maquettes auxquelles tes retours répondent</h2></section>
 ${sectionIntensites()}
 ${sectionFiches()}
 ${sectionContenu()}
