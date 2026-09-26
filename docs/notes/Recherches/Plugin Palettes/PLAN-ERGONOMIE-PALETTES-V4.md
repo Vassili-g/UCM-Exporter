@@ -180,12 +180,15 @@ Fichiers : `textes.ts`, `ongletPalettes.ts`, `nuancier.ts`, `styles.css`,
   d’y porter le focus. Fait selon Q4.3 : Intensités, Dérive de teinte, puis
   Garanties de contraste, puis Interface de test. Les liens gardent leur cible,
   qui ne dépend pas de la place.
-- [ ] **X1.6** Tests : désélection au clic et au clavier ; ordre des cartes ;
+- [x] **X1.6** Tests : désélection au clic et au clavier ; ordre des cartes ;
   bouton danger au survol, par sa couleur calculée et non par sa classe.
   Chaque test vu rouge sur une mutation de ce qu’il protège. Fait en test
-  unitaire pour la désélection (`memeChoix`), vu rouge sur une mutation. L’ordre
-  des cartes et le survol du bouton danger restent au mainteneur, dans le plugin
-  : pas de test d’interface dans ce tour.
+  unitaire pour la désélection (`memeChoix`), puis en tests d’interface : un
+  second clic, Entrée ou Espace relâche la nuance ; l’ordre des cartes et leur
+  état replié ; « Supprimer la palette » lu en `rgb(242, 72, 34)`, puis
+  `rgb(220, 52, 18)` au survol, jamais la couleur de marque. Chacun vu rouge
+  sur une mutation : `choisir(suivant)` sans relâche, Garanties avant
+  Intensités, survol en `--fond-marque-survol`.
 - [x] **X1.7** Appliquer à la carte de création la disposition retenue en
   X2.7, après validation. Fait : Modèle Standard ou Libre dans la troisième
   colonne, palette de base dessous, puces d’une palette libre sous les
@@ -349,9 +352,11 @@ Après validation de X2.4.
   et « Afficher dans Figma » ; l’erreur ou les écarts viennent dessous. Dans
   l’onglet Planches, un cadre jamais dessiné n’a plus d’état écrit, et un cadre
   périmé propose « Actualiser sur Figma ».
-- [ ] **X4.4** Reprendre le test `[UI-03]` à 500 × 520 : titre et bouton sur
-  une ligne, configuration et haut de l’aperçu lisibles sans défiler. Au
-  mainteneur, dans le plugin.
+- [x] **X4.4** Reprendre le test `[UI-03]` à 500 × 520 : titre et bouton sur
+  une ligne, configuration et haut de l’aperçu lisibles sans défiler. Fait :
+  le test mesure le bouton à droite du titre et sur sa ligne, et un nom long
+  coupé avant le bouton. Vu rouge sur un bouton posé sous le titre. Le constat
+  dans Figma reste dans la recette (X8.3).
 - [x] **X4.5** Tests : libellé par état, « Actualiser sur Figma » après une
   modification d’un cadre à jour, nom long qui ne pousse pas le bouton hors
   du panneau. Fait pour le libellé par état, en test unitaire
@@ -490,10 +495,14 @@ d’origine, et le plugin ne change jamais la couleur à sa place.
 
 ## Lot X8 : recette et clôture
 
-- [ ] **X8.1** Récrire ou retirer les 36 tests d’interface écrits avant W1,
-  en gardant ce que chacun protégeait encore. Non fait : le mainteneur fait les
-  tests d’interface. Les sélecteurs de la génération et du bouton « Nouvelle
-  palette » y suivent le code, sans être rejoués.
+- [x] **X8.1** Récrire ou retirer les 36 tests d’interface écrits avant W1,
+  en gardant ce que chacun protégeait encore. Fait : ils étaient 40 à
+  échouer, surface-card comprise. Les cartes repliées se déplient par leur
+  titre ; la dérive, l’import et le rapport y passent. « Voir les deux
+  couleurs » et l’option de grille n’existent plus : leurs deux tests visent
+  désormais la carte des garanties (ligne choisie, arcs, autre thème) et le
+  bouton du titre (« À jour sur Figma », puis « Actualiser sur Figma » après
+  un rangement). 87 tests, tous verts.
 - [ ] **X8.2** (ex-W2.5) Tests de « Supprimer définitivement » : écriture qui
   retire cadre et suivi ensemble, cadre déjà absent, geste bloqué en
   conflit. Constater dans Figma qu’un seul Ctrl+Z rend le cadre et son
