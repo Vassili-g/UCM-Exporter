@@ -292,7 +292,14 @@ Fichiers : `styles.css`, `ongletPalettes.ts`, `derive/editeur.ts`,
 - [x] **Y1.10** Fenêtre à 650 × 720 par défaut ; une taille rangée de
   600 × 720 s’ouvre à 650 × 720. Reprendre les tests de `fenetre.ts` et la
   taille de la recette visuelle. Fait : `tailleALOuverture`, et la galerie
-  par défaut à 650 × 720.
+  par défaut à 650 × 720. Puis, à la demande du mainteneur en cours de plan,
+  750 × 720 : une taille rangée à 600 × 720 ou 650 × 720 s’ouvre à
+  750 × 720. Les marges latérales de la page et des cartes passent de 16 et
+  12 px à 8 px, pour que le contenu prenne cette largeur. Avec les deux
+  cartes d’intensités, la carte de configuration ne tient plus entière à
+  500 × 520 : `[UI-03]` exige désormais la carte et le haut de l’aperçu à la
+  taille par défaut, et la rangée du nom et de la référence à la taille
+  minimale.
 - [x] **Y1.11** Tests : ligne du titre sans génération ; fond de l’onglet
   actif distinct de la carte, par sa couleur calculée, pour les trois
   bascules ; écart entre deux anneaux de la grille des États ; hauteur égale
@@ -403,70 +410,101 @@ Après la validation de Y2.1. Fichiers : `packages/couleur/src/*`,
 `plugin-palettes/src/presentation.ts`, `rapport.ts`, `edition.ts`,
 `configuration.ts`.
 
-- [ ] **Y3.1** Faire relire ce lot et le lot Y7 par un agent de revue
+- [x] **Y3.1** Faire relire ce lot et le lot Y7 par un agent de revue
   indépendant avant d’écrire le code. Trancher point par point, dire ce qui
   est retenu et ce qui est rejeté, avec la raison, et vérifier chaque
-  affirmation dans le code.
-- [ ] **Y3.2** Recette : un champ facultatif marque une palette à une
+  affirmation dans le code. Fait : voir la [disposition de la
+  revue](#disposition-de-la-revue-des-lots-y3-et-y7).
+- [x] **Y3.2** Recette : un champ facultatif marque une palette à une
   intensité ; absent, la palette en a deux. Son nom se fixe à la revue. Une
   palette libre n’en porte pas. Une palette à une intensité ne porte ni
   `base`, ni dérive par profil, ni parts par profil. `FORMAT_RECETTE` passe à
-  4 avec Y7 ; une recette de format 3 se lit sans changement.
-- [ ] **Y3.3** Rampes et ancrage : une palette à une intensité se calcule
+  4 avec Y7 ; une recette de format 3 se lit sans changement. Fait : `intensites: 1`, règles `intensites-valeur` et `intensites-incompatible` ; `FORMAT_RECETTE` vaut 4, et la migration 3 → 4 ajoute les deux réglages communs.
+- [x] **Y3.3** Rampes et ancrage : une palette à une intensité se calcule
   comme le profil porteur forcé de `[ENT-11]`, à la part de chroma de la
   référence, référence exacte à son cran ; seule cette rampe se garde, en
   Light et en Dark. Une palette à deux intensités garde `[MOT-17]` et
-  `[ENT-11]`. Traiter à la revue une référence presque grise (`[MOT-18]`).
-- [ ] **Y3.4** Promesses et alertes : seules les rampes présentes se jugent.
+  `[ENT-11]`. Traiter à la revue une référence presque grise (`[MOT-18]`). Fait : `rampesDe` rend `{ unique }`, calculée à la part de la référence et ancrée ; un test la compare au profil forcé sur cinq cents références. Une référence presque grise prend sa part de chroma, comme ses parts `grise` à deux intensités.
+- [x] **Y3.4** Promesses et alertes : seules les rampes présentes se jugent.
   Le verdict d’un thème compte les rampes présentes. « Profils confondus »
   se tait pour une palette à une intensité. « Palettes proches » compare
   deux palettes sur une rampe que chacune porte ; la règle se fixe à la
-  revue et s’écrit dans la spécification.
-- [ ] **Y3.5** Rapport, export de la recette et empreinte : ils ne listent
+  revue et s’écrit dans la spécification. Fait selon la [disposition de la revue](#disposition-de-la-revue-des-lots-y3-et-y7) ; « Palettes proches » est `[VER-17]`.
+- [x] **Y3.5** Rapport, export de la recette et empreinte : ils ne listent
   que les rampes présentes, sous les noms de la décision « Noms des
-  tokens ». L’empreinte d’un cadre change avec le nombre d’intensités.
+  tokens ». L’empreinte d’un cadre change avec le nombre d’intensités. Fait : rapport au format 3 (`intensites`, crans sans profil pour une intensité), pastilles `{mode}/{cran}`, empreinte du cadre recalculée sur l’arbre. L’export de la recette reste le JSON canonique.
 - [ ] **Y3.6** Spécification : `[MOT-17]`, `[ENT-11]`, section 11 et les
   alertes touchées. Architecture multi-marques : sections 1 à 4, chemin
   d’une couleur à une intensité, comptes de `theme` et de `brand`, exemples
   d’exceptions ; la [vue illustrée](../Archi%20Tokens%20Multi-marques/VUE-ILLUSTREE-MULTIMARQUES.html)
-  suit.
-- [ ] **Y3.7** Tests : une recette de format 3 relue avec deux intensités par
+  suit. Reste à faire.
+- [x] **Y3.7** Tests : une recette de format 3 relue avec deux intensités par
   palette ; une palette à une intensité sans seconde rampe, sans seconde
   série de garanties, sans alerte « Profils confondus », et dont la rampe
   contient la référence exacte ; le verdict compté sur les rampes
   présentes ; le champ refusé sur une palette libre ; « Palettes proches »
   entre une palette à une intensité et une palette à deux. Chaque loi vue
-  rouge sur une mutation.
+  rouge sur une mutation. Fait : `intensites.test.ts`, six tests, chacun vu rouge sur une mutation de la ligne qu’il protège.
 
 Critère : une recette de format 3 se lit et se juge comme avant, et une
 palette à une intensité n’a ni rampe, ni garantie, ni alerte d’un second
 profil.
 
+### Disposition de la revue des lots Y3 et Y7
+
+Chaque point a été relu dans le code avant d’être retenu.
+
+| Point de la revue | Disposition |
+|---|---|
+| Un champ `intensites`, qui ne vaut que `1` ; absent, deux intensités | Retenu. `validerPalette` refuse toute clé inconnue, et `base-libre` sert de patron : `intensites-valeur` refuse une autre valeur, `intensites-incompatible` refuse `base`, `parts` et `crans` à côté de lui. Deux textes ne décrivent ainsi jamais la même palette |
+| La dérive garde `{ lien, soft, vivid }`, liée | Retenu : une palette à une intensité exige `lien: true`, donc deux dérives égales (`derive-lien`). Entorse assumée à « ni dérive par profil » de Y3.2 : l’édition, l’import et l’éditeur restent tels quels |
+| La rampe unique sous une clé `unique` | Retenu : `Intensite = Profil \| 'unique'`, et `intensitesDe` en est l’unique autorité. Garder `soft` ou `vivid` ferait sortir un nom de profil que Q5.2 retire |
+| La rampe unique égale celle du profil forcé | Retenu et vérifié : avec `base` forcée, `partsDe` donne au profil forcé la part de la référence au millième, et `ancrageDe` ne dépend pas du profil. Un test compare les deux sur des tirages |
+| Rampes d’une palette au type partiel | Retenu : le compilateur désigne chaque lecture de Soft ou de Vivid, sélecteur de couleur compris, qu’aucun lot ne nommait |
+| Promesses et verdict par intensité présente | Retenu. `groupesManques`, `constatDeGroupe`, `manqueesParProfil` et le panneau d’ajustement, qui supposent Soft et Vivid, suivent les intensités présentes |
+| « Référence plus terne » et « Référence plus vive » muettes pour une intensité | Retenu : le plan les oubliait. La part de la rampe unique est celle de la référence |
+| `ciblesDeLaPromesse` reçoit la palette | Retenu : une palette à une intensité n’a pas de carte Intensités (I1) |
+| « Palettes proches » | Retenu : Vivid contre Vivid entre deux palettes à deux intensités, comme au format 3 ; rampe unique contre rampe unique ; entre une et deux, la plus petite distance de la rampe unique à Soft et à Vivid. `rampesDe` sort de la boucle, où il se calculait trois fois par palette |
+| Rapport au format 3, `intensites` et crans sans profil pour une intensité | Retenu : un champ retiré monte `FORMAT_DU_RAPPORT` |
+| Pastilles et calques sans profil, `ecartsDePeinture` par intensité | Retenu (Y5.1) |
+| R3 dans `fabriquerRampe` et `cranFlottant`, jamais dans `fabriquerCran` | Retenu : `fabriquerCran` sert aussi à la garantie, à l’ajustement et à la bande de la dérive |
+| Le facteur lu par clarté, entre les numéros 50 et 400 de la courbe Dark commune | Retenu : `luminositeAuNumero` donne une clarté au numéro 400 d’une liste qui ne le porte pas, et une palette libre prend son facteur par clarté. `facteurSombre` en est l’autorité, que « Profils confondus » lit pour taire ses nuances Dark sous 1 |
+| Réglage `intensiteDesFondsSombres`, clé de premier niveau, posé par la migration | Retenu, 0,30 par défaut. La migration 3 → 4 est la première qui change le texte : le test « format 3 relu sans changement » porte sur les palettes et les couleurs Light |
+| Le contenu des planches au format 4 aussi | Retenu : `contenuDesPlanches` entre dans le même passage, sans quoi Y5.3 demanderait un format 5 |
+| `architecture.test.ts` suit R3 ; la garantie des courbes ne change pas | Retenu : la garantie compare 600 et 700 à un 50 gris, où le facteur vaut 1. Son pire cas se mesure aussi sur les parts de 0 à 1, puisque la part d’une marque devient quelconque (Y7.4) |
+| Import : les trois champs nouveaux comparés, refus nommés | Retenu |
+| `passerEnLibre` retire `intensites` ; `revenirAuModele` pose « Une » | Retenu, « Une » étant le choix par défaut de la création. À confirmer à la recette |
+| Une notice au passage de deux intensités à une | Rejeté : le mainteneur a choisi « pas de confirmation » (Y2.1), et Ctrl+Z dans Figma défait le rangement |
+| Tous les cadres « À mettre à jour » à la mise à jour du plugin | Déjà écrit en Y7.3 ; la note de version le dira |
+
 ## Lot Y4 : interface, le choix des intensités partout
 
 Après Y3. Disposition de Y2.6 validée.
 
-- [ ] **Y4.1** Carte de création et configuration de la palette : le choix
+- [x] **Y4.1** Carte de création et configuration de la palette : le choix
   des intensités, et la configuration alignée sur la création. « Palette de
   base » se retire ; le choix du profil porteur ne paraît qu’avec deux
-  intensités.
-- [ ] **Y4.2** Aperçu et nuancier : une rangée par thème pour une intensité,
-  sans nom de profil ; le repère ≈ seulement avec deux.
-- [ ] **Y4.3** Intensités d’une palette, selon Y2.1. Les Intensités des
+  intensités. Fait : composant `createChoixDesIntensites`, deux cartes avec leur rampe, disposition P2 dans la création et la configuration ; « Référence exacte dans » dans la carte « Deux intensités ». Une palette neuve se crée à une intensité.
+- [x] **Y4.2** Aperçu et nuancier : une rangée par thème pour une intensité,
+  sans nom de profil ; le repère ≈ seulement avec deux. Fait : les rangées suivent `analyse.intensites`, et la rampe unique n’a pas de nom.
+- [x] **Y4.3** Intensités d’une palette, selon Y2.1. Les Intensités des
   Réglages communs gardent Soft et Vivid, qui servent aux palettes à deux
-  intensités.
-- [ ] **Y4.4** Dérive de teinte : un seul tracé et aucun lien de
-  synchronisation pour une palette à une intensité.
-- [ ] **Y4.5** Garanties de contraste : la bascule Soft et Vivid se retire
+  intensités. Fait : la carte Intensités de la palette se retire pour une intensité ; la carte commune garde Soft et Vivid.
+- [x] **Y4.4** Dérive de teinte : un seul tracé et aucun lien de
+  synchronisation pour une palette à une intensité. Fait : un tracé, ni case de synchronisation ni choix du profil ; le résumé dit le seul préréglage.
+- [x] **Y4.5** Garanties de contraste : la bascule Soft et Vivid se retire
   pour une palette à une intensité. Le détail d’une nuance ne cite que les
-  rampes présentes.
-- [ ] **Y4.6** Interface de test : la rampe peinte selon Y2.6.
-- [ ] **Y4.7** Aperçu compact d’une fiche de l’onglet Planches : les rampes
-  présentes.
-- [ ] **Y4.8** Tests d’interface : chaque choix change l’aperçu, les
+  rampes présentes. Fait : bascule retirée, résumé « Garanties ✓ », détail d’une nuance limité aux rampes présentes.
+- [x] **Y4.6** Interface de test : la rampe peinte selon Y2.6. Fait : bascule Soft et Vivid au bord droit, ouverte sur le porteur de la palette ouverte.
+- [x] **Y4.7** Aperçu compact d’une fiche de l’onglet Planches : les rampes
+  présentes. Fait ; le sélecteur de couleur propose la rampe unique d’une palette à une intensité.
+- [x] **Y4.8** Tests d’interface : chaque choix change l’aperçu, les
   Garanties et l’interface de test ; changer le nombre d’intensités d’une
   palette générée fait passer son cadre « À mettre à jour ». Chaque test vu
-  rouge sur une mutation.
+  rouge sur une mutation. Fait : deux tests d’interface (le passage de deux
+  intensités à une et retour, le cadre périmé), et la création réécrite
+  (« Une » par défaut, porteur dans la carte « Deux »), vus rouges sur
+  mutation.
 
 Critère : le designer ne voit jamais un profil que sa palette ne porte pas.
 
@@ -474,22 +512,22 @@ Critère : le designer ne voit jamais un profil que sa palette ne porte pas.
 
 Après Y3, et la validation de Y2.3 et Y2.7.
 
-- [ ] **Y5.1** Rampes et grilles : celles des intensités présentes. Une
+- [x] **Y5.1** Rampes et grilles : celles des intensités présentes. Une
   palette à une intensité nomme ses pastilles `{mode}/{cran}` (`[PLA-14]`).
-  La note sous les rampes n’explique ≈ qu’avec deux intensités.
+  La note sous les rampes n’explique ≈ qu’avec deux intensités. Fait.
 - [ ] **Y5.2** Usages : ceux de chaque profil présent, disposés selon Y2.7.
   Récrire `[PLA-18]`. L’en-tête nomme le profil porteur seulement avec deux
-  intensités.
-- [ ] **Y5.3** Contenu des planches : le modèle reçoit les parties à
+  intensités. Fait dans le modèle : une section d’usages par profil présent, Soft puis Vivid, et « Fond léger ». `[PLA-18]` reste à récrire dans la spécification.
+- [x] **Y5.3** Contenu des planches : le modèle reçoit les parties à
   dessiner, à la place de l’option `grille`. Le réglage se range dans la
   recette. Une partie retirée change l’empreinte, et les cadres passent
-  « À mettre à jour ».
-- [ ] **Y5.4** Recompter les calques du cadre de Bleu à une et à deux
-  intensités, toutes parties dessinées, contre 1 632 aujourd’hui.
-- [ ] **Y5.5** Tests : aucun cadre ne montre une rampe absente ; une palette
+  « À mettre à jour ». Fait : `contenuDesPlanches` dans la recette au format 4 ; la demande `dessiner` ne porte plus d’option `grille` ; carte C1 repliée en dernier dans les Réglages communs, avec les calques de chaque partie et l’effet sur le cadre de la palette ouverte.
+- [x] **Y5.4** Recompter les calques du cadre de Bleu à une et à deux
+  intensités, toutes parties dessinées, contre 1 632 aujourd’hui. Fait : Bleu compte 1 966 calques à deux intensités et 1 008 à une, toutes parties dessinées.
+- [x] **Y5.5** Tests : aucun cadre ne montre une rampe absente ; une palette
   à deux intensités montre les usages des deux profils ; chaque partie
   désactivée disparaît du modèle et change l’empreinte ; les parties qui ne
-  se désactivent pas restent. Chaque loi vue rouge sur une mutation.
+  se désactivent pas restent. Chaque loi vue rouge sur une mutation. Fait : quatre tests du modèle de planche, vus rouges sur cinq mutations.
 
 Critère : deux palettes de même configuration donnent deux cadres de même
 structure, quelle que soit la saturation de leur référence.
@@ -498,12 +536,14 @@ structure, quelle que soit la saturation de leur référence.
 
 Après la validation de Y2.2.
 
-- [ ] **Y6.1** Refaire la fiche d’une palette selon Y2.2, gestes de Y1.9
-  compris.
-- [ ] **Y6.2** Le premier geste de chaque état du cadre, dont « À jour »,
-  selon Y2.2.
-- [ ] **Y6.3** Tests : ordre et variantes des gestes par état ; focus rendu
-  au geste après une génération. Chaque test vu rouge sur une mutation.
+- [x] **Y6.1** Refaire la fiche d’une palette selon Y2.2, gestes de Y1.9
+  compris. Fait : disposition A, l’état en pastille colorée à droite du nom, la référence et les garanties sur une ligne.
+- [x] **Y6.2** Le premier geste de chaque état du cadre, dont « À jour »,
+  selon Y2.2. Fait avec Y1.9 ; « Pas encore sur Figma » pour un cadre jamais généré.
+- [x] **Y6.3** Tests : ordre et variantes des gestes par état ; focus rendu
+  au geste après une génération. Chaque test vu rouge sur une mutation. Fait :
+  le focus, que le panneau inerte perdait, revient au geste de la fiche, ou
+  à son premier geste quand le cadre n’en demande plus.
 
 Critère : le designer lit en un regard quelles palettes sont à générer, et
 les génère d’un clic depuis leur fiche.
@@ -557,21 +597,21 @@ change pas.
   3,44:1 pour `border-control` et `focus` sur `surface`. R3 fait
   apparaître ≈ aux nuances 50 (et 100 pour Vert et Sauge) des quatre
   références.
-- [ ] **Y7.3** Moteur et recette : la règle retenue en Y2.5, son réglage et
+- [x] **Y7.3** Moteur et recette : la règle retenue en Y2.5, son réglage et
   sa valeur par défaut, dans le même passage au format 4 que Y3. Une recette
   de format 3 prend la valeur par défaut : aucune variable ne dépend encore
-  de ces couleurs, et tous les cadres passent « À mettre à jour ».
+  de ces couleurs, et tous les cadres passent « À mettre à jour ». Fait : `facteurSombre` dans `fabriquerRampe`, réglage `intensiteDesFondsSombres` à 0,30. Les bornes se lisent à la courbe Dark commune aux numéros 50 et 400, ou à la courbe par défaut quand la liste ne porte pas le numéro : passer à neuf nuances ne change ainsi aucune couleur gardée.
 - [ ] **Y7.4** Garanties : une baisse de chroma à clarté égale change la
   luminance relative. Rejouer `verifier-courbes.mjs` et la garantie des
   courbes : `text` sur `surface` à ses trois états, `text` et
   `border-control` sur `surface-card`, sur les 360 teintes. Reporter les
-  minimums dans l’architecture, section 4.
+  minimums dans l’architecture, section 4. Mesures faites : avec R3, `verifier-courbes.mjs` donne 4,95:1 pour text sur surface et 3,45:1 pour border-control et focus sur surface ; sa nouvelle section 9, sur les parts de 0 à 1, donne 4,90:1 et 3,41:1. `architecture.test.ts` suit R3. Le report dans l’architecture, section 4, reste à faire.
 - [ ] **Y7.5** Interface et documents : le réglage à la place que Y2.5 fixe ;
-  spécification, architecture section 3.2, CONTRIBUTING.md.
-- [ ] **Y7.6** Tests : le thème Light identique à l’octet ; en Dark, les
+  spécification, architecture section 3.2, CONTRIBUTING.md. Réglage fait : ligne « Fonds du thème Dark » dans la carte Intensités des Réglages communs. Spécification, architecture et CONTRIBUTING.md restent à faire.
+- [x] **Y7.6** Tests : le thème Light identique à l’octet ; en Dark, les
   crans 50 à 300 sous la règle et les crans 500 à 800 inchangés ; les
   garanties tenues ; une recette de format 3 relue avec la valeur par
-  défaut. Chaque loi vue rouge sur une mutation.
+  défaut. Chaque loi vue rouge sur une mutation. Fait : `fondsSombres.test.ts` et `architecture.test.ts`, vus rouges sur mutation.
 
 Critère : en Dark, une alerte ou un encart teinté ne sature plus, les
 boutons gardent leur vivacité, et toutes les garanties tiennent.

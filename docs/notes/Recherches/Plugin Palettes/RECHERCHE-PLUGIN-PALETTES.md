@@ -1213,12 +1213,12 @@ titre et, à droite, le résumé du préréglage et de la synchronisation.
 
 ### 13.1 Fenêtre et onglets
 
-- `[UI-01]` Taille par défaut 650 × 720, minimale 500 × 520, rangée sous une
+- `[UI-01]` Taille par défaut 750 × 720, minimale 500 × 520, rangée sous une
   clé propre au plugin par la fenêtre du socle. La poignée de
   redimensionnement ne descend pas sous la largeur minimale, et une taille
-  rangée plus étroite s'ouvre à 500 px. Une taille rangée égale à l'ancien
-  défaut, 600 × 720, s'ouvre à 650 × 720 ; toute autre taille rangée se
-  garde. Le designer peut élargir la fenêtre.
+  rangée plus étroite s'ouvre à 500 px. Une taille rangée égale à un ancien
+  défaut, 600 × 720 ou 650 × 720, s'ouvre à 750 × 720 ; toute autre taille
+  rangée se garde. Le designer peut élargir la fenêtre.
 - `[UI-02]` Deux onglets, **Palettes** et **Planches**, et un bouton en forme
   d'engrenage dans l'en-tête, qui ouvre les Réglages communs (section 8.3)
   comme celui d'UCM Exporter ouvre sa configuration. L'onglet Palettes ne
@@ -1236,9 +1236,9 @@ titre et, à droite, le résumé du préréglage et de la synchronisation.
   [CONTRIBUTING.md](../../../../CONTRIBUTING.md#la-hiérarchie-de-linformation)
   s'applique, avec les surfaces propres à
   [UCM Palettes](../../../../CONTRIBUTING.md#les-surfaces-ducm-palettes) : à
-  500 × 520, le sélecteur de palette, le titre de premier rang, la carte
-  « Configuration de la palette » et le haut de l'aperçu se lisent sans
-  défiler. Le reste s'atteint en défilant, sans barre flottante qui recouvre
+  la taille par défaut, la carte « Configuration de la palette » et le haut
+  de l'aperçu se lisent sans défiler ; à 500 × 520, le sélecteur de palette,
+  le titre de premier rang et la rangée du nom et de la référence. Le reste s'atteint en défilant, sans barre flottante qui recouvre
   le contenu.
 
 ### 13.2 Écrans
