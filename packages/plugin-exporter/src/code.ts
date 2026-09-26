@@ -15,7 +15,8 @@ import type { PointACorriger } from './contract/localisation';
 import type { ExtractedRules, ReleveDeSource } from './contract/extractRules';
 import handleExportComponent, { ETAPES_DE_L_ANALYSE, getSelectedComponent } from './contract/exportComponent';
 import {
-  abandonnerLaMesure, avancementCourant, etape, fermerLaMesure, ouvrirLaMesure,
+  abandonnerLaMesure, avancementCourant, compter, etape, fermerLaMesure, ouvrirLaMesure,
+  retenirLeMaximum,
 } from './contract/mesure';
 import type { EtapePrevue } from './contract/mesure';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
@@ -636,14 +637,33 @@ function verifierAnnulation(): void {
  */
 function respirer(): Promise<void> {
   signalerAvancement();
-  return new Promise<void>((resolve) => setTimeout(resolve, 0)).then(verifierAnnulation);
+  noterUnContact();
+  const debut = Date.now();
+  return new Promise<void>((resolve) => setTimeout(resolve, 0)).then(() => {
+    compter('msEnRespiration', Date.now() - debut);
+    dernierContact = Date.now();
+    verifierAnnulation();
+  });
+}
+
+/**
+ * Le dernier moment où l'analyse a parlé à l'interface, annonce ou
+ * respiration. Le plus long intervalle entre deux contacts est le plus long
+ * moment où la note de chargement n'a pas bougé.
+ */
+let dernierContact = 0;
+
+function noterUnContact(): void {
+  const maintenant = Date.now();
+  retenirLeMaximum('plusLongSilenceMs', maintenant - dernierContact);
+  dernierContact = maintenant;
 }
 
 /**
  * Les étapes d'une analyse de composant, lecture du dépôt comprise. Celles des
  * tokens ne sont pas pesées : leur carte n'a pas de barre.
  */
-const ETAPES_DU_COMPOSANT: readonly EtapePrevue[] = [...ETAPES_DE_L_ANALYSE, { nom: 'depot', poids: 10 }];
+const ETAPES_DU_COMPOSANT: readonly EtapePrevue[] = [...ETAPES_DE_L_ANALYSE, { nom: 'depot', poids: 5 }];
 
 /** La provenance de l'analyse en cours, et le dernier avancement envoyé. */
 let avancementDeLAnalyse: { provenance: Provenance; envoye: string } | null = null;
@@ -716,6 +736,7 @@ async function analyser(
   annulation = null;
   analysesGardees.delete(artifactKind);
   ouvrirLaMesure(artifactKind === 'component' ? ETAPES_DU_COMPOSANT : null);
+  dernierContact = Date.now();
   let analyseProduite: AnalyseGardee | null = null;
   // Un stockage illisible n'empêche pas l'extraction : la lecture suivante lève
   // alors, et le fichier produit est téléchargé.
@@ -738,6 +759,7 @@ async function analyser(
       verifierAnnulation();
       versUi({ type: 'phase', texte, ...provenance });
       signalerAvancement();
+      noterUnContact();
     }, { respirer });
     verifierAnnulation();
 
@@ -793,6 +815,7 @@ async function analyser(
     versUi({ type: 'phase', texte: 'Lecture du dépôt…', ...provenance });
     etape('depot');
     signalerAvancement();
+    noterUnContact();
     const forge = forgeDe(validation.config);
     // Gestion des tokens désactivée, l'analyse ne lit pas l'état des tokens du
     // dépôt et le verdict ne porte aucune consigne à leur sujet.
@@ -841,6 +864,7 @@ async function analyser(
     avancementDeLAnalyse = null;
     // Sans contrat produit, l'analyse a été annulée ou a échoué dans le moteur :
     // sa trace est jetée, et le pied de page garde celle de la précédente.
+    noterUnContact();
     const trace = analyseProduite ? fermerLaMesure(analyseProduite.content) : null;
     if (trace) {
       console.log('[ucm:mesure]', JSON.stringify(trace));

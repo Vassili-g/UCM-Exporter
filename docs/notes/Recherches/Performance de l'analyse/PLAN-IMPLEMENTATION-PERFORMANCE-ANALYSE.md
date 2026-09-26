@@ -71,6 +71,7 @@ Avant de toucher à un message destiné au designer, charger aussi
 | L5 | Accélérations conditionnelles | M1 | Seuils de la conception, section 5.7 |
 | L7 | Documents | chaque lot | |
 | L8 | Mesure dans le build courant, barre d'avancement | L4 | |
+| L9 | Mesure de la structure, affichage de l'avancement, accélération | L8 | Trace de L9.3 pour L9.8 |
 
 L4 ne dépend que de L1 et peut passer avant L2.
 
@@ -439,6 +440,56 @@ variants.
 - [ ] **L8.6** **[mainteneur]** Analyser trois composants du corpus, copier
   chaque trace et la coller dans `MESURES-PERFORMANCE-ANALYSE.md`. Les durées
   par étape corrigent les poids de `ETAPES_DE_L_ANALYSE` et décident L5.
+
+## Lot L9 : mesure de la structure, affichage de l'avancement, accélération
+
+Demandé par le mainteneur sur la trace d'un set de 140
+variants dans un fichier de plus de 50 pages : 20,6 s, dont 15,3 s pour
+`structure`, 2,5 s pour `echantillons` et 1,1 s pour `depot`. L'index ne
+pèse plus que 0,3 s. Figma reste figé pendant l'analyse ; le mainteneur
+renonce à le libérer et demande deux choses : aller le plus vite possible, et
+montrer dans la note de chargement ce qui est fait et que ça progresse.
+
+La trace ne dit pas ce que coûte `structure`. Elle compte 29 056 appels à
+`getAllNodes` pour 55 071 nodes, soit deux nodes par appel, et 145
+respirations, soit une par variant : les passes de `extractStructure` hors de
+la boucle des vues exactes, comme `echantillons`, n'envoient aucun
+avancement.
+
+- [x] **L9.1** Découper `structure` en étapes de la trace, dans l'ordre de
+  `extractStructure` : `structure.couleurs`, `structure.election`,
+  `structure.icones`, `structure.reference`, `structure.vues`,
+  `structure.effets`, `structure.typographie`,
+  `structure.typographie-exacte`, `structure.tailles`. Chacune entre dans
+  `ETAPES_DE_L_ANALYSE`. Les poids suivent la trace ci-dessus ; ceux des
+  sous-étapes sont provisoires jusqu'à L9.3.
+  *Fait. `extractStructure` ouvre ses étapes ; `exportComponent.ts` n'ouvre
+  plus `structure`. Vu rouge : une sous-étape retirée casse la liste des
+  étapes relevées dans `mesure.test.ts`.*
+- [x] **L9.2** Deux compteurs, relevés par `code.ts` : le temps passé à
+  rendre la main (`msEnRespiration`) et le plus long intervalle entre deux
+  contacts avec l'interface, annonce ou respiration (`plusLongSilenceMs`).
+  Le second est un maximum, pas une somme.
+  *Fait, par `retenirLeMaximum` (`mesure.ts`). Vus rouges : le maximum
+  muet, l'annonce qui ne compte plus comme contact.*
+- [ ] **L9.3** **[mainteneur]** Analyser le même set de 140 variants et coller
+  la trace sous cette tâche.
+- [ ] **L9.4** Rédactions de la note de chargement, étape par étape, soumises
+  au mainteneur sous cette tâche, au moins deux par étape.
+- [ ] **L9.5** Maquettes des rédactions retenues, dans la galerie, face à
+  l'affichage actuel.
+- [ ] **L9.6** Revue indépendante de L9.7 et L9.8 avant le code : elles
+  touchent au moteur.
+- [ ] **L9.7** Chaque passe longue appelle `avancer` et `respirerSiBesoin`,
+  et annonce son texte validé. L'intervalle entre deux respirations ne sert
+  qu'à envoyer l'avancement : il se règle sur `plusLongSilenceMs` et
+  `msEnRespiration`, pas sur la fluidité de Figma.
+- [ ] **L9.8** Accélérer ce que L9.3 désigne. Deux pistes sont écrites
+  d'avance. Si les petits parcours dominent : le relevé par variant de L5.1.
+  Si les lectures de propriétés dominent : chaque variant est lu par cinq
+  passes au moins (couleurs, élection, icônes, vue exacte, typographie deux
+  fois), et une lecture unique par node et par analyse les remplacerait. Le
+  choix revient au mainteneur, sur les chiffres.
 
 ## Lot L7 : documents
 

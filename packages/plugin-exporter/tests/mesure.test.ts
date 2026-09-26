@@ -8,6 +8,7 @@ import test from 'node:test';
 import handleExportComponent, { ETAPES_DE_L_ANALYSE } from '../src/contract/exportComponent';
 import {
   abandonnerLaMesure, avancementCourant, avancer, empreinteDuContrat, etape, fermerLaMesure, ouvrirLaMesure,
+  retenirLeMaximum,
 } from '../src/contract/mesure';
 import { node } from './aides/figmaFaux';
 
@@ -89,6 +90,15 @@ test('l’avancement pèse les étapes prévues, compte la boucle en cours et ne
     abandonnerLaMesure();
   }
   assert.equal(avancementCourant(), null);
+});
+
+test('un maximum retient le plus grand relevé, et se tait hors d’une trace ouverte', () => {
+  retenirLeMaximum('plusLongSilenceMs', 40);
+  ouvrirLaMesure();
+  retenirLeMaximum('plusLongSilenceMs', 12);
+  retenirLeMaximum('plusLongSilenceMs', 30);
+  retenirLeMaximum('plusLongSilenceMs', 5);
+  assert.equal(fermerLaMesure('{}')?.compteurs.plusLongSilenceMs, 30);
 });
 
 test('sans étapes prévues, la trace mesure sans rendre d’avancement', () => {

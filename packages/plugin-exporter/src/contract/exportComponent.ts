@@ -198,18 +198,28 @@ export function componentContractFilename(name: string): string {
  * Les étapes de l'analyse d'un composant, dans leur ordre, et leur part
  * supposée du temps total. La barre de chargement avance d'après ces poids ;
  * la trace de mesure (`mesure.ts`) relève les durées réelles, qui servent à
- * les corriger.
+ * les corriger. Les poids viennent d'un set de 140 variants, en pour cent ;
+ * ceux de `structure.*` se partagent ses 74 % au jugé, jusqu'à la trace qui
+ * les distingue. Les étapes `structure.*` s'ouvrent dans `extractStructure`.
  */
 export const ETAPES_DE_L_ANALYSE: readonly EtapePrevue[] = [
-  { nom: 'regles', poids: 10 },
-  { nom: 'variants', poids: 2 },
-  { nom: 'index', poids: 25 },
-  { nom: 'composition', poids: 15 },
-  { nom: 'wrapper', poids: 3 },
-  { nom: 'variables', poids: 5 },
-  { nom: 'structure', poids: 30 },
-  { nom: 'echantillons', poids: 3 },
-  { nom: 'compaction', poids: 2 },
+  { nom: 'regles', poids: 1 },
+  { nom: 'variants', poids: 1 },
+  { nom: 'index', poids: 2 },
+  { nom: 'composition', poids: 1 },
+  { nom: 'wrapper', poids: 4 },
+  { nom: 'variables', poids: 1 },
+  { nom: 'structure.couleurs', poids: 8 },
+  { nom: 'structure.election', poids: 4 },
+  { nom: 'structure.icones', poids: 4 },
+  { nom: 'structure.reference', poids: 2 },
+  { nom: 'structure.vues', poids: 36 },
+  { nom: 'structure.effets', poids: 2 },
+  { nom: 'structure.typographie', poids: 8 },
+  { nom: 'structure.typographie-exacte', poids: 8 },
+  { nom: 'structure.tailles', poids: 2 },
+  { nom: 'echantillons', poids: 12 },
+  { nom: 'compaction', poids: 1 },
   { nom: 'serialisation', poids: 1 },
 ];
 
@@ -415,7 +425,6 @@ async function exporterLaSelection(annoncer: Annonce): Promise<ComponentExport> 
   const index = indexVariables(variables, new Map(collections.map((c) => [c.id, c])));
   const resolver = new VariableNameResolver({ index, warnings });
 
-  etape('structure');
   const extracted = await extractStructure(
     matrix,
     matrixWarnings,

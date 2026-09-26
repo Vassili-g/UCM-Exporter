@@ -105,13 +105,16 @@ document, comme aujourd'hui.
 Nouveau module `src/contract/mesure.ts`. Il tient, pour une analyse :
 
 - un chronomètre par étape : les étapes de `ETAPES_DE_L_ANALYSE`
-  (`exportComponent.ts`), plus `depot`, la lecture du dépôt que `code.ts`
-  ajoute ;
+  (`exportComponent.ts`), dont les passes de `extractStructure` sous le préfixe
+  `structure.`, plus `depot`, la lecture du dépôt que `code.ts` ajoute ;
 - des compteurs : `pagesChargees`, `pagesBalayees`, `pagesReutilisees`,
   `nodesParcourus` (somme des longueurs rendues par `findAll` dans
   `getAllNodes`), `appelsGetAllNodes`, `appelsFindAllWithCriteria`,
   `appelsGetMainComponentAsync`, `maitresReutilises`, `respirations`,
-  `tailleIndex` ;
+  `msEnRespiration`, `tailleIndex` ;
+- un maximum : `plusLongSilenceMs`, le plus long intervalle entre deux
+  contacts de l'analyse avec l'interface, annonce ou respiration. C'est le plus
+  long moment où la note de chargement reste immobile ;
 - une empreinte du contrat : FNV-1a 32 bits de `content`, dont la valeur de
   `exportedAt` est remplacée par une chaîne fixe.
 

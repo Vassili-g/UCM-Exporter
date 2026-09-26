@@ -25,7 +25,7 @@ import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNo
 import { declarerLesImbriquesSansRegles } from './imbriques';
 import type { ReleveDesImbriques } from './imbriques';
 import { declarerLesRacinesDeVariants, pousserSansNode } from './localisation';
-import { avancer } from './mesure';
+import { avancer, etape } from './mesure';
 import { respirerSiBesoin } from './porteeDAnalyse';
 import type { DiscoveredRoles } from './semantics';
 import type {
@@ -154,6 +154,7 @@ export async function extractStructure(
    */
   targetedLayers: Set<string>;
 }> {
+  etape('structure.couleurs');
   const warnings = [...matrixWarnings];
   if (imbriques) declarerLesImbriquesSansRegles(warnings, imbriques);
   // Un set d'un seul variant garde le nom de sa racine : rien n'y est à regrouper.
@@ -186,6 +187,7 @@ export async function extractStructure(
   // une autre racine (le variant plutôt que son wrapper) désigne parfois un
   // autre node, et les slots des icônes comme les chemins de la typographie
   // cesseraient alors de décrire ceux du contrat.
+  etape('structure.election');
   const layoutNodes = await electVariantLayoutNodes(
     matrix.variants.map((entry) => entry.component),
     referenceComponent ? { component: referenceComponent, wrapper } : null,
@@ -202,6 +204,7 @@ export async function extractStructure(
   // L'inventaire des icônes précède les slots : il couvre toute la matrice,
   // là où le layout ne décrit que le variant de référence. C'est lui qui relève
   // les icônes que ce variant ne contient pas, et qui nomme leur slot.
+  etape('structure.icones');
   const iconLayers = await extractIconLayers(
     matrix,
     layoutNodes,
@@ -216,6 +219,7 @@ export async function extractStructure(
   // fois : c'est cette réponse que suivent à la fois l'extraction du layout de
   // référence et le choix final de `dimensions`. La décider après coup ferait
   // relever (donc avertir sur) des valeurs aussitôt jetées.
+  etape('structure.reference');
   const sizeAxisOwners = proprietairesDAxeDeTailles(wrapper, referenceComponent);
   const aUnAxeDeTailles = sizeAxisOwners.some((owner) => findSizeRepresentatives(owner) !== null);
 
@@ -260,6 +264,7 @@ export async function extractStructure(
   // Seules les vues exactes collectent les calques à effets : la projection de
   // référence n'a pas de vue où situer un usage.
   const effectCarriers = new Map<ComponentNode, EffectCarrier[]>();
+  etape('structure.vues');
   for (const [rang, entry] of matrix.variants.entries()) {
     avancer(rang, matrix.variants.length);
     await respirerSiBesoin();
@@ -282,11 +287,13 @@ export async function extractStructure(
     exactLayouts.push({ entry, structure: exactStructure, placed: exactPlaced, paths: exactPaths });
     effectCarriers.set(entry.component, exactEffects);
   }
+  etape('structure.effets');
   const effects = await extractEffectStyles(effectCarriers, resolver, warnings);
   const exactPathsByVariant = new Map(
     exactLayouts.map(({ entry, paths }) => [entry.component, paths] as const),
   );
 
+  etape('structure.typographie');
   const referenceTextSlotPaths = new Set(
     referenceLayout
       ? textSlots(referenceLayout.layoutNode, targetedLayers, composed)
@@ -304,6 +311,7 @@ export async function extractStructure(
     undefined,
     notices,
   );
+  etape('structure.typographie-exacte');
   const exactTypography = await extractVariantTypography(
     matrix,
     new Map(matrix.variants.map((entry) => [entry.component, entry.component])),
@@ -335,6 +343,7 @@ export async function extractStructure(
 
   // Dimensions par taille, pour couvrir big/medium/small et pas seulement la
   // taille instanciée par défaut.
+  etape('structure.tailles');
   let sizes: Record<string, SizeDimensions> | null = null;
   for (const owner of sizeAxisOwners) {
     // Un set sans axe de tailles n'a pas de représentants : on passe au suivant

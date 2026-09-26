@@ -261,10 +261,10 @@ test('une analyse de composant envoie son avancement, puis sa trace au pied de p
   await h.envoyer({ type: 'analyser-composant', operation: 1 });
 
   const avancements = h.messages.flatMap((message) => (message.type === 'avancement' ? [message] : []));
-  // Poids du banc : 1 pour `regles`, 1 pour `structure`, 10 pour `depot`.
+  // Poids du banc : 1 pour `regles`, 1 pour `structure`, 5 pour `depot`.
   assert.deepEqual(avancements.map(({ fraction, fait, total }) => ({ fraction, fait, total })), [
-    { fraction: 1.5 / 12, fait: 1, total: 2 },
-    { fraction: 2 / 12, fait: undefined, total: undefined },
+    { fraction: 1.5 / 7, fait: 1, total: 2 },
+    { fraction: 2 / 7, fait: undefined, total: undefined },
   ]);
   assert.ok(avancements.every(({ operation }) => operation === 1));
 
@@ -274,6 +274,35 @@ test('une analyse de composant envoie son avancement, puis sa trace au pied de p
   const envoyee = h.messages[rangDeLaMesure] as Extract<PluginMessage, { type: 'mesure' }>;
   assert.deepEqual(envoyee.trace.etapes.map(({ nom }) => nom), ['regles', 'structure', 'depot']);
   assert.deepEqual(h.traces.map((trace) => JSON.parse(trace)), [envoyee.trace]);
+});
+
+function calculerSansContact(ms: number): void {
+  const debut = Date.now();
+  while (Date.now() - debut < ms) { /* le sandbox calcule sans parler à l'interface */ }
+}
+
+test('la trace relève le temps passé à rendre la main et le plus long silence envers l’interface', async () => {
+  const h = ouvrir();
+  h.connecter();
+  h.exporte.traiter = async (annoncer, options) => {
+    (annoncer as (texte: string) => void)('Lecture des règles d’usage…');
+    const respiration = options!.respirer();
+    const [id, rappel] = [...h.temporisations].at(-1)!;
+    h.temporisations.delete(id);
+    rappel();
+    await respiration;
+    calculerSansContact(40);
+    (annoncer as (texte: string) => void)('Écriture du contrat…');
+    calculerSansContact(40);
+    return resultat('exemple.contract.json');
+  };
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+
+  // L'annonce coupe les 80 ms de calcul en deux silences de 40 ms.
+  const envoyee = h.messages.find(({ type }) => type === 'mesure') as Extract<PluginMessage, { type: 'mesure' }>;
+  const { plusLongSilenceMs = 0, msEnRespiration } = envoyee.trace.compteurs;
+  assert.ok(plusLongSilenceMs >= 40 && plusLongSilenceMs < 80, `${plusLongSilenceMs} ms de silence`);
+  assert.equal(typeof msEnRespiration, 'number');
 });
 
 test('une analyse annulée ou en échec ne pose aucune trace, et l’analyse des tokens n’a pas de barre', async () => {

@@ -22,6 +22,8 @@ export type Compteur =
   | 'appelsGetMainComponentAsync'
   | 'maitresReutilises'
   | 'respirations'
+  | 'msEnRespiration'
+  | 'plusLongSilenceMs'
   | 'tailleIndex'
   | 'porteeRefusee';
 
@@ -108,6 +110,12 @@ export function avancer(fait: number, total: number, montrer = true): void {
 export function compter(nom: Compteur, n = 1): void {
   if (!trace) return;
   trace.compteurs[nom] = (trace.compteurs[nom] ?? 0) + n;
+}
+
+/** Garde le plus grand des `n` relevés sous ce nom ; sans effet hors d'une trace ouverte. */
+export function retenirLeMaximum(nom: Compteur, n: number): void {
+  if (!trace) return;
+  trace.compteurs[nom] = Math.max(trace.compteurs[nom] ?? 0, n);
 }
 
 /**
