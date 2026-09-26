@@ -2,29 +2,34 @@
 
 ## Résultat attendu
 
-À la création d’une palette, le designer choisit les profils qu’elle porte :
-Soft seul, Vivid seul, ou les deux. Ce choix se lit ensuite partout :
-aperçu, intensités, dérive, garanties, interface de test, fiches de l’onglet
-Planches et cadres de la planche. Un cadre montre les usages de chaque
-profil qu’il porte, et non plus celui que le classement automatique a élu.
-L’onglet Palettes ne génère plus rien : la génération appartient à l’onglet
-Planches, dont les fiches sont refaites. Les Réglages communs gagnent une
-carte qui dit quelles parties de la planche se génèrent. Les onglets ont
-tous le même style, et le panneau s’ouvre 50 px plus large.
+À la création d’une palette, le designer choisit une intensité ou deux. Une
+palette à une intensité prend celle de sa couleur de référence, et ses
+tokens n’ont pas de segment de profil : `theme.primary.700`. Une palette à
+deux intensités porte Soft et Vivid, comme aujourd’hui. Ce choix se lit
+ensuite partout : aperçu, intensités, dérive, garanties, interface de test,
+fiches de l’onglet Planches et cadres de la planche. Un cadre montre les
+usages de chaque profil qu’il porte, et non plus celui que le classement
+automatique a élu. En thème Dark, les fonds teintés perdent la saturation
+qui les rend criards. L’onglet Palettes ne génère plus rien : la génération
+appartient à l’onglet Planches, dont les fiches sont refaites. Les Réglages
+communs gagnent une carte qui dit quelles parties de la planche se
+génèrent. Les onglets ont tous le même style, et le panneau s’ouvre 50 px
+plus large.
 
 Ce plan est destiné à l’agent qui réalisera les changements. Il remplace les
 cases encore ouvertes du [quatrième plan](./PLAN-ERGONOMIE-PALETTES-V4.md),
 dont les décisions restent valables quand ce document ne les remplace pas.
-Il pose aussi une question de fond, [Q5.1](#questions-au-mainteneur), sur la
-raison d’être des deux profils ; le lot moteur Y3 attend sa réponse. Le
-mainteneur fait lui-même les tests d’interface et la recette dans Figma.
+Le mainteneur a répondu aux six [questions](#questions-au-mainteneur) ; Q5.4
+se confirme sur la maquette Y2.1. Il fait lui-même les tests d’interface et
+la recette dans Figma.
 
 ## Autorités
 
 Lire dans cet ordre :
 
-1. les [retours du mainteneur](#retours-du-mainteneur-round-5), conservés
-   sans modification, et ses réponses aux questions ;
+1. les [retours du mainteneur](#retours-du-mainteneur-round-5) et ses
+   [réponses aux questions](#réponses-du-mainteneur-aux-questions),
+   conservés sans modification ;
 2. l’[avis sur la question de fond](#avis-sur-la-question-de-fond) et les
    décisions ci-dessous ;
 3. les maquettes du lot Y2, une fois validées ; d’ici là, les [maquettes du
@@ -41,19 +46,23 @@ Lire dans cet ordre :
 
 ## Faits qui fondent les décisions
 
-Relevés dans le code et les documents.
+Relevés dans le code et les documents, et mesurés avec le moteur sur la
+recette par défaut.
 
 | Fait | Source | Conséquence |
 |---|---|---|
-| Une palette porte quatre rampes : Soft et Vivid, chacune en Light et en Dark. Soft et Vivid ont la même clarté à chaque cran, donc les mêmes contrastes. Ils diffèrent par la part de chroma, 0,45 et 0,95 du maximum que sRGB porte à cette clarté et à cette teinte | `recetteParDefaut`, architecture section 3.2 | La part est relative : un Vivid est toujours presque aussi saturé que l’écran le permet à sa clarté, en Light comme en Dark |
-| Un composant cite `theme.primary.vivid.700` ; la collection `theme` choisit la valeur Light ou Dark. `theme` compte 143 variables : 11 pour le neutre, 88 pour quatre utilitaires à deux profils, 44 pour deux rampes de marque à deux profils | Architecture section 2 | Les quatre rampes d’une famille ne font que deux noms à choisir. Retirer un profil à une famille retire la moitié de ses noms |
-| Aucune variable `soft` ou `vivid` n’existe dans `intencial-library` ni dans UCM-Playground | Recherche dans les deux dépôts | Changer l’architecture des profils ne casse aucun consommateur |
-| La première recherche proposait des rampes `-dark` plus saturées que les rampes claires. La revue critique l’a jugé bloquant : une couleur douce ou vive sert dans les deux thèmes | Recherche section 6.5, revue section 3.1 | L’idée « Vivid pour le Dark » a déjà été examinée et écartée une fois ; la question Q5.1 la reprend avec les deux besoins du mainteneur |
+| Le plugin génère quatre palettes par famille : Soft Light, Soft Dark, Vivid Light, Vivid Dark, toutes différentes. Soft et Vivid ont la même clarté à chaque cran ; ils diffèrent par la part de chroma, 0,45 et 0,95 du maximum que sRGB porte à cette clarté et à cette teinte | `recetteParDefaut`, `fabriquerPalette`, architecture section 3.2 | Une famille à une intensité n’a que deux palettes, Light et Dark |
+| La couleur de référence `#1E6FD9` a une chroma de 0,179 ; elle est portée par Vivid. Soft 700 en Light vaut `#446493`, chroma 0,084. Vivid 700 vaut 0,179 en Light et 0,168 en Dark (`#4596FA`) | Mesure du moteur | Une couleur de marque saturée est un Vivid. Le moteur donne déjà en Dark des accents presque aussi vifs qu’en Light |
+| En Dark, le cran 100 vaut en Vivid `#01154B` (chroma 0,104) pour le bleu, `#3B0203` (0,087) pour le rouge, `#02230B` (0,059) pour le vert ; en Soft, 0,048, 0,040 et 0,030. En Light, le cran 100 ne dépasse pas 0,079 | Mesure du moteur | Les fonds teintés du thème Dark sont les plus saturés de la palette. C’est là que la recommandation de désaturer s’applique |
+| Un composant cite `theme.primary.vivid.700` ; la collection `theme` choisit la valeur Light ou Dark. `theme` compte 143 variables : 11 pour le neutre, 88 pour quatre utilitaires à deux profils, 44 pour deux rampes de marque à deux profils. `brand` en compte 89 par marque | Architecture section 2 | Deux rampes de marque à une intensité ramènent `theme` à 121 variables et `brand` à 45 par marque |
+| Aucune variable `soft` ou `vivid` n’existe dans `intencial-library` ni dans UCM-Playground | Recherche dans les deux dépôts | Changer l’architecture des profils et les couleurs sombres ne casse aucun consommateur |
+| La première recherche proposait des rampes `-dark` plus saturées que les rampes claires. La revue critique l’a jugé bloquant : une couleur douce ou vive sert dans les deux thèmes | Recherche section 6.5, revue sections 3.1 et 3.3 | Aucun profil ne se lie à un thème |
 | Les usages d’un cadre montrent le profil porteur (`[PLA-18]`). Sans palette de base, le classement automatique élit le porteur sur la part de chroma de la référence : `#1E6FD9` est porté par Vivid, `#A0B599` par Soft | `[PLA-18]`, `[MOT-17]`, tableau des références de la spécification | Voilà l’alternance que le mainteneur constate : une référence saturée donne des usages Vivid, une référence douce des usages Soft |
-| « Palette de base » est une bascule Auto, Soft, Vivid qui force le profil porteur et lui donne la part de chroma de la référence | `[ENT-11]`, `champs.ts` | Avec un choix de profils, elle n’a plus de sens pour une palette à un profil. Pour une palette à deux profils, la question du porteur reste |
-| `FORMAT_RECETTE` vaut 3. Chaque champ ajouté à une palette a changé le format, parce que la validation refuse une clé inconnue | `recette.ts` | Un champ `profils` passe la recette au format 4. Un plugin de format 3 la classe « future » |
+| « Palette de base » est une bascule Auto, Soft, Vivid qui force le profil porteur et lui donne la part de chroma de la référence | `[ENT-11]`, `champs.ts` | Une palette à une intensité se calcule comme le profil porteur forcé d’aujourd’hui, dont on ne garde que la rampe |
+| `FORMAT_RECETTE` vaut 3. Chaque champ ajouté à une palette a changé le format, parce que la validation refuse une clé inconnue | `recette.ts` | Les lots Y3 et Y7 passent la recette au format 4, en un seul passage |
 | 33 lignes du moteur et du plugin parcourent `PROFILS`. Les promesses se jugent par mode et par profil, et le verdict d’un thème compte les deux profils | `promesses.ts`, `[PLA-07]` | Le changement de moteur touche promesses, alertes, rapport, planche et interface |
-| « Palettes proches » se mesure sur les nuances 500, 600 et 700 de Vivid, en Light | `CRANS_PALETTES_PROCHES`, `aidePalettesProches` | Une palette Soft seule n’a pas de Vivid : la mesure doit changer de profil |
+| « Palettes proches » se mesure sur les nuances 500, 600 et 700 de Vivid, en Light | `CRANS_PALETTES_PROCHES`, `aidePalettesProches` | Une palette à une intensité n’a pas de Vivid : la mesure doit changer de rampe |
+| Le calque d’une pastille se nomme `{profil}/{mode}/{cran}` et sert de clé à l’option de création des variables | `[PLA-14]`, section 17 de la spécification | Une palette à une intensité nomme ses pastilles `{mode}/{cran}` |
 | Le cadre de Bleu compte 1 632 calques avec les grilles, 466 sans. La section des usages ne montre qu’un profil | Lot X5.1 | Montrer les usages des deux profils ajoute une section par thème ; le nombre se remesure |
 | Le modèle de planche reçoit déjà une option `grille`, que l’écriture transmet | `modeleDeCadre`, `ecriture/planche.ts` | La carte « Contenu des planches » étend un mécanisme existant |
 | Un onglet actif prend `--fond-bloc`. Les bascules Soft et Vivid des Garanties et Écran et États de l’interface de test sont posées sur une carte, peinte du même `--fond-bloc`. Seuls les onglets de thème prennent `--fond-note` | `styles.css` | L’onglet actif des Garanties et de l’interface de test n’a pas de fond visible : c’est l’incohérence relevée |
@@ -68,10 +77,22 @@ Relevés dans le code et les documents.
 
 ## Avis sur la question de fond
 
-Le mainteneur demande deux choses : garder deux intensités pour certains
-emplois sémantiques, et savoir si Vivid doit servir au thème sombre. Il
-craint quatre palettes par emploi et lit, dans des tutoriels, qu’un thème
-sombre emploie des couleurs moins saturées.
+Le mainteneur demandait deux choses : garder deux intensités pour certains
+emplois sémantiques, et savoir si Vivid doit servir au thème sombre. Il a
+retenu l’option B de Q5.1.
+
+### Deux doublements, un seul choix
+
+Le doublement Light et Dark existe dans tout système qui a un thème sombre.
+Radix publie une échelle `blue` et une échelle `blueDark` ; Material tire
+d’autres tons de sa palette ; Apple donne deux valeurs à chaque couleur
+système. Le plugin calcule la palette Dark, `theme` la choisit, et le
+designer n’a rien à décider.
+
+Le doublement Soft et Vivid est un choix de conception : le designer choisit
+un profil à chaque composant. C’est le seul levier sur le nombre de
+palettes. Une famille à une intensité en a deux, une famille à deux
+intensités en a quatre.
 
 ### Ce que disent les systèmes publiés
 
@@ -81,79 +102,60 @@ sombre emploie des couleurs moins saturées.
 | [Material 3](https://m3.material.io/styles/color/system/how-the-system-works) | La même palette tonale. `primary` passe du ton 40 en clair au ton 80 en sombre ; la chroma disponible baisse d’elle-même aux tons clairs | `primary` et `primary-container` : deux tons, une chroma |
 | [MUI](https://mui.com/material-ui/customization/dark-mode/) | Le thème sombre par défaut prend `blue[200]`, `#90CAF9`, pour `primary.main`. Les nuances « Accent » A100 à A700 viennent de la palette Material de 2014 et servent aux éléments d’accent, dans les deux thèmes | `main`, `light`, `dark` |
 | [Apple, couleurs système](https://developer.apple.com/design/human-interface-guidelines/color) | Une valeur par apparence : `systemBlue` vaut `#007AFF` en clair et `#0A84FF` en sombre, un peu plus claire et plus vive | Hors du système de couleurs |
-| [Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale) | Une échelle sombre distincte. Le fond plein garde souvent son code : `blue9` vaut `#0090FF` dans les deux thèmes. Les fonds sombres sont peu saturés | Crans 3 à 5 pour un fond discret, 9 et 10 pour un fond plein, sur la même échelle |
+| [Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale) | Une échelle sombre distincte. Le fond plein garde souvent son code : `blue9` vaut `#0090FF` dans les deux thèmes | Crans 3 à 5 pour un fond discret, 9 et 10 pour un fond plein, sur la même échelle |
 | [Atlassian](https://atlassian.design/foundations/color), [GitHub Primer](https://primer.style/foundations/color) | Un jeu de valeurs par thème, mêmes noms | `danger` et `danger.bold` chez Atlassian, `muted` et `emphasis` chez Primer : deux crans d’une même rampe |
 
-Les deux affirmations que le mainteneur oppose portent sur des éléments
-différents. « Moins saturé en sombre » vise les grandes surfaces et les
-textes : un fond sombre et un texte clair sont aux deux bouts de la courbe,
-où sRGB porte peu de chroma, et un grand aplat saturé éblouit sur un fond
-sombre. « Plus vif en sombre » vise les petits éléments pleins, bouton,
-badge, anneau de focus. À la clarté où un fond plein tient son contraste sur
-un fond sombre, une chroma moyenne paraît délavée ; la pousser vers le
-maximum garde la couleur de marque reconnaissable. Apple et Radix font les
-deux à la fois.
+« Moins saturé en sombre » vise les grandes surfaces et les textes.
+« Plus vif en sombre » vise les petits éléments pleins : bouton, badge,
+anneau de focus. Apple et Radix font les deux à la fois.
 
-Le moteur tient déjà ces deux effets. La courbe sombre place les fonds et
-les textes aux bouts, où la chroma baisse. La part de chroma est relative
-au maximum, donc un Vivid sombre est aussi vif que l’écran le permet à sa
-clarté. L’écart de chroma absolue entre un 700 Vivid Light et un 700 Vivid
-Dark se mesure en Y0.2 avant d’en conclure davantage.
+### « Vivid pour le Dark », mesuré
 
-### Avis
+Une couleur de marque saturée est déjà un Vivid : `#1E6FD9` a une chroma de
+0,179, et Soft 700 en Light vaut `#446493`, chroma 0,084. Soft en Light
+rendrait le thème clair terne. Vivid 700 vaut 0,168 en Dark contre 0,179 en
+Light : les accents sombres sont déjà aussi vifs que les clairs. Lier Vivid
+au thème Dark retirerait en outre l’erreur douce du thème sombre et l’alerte
+vive du thème clair.
 
-1. **Quatre rampes ne font pas quatre choix.** Le designer choisit entre
-   `soft` et `vivid` ; `theme` choisit Light ou Dark. Le doublement par thème
-   existe dans chaque système cité. Le coût réel est le nombre de noms, deux
-   par famille.
-2. **Les deux besoins n’ont pas la même nature.** L’insistance se choisit
-   composant par composant, dans un même thème : elle demande deux noms,
-   ce que l’architecture fait. « Plus vif en sombre » est une propriété du
-   thème : elle ne demande aucun nom, seulement une autre valeur derrière le
-   même nom. Faire de Vivid la palette du sombre lierait les deux : une
-   erreur douce n’existerait plus en sombre, une alerte vive n’existerait plus
-   en clair. La revue critique relevait déjà ce défaut en section 3.1.
-3. **La plupart des systèmes règlent l’insistance par le cran, pas par la
-   chroma.** Une liste d’erreurs douce prend un fond 100 et un texte 700 ;
-   une erreur critique prend un fond plein 700 et `on-solid`. Les deux
-   viennent d’une seule rampe. Soft n’apporte quelque chose que pour un
-   élément de ton moyen répété, bordure, icône ou badge plein, que le cran
-   ne peut pas adoucir sans perdre son contraste. Ce besoin est réel pour les
-   utilitaires. Il n’est pas démontré pour les couleurs de marque.
-4. **Recommandation : les profils par palette** (option B de Q5.1). Le
-   changement de moteur que ce retour demande y mène directement : `success`,
-   `warning`, `info` et `danger` portent Soft et Vivid, une couleur de marque
-   n’en porte qu’un. `theme` passe de 143 à 121 variables quand les deux
-   rampes de marque n’ont qu’un profil ; les noms retirés sont ceux qu’aucun
-   composant ne cite aujourd’hui.
-5. **Pour le sombre, aucun profil de plus.** Si la recette dans Figma montre
-   que les accents sombres manquent de vivacité, une part de chroma propre
-   au thème Dark se réglera derrière les mêmes noms. Ce réglage est hors de
-   ce plan. Il se décide après la recette Y7, sur de vraies maquettes
-   sombres.
+### Là où « moins saturé en sombre » s’applique
 
-Pour ce plugin, générer Soft et Vivid reste utile : les utilitaires en ont
-besoin. Le choix par palette retire les rampes dont une famille n’a pas
-l’usage, et la planche ne montre plus que ce que la configuration demande.
+En Dark, les crans 50 à 300 servent de fonds teintés : `surface`,
+`surface-card`, alertes et encarts. En Vivid, le cran 100 vaut `#3B0203`
+pour le rouge et `#01154B` pour le bleu, deux fois la chroma de Soft. C’est
+ce que Material déconseille. Le lot Y7 les désature, dans les deux profils
+et dans les palettes à une intensité.
+
+### Ce qui est retenu
+
+- Une palette porte une intensité ou deux. Les utilitaires en portent deux,
+  une couleur de marque une (Q5.1).
+- Une palette à une intensité prend celle de sa couleur de référence. Ses
+  tokens n’ont pas de segment de profil : `theme.primary.700` (Q5.2).
+- Aucun profil ne se lie à un thème.
+- Les fonds teintés du thème Dark se désaturent (Q5.6, lot Y7).
 
 ## Décisions
 
 | Sujet | Décision |
 |---|---|
-| Profils d’une palette | Soft seul, Vivid seul, ou les deux, choisis à la création et modifiables dans la configuration. Une recette de format 3 se lit avec les deux profils pour chaque palette. Forme du choix et libellés sur maquette (Y2.1) |
-| Palette de base | Remplacée par le choix des profils. Pour une palette à deux profils, le porteur de la référence se choisit sur maquette (Y2.1). Pour une palette à un profil, Q5.2 |
-| Architecture | Mise à jour selon la réponse à Q5.1 ; rien ne s’écrit avant |
+| Intensités d’une palette | Une ou deux, choisies à la création et modifiables dans la configuration. Une recette de format 3 se lit avec deux intensités pour chaque palette. Forme du choix et libellés sur maquette (Y2.1) |
+| Palette à une intensité | Elle se calcule comme le profil porteur forcé d’aujourd’hui (`[ENT-11]`) : la part de chroma de la référence, la référence exacte à son cran. Seule cette rampe se garde, en Light et en Dark. Elle n’a ni nom de profil, ni dérive propre à un profil, ni alerte « Profils confondus » |
+| Palette de base | Remplacée par le choix des intensités. Pour une palette à deux intensités, un choix « Auto, Soft, Vivid » du profil qui porte la référence, affiché seulement dans ce cas ; la maquette Y2.1 le confirme (Q5.4) |
+| Noms des tokens | `theme.{famille}.{cran}` pour une palette à une intensité, `theme.{famille}.{profil}.{cran}` pour deux. Pastilles de la planche : `{mode}/{cran}` et `{profil}/{mode}/{cran}` |
+| Architecture | Les utilitaires gardent deux profils ; les rampes de marque passent à une intensité. `theme` compte 121 variables, `brand` 45 par marque |
+| Fonds sombres | Les crans de fond du thème Dark perdent de la chroma, dans chaque profil. Règle, réglage et valeur par défaut sur maquette (Y2.5). Le thème Light ne change pas |
 | Onglet Palettes | La ligne du titre ne porte plus que « Palette [nom] ». Le bouton de génération, « Enregistré », « Afficher dans Figma », l’état du cadre et la progression la quittent. Les erreurs d’enregistrement et le conflit restent affichés : ce sont des constats, pas l’indication d’enregistrement |
 | Configuration de la palette | Mêmes champs, même ordre et même disposition que la carte de création (Y2.1) |
 | Dérive de teinte | La ligne de bilan et « Voir les garanties » se retirent de la carte |
 | Onglets | Un seul style pour toutes les bascules à onglets : l’onglet actif a un fond, un peu plus clair que `--fond-note` au thème sombre de Figma, et distinct de la carte au thème clair. Les segments de choix d’une valeur (préréglage, modèle) gardent le leur |
 | Interface de test | Les rangées de la grille des États s’espacent assez pour que deux anneaux de focus ne se touchent plus |
-| Planche | Les rampes, les usages et les grilles des profils de la palette, et d’eux seuls. Avec deux profils, les usages des deux, disposés selon Y2.4. `[PLA-18]` se récrit |
+| Planche | Les rampes, les usages et les grilles des intensités de la palette, et d’elles seules. Avec deux profils, les usages des deux, disposés selon Y2.4. `[PLA-18]` se récrit |
 | Fiche d’une palette | Gestes dans l’ordre dicté : « Générer sur Figma » ou « Actualiser sur Figma », bouton principal bleu ; « Afficher » ; « Modifier ». Le reste de la fiche sur maquette (Y2.2) |
 | Taille des gestes d’une fiche | Le socle gagne une taille compacte de 24 px pour `createButton`. Les gestes d’une fiche et d’une carte supprimée la prennent, « Supprimer définitivement » et le bouton principal compris |
 | Palette supprimée | Fond et bordure plus proches du fond de la page, teinte d’avertissement gardée |
-| Gestes globaux | 10 px au-dessus et au-dessous. Libellés dictés : « Mettre à jour (2 palettes) » et « Générer tout (2 palettes) », sous réserve de Q5.5 |
-| Contenu des planches | Une carte des Réglages communs, un interrupteur par partie du cadre. Parties et règles sur maquette (Y2.3), rangement selon Q5.3 |
+| Gestes globaux | 10 px au-dessus et au-dessous. « Mettre à jour (2 palettes) » et « Générer tout (2 palettes) », en minuscules, au singulier pour une palette (Q5.5) |
+| Contenu des planches | Une carte des Réglages communs, un interrupteur par partie du cadre, rangée dans la recette et comptée dans l’empreinte (Q5.3). Parties et règles sur maquette (Y2.3) |
 | Fenêtre | 650 × 720 par défaut. Le plus petit format reste 500 × 520. Une taille rangée égale à l’ancien défaut, 600 × 720, s’ouvre à 650 × 720 ; toute autre taille rangée se garde |
 
 ## Reprise du quatrième plan
@@ -161,9 +163,9 @@ l’usage, et la planche ne montre plus que ce que la configuration demande.
 | Case du quatrième plan | Sort |
 |---|---|
 | X4.1 à X4.5, génération au niveau du titre | Défaites par Y1.2 : la génération appartient à l’onglet Planches |
-| X8.2, tests de « Supprimer définitivement » et Ctrl+Z dans Figma | Reprise en Y7.3 |
-| X8.3, recette dans Figma et constats restés ouverts | Reprise en Y7.4 |
-| X8.4, temps et calques d’une génération de douze palettes | Reprise en Y7.5, après Y5 qui change le nombre de calques |
+| X8.2, tests de « Supprimer définitivement » et Ctrl+Z dans Figma | Reprise en Y8.3 |
+| X8.3, recette dans Figma et constats restés ouverts | Reprise en Y8.4 |
+| X8.4, temps et calques d’une génération de douze palettes | Reprise en Y8.5, après Y5 qui change le nombre de calques |
 
 Les cases faites du quatrième plan restent acquises, sauf X4. Leur
 comportement se conserve quand un lot déplace l’élément qui le porte : titre
@@ -177,41 +179,44 @@ repliées à l’ouverture, bouton danger du socle, badges AA et AAA.
 | Question de fond, règles et documents | Y0 | Relecture de ce plan |
 | Corrections directes | Y1 | Y0.3 à Y0.5 |
 | Maquettes à valider | Y2 | Y0 ; en parallèle de Y1 |
-| Moteur : profils d’une palette | Y3 | Q5.1, Q5.2, Y2.1 validée, revue indépendante (Y3.1) |
-| Interface : le choix des profils partout | Y4 | Y3 |
-| Planche : profils et contenu | Y5 | Y3, Y2.3, Y2.4 validées, Q5.3 |
+| Moteur : une ou deux intensités | Y3 | Y2.1 validée, revue indépendante (Y3.1) |
+| Interface : le choix des intensités partout | Y4 | Y3 |
+| Planche : intensités et contenu | Y5 | Y3, Y2.3 et Y2.4 validées |
 | Onglet Planches : fiches | Y6 | Y2.2 validée, Y1.9 |
-| Recette et clôture | Y7 | Parcours finis |
+| Fonds sombres | Y7 | Y7.1 dès maintenant ; le reste après Y2.5 validée et la revue Y3.1, qui couvre aussi ce lot |
+| Recette et clôture | Y8 | Parcours finis |
 
-Chaque lot suit les règles de code, de test et de relecture de
-CONTRIBUTING.md, met à jour la documentation qu’il touche et ajoute ses
-textes à l’inventaire. Une capture ne prouve ni une interaction ni une
-sauvegarde.
+Y3 et Y7 changent la recette : leur code moteur sort dans la même version,
+pour un seul passage au format 4. Chaque lot suit les règles de code, de
+test et de relecture de CONTRIBUTING.md, met à jour la documentation qu’il
+touche et ajoute ses textes à l’inventaire. Une capture ne prouve ni une
+interaction ni une sauvegarde.
 
 ## Lot Y0 : question de fond, règles et documents
 
-- [ ] **Y0.1** Discuter Q5.1 avec le mainteneur à partir de l’[avis sur la
+- [x] **Y0.1** Discuter Q5.1 avec le mainteneur à partir de l’[avis sur la
   question de fond](#avis-sur-la-question-de-fond) ; noter sa réponse dans
-  ce plan.
-- [ ] **Y0.2** Mesurer, pour `#1E6FD9` et `#16A34A`, la chroma absolue des
+  ce plan. Fait : B, et les réponses aux cinq autres questions.
+- [x] **Y0.2** Mesurer, pour `#1E6FD9` et `#16A34A`, la chroma absolue des
   crans 600 et 700 de chaque profil en Light et en Dark, avec le moteur.
-  Rapporter les chiffres dans l’avis. Si la mesure contredit l’avis, le
-  corriger avant la réponse à Q5.1.
+  Fait, avec `#DC2626` en plus : les chiffres sont dans les faits et dans
+  l’avis. La mesure a ajouté le constat des fonds sombres, repris en Y7.
 - [ ] **Y0.3** Mettre à jour « Les surfaces d’UCM Palettes » dans
   CONTRIBUTING.md : génération dans l’onglet Planches seul, style unique des
   onglets, taille compacte des gestes d’une fiche.
 - [ ] **Y0.4** Mettre à jour la spécification : `[UI-05]` et `[UI-11]`
   (ligne du titre sans génération), `[UI-01]` (taille par défaut), et les
-  marqueurs des onglets et des fiches. Les profils d’une palette, `[ENT-11]`,
-  `[MOT-17]`, `[PLA-18]` et le contenu des planches entrent avec leurs lots.
+  marqueurs des onglets et des fiches. Les intensités d’une palette,
+  `[ENT-11]`, `[MOT-17]`, `[PLA-14]`, `[PLA-18]`, les fonds sombres et le
+  contenu des planches entrent avec leurs lots.
 - [ ] **Y0.5** Inventaire des textes : « Afficher », « Modifier », « Mettre à
   jour (N palettes) » et « Générer tout (N palettes) », dictés ; les
   libellés retirés de la ligne du titre et de la carte Dérive marqués
   retirés. Les textes nouveaux des lots entrent « À valider ».
 - [ ] **Y0.6** Déclarer dans `galerie/etats.cjs` les états de ce plan :
-  palette Soft seule, Vivid seule, les deux ; fiche refaite ; carte
-  « Contenu des planches » ; grille des États. Retirer ou remplacer les états
-  « Titre et Générer sur Figma » et « Titre et Actualiser sur Figma ».
+  palette à une intensité, à deux ; fiche refaite ; carte « Contenu des
+  planches » ; grille des États ; fonds sombres. Retirer ou remplacer les
+  états « Titre et Générer sur Figma » et « Titre et Actualiser sur Figma ».
   Chaque état annoncé nomme la case qui le rendra atteignable.
 
 Critère : l’agent place chaque élément de Y1 sans relire ce plan, à partir de
@@ -254,8 +259,8 @@ Fichiers : `styles.css`, `ongletPalettes.ts`, `derive/editeur.ts`,
   page, orange encore reconnaissable. Vérifier aux deux thèmes de Figma.
 - [ ] **Y1.8** Gestes globaux de l’onglet Planches : 10 px au-dessus et
   au-dessous ; libellés « Mettre à jour (N palettes) » et « Générer tout (N
-  palettes) », au singulier pour une palette, selon Q5.5. La progression
-  garde son libellé actuel.
+  palettes) », « (1 palette) » au singulier. La progression garde son
+  libellé actuel.
 - [ ] **Y1.9** Gestes d’une fiche, dans cet ordre : « Générer sur Figma » ou
   « Actualiser sur Figma », bouton principal compact ; « Afficher » ;
   « Modifier ». Un cadre à jour ou illisible n’a pas de premier geste,
@@ -277,21 +282,19 @@ même façon, et les gestes d’une fiche ont une hauteur.
 
 Produites dans `MAQUETTES-RECETTE-V5.html`, que `generer-maquettes-v5.mjs`
 écrit, au format des précédentes : panneau à 650 px, thème sombre de Figma,
-couleurs et ratios calculés par le moteur pour `#1E6FD9`, `#16A34A` et
-`#A0B599`. Chaque maquette montre la disposition en place quand elle existe,
-au moins une autre, puis ses questions avec une recommandation.
+couleurs et ratios calculés par le moteur pour `#1E6FD9`, `#16A34A`,
+`#DC2626` et `#A0B599`. Chaque maquette montre la disposition en place quand
+elle existe, au moins une autre, puis ses questions avec une recommandation.
 
-- [ ] **Y2.1** Choix des profils, dans la carte de création et dans la
-  configuration alignée sur elle. Au moins trois formes : segments « Soft ·
-  Vivid · Les deux » ; deux cases Soft et Vivid dont une au moins reste
-  cochée ; trois cartes qui montrent chacune une rampe d’aperçu. Des
-  libellés qui disent l’usage sans le jargon, par exemple « Douce »,
-  « Vive », « Les deux ». Pour une palette à deux profils, l’endroit où se
-  choisit le porteur de la référence, qui remplace « Palette de base ». Pour
-  une palette à un profil, la réponse à Q5.2, et l’avertissement quand la
-  référence est plus proche de l’autre profil. Ce que l’aperçu, les
-  Intensités, la Dérive, les Garanties et l’interface de test montrent pour
-  chacun des trois choix.
+- [ ] **Y2.1** Choix des intensités, dans la carte de création et dans la
+  configuration alignée sur elle. Au moins trois formes : segments « Une
+  intensité · Deux intensités » ; un interrupteur « Soft et Vivid » ; deux
+  cartes qui montrent chacune une rampe d’aperçu. Des libellés qui disent
+  l’usage sans le jargon. Pour deux intensités, le choix « Auto, Soft,
+  Vivid » du profil qui porte la référence (Q5.4). Ce que l’aperçu, les
+  Intensités, la Dérive, les Garanties et l’interface de test montrent dans
+  chaque cas ; pour une intensité, ce que la carte Intensités garde, puisque
+  la part est celle de la référence.
 - [ ] **Y2.2** Fiche d’une palette dans l’onglet Planches : hiérarchie entre
   nom, état du cadre, aperçu, référence et garanties, et les trois gestes
   dans l’ordre de Y1.9. Deux dispositions au moins, dont une plus compacte.
@@ -303,94 +306,111 @@ au moins une autre, puis ses questions avec une recommandation.
   lient. Proposer ce qui ne se désactive pas, par exemple l’en-tête et au
   moins un thème. Montrer l’effet annoncé : les cadres passeront « À mettre
   à jour », et le nombre de calques d’un cadre.
-- [ ] **Y2.4** Cadre de la planche pour une palette Soft seule, Vivid seule
-  et à deux profils. Pour deux profils, au moins deux dispositions des
-  usages : une section par profil, ou deux colonnes Soft et Vivid par état.
-  Nombre de calques de chacune pour Bleu.
+- [ ] **Y2.4** Cadre de la planche pour une palette à une intensité et à
+  deux. Pour deux, au moins deux dispositions des usages : une section par
+  profil, ou deux colonnes Soft et Vivid par état. Nombre de calques de
+  chacune pour Bleu.
+- [ ] **Y2.5** Fonds sombres : les règles de Y7.2 appliquées aux crans 50 à
+  300 du thème Dark, sur les quatre références, en alerte, en encart et en
+  carte, à côté des couleurs actuelles. Le réglage qui les porte dans les
+  Réglages communs, et sa valeur par défaut.
 
 Critère : le mainteneur valide ou corrige chaque maquette sans avoir à
 imaginer une interaction.
 
-## Lot Y3 : moteur, profils d’une palette
+## Lot Y3 : moteur, une ou deux intensités
 
-Après la réponse à Q5.1 et Q5.2, et la validation de Y2.1. Fichiers :
-`packages/couleur/src/*`, `plugin-palettes/src/presentation.ts`,
-`rapport.ts`, `edition.ts`, `configuration.ts`.
+Après la validation de Y2.1. Fichiers : `packages/couleur/src/*`,
+`plugin-palettes/src/presentation.ts`, `rapport.ts`, `edition.ts`,
+`configuration.ts`.
 
-- [ ] **Y3.1** Faire relire ce lot par un agent de revue indépendant avant
-  d’écrire le code. Trancher point par point, dire ce qui est retenu et ce
-  qui est rejeté, avec la raison, et vérifier chaque affirmation dans le
-  code.
-- [ ] **Y3.2** Recette : un champ facultatif `profils` sur une palette,
-  `["soft"]` ou `["vivid"]` ; absent, la palette porte les deux. Une palette
-  libre n’en porte pas. `FORMAT_RECETTE` passe à 4 ; une recette de format 3
-  se lit sans changement. La relation entre `profils` et `base` suit Q5.2.
-- [ ] **Y3.3** Rampes et ancrage : une palette à un profil ne calcule que ses
-  deux rampes, et y ancre la référence selon Q5.2. Une palette à deux
-  profils garde `[MOT-17]` et `[ENT-11]`.
+- [ ] **Y3.1** Faire relire ce lot et le lot Y7 par un agent de revue
+  indépendant avant d’écrire le code. Trancher point par point, dire ce qui
+  est retenu et ce qui est rejeté, avec la raison, et vérifier chaque
+  affirmation dans le code.
+- [ ] **Y3.2** Recette : un champ facultatif marque une palette à une
+  intensité ; absent, la palette en a deux. Son nom se fixe à la revue. Une
+  palette libre n’en porte pas. Une palette à une intensité ne porte ni
+  `base`, ni dérive par profil, ni parts par profil. `FORMAT_RECETTE` passe à
+  4 avec Y7 ; une recette de format 3 se lit sans changement.
+- [ ] **Y3.3** Rampes et ancrage : une palette à une intensité se calcule
+  comme le profil porteur forcé de `[ENT-11]`, à la part de chroma de la
+  référence, référence exacte à son cran ; seule cette rampe se garde, en
+  Light et en Dark. Une palette à deux intensités garde `[MOT-17]` et
+  `[ENT-11]`. Traiter à la revue une référence presque grise (`[MOT-18]`).
 - [ ] **Y3.4** Promesses et alertes : seules les rampes présentes se jugent.
-  Le verdict d’un thème compte les profils présents. « Profils confondus » se
-  tait pour une palette à un profil. « Palettes proches » se mesure sur un
-  profil que les deux palettes portent ; la règle pour deux palettes sans
-  profil commun se fixe à la revue et s’écrit dans la spécification.
+  Le verdict d’un thème compte les rampes présentes. « Profils confondus »
+  se tait pour une palette à une intensité. « Palettes proches » compare
+  deux palettes sur une rampe que chacune porte ; la règle se fixe à la
+  revue et s’écrit dans la spécification.
 - [ ] **Y3.5** Rapport, export de la recette et empreinte : ils ne listent
-  que les profils présents. L’empreinte d’un cadre change avec les profils.
+  que les rampes présentes, sous les noms de la décision « Noms des
+  tokens ». L’empreinte d’un cadre change avec le nombre d’intensités.
 - [ ] **Y3.6** Spécification : `[MOT-17]`, `[ENT-11]`, section 11 et les
-  alertes touchées. Architecture multi-marques selon la réponse à Q5.1.
-- [ ] **Y3.7** Tests : une recette de format 3 relue avec deux profils par
-  palette ; une palette Soft seule sans rampe Vivid, sans garantie Vivid,
-  sans alerte « Profils confondus » ; le verdict compté sur les profils
-  présents ; `profils` refusé sur une palette libre ; « Palettes proches »
-  entre une palette Soft et une palette Vivid. Chaque loi vue rouge sur une
-  mutation.
+  alertes touchées. Architecture multi-marques : sections 1 à 4, chemin
+  d’une couleur à une intensité, comptes de `theme` et de `brand`, exemples
+  d’exceptions ; la [vue illustrée](../Archi%20Tokens%20Multi-marques/VUE-ILLUSTREE-MULTIMARQUES.html)
+  suit.
+- [ ] **Y3.7** Tests : une recette de format 3 relue avec deux intensités par
+  palette ; une palette à une intensité sans seconde rampe, sans seconde
+  série de garanties, sans alerte « Profils confondus », et dont la rampe
+  contient la référence exacte ; le verdict compté sur les rampes
+  présentes ; le champ refusé sur une palette libre ; « Palettes proches »
+  entre une palette à une intensité et une palette à deux. Chaque loi vue
+  rouge sur une mutation.
 
 Critère : une recette de format 3 se lit et se juge comme avant, et une
-palette à un profil n’a ni rampe, ni garantie, ni alerte pour l’autre.
+palette à une intensité n’a ni rampe, ni garantie, ni alerte d’un second
+profil.
 
-## Lot Y4 : interface, le choix des profils partout
+## Lot Y4 : interface, le choix des intensités partout
 
 Après Y3. Disposition de Y2.1 validée.
 
 - [ ] **Y4.1** Carte de création et configuration de la palette : le choix
-  des profils, et la configuration alignée sur la création. « Palette de
-  base » se retire.
-- [ ] **Y4.2** Aperçu et nuancier : les rangées des profils présents, et le
-  repère ≈ seulement avec deux profils.
-- [ ] **Y4.3** Intensités d’une palette : les profils présents. Les
-  Intensités des Réglages communs gardent les deux, qui servent à toutes les
-  palettes.
+  des intensités, et la configuration alignée sur la création. « Palette de
+  base » se retire ; le choix du profil porteur ne paraît qu’avec deux
+  intensités.
+- [ ] **Y4.2** Aperçu et nuancier : une rangée par thème pour une intensité,
+  sans nom de profil ; le repère ≈ seulement avec deux.
+- [ ] **Y4.3** Intensités d’une palette, selon Y2.1. Les Intensités des
+  Réglages communs gardent Soft et Vivid, qui servent aux palettes à deux
+  intensités.
 - [ ] **Y4.4** Dérive de teinte : un seul tracé et aucun lien de
-  synchronisation pour une palette à un profil.
+  synchronisation pour une palette à une intensité.
 - [ ] **Y4.5** Garanties de contraste : la bascule Soft et Vivid se retire
-  pour une palette à un profil. Le détail d’une nuance ne cite que les
-  profils présents.
-- [ ] **Y4.6** Interface de test : le profil peint selon Y2.1.
-- [ ] **Y4.7** Aperçu compact d’une fiche de l’onglet Planches : les profils
-  présents.
-- [ ] **Y4.8** Tests d’interface : chaque choix de profils change l’aperçu,
-  les Garanties et l’interface de test ; changer les profils d’une palette
-  générée fait passer son cadre « À mettre à jour ». Chaque test vu rouge
-  sur une mutation.
+  pour une palette à une intensité. Le détail d’une nuance ne cite que les
+  rampes présentes.
+- [ ] **Y4.6** Interface de test : la rampe peinte selon Y2.1.
+- [ ] **Y4.7** Aperçu compact d’une fiche de l’onglet Planches : les rampes
+  présentes.
+- [ ] **Y4.8** Tests d’interface : chaque choix change l’aperçu, les
+  Garanties et l’interface de test ; changer le nombre d’intensités d’une
+  palette générée fait passer son cadre « À mettre à jour ». Chaque test vu
+  rouge sur une mutation.
 
 Critère : le designer ne voit jamais un profil que sa palette ne porte pas.
 
-## Lot Y5 : planche, profils et contenu
+## Lot Y5 : planche, intensités et contenu
 
-Après Y3, la validation de Y2.3 et Y2.4, et la réponse à Q5.3.
+Après Y3, et la validation de Y2.3 et Y2.4.
 
-- [ ] **Y5.1** Rampes et grilles : celles des profils présents. La note sous
-  les rampes n’explique ≈ qu’avec deux profils.
+- [ ] **Y5.1** Rampes et grilles : celles des intensités présentes. Une
+  palette à une intensité nomme ses pastilles `{mode}/{cran}` (`[PLA-14]`).
+  La note sous les rampes n’explique ≈ qu’avec deux intensités.
 - [ ] **Y5.2** Usages : ceux de chaque profil présent, disposés selon Y2.4.
-  Récrire `[PLA-18]`. L’en-tête nomme toujours le porteur de la référence.
-- [ ] **Y5.3** Contenu des planches : le modèle reçoit les parties à dessiner,
-  à la place de l’option `grille`. Une partie retirée change l’empreinte, et
-  les cadres passent « À mettre à jour ». Rangement selon Q5.3.
-- [ ] **Y5.4** Recompter les calques du cadre de Bleu pour chaque choix de
-  profils, toutes parties dessinées, contre 1 632 aujourd’hui.
-- [ ] **Y5.5** Tests : aucun cadre ne montre un profil absent ; une palette à
-  deux profils montre les usages des deux ; chaque partie désactivée
-  disparaît du modèle et change l’empreinte ; les parties qui ne se
-  désactivent pas restent. Chaque loi vue rouge sur une mutation.
+  Récrire `[PLA-18]`. L’en-tête nomme le profil porteur seulement avec deux
+  intensités.
+- [ ] **Y5.3** Contenu des planches : le modèle reçoit les parties à
+  dessiner, à la place de l’option `grille`. Le réglage se range dans la
+  recette. Une partie retirée change l’empreinte, et les cadres passent
+  « À mettre à jour ».
+- [ ] **Y5.4** Recompter les calques du cadre de Bleu à une et à deux
+  intensités, toutes parties dessinées, contre 1 632 aujourd’hui.
+- [ ] **Y5.5** Tests : aucun cadre ne montre une rampe absente ; une palette
+  à deux intensités montre les usages des deux profils ; chaque partie
+  désactivée disparaît du modèle et change l’empreinte ; les parties qui ne
+  se désactivent pas restent. Chaque loi vue rouge sur une mutation.
 
 Critère : deux palettes de même configuration donnent deux cadres de même
 structure, quelle que soit la saturation de leur référence.
@@ -409,19 +429,53 @@ Après la validation de Y2.2.
 Critère : le designer lit en un regard quelles palettes sont à générer, et
 les génère d’un clic depuis leur fiche.
 
-## Lot Y7 : recette et clôture
+## Lot Y7 : fonds sombres
 
-- [ ] **Y7.1** Reprendre les tests d’interface que Y1 à Y6 cassent, en
+Réponse du mainteneur à Q5.6 : maintenant. Les crans de fond du thème Dark,
+50 à 300, perdent de la chroma, dans chaque profil et dans les palettes à
+une intensité. Les accents, 500 à 800, gardent la leur. Le thème Light ne
+change pas.
+
+- [ ] **Y7.1** Mesurer la chroma des crans 50 à 300 du thème Dark, par
+  profil, sur les 360 teintes, et la comparer aux crans 1 à 5 des échelles
+  sombres de Radix et aux tons de surface de Material 3 en sombre. Rapporter
+  les chiffres dans ce plan avant la maquette.
+- [ ] **Y7.2** Écrire au moins trois règles candidates pour la maquette
+  Y2.5 : un plafond de chroma absolue sous une clarté donnée ; une part de
+  chroma propre aux fonds sombres ; une part qui décroît vers le bout sombre
+  de la courbe Dark. Pour chacune, le réglage que le designer manipule.
+- [ ] **Y7.3** Moteur et recette : la règle retenue en Y2.5, son réglage et
+  sa valeur par défaut, dans le même passage au format 4 que Y3. Une recette
+  de format 3 prend la valeur par défaut : aucune variable ne dépend encore
+  de ces couleurs, et tous les cadres passent « À mettre à jour ».
+- [ ] **Y7.4** Garanties : une baisse de chroma à clarté égale change la
+  luminance relative. Rejouer `verifier-courbes.mjs` et la garantie des
+  courbes : `text` sur `surface` à ses trois états, `text` et
+  `border-control` sur `surface-card`, sur les 360 teintes. Reporter les
+  minimums dans l’architecture, section 4.
+- [ ] **Y7.5** Interface et documents : le réglage à la place que Y2.5 fixe ;
+  spécification, architecture section 3.2, CONTRIBUTING.md.
+- [ ] **Y7.6** Tests : le thème Light identique à l’octet ; en Dark, les
+  crans 50 à 300 sous la règle et les crans 500 à 800 inchangés ; les
+  garanties tenues ; une recette de format 3 relue avec la valeur par
+  défaut. Chaque loi vue rouge sur une mutation.
+
+Critère : en Dark, une alerte ou un encart teinté ne sature plus, les
+boutons gardent leur vivacité, et toutes les garanties tiennent.
+
+## Lot Y8 : recette et clôture
+
+- [ ] **Y8.1** Reprendre les tests d’interface que Y1 à Y7 cassent, en
   gardant ce que chacun protégeait encore.
-- [ ] **Y7.2** Mettre à jour AGENTS.md si la carte du code change, la
+- [ ] **Y8.2** Mettre à jour AGENTS.md si la carte du code change, la
   spécification et les liens des plans. Marquer le quatrième plan comme
   remplacé pour ses cases ouvertes.
-- [ ] **Y7.3** (ex-X8.2) Constater dans Figma qu’un seul Ctrl+Z après
+- [ ] **Y8.3** (ex-X8.2) Constater dans Figma qu’un seul Ctrl+Z après
   « Supprimer définitivement » rend le cadre et son suivi. Au mainteneur.
-- [ ] **Y7.4** (ex-X8.3) Construire code et interface, recharger le plugin
+- [ ] **Y8.4** (ex-X8.3) Construire code et interface, recharger le plugin
   dans la copie partagée, puis exécuter la recette ci-dessous avec les
   constats restés ouverts du quatrième plan. Au mainteneur.
-- [ ] **Y7.5** (ex-X8.4) Mesurer dans Figma le temps et le nombre de calques
+- [ ] **Y8.5** (ex-X8.4) Mesurer dans Figma le temps et le nombre de calques
   d’une génération de douze palettes, après Y5 ; appliquer `[PLA-24]` au
   résultat. Au mainteneur.
 
@@ -432,10 +486,11 @@ de Palettes tous verts, et recette Figma terminée.
 
 | Scénario | Résultat observable | Lots |
 |---|---|---|
-| Créer une palette Soft seule | Une rangée par thème dans l’aperçu ; ni bascule Soft et Vivid, ni garantie Vivid | Y3, Y4 |
-| Passer cette palette aux deux profils | Deux rangées, bascule des Garanties revenue, cadre « À mettre à jour » | Y4 |
-| Générer une palette saturée et une palette douce, toutes deux à deux profils | Deux cadres de même structure, usages Soft et Vivid dans chacun | Y5 |
+| Créer `primary` à une intensité | Une rangée par thème dans l’aperçu, sans nom de profil ; ni bascule Soft et Vivid, ni seconde série de garanties ; la référence exacte dans la rampe | Y3, Y4 |
+| Passer cette palette à deux intensités | Deux rangées par thème, bascule des Garanties revenue, choix du porteur visible, cadre « À mettre à jour » | Y4 |
+| Générer une palette saturée et une palette douce, toutes deux à deux intensités | Deux cadres de même structure, usages Soft et Vivid dans chacun | Y5 |
 | Désactiver les grilles dans « Contenu des planches » | Tous les cadres « À mettre à jour » ; après génération, plus de grilles | Y5 |
+| Comparer une alerte `danger` en Dark avant et après Y7 | Fond moins saturé, bouton plein inchangé, garanties tenues | Y7 |
 | Ouvrir une palette | « Palette [nom] » seul sur la ligne du titre | Y1 |
 | Parcourir les onglets Thème, Soft et Vivid, Écran et États | Même fond pour chaque onglet actif, visible sur la carte | Y1 |
 | Tabuler dans la grille des États | Deux anneaux de focus voisins ne se touchent pas | Y1 |
@@ -443,26 +498,40 @@ de Palettes tous verts, et recette Figma terminée.
 | Ouvrir le plugin sans taille rangée, puis avec 600 × 720 rangé | 650 × 720 dans les deux cas | Y1 |
 
 La recette visuelle couvre 500 × 520 et 650 × 720, les deux thèmes de Figma,
-les deux thèmes de palette, les trois choix de profils, un nom long et
-plusieurs garanties en échec.
+les deux thèmes de palette, une et deux intensités, un nom long et plusieurs
+garanties en échec.
 
 ## Questions au mainteneur
 
 | Question | Ce qui en dépend | Recommandation |
 |---|---|---|
-| **Q5.1** Que deviennent les deux profils ? A : deux profils pour chaque palette, comme aujourd’hui. B : les profils se choisissent par palette ; les utilitaires portent les deux, une couleur de marque un seul. C : Soft sert au thème Light et Vivid au thème Dark, sous un seul nom. D : un seul profil ; l’insistance passe par les crans | Y3, architecture | **B**, voir l’[avis](#avis-sur-la-question-de-fond). C retire le choix d’insistance dans chaque thème ; l’effet recherché, des accents plus vifs en sombre, s’obtiendra au besoin par une part de chroma propre au thème Dark, sans nom de plus. D convient aux couleurs de marque, pas aux utilitaires qui ont besoin d’une erreur douce et d’une erreur vive au même cran |
-| **Q5.2** Une palette à un profil : quelle intensité ? a : celle de la référence, qui reste exacte ; le profil choisi décide seulement de la famille de tokens. b : la part commune du profil, avec la référence exacte à son seul cran, au prix d’un saut de chroma. c : la part commune, et la référence n’est plus exacte | Y2.1, Y3 | **a**. b casse la régularité de la rampe au cran de la référence. c renonce à `[MOT-17]`, qui ne recalcule jamais la référence. Avec a, le plugin avertit quand la référence est plus proche de la part commune de l’autre profil |
-| **Q5.3** Le contenu des planches se range-t-il dans la recette, commun à tous les designers du fichier, ou dans les réglages locaux du plugin ? | Y5.3 | La recette : la planche est commune au fichier, et deux designers qui génèrent doivent obtenir le même cadre. Le réglage entre dans l’empreinte |
-| **Q5.4** Où la question du porteur va-t-elle pour une palette à deux profils ? | Y2.1 | Posée dans la maquette Y2.1, avec une proposition : un choix « Référence dans : Auto, Soft, Vivid » qui ne paraît qu’avec les deux profils |
-| **Q5.5** « Palettes » garde-t-il sa majuscule dans « Mettre à jour (2 Palettes) » et « Générer tout (2 Palettes) » ? | Y1.8 | Minuscule, et le singulier pour une palette : « Mettre à jour (1 palette) ». Les autres libellés du plugin écrivent les noms communs en minuscules |
+| **Q5.1** Réponse : B. Que deviennent les deux profils ? A : deux profils pour chaque palette. B : chaque palette choisit ; les utilitaires portent les deux, une couleur de marque un seul. C : Soft au thème Light, Vivid au thème Dark, sous un seul nom. D : un seul profil ; l’insistance passe par les crans | Y3, architecture | **B**. C rend la marque terne en Light et retire le choix d’insistance dans chaque thème |
+| **Q5.2** Réponse : a, sans profil. Une palette à un profil : quelle intensité ? a : celle de la référence, qui reste exacte. b : la part commune du profil, avec la référence exacte à son seul cran, au prix d’un saut de chroma. c : la part commune, et la référence n’est plus exacte. Sous-question : le token garde-t-il un segment de profil ? | Y2.1, Y3 | **a**, sans segment de profil : `theme.primary.700`. Le choix de création devient « une intensité » ou « deux intensités » |
+| **Q5.3** Réponse : la recette. Le contenu des planches se range-t-il dans la recette ou dans les réglages locaux du plugin ? | Y5.3 | La recette : la planche est commune au fichier |
+| **Q5.4** Réponse : d’accord, à confirmer sur maquette. Où se choisit le profil porteur d’une palette à deux intensités ? | Y2.1 | Un choix « Auto, Soft, Vivid » affiché seulement avec deux intensités |
+| **Q5.5** Réponse : minuscule. « Palettes » garde-t-il sa majuscule dans les gestes globaux ? | Y1.8 | Minuscule, et le singulier pour une palette |
+| **Q5.6** Réponse : maintenant. Les fonds Vivid du thème Dark, très saturés, se traitent-ils dans ce plan ou après la recette ? | Y7 | Après la recette ; le mainteneur a choisi de les traiter maintenant, en lot Y7 |
 
 ## Hors périmètre
 
-- Une part de chroma propre au thème Dark, qui se décide après la recette
-  Y7 selon Q5.1.
+- Une chroma propre au thème Dark pour les accents, crans 500 à 800 : le
+  moteur les donne déjà presque aussi vives qu’en Light.
 - Création de variables et ajout aux tokens du design system.
 - Relecture des textes déjà hors du quatrième plan.
 - Nombre de nuances différent d’une marque à l’autre en mode standard.
+
+## Réponses du mainteneur aux questions
+
+Texte d’origine.
+
+```text
+Q5.1 : B
+Q5.2 : A, sans profil
+Q5.3 :  la recette
+Q5.4 : je suis ok, la maquette confirmera
+Q5.5 : minuscule
+Q5.6 : maintenant
+```
 
 ## Retours du mainteneur, round 5
 
