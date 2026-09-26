@@ -619,7 +619,7 @@ const ETATS = [
     id: 'reference-ajustee',
     titre: 'Référence ajustée',
     quand: 'La référence #16A34A a été ajustée d’un pas plus sombre, en #0DA047, et l’originale est gardée.',
-    regarder: 'Sous le code #0DA047, « Ajuster la référence », puis « Ajustée depuis #16A34A · Revenir à l’originale » ; le ◆ au 600 dans les deux thèmes.',
+    regarder: 'Sous le code #0DA047, « Ajustée depuis #16A34A · Revenir à l’originale », sans « Ajuster la référence » : les garanties sont tenues ; le ◆ au 600 dans les deux thèmes.',
     existe: true,
     atteinte: [etatDuFichier(rangee([VERT_AJUSTE]))],
   },

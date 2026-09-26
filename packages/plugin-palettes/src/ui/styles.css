@@ -1980,6 +1980,12 @@
   margin: 0;
 }
 
+/* Le lien garde sa largeur, aligné sous le code : étiré, toute la bande sous le champ ouvrait le panneau. */
+.champ-colonne > .lien-de-constat {
+  justify-self: start;
+  text-align: left;
+}
+
 /*
  * L'interface de test ([UI-14]) : l'écran d'équipe et la grille des états,
  * peints de la palette. Leurs couleurs viennent du script, par propriété et

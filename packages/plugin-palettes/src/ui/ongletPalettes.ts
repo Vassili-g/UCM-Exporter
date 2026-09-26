@@ -233,10 +233,11 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   const nom = document.createElement('input');
   nom.type = 'text';
   nom.className = 'input';
-  const colonneDeLaReference = champEnColonne(TEXTES.reference, pipette.bouton, hexa);
   /*
-   * Sous le code : « Ajuster la référence » ouvre le panneau (W7.1) ; une
-   * référence ajustée dit son originale, que « Revenir à l'originale » rend.
+   * Sous le code, hors du libellé qui focalise la pastille : « Ajuster la
+   * référence » ouvre le panneau (W7.1), seulement quand une garantie est
+   * manquée ; une référence ajustée dit son originale, que « Revenir à
+   * l'originale » rend.
    */
   const lienDAjustement = document.createElement('button');
   lienDAjustement.type = 'button';
@@ -255,10 +256,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     if (!recette || !courante) return;
     note = null;
     valider(remplacerPalette(recette, revenirALOriginale(recette, courante)));
-    lienDAjustement.focus();
+    (lienDAjustement.hidden ? hexa : lienDAjustement).focus();
   });
   traceDeLAjustement.append(ajusteeDepuis, ' · ', revenir);
-  colonneDeLaReference.append(erreurHexa, lienDAjustement, traceDeLAjustement);
+  const colonneDeLaReference = document.createElement('div');
+  colonneDeLaReference.className = 'champ-colonne';
+  colonneDeLaReference.append(champEnColonne(TEXTES.reference, pipette.bouton, hexa), erreurHexa, lienDAjustement, traceDeLAjustement);
   /** L'originale de la palette au début d'une saisie du code : la retirer se signale (section 3 de la conception). */
   let originaleAvantSaisie: string | null = null;
   hexa.addEventListener('focus', () => {
@@ -595,6 +598,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     pipette.poser(courante.reference);
     ajusteeDepuis.textContent = courante.originale ? TEXTES_DE_L_AJUSTEMENT.ajusteeDepuis(courante.originale) : '';
     traceDeLAjustement.hidden = !courante.originale;
+    lienDAjustement.hidden = analyse.manquees === 0;
     poser(nom, courante.nom ?? '');
     nom.placeholder = courante.reference;
     titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre(nomDeLaPalette(courante));

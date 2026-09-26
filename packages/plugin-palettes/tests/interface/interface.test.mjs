@@ -247,6 +247,37 @@ test('[MOT-17] [UI-04] la nuance qui porte la référence porte son repère, qui
   }
 });
 
+test('[UI-11] [UI-15] « Ajuster la référence » ne paraît sous le code qu’avec une garantie manquée, hors du libellé, aligné à gauche', async () => {
+  // Vert, #16A34A : deux garanties Vivid manquées.
+  const page = await ouvrirSur('ajustement-ouvert', PAR_DEFAUT);
+  try {
+    const configuration = carteDeLOnglet(page, 'Configuration de la palette');
+    const lien = configuration.getByRole('button', { name: 'Ajuster la référence', exact: true });
+    assert.equal(await lien.isVisible(), true);
+    // Le libellé du champ désigne la pastille : il ne contient pas un second contrôle.
+    assert.equal(await lien.evaluate((element) => element.closest('label') === null), true);
+    const { colonne, boite } = await lien.evaluate((element) => ({
+      colonne: element.parentElement.getBoundingClientRect().toJSON(),
+      boite: element.getBoundingClientRect().toJSON(),
+    }));
+    const code = await configuration.locator('.champ-hexa').boundingBox();
+    assert.ok(boite.y >= code.y + code.height, 'le lien vient sous le code');
+    assert.ok(Math.abs(boite.x - colonne.x) < 1, 'le lien commence au bord gauche de la colonne');
+    assert.ok(boite.width < colonne.width / 2, `le lien garde sa largeur : ${boite.width} px sur ${colonne.width}`);
+  } finally {
+    await page.close();
+  }
+  // Vert ajusté, #0DA047 : toutes les garanties tenues ; la trace de l'ajustement reste.
+  const ajustee = await ouvrirSur('reference-ajustee', PAR_DEFAUT);
+  try {
+    const configuration = carteDeLOnglet(ajustee, 'Configuration de la palette');
+    assert.equal(await configuration.getByRole('button', { name: 'Ajuster la référence', exact: true }).isVisible(), false);
+    assert.equal(await configuration.locator('.trace-de-l-ajustement').isVisible(), true);
+  } finally {
+    await ajustee.close();
+  }
+});
+
 test('[UI-04] le nuancier porte le fond du thème choisi, et ses textes s’y lisent', async () => {
   const page = await ouvrirSur('fond-personnalise');
   try {

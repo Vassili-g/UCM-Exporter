@@ -622,6 +622,16 @@ boutons gardent leur vivacité, et toutes les garanties tiennent.
 
 ## Lot Y8 : recette et clôture
 
+- [x] **Y8.0** Retour du mainteneur en cours de recette : « Ajuster la
+  référence » s’affichait sous le code pour toute palette, selon X7.1, et
+  s’étirait sur toute la largeur de sa colonne, texte centré, dans le libellé
+  du champ. Réponse : il ne paraît qu’avec au moins une garantie manquée,
+  dans l’un ou l’autre thème. Fait : le lien sort du libellé, garde sa
+  largeur, aligné à gauche sous le code ; « Revenir à l’originale » rend le
+  focus au code quand le lien disparaît. `[UI-11]` le dit, et un test
+  d’interface le tient, écrit sans être lancé : les tests sous Chromium
+  restent au mainteneur (Y8.1).
+
 - [ ] **Y8.1** Reprendre les tests d’interface que Y1 à Y7 cassent, en
   gardant ce que chacun protégeait encore. Au mainteneur : à sa demande, les
   tests d’interface sous Chromium ne tournent pas dans la session de clôture.

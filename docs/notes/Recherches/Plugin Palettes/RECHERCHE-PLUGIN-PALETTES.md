@@ -1487,9 +1487,13 @@ palette » gardent leurs libellés au-dessus des champs.
   « Référence exacte dans » (Auto, Soft ou Vivid), et en Auto une ligne qui
   dit le profil que le classement a choisi : « Auto a choisi Vivid ». Soft
   ou Vivid force le profil porteur (`[MOT-17]`). L'erreur d'un code invalide reste sous son champ.
-  Sous le code, « Ajuster la référence » ouvre le sélecteur de couleur de la
-  référence sur son onglet « Ajuster » (`[UI-15]`) ; une référence ajustée
-  ajoute « Ajustée depuis #16A34A · Revenir à l'originale ».
+  Sous le code, aligné à gauche et hors du libellé du champ, « Ajuster la
+  référence » ouvre le sélecteur de couleur de la référence sur son onglet
+  « Ajuster » (`[UI-15]`). Il ne paraît que lorsqu'une garantie est manquée,
+  dans l'un ou l'autre thème : une palette libre ou une palette qui tient
+  toutes ses garanties ne l'a pas, et l'onglet « Ajuster » de la pastille
+  reste ouvert à toute palette. Une référence ajustée ajoute « Ajustée depuis
+  #16A34A · Revenir à l'originale ».
   Libre retire le choix des intensités, dit « Sans rôles ni garanties », et
   montre une puce par multiple de 50, de 50 à 1050, allumée
   quand la palette porte ce numéro. Une puce allumée ne s'éteint pas sous
