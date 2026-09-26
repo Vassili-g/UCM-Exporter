@@ -140,9 +140,9 @@ et dans les palettes à une intensité.
 
 | Sujet | Décision |
 |---|---|
-| Intensités d’une palette | Une ou deux, choisies à la création et modifiables dans la configuration. Une recette de format 3 se lit avec deux intensités pour chaque palette. Deux cartes, « Une intensité » et « Deux intensités », chacune avec sa rampe ; libellé « Intensités » ; « Une » par défaut ; choix caché pour une palette libre ; passage de deux à une sans confirmation (Y2.1). Disposition de la carte et texte de la carte « Une intensité » en Y2.6 |
+| Intensités d’une palette | Une ou deux, choisies à la création et modifiables dans la configuration. Une recette de format 3 se lit avec deux intensités pour chaque palette. Deux cartes, « Une intensité » et « Deux intensités », chacune avec sa rampe ; libellé « Intensités » ; « Une » par défaut ; choix caché pour une palette libre ; passage de deux à une sans confirmation (Y2.1). Disposition P2 : nom et couleur de référence sur une ligne, puis une rangée pour le Modèle et une pour les Intensités. Textes des cartes : « Une seule variante, à l’intensité de la couleur de référence. » et « Une variante douce « Soft » et une variante vive « Vivid ». » (Y2.6) |
 | Palette à une intensité | Elle se calcule comme le profil porteur forcé d’aujourd’hui (`[ENT-11]`) : la part de chroma de la référence, la référence exacte à son cran. Seule cette rampe se garde, en Light et en Dark. Elle n’a ni nom de profil, ni dérive propre à un profil, ni alerte « Profils confondus » |
-| Palette de base | Remplacée par le choix des intensités. Pour une palette à deux intensités, un choix « Auto, Soft, Vivid » du profil qui porte la référence, affiché seulement dans ce cas, libellé « Référence exacte dans », avec « Auto a choisi Vivid » dessous (Q5.4, Y2.1) |
+| Palette de base | Remplacée par le choix des intensités. Pour une palette à deux intensités, un choix « Auto, Soft, Vivid » du profil qui porte la référence, affiché seulement dans ce cas, libellé « Référence exacte dans », avec « Auto a choisi Vivid » dessous, posé dans la carte « Deux intensités » (Q5.4, Y2.1, Y2.6) |
 | Noms des tokens | `theme.{famille}.{cran}` pour une palette à une intensité, `theme.{famille}.{profil}.{cran}` pour deux. Pastilles de la planche : `{mode}/{cran}` et `{profil}/{mode}/{cran}` |
 | Architecture | Les utilitaires gardent deux profils ; les rampes de marque passent à une intensité. `theme` compte 121 variables, `brand` 45 par marque |
 | Fonds sombres | Les crans 50 à 300 du thème Dark perdent de la chroma, dans chaque profil, selon R3 : la part du profil multipliée par un facteur qui vaut 0,30 au cran 50 et remonte linéairement en clarté jusqu’à 1 au cran 400. Un curseur « Fonds du thème Dark » dans la carte Intensités des Réglages communs. L’alerte « Profils confondus » ignore ces crans ; une référence exacte qui y tombe garde ses octets (Y2.5). Le thème Light ne change pas |
@@ -150,8 +150,8 @@ et dans les palettes à une intensité.
 | Configuration de la palette | Mêmes champs, même ordre et même disposition que la carte de création (Y2.1) |
 | Dérive de teinte | La ligne de bilan et « Voir les garanties » se retirent de la carte |
 | Onglets | Un seul style pour toutes les bascules à onglets : l’onglet actif a un fond, un peu plus clair que `--fond-note` au thème sombre de Figma, et distinct de la carte au thème clair. Les segments de choix d’une valeur (préréglage, modèle) gardent le leur |
-| Interface de test | Les rangées de la grille des États s’espacent assez pour que deux anneaux de focus ne se touchent plus |
-| Planche | Les rampes, les usages et les grilles des intensités de la palette, et d’elles seules. Avec deux profils, les usages des deux, disposés selon Y2.7. `[PLA-18]` se récrit |
+| Interface de test | Les rangées de la grille des États s’espacent assez pour que deux anneaux de focus ne se touchent plus. Une palette à deux intensités a une bascule Soft et Vivid à droite d’Écran et États, ouverte sur le profil porteur ; une palette à une intensité n’en a pas (Y2.6) |
+| Planche | Les rampes, les usages et les grilles des intensités de la palette, et d’elles seules. Une intensité : « La rampe », une section d’usages et une grille par thème, sans nom de profil. Deux intensités : une section d’usages par profil, « · Soft » puis « · Vivid », quel que soit le porteur (D1). Le spécimen de `surface` s’écrit « Fond léger » (Y2.7). `[PLA-18]` se récrit |
 | Fiche d’une palette | Gestes dans l’ordre dicté : « Générer sur Figma » ou « Actualiser sur Figma », bouton principal bleu ; « Afficher » ; « Modifier ». Disposition A : le nom et l’état en pastille sur la première ligne, l’aperçu, la référence et les garanties sur une ligne, les gestes. « À jour » et « Lecture impossible » n’ont pas de premier geste ; un cadre jamais généré porte « Pas encore sur Figma » (Y2.2) |
 | Taille des gestes d’une fiche | Le socle gagne une taille compacte de 24 px pour `createButton`. Les gestes d’une fiche et d’une carte supprimée la prennent, « Supprimer définitivement » et le bouton principal compris |
 | Palette supprimée | Fond et bordure plus proches du fond de la page, teinte d’avertissement gardée |
@@ -357,15 +357,16 @@ choix :
   création et en configuration, le texte de la carte « Une intensité », et
   l’interface de test à deux intensités, avec ou sans bascule Soft et
   Vivid. Recommandé : P2 ; « Une seule variante, à l’intensité de la
-  couleur de référence. » ; guillemets français ; la bascule. En attente de
-  validation.
+  couleur de référence. » ; guillemets français ; la bascule. Réponse : P2,
+  mais le choix « Référence exacte dans » se pose dans la carte « Deux
+  intensités » ; texte b ; la bascule. Validée.
 - [x] **Y2.7** Cadre de la planche, restructuré : le constat de
   l’alternance en schéma (Bleu en Vivid, Sauge en Soft), le cadre à une
   intensité, puis D1, D2 et D3, chacune en schéma et en extrait du vrai
   cadre à taille réelle, avec ses calques. Une question ajoutée : le
   spécimen de `surface` s’écrit « Soft » et se lit comme le profil dans la
   section « · Vivid ». Recommandé : le cadre à une intensité tel quel ; D1 ;
-  « Fond léger ». En attente de validation.
+  « Fond léger ». Réponse : les trois recommandations. Validée.
 
 Critère : le mainteneur valide ou corrige chaque maquette sans avoir à
 imaginer une interaction.
@@ -785,4 +786,30 @@ j'ai pas compris, à restructurer
 
 Y2.5 · Fonds sombres
 ok pour tout
+```
+
+Second passage, texte d’origine, puis la précision demandée sur
+« raccourcir » : elle vise les textes des maquettes, et le cadre D1 reste
+tel quel.
+
+```text
+Y2.6 · Choix des intensités, second passage
+p2 mais mettre "référence exacte dans" dans la card des deux intensités
+
+Question 2
+b
+Question 3
+b
+
+Y2.7 · Cadre de la planche, second passage
+Question 1
+ok
+Question 2
+D1 mais il faudrait raccourcir tout ça drastiquement je pense
+Question 3
+b
+```
+
+```text
+Pour D1, « raccourcir tout ça drastiquement » vise quoi ? Les textes des maquettes
 ```
