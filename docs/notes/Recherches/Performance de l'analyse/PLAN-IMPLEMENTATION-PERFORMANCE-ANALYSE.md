@@ -539,6 +539,15 @@ avancement.
   passes au moins (couleurs, élection, icônes, vue exacte, typographie deux
   fois), et une lecture unique par node et par analyse les remplacerait. Le
   choix revient au mainteneur, sur les chiffres.
+  *Mesuré sur deux analyses après L9.7, l'une à l'ouverture du plugin,
+  l'autre sans le fermer : 20,0 s et 19,3 s, même empreinte `d9493f9a`.
+  `regles` prend 329 ms puis 94 ms : les 6,5 s de L9.3 ne se reproduisent
+  pas. `msGetAllNodes` vaut 4,6 s, soit 24 % du total : 1,6 s sur les
+  8,6 s de `structure.vues`, et 0,9 s sur chacune des 2,6 s de
+  `structure.typographie-exacte` et de `echantillons`. Ces deux étapes ont
+  les mêmes compteurs de parcours : `extractVariantSample` rappelle
+  `textSlots` sur chaque variant, comme la typographie exacte.
+  `msEnRespiration` tombe à 0,86 s, et `plusLongSilenceMs` à 0,84 s.*
 
 ## Lot L7 : documents
 
