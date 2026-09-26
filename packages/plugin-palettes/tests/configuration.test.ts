@@ -45,13 +45,13 @@ test('chaque champ pose sa valeur à sa place, et la relit', () => {
 
 test('[ENT-07] une courbe touche toutes les palettes, une part épargne les parts propres, le seuil les grises', () => {
   let recette: Recette = DEFAUT;
-  recette = ajouter(recette, nouvellePalette(recette, 'p-0000000a', '#1E6FD9')!);
-  recette = ajouter(recette, { ...nouvellePalette(recette, 'p-0000000b', '#FACC15')!, parts: { soft: 0.3, vivid: 0.8, origine: 'designer' } });
-  recette = ajouter(recette, nouvellePalette(recette, 'p-0000000c', '#6B7280')!);
+  recette = ajouter(recette, nouvellePalette(recette, 'p-0000000a', '#1E6FD9', 2)!);
+  recette = ajouter(recette, { ...nouvellePalette(recette, 'p-0000000b', '#FACC15', 2)!, parts: { soft: 0.3, vivid: 0.8, origine: 'designer' } });
+  recette = ajouter(recette, nouvellePalette(recette, 'p-0000000c', '#6B7280', 2)!);
   assert.equal(recette.palettes[2].parts?.origine, 'grise');
   const groupes = ['courbes', 'parts', 'fonds', 'contraste', 'profilsConfondus', 'palettesProches', 'chromaGrise'] as const;
   assert.deepEqual(groupes.map((groupe) => palettesModifiees(recette, groupe)), [3, 1, 3, 3, 2, 3, 2]);
-  const seule = ajouter(DEFAUT, nouvellePalette(DEFAUT, 'p-0000000a', '#1E6FD9')!);
+  const seule = ajouter(DEFAUT, nouvellePalette(DEFAUT, 'p-0000000a', '#1E6FD9', 2)!);
   assert.equal(palettesModifiees(seule, 'palettesProches'), 0, 'une palette seule n’a aucune voisine');
   assert.deepEqual([palettesConcernees(0), palettesConcernees(1), palettesConcernees(3)], ['Aucune palette concernée', '1 palette concernée', '3 palettes concernées']);
 });
@@ -70,8 +70,8 @@ test('[ENT-05] un fond se saisit en hexa, s’écrit en majuscules, et une saisi
 
 test('[ENT-09] le seuil de chroma grise recalcule les parts grises, et laisse les parts du designer', () => {
   let recette: Recette = DEFAUT;
-  recette = ajouter(recette, nouvellePalette(recette, 'p-0000000c', '#6B7280')!);
-  recette = ajouter(recette, { ...nouvellePalette(recette, 'p-0000000d', '#64748B')!, parts: { soft: 0.2, vivid: 0.4, origine: 'designer' } });
+  recette = ajouter(recette, nouvellePalette(recette, 'p-0000000c', '#6B7280', 2)!);
+  recette = ajouter(recette, { ...nouvellePalette(recette, 'p-0000000d', '#64748B', 2)!, parts: { soft: 0.2, vivid: 0.4, origine: 'designer' } });
   assert.equal(recette.palettes[0].parts?.origine, 'grise');
   const abaisse = poserValeur(recette, { seuil: 'chromaGrise' }, 0.001);
   assert.equal(abaisse.palettes[0].parts, undefined, 'la référence cesse d’être grise');
@@ -82,13 +82,14 @@ test('[ENT-09] le seuil de chroma grise recalcule les parts grises, et laisse le
 /** Une recette où chaque carte s'écarte de ses valeurs par défaut, avec une palette aux parts du designer et une palette forcée. */
 function recetteReglee(): Recette {
   let recette: Recette = DEFAUT;
-  recette = ajouter(recette, { ...nouvellePalette(recette, 'p-0000000a', '#1E6FD9')!, base: 'soft' });
-  recette = ajouter(recette, { ...nouvellePalette(recette, 'p-0000000b', '#FACC15')!, parts: { soft: 0.3, vivid: 0.8, origine: 'designer' } });
-  recette = ajouter(recette, nouvellePalette(recette, 'p-0000000c', '#6B7280')!);
+  recette = ajouter(recette, { ...nouvellePalette(recette, 'p-0000000a', '#1E6FD9', 2)!, base: 'soft' });
+  recette = ajouter(recette, { ...nouvellePalette(recette, 'p-0000000b', '#FACC15', 2)!, parts: { soft: 0.3, vivid: 0.8, origine: 'designer' } });
+  recette = ajouter(recette, nouvellePalette(recette, 'p-0000000c', '#6B7280', 2)!);
   recette = poserFond(recette, 'light', '#FFFFFF')!;
   recette = poserValeur(recette, { part: 'soft' }, 0.3);
   recette = poserValeur(recette, { courbe: 'light', rang: 7 }, 0.48);
   recette = poserValeur(recette, { seuil: 'texte' }, 7);
+  recette = { ...recette, contenuDesPlanches: { ...recette.contenuDesPlanches, grilles: false } };
   return poserValeur(recette, { seuil: 'chromaGrise' }, 0.05);
 }
 
@@ -106,15 +107,16 @@ test('V9.5 : « Rétablir » remet une carte aux valeurs par défaut, sans touch
     const propres = (recette: Recette) => recette.palettes.filter((palette) => palette.parts?.origine !== 'grise');
     assert.deepEqual(propres(retablie), propres(reglee), `${carte} garde les palettes, base forcée et parts du designer comprises`);
   }
-  assert.deepEqual(CARTES.map((carte) => estParDefaut(reglee, carte)), [false, false, false, false, false]);
-  assert.deepEqual(CARTES.map((carte) => estParDefaut(DEFAUT, carte)), [true, true, true, true, true]);
+  assert.deepEqual(CARTES.map((carte) => estParDefaut(reglee, carte)), [false, false, false, false, false, false]);
+  assert.deepEqual(CARTES.map((carte) => estParDefaut(DEFAUT, carte)), [true, true, true, true, true, true]);
+  assert.equal(estParDefaut(poserValeur(DEFAUT, { fondsSombres: true }, 0.5), 'parts'), false, 'les fonds du thème Dark comptent dans les intensités');
   assert.equal(estParDefaut(poserValeur(DEFAUT, { courbe: 'dark', rang: 3 }, 0.34), 'courbes'), false, 'la courbe sombre compte aussi');
 });
 
 test('V9.5 : rétablir le seuil de gris recalcule les parts grises, comme sa saisie', () => {
   // #6E7A90 a une chroma de 0,037 : presque grise sous le seuil de 0,05, colorée sous celui par défaut, 0,03.
   const reglee = recetteReglee();
-  const ardoise = ajouter(reglee, nouvellePalette(reglee, 'p-0000000d', '#6E7A90')!);
+  const ardoise = ajouter(reglee, nouvellePalette(reglee, 'p-0000000d', '#6E7A90', 2)!);
   assert.equal(ardoise.palettes[3].parts?.origine, 'grise');
   const retablie = retablir(ardoise, 'proches')!;
   assert.equal(retablie.palettes[3].parts, undefined);

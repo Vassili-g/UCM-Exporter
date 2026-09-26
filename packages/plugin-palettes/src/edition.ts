@@ -6,13 +6,15 @@ import {
   BORNES_DES_CRANS_LIBRES,
   DERIVE_MAXIMALE,
   PROFILS,
+  aUneIntensite,
   ajusterPartsGrises,
   arrondir,
   boutsDe,
   ecrireHexa,
   lireHexa,
-  partsDe,
+  partsDesProfils,
   prereglageTailwind,
+  profilPorteur,
   rgb8VersOklch,
   type Derive,
   type DeriveRangee,
@@ -96,11 +98,31 @@ export function nouvelIdentifiant(recette: Recette, tirer: () => number): string
 
 /**
  * Une palette neuve de référence `saisie`, au préréglage Tailwind, profils
- * liés. Rend `null` pour un hexa qui ne se lit pas.
+ * liés, à une intensité ou à deux ([ENT-14]). Rend `null` pour un hexa qui
+ * ne se lit pas.
  */
-export function nouvellePalette(recette: Recette, id: string, saisie: string): Palette | null {
+export function nouvellePalette(recette: Recette, id: string, saisie: string, intensites: 1 | 2): Palette | null {
   const nulle: DeriveRangee = { clair: 0, sombre: 0, origine: 'tailwind' };
-  return changerReference(recette, { id, reference: '#000000', derive: { lien: true, soft: nulle, vivid: nulle } }, saisie);
+  const vierge: Palette = { id, reference: '#000000', derive: { lien: true, soft: nulle, vivid: nulle } };
+  return changerReference(recette, intensites === 1 ? { ...vierge, intensites: 1 } : vierge, saisie);
+}
+
+/**
+ * La palette à une ou deux intensités ([ENT-14]). Passer à une retire la
+ * palette de base et les parts propres, et garde la dérive de l'intensité qui
+ * portait la référence, liée ; passer à deux rend Soft et Vivid, parts grises
+ * posées s'il le faut. Une palette libre n'a pas ce choix : elle reste telle
+ * quelle.
+ */
+export function choisirLesIntensites(recette: Recette, palette: Palette, nombre: 1 | 2): Palette {
+  if (palette.crans !== undefined || aUneIntensite(palette) === (nombre === 1)) return palette;
+  if (nombre === 2) {
+    const { intensites: _retirees, ...deux } = palette;
+    return ajusterPartsGrises(recette, deux);
+  }
+  const porteuse = palette.derive[profilPorteur(recette, palette)];
+  const { base: _base, parts: _parts, ...sansProfil } = palette;
+  return { ...sansProfil, derive: { lien: true, soft: porteuse, vivid: porteuse }, intensites: 1 };
 }
 
 /** La recette avec la palette ajoutée en dernier. */
@@ -205,7 +227,9 @@ export function remplacerPalette(recette: Recette, palette: Palette): Recette {
  * qu'il employait, et la configuration ne les touche plus.
  */
 export function poserPart(recette: Recette, palette: Palette, profil: Profil, part: number): Palette {
-  const employees = partsDe(recette, palette);
+  // Une palette à une intensité prend la part de sa référence : elle n'a pas de part propre ([ENT-14]).
+  if (aUneIntensite(palette)) return palette;
+  const employees = partsDesProfils(recette, palette);
   return { ...palette, parts: { ...employees, [profil]: arrondir(part, 3), origine: 'designer' } };
 }
 
@@ -223,6 +247,7 @@ export function reprendreLesParts(recette: Recette, palette: Palette): Palette {
  * sans changer de profil porteur.
  */
 export function choisirLaBase(palette: Palette, choix: 'auto' | Profil): Palette {
+  if (aUneIntensite(palette)) return palette;
   const { base: _ancienne, ...sansBase } = palette;
   if (choix === 'auto') return sansBase;
   if (sansBase.parts?.origine !== 'designer') return { ...sansBase, base: choix };
@@ -233,13 +258,13 @@ export function choisirLaBase(palette: Palette, choix: 'auto' | Profil): Palette
 /**
  * Passe une palette en palette libre (W6.5), sur la liste commune bornée à
  * treize numéros admis : le designer retire ensuite ce qu'il ne veut pas. Une
- * palette libre n'a pas de base (conception W6) : la retirer rend les parts
- * communes à une base forcée.
+ * palette libre n'a ni base (conception W6) ni choix des intensités
+ * ([ENT-14]) : retirer la base rend les parts communes à une base forcée.
  */
 export function passerEnLibre(recette: Recette, palette: Palette): Palette {
   if (palette.crans !== undefined) return palette;
-  const { base: _retiree, ...sansBase } = palette;
-  return { ...sansBase, crans: cransLibresParDefaut(recette) };
+  const { base: _retiree, intensites: _intensites, ...sansBase } = palette;
+  return ajusterPartsGrises(recette, { ...sansBase, crans: cransLibresParDefaut(recette) });
 }
 
 /** Les numéros qu'une palette libre reçoit en sortant du modèle : ceux de la liste commune que les bornes admettent. */
@@ -248,10 +273,14 @@ export function cransLibresParDefaut(recette: Recette): number[] {
   return recette.crans.filter((cran) => cran % pas === 0 && cran >= premier && cran <= dernier).slice(0, nombre[1]);
 }
 
-/** Rend une palette libre au modèle du design system : elle suit de nouveau la liste commune, en Auto. */
+/**
+ * Rend une palette libre au modèle du design system : elle suit de nouveau la
+ * liste commune, à une intensité, le choix par défaut de la création
+ * ([ENT-14]). Ses parts propres partent avec le choix des intensités.
+ */
 export function revenirAuModele(palette: Palette): Palette {
-  const { crans: _retiree, ...commune } = palette;
-  return commune;
+  const { crans: _retiree, parts: _parts, ...commune } = palette;
+  return { ...commune, derive: { ...commune.derive, lien: true, soft: commune.derive.vivid }, intensites: 1 };
 }
 
 /**

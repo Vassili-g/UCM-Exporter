@@ -35,7 +35,7 @@ export type EtatDuDessin =
 
 export interface SuiviDuDessin {
   /** Dessine les palettes nommées ; `noms` donne le nom affiché de chacune. */
-  dessiner(palettes: readonly string[], grille: boolean, noms: { readonly [id: string]: string }): void;
+  dessiner(palettes: readonly string[], noms: { readonly [id: string]: string }): void;
   /** Relance le dernier dessin demandé ; après une interruption, à partir de la palette fautive (V8.4). */
   reessayer(): void;
   /** Relance le dernier dessin en acceptant de perdre les calques étrangers qu'il a nommés. */
@@ -56,7 +56,7 @@ export function createSuiviDuDessin(
 ): SuiviDuDessin {
   let courant: EtatDuDessin = { phase: 'repos' };
   let noms: { readonly [id: string]: string } = {};
-  let derniereDemande: { palettes: readonly string[]; grille: boolean } | null = null;
+  let derniereDemande: { palettes: readonly string[] } | null = null;
   const abonnes: ((etat: EtatDuDessin) => void)[] = [];
 
   function poser(etat: EtatDuDessin): void {
@@ -66,29 +66,28 @@ export function createSuiviDuDessin(
 
   function dessiner(
     palettes: readonly string[],
-    grille: boolean,
     nomsDesPalettes: { readonly [id: string]: string },
     etrangersConfirmes: readonly string[] = [],
   ): void {
     if (courant.phase === 'en-cours' || palettes.length === 0) return;
     noms = nomsDesPalettes;
-    derniereDemande = { palettes, grille };
+    derniereDemande = { palettes };
     poser({ phase: 'en-cours', fait: 0, total: palettes.length, nom: noms[palettes[0]] ?? '' });
-    frontiere.dessiner({ palettes, grille, etrangersConfirmes }, () => poser({ phase: 'repos' }));
+    frontiere.dessiner({ palettes, etrangersConfirmes }, () => poser({ phase: 'repos' }));
   }
 
   return {
-    dessiner: (palettes, grille, nomsDesPalettes) => dessiner(palettes, grille, nomsDesPalettes),
+    dessiner: (palettes, nomsDesPalettes) => dessiner(palettes, nomsDesPalettes),
     reessayer() {
       if (!derniereDemande) return;
-      const { palettes, grille } = derniereDemande;
+      const { palettes } = derniereDemande;
       const fautive = courant.phase === 'fini' && courant.resultat.issue === 'interrompue' ? palettes.indexOf(courant.resultat.palette) : -1;
-      dessiner(fautive > 0 ? palettes.slice(fautive) : palettes, grille, noms);
+      dessiner(fautive > 0 ? palettes.slice(fautive) : palettes, noms);
     },
     confirmerEtrangers() {
       if (!derniereDemande || courant.phase !== 'fini' || courant.resultat.issue !== 'etrangers') return;
       const calques = courant.resultat.cadres.flatMap((cadre) => cadre.calques.map(({ id }) => id));
-      dessiner(derniereDemande.palettes, derniereDemande.grille, noms, calques);
+      dessiner(derniereDemande.palettes, noms, calques);
     },
     renoncer() {
       poser({ phase: 'repos' });

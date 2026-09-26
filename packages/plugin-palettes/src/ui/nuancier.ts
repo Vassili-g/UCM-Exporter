@@ -12,7 +12,6 @@
  * choix d'une nuance. Les accolades ne se focalisent pas.
  */
 import {
-  PROFILS,
   TABLE_DES_EMPLOIS,
   associationDe,
   contraste,
@@ -21,11 +20,12 @@ import {
   etatDeLaPaire,
   lireHexa,
   mesurerCran,
+  rampeDe,
   type Association,
   type Cran,
   type Emploi,
   type Mode,
-  type Profil,
+  type Intensite,
   type Promesse,
   type Recette,
   type Rgb8,
@@ -86,7 +86,7 @@ export interface NuancierUi {
 
 export type Choix =
   /** Une nuance, par son rang et par son numéro : quand la liste change, le choix suit le numéro. */
-  | { readonly nature: 'nuance'; readonly profil: Profil; readonly rang: number; readonly numero: number }
+  | { readonly nature: 'nuance'; readonly profil: Intensite; readonly rang: number; readonly numero: number }
   | { readonly nature: 'fond' };
 
 /** L'encre qui se lit sur le fond du thème : la sombre ou la claire des couleurs de la planche. */
@@ -271,7 +271,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   function choixDe(rampe: number, place: number): Choix {
     if (place === 0) return { nature: 'fond' };
     const numero = donnees?.analyse.grille.crans[place - 1] ?? 0;
-    return { nature: 'nuance', profil: PROFILS[rampe], rang: place - 1, numero };
+    return { nature: 'nuance', profil: donnees?.analyse.intensites[rampe] ?? 'unique', rang: place - 1, numero };
   }
 
   function choisir(suivant: Choix | null): void {
@@ -307,7 +307,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
   });
 
   /** Les promesses du thème montré qui comptent `emploi` au décalage donné, dans un profil. */
-  function promessesDuRole(analyse: AnalyseDePalette, profil: Profil, emploi: Emploi, decalage: number): Promesse[] {
+  function promessesDuRole(analyse: AnalyseDePalette, profil: Intensite, emploi: Emploi, decalage: number): Promesse[] {
     return analyse.promesses.filter((promesse) => promesse.mode === mode && promesse.profil === profil
       && [promesse.paire.premier, promesse.paire.second].some((membre) => 'emploi' in membre && membre.emploi === emploi && membre.decalage === decalage));
   }
@@ -354,7 +354,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
    * noir, un ratio et un badge par ligne, que le badge juge en texte courant
    * ([VER-13]). Suivent les nuances identiques ou confondues, s'il y en a.
    */
-  function contrastesDeLaNuance(cran: Cran, profil: Profil, rang: number, entrees: EntreesDuNuancier, fondDuMode: Rgb8): HTMLElement[] {
+  function contrastesDeLaNuance(cran: Cran, profil: Intensite, rang: number, entrees: EntreesDuNuancier, fondDuMode: Rgb8): HTMLElement[] {
     const { recette, analyse } = entrees;
     const numero = analyse.grille.crans[rang];
     const mesure = mesurerCran(cran.couleur, fondDuMode, recette.seuils);
@@ -374,7 +374,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       table.append(ligne);
     }
     const blocs: HTMLElement[] = [table];
-    for (const autre of [rang - 1, rang + 1].filter((voisin) => analyse.rampes[profil][mode][voisin]?.hexa === cran.hexa)) {
+    for (const autre of [rang - 1, rang + 1].filter((voisin) => rampeDe(analyse.rampes, profil)[mode][voisin]?.hexa === cran.hexa)) {
       blocs.push(paragraphe(TEXTES_DU_NUANCIER.memeCouleur(analyse.grille.crans[autre]), 'ligne-secondaire'));
     }
     if (entrees.confondues.some((confondue) => confondue.mode === mode && confondue.cran === numero)) {
@@ -420,9 +420,9 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     return enTete;
   }
 
-  function detailDeNuance(profil: Profil, rang: number, entrees: EntreesDuNuancier): HTMLElement[] {
+  function detailDeNuance(profil: Intensite, rang: number, entrees: EntreesDuNuancier): HTMLElement[] {
     const { recette, analyse } = entrees;
-    const cran = analyse.rampes[profil][mode][rang];
+    const cran = rampeDe(analyse.rampes, profil)[mode][rang];
     const fondDuMode = lireHexa(recette.fonds[mode]) ?? [255, 255, 255];
     const { crans } = analyse.grille;
     const reference = analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang;
@@ -436,19 +436,19 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     return blocs;
   }
 
-  /** Le détail de la pastille `on-solid` : le fond de page, posé en texte sur `solid`, et ses garanties par profil. */
+  /** Le détail de la pastille `on-solid` : le fond de page, posé en texte sur `solid`, et ses garanties par intensité. */
   function detailDuFond(entrees: EntreesDuNuancier): HTMLElement[] {
     const { recette, analyse } = entrees;
     const fondDuMode = lireHexa(recette.fonds[mode]) ?? [255, 255, 255];
     const depart = recette.crans.indexOf(TABLE_DES_EMPLOIS.solid);
     const fin = recette.crans[Math.min(recette.crans.length - 1, depart + Math.max(...decalagesDeLEmploi('on-solid')))];
     const lignes: HTMLElement[] = [];
-    for (const profil of PROFILS) {
+    for (const profil of analyse.intensites) {
       const promesses = promessesDuRole(analyse, profil, 'on-solid', 0).sort((a, b) => etatDeLaPaire(a.paire) - etatDeLaPaire(b.paire));
       // Le texte on-solid se montre posé sur le fond plein de son premier état.
-      const plein = analyse.rampes[profil][mode][depart];
+      const plein = rampeDe(analyse.rampes, profil)[mode][depart];
       const ligne = ligneDUsage('on-solid', 0, specimenDuRole('solid', plein.couleur, fondDuMode, fondDuMode), promesses);
-      ligne.querySelector('.usage-quoi p')?.prepend(`${NOM_DU_PROFIL[profil]} · `);
+      if (profil !== 'unique') ligne.querySelector('.usage-quoi p')?.prepend(`${NOM_DU_PROFIL[profil]} · `);
       lignes.push(ligne);
     }
     return [
@@ -514,6 +514,8 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
     surface.style.setProperty('--bordure-surface', encres.bordure);
     const { crans } = analyse.grille;
     if (analyse.libre && choix?.nature === 'fond') choix = null;
+    // Une intensité que la palette ne porte plus referme son choix ([ENT-14]).
+    if (choix?.nature === 'nuance' && !analyse.intensites.includes(choix.profil)) choix = null;
     // Une liste qui change, celle d'une palette libre, déplace les rangs : le choix suit son numéro, ou se referme.
     if (choix?.nature === 'nuance') {
       const rang = crans.indexOf(choix.numero);
@@ -545,12 +547,12 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       return entete;
     }));
 
-    // La pastille on-solid : peinte du fond du thème, sur la hauteur des deux rangées.
+    // La pastille on-solid : peinte du fond du thème, sur la hauteur des rangées, une par intensité.
     const onSolid = document.createElement('span');
     onSolid.className = 'pastille pastille-on-solid';
     onSolid.setAttribute('role', 'gridcell');
     onSolid.style.gridColumn = String(colonne(-1));
-    onSolid.style.gridRow = '2 / span 2';
+    onSolid.style.gridRow = `2 / span ${analyse.intensites.length}`;
     onSolid.style.background = recette.fonds[mode];
     onSolid.setAttribute('aria-label', TEXTES_DU_NUANCIER.etiquetteDuFond(recette.fonds[mode]));
     onSolid.setAttribute('aria-selected', String(choix?.nature === 'fond'));
@@ -564,7 +566,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
 
     const confondues = new Set(entrees.confondues.filter((confondue) => confondue.mode === mode).map((confondue) => confondue.cran));
     cellules = [];
-    const rangees = PROFILS.map((profil, rangDeRampe) => {
+    const rangees = analyse.intensites.map((profil, rangDeRampe) => {
       const rangee = document.createElement('div');
       rangee.className = 'nuancier-rangee';
       rangee.setAttribute('role', 'row');
@@ -572,10 +574,11 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
       entete.className = 'nuancier-profil';
       entete.setAttribute('role', 'rowheader');
       entete.style.gridRow = String(rangDeRampe + 2);
-      entete.textContent = NOM_DU_PROFIL[profil];
+      // La rampe d'une palette à une intensité n'a pas de nom de profil ([ENT-14]).
+      entete.textContent = profil === 'unique' ? '' : NOM_DU_PROFIL[profil];
       rangee.append(entete);
       if (rangDeRampe === 0) rangee.append(onSolid);
-      const pastilles = analyse.rampes[profil][mode].map((cran, rang) => {
+      const pastilles = rampeDe(analyse.rampes, profil)[mode].map((cran, rang) => {
         const numero = crans[rang];
         const pastille = document.createElement('span');
         pastille.className = 'pastille';
@@ -587,7 +590,7 @@ export function createNuancier(gestes: GestesDuNuancier): NuancierUi {
         pastille.style.background = cran.hexa;
         pastille.style.color = contraste(cran.couleur, [0, 0, 0]) >= contraste(cran.couleur, [255, 255, 255]) ? '#000000' : '#FFFFFF';
         const reference = analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang;
-        const etiquettes = [TEXTES_DU_NUANCIER.etiquetteDeNuance(NOM_DU_PROFIL[profil], numero, cran.hexa)];
+        const etiquettes = [TEXTES_DU_NUANCIER.etiquetteDeNuance(profil, numero, cran.hexa)];
         if (reference) {
           pastille.dataset.reference = 'true';
           pastille.textContent = '◆';

@@ -10,7 +10,7 @@
  * Une palette libre n'a pas de rôles : la section se retire. Repliée à
  * l'ouverture, elle ne se dessine que dépliée ; la vue choisie dure la session.
  */
-import { TABLE_DES_EMPLOIS, lireHexa, type Emploi, type Mode, type Recette } from 'ucm-couleur';
+import { PROFILS, TABLE_DES_EMPLOIS, lireHexa, rampeDe, type Emploi, type Intensite, type Mode, type Profil, type Recette } from 'ucm-couleur';
 
 import type { AnalyseDePalette } from '../analyse';
 import { createCarte } from './carte';
@@ -28,7 +28,7 @@ export interface CouleursDeLInterface {
   readonly fond: string;
   readonly encre: string;
   readonly encreSeconde: string;
-  /** La couleur d'un emploi à un état, dans le profil porteur. */
+  /** La couleur d'un emploi à un état, dans l'intensité montrée. */
   readonly emploi: (emploi: EmploiPeint, etat: Etat) => string;
 }
 
@@ -37,10 +37,10 @@ export interface CouleursDeLInterface {
  * fond du thème. Un état au-delà de la dernière nuance garde la dernière ;
  * `surface-card`, dans une liste sans 50, prend le fond du thème.
  */
-export function couleursDeLInterface(recette: Recette, analyse: AnalyseDePalette, mode: Mode): CouleursDeLInterface {
+export function couleursDeLInterface(recette: Recette, analyse: AnalyseDePalette, mode: Mode, intensite: Intensite = analyse.ancrage.profil): CouleursDeLInterface {
   const fond = recette.fonds[mode];
   const encres = encresSur(lireHexa(fond) ?? [255, 255, 255]);
-  const rampe = analyse.rampes[analyse.ancrage.profil][mode];
+  const rampe = rampeDe(analyse.rampes, intensite)[mode];
   return {
     fond,
     encre: encres.encre,
@@ -57,7 +57,8 @@ export function couleursDeLInterface(recette: Recette, analyse: AnalyseDePalette
 export interface InterfaceDeTestUi {
   readonly element: HTMLElement;
   /** Dessine la vue choisie quand la carte est dépliée ; une palette libre retire la section. */
-  afficher(recette: Recette, analyse: AnalyseDePalette, mode: Mode): void;
+  /** `palette` est l'identifiant de la palette ouverte : en changer rouvre la bascule du profil sur son porteur. */
+  afficher(recette: Recette, analyse: AnalyseDePalette, mode: Mode, palette: string): void;
   /** Un geste sur l'en-tête qui déplie la carte : l'onglet redessine. */
   surBascule(action: () => void): void;
 }
@@ -329,6 +330,9 @@ export function createInterfaceDeTest(): InterfaceDeTestUi {
   const carte = createCarte({ titre: TEXTES_DE_L_INTERFACE_DE_TEST.titre, repliable: { ouverte: false } });
   let vue: Vue = 'ecran';
   let dernier: { recette: Recette; analyse: AnalyseDePalette; mode: Mode } | null = null;
+  /** Le profil peint d'une palette à deux intensités, ouvert sur son porteur (Y2.6) ; la palette dont il est le choix. */
+  let profil: Profil = 'vivid';
+  let paletteDuProfil: string | null = null;
 
   const bascule = noeud('div');
   bascule.className = 'bascule bascule-de-l-essai';
@@ -344,17 +348,47 @@ export function createInterfaceDeTest(): InterfaceDeTestUi {
     return { valeur, option };
   });
   bascule.append(...options.map(({ option }) => option));
+  // Le profil peint, à droite des vues : seule une palette à deux intensités en a un à choisir ([ENT-14]).
+  const basculeDuProfil = noeud('div');
+  basculeDuProfil.className = 'bascule bascule-du-profil-essaye';
+  basculeDuProfil.setAttribute('role', 'group');
+  basculeDuProfil.setAttribute('aria-label', TEXTES_DE_L_INTERFACE_DE_TEST.profil);
+  const optionsDuProfil = PROFILS.map((valeur) => {
+    const option = boutonDeLEcran(NOM_DU_PROFIL[valeur]);
+    option.className = 'bascule-option';
+    option.addEventListener('click', () => {
+      profil = valeur;
+      rendreLeResume();
+      dessiner();
+    });
+    return { valeur, option };
+  });
+  basculeDuProfil.append(...optionsDuProfil.map(({ option }) => option));
+  const tete = noeud('div');
+  tete.className = 'essai-bascules';
+  tete.append(bascule, basculeDuProfil);
   const surface = noeud('div');
   surface.className = 'essai-surface';
-  carte.corps.append(bascule, surface);
+  carte.corps.append(tete, surface);
+
+  /** L'intensité peinte : la rampe unique, ou le profil choisi. */
+  const intensiteMontree = (analyse: AnalyseDePalette): Intensite => (analyse.intensites.length === 1 ? 'unique' : profil);
+
+  function rendreLeResume(): void {
+    if (!dernier) return;
+    const intensite = intensiteMontree(dernier.analyse);
+    carte.poserResume(TEXTES_DE_L_INTERFACE_DE_TEST.resume(dernier.mode, intensite === 'unique' ? null : NOM_DU_PROFIL[intensite]));
+  }
 
   function dessiner(): void {
     for (const { valeur, option } of options) option.setAttribute('aria-pressed', String(valeur === vue));
+    for (const { valeur, option } of optionsDuProfil) option.setAttribute('aria-pressed', String(valeur === profil));
+    basculeDuProfil.hidden = !dernier || dernier.analyse.intensites.length === 1;
     if (!dernier || dernier.analyse.libre || !carte.estOuverte()) {
       surface.replaceChildren();
       return;
     }
-    const couleurs = couleursDeLInterface(dernier.recette, dernier.analyse, dernier.mode);
+    const couleurs = couleursDeLInterface(dernier.recette, dernier.analyse, dernier.mode, intensiteMontree(dernier.analyse));
     surface.style.setProperty('--essai-fond', couleurs.fond);
     surface.style.setProperty('--essai-encre', couleurs.encre);
     surface.style.setProperty('--essai-encre-seconde', couleurs.encreSeconde);
@@ -365,10 +399,17 @@ export function createInterfaceDeTest(): InterfaceDeTestUi {
 
   return {
     element: carte.element,
-    afficher(recette, analyse, mode) {
+    afficher(recette, analyse, mode, palette) {
+      // Une autre palette, ou une palette qui passe à deux intensités, rouvre la bascule sur son profil porteur.
+      const { profil: porteur } = analyse.ancrage;
+      if (porteur === 'unique') paletteDuProfil = null;
+      else if (palette !== paletteDuProfil) {
+        profil = porteur;
+        paletteDuProfil = palette;
+      }
       dernier = { recette, analyse, mode };
       carte.element.hidden = analyse.libre;
-      carte.poserResume(TEXTES_DE_L_INTERFACE_DE_TEST.resume(mode, NOM_DU_PROFIL[analyse.ancrage.profil]));
+      rendreLeResume();
       dessiner();
     },
     surBascule(action) {

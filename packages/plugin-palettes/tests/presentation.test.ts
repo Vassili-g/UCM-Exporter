@@ -27,8 +27,7 @@ test('[VER-06] deux profils en échec sur la même paire font un groupe, et comp
   const groupes = groupesManques(promesses);
   assert.deepEqual(groupes.map((groupe) => `${groupe.association.premier}/${groupe.association.second} ${groupe.mode} ${groupe.etat} ${groupe.manquees}`), ['text/surface light 0 2']);
   assert.equal(groupes.reduce((total, groupe) => total + groupe.manquees, 0), promesses.filter((promesse) => promesse.verdict === 'manquee').length);
-  assert.equal(groupes[0].soft.profil, 'soft');
-  assert.equal(groupes[0].vivid.profil, 'vivid');
+  assert.deepEqual(groupes[0].resultats.map((promesse) => promesse.profil), ['soft', 'vivid']);
 });
 
 test('[VER-06] un groupe garde le résultat du profil qui tient sa promesse', () => {
@@ -36,8 +35,7 @@ test('[VER-06] un groupe garde le résultat du profil qui tient sa promesse', ()
     (promesse.profil === 'soft' ? { ...promesse, verdict: 'tenue' as const } : promesse));
   const [groupe] = groupesManques(promesses);
   assert.equal(groupe.manquees, 1);
-  assert.equal(groupe.soft.verdict, 'tenue');
-  assert.equal(groupe.vivid.verdict, 'manquee');
+  assert.deepEqual(groupe.resultats.map((promesse) => promesse.verdict), ['tenue', 'manquee']);
 });
 
 test('aucune promesse manquée, aucun groupe', () => {

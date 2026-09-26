@@ -139,8 +139,10 @@ export function createGraphe(): GrapheUi {
       const enfants: SVGElement[] = reperes(echelle).map(repere);
 
       // Synchronisés, les profils partagent la ligne du porteur. Déliés, deux lignes, pleine et tiretée ([DER-05]).
-      for (const trace of lie ? [ancrage.profil] : PROFILS) {
-        const rangAncre = trace === ancrage.profil ? ancrage.rangs.light : null;
+      // La rampe unique d'une palette à une intensité range sa dérive sous la clé `vivid` comme sous `soft` ([ENT-14]).
+      const porteur = ancrage.profil === 'unique' ? 'vivid' : ancrage.profil;
+      for (const trace of lie ? [porteur] : PROFILS) {
+        const rangAncre = trace === porteur ? ancrage.rangs.light : null;
         const sommets = ligneBrisee(courbe, reference, palette.derive[trace], bouts, rangAncre);
         const points = sommets.map(({ rang, angle }) => `${abscisse(rang, CADRE, total)},${ordonnee(angle, CADRE, echelle)}`);
         const ligne = element('polyline', { points: points.join(' ') });

@@ -145,8 +145,7 @@ test('[VER-06] un groupe de promesses nomme l’association, l’état, le thèm
     mode: 'dark',
     etat: 1,
     seuil: 4.5,
-    soft: promesse('soft', 4.62),
-    vivid: promesse('vivid', 4.319),
+    resultats: [promesse('soft', 4.62), promesse('vivid', 4.319)],
     manquees: 1,
   };
   const constat = constatDeGroupe(groupe, 'Bleu');
@@ -186,7 +185,7 @@ test('[VER-13] un élément graphique n’a que AA, à 3:1, même au-delà de 7:
 test('[VER-13] Q4.2 : un minimum réglé à 6:1 manque la promesse, et le badge dit toujours AA atteint', () => {
   const recette = recetteParDefaut();
   const exigeante = { ...recette, seuils: { ...recette.seuils, texte: 6 } };
-  const bleu = nouvellePalette(exigeante, 'p-0000000a', '#1E6FD9')!;
+  const bleu = nouvellePalette(exigeante, 'p-0000000a', '#1E6FD9', 2)!;
   const entre = verifierPromesses(exigeante, bleu).filter((promesse) => promesse.paire.seuil === 'texte' && promesse.contraste >= 4.5 && promesse.contraste < 6);
   assert.ok(entre.length > 0, 'une garantie de texte entre 4,5:1 et 6:1');
   for (const promesse of entre) {
@@ -225,7 +224,7 @@ test('[UI-12] une carte repliée se résume : préréglage et synchronisation, o
   assert.equal(resumeDeLaDerive(liee, false, 1), 'Personnalisée · synchronisée · 1 point à vérifier');
   assert.equal(resumeDeLaDerive(liee, true, 0), 'Désactivée pour une couleur presque grise');
   assert.equal(resumeDesIntensites(undefined, undefined, { soft: 0.45, vivid: 0.95 }, 0), 'Communes · Soft 0,45 · Vivid 0,95');
-  assert.equal(resumeDesIntensites(undefined, 'vivid', { soft: 0.3, vivid: 0.3 }, 2), 'Palette de base Vivid · Soft 0,3 · Vivid 0,3 · 2 points à vérifier');
+  assert.equal(resumeDesIntensites(undefined, 'vivid', { soft: 0.3, vivid: 0.3 }, 2), 'Référence dans Vivid · Soft 0,3 · Vivid 0,3 · 2 points à vérifier');
   assert.equal(resumeDesIntensites('designer', 'vivid', { soft: 0.2, vivid: 0.8 }, 0), 'Propres · Soft 0,2 · Vivid 0,8');
 });
 

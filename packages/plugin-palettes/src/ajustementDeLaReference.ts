@@ -9,13 +9,14 @@ import {
   MODES,
   ancrageDe,
   ecrireHexa,
+  intensitesDe,
   lireHexa,
   pasDepuisLOriginale,
   propositionDAjustement,
   verifierPromesses,
+  type Intensite,
   type Mode,
   type Palette,
-  type Profil,
   type Promesse,
   type Recette,
 } from 'ucm-couleur';
@@ -97,11 +98,13 @@ export function changementAuPasVoisin(recette: Recette, palette: Palette, pas: n
   return MODES.filter((mode) => cransAvant[mode] !== cransApres[mode]).map((mode) => ({ mode, numero: cransApres[mode] }));
 }
 
-/** Les garanties manquées de chaque profil, les deux thèmes comptés. */
-export function manqueesParProfil(recette: Recette, palette: Palette): { readonly [P in Profil]: number } {
+/** Les garanties manquées de chaque intensité présente, les deux thèmes comptés, dans l'ordre de `intensitesDe`. */
+export function manqueesParIntensite(recette: Recette, palette: Palette): { readonly intensite: Intensite; readonly manquees: number }[] {
   const promesses = verifierPromesses(recette, palette);
-  const compte = (profil: Profil) => promesses.filter((promesse) => promesse.profil === profil && promesse.verdict === 'manquee').length;
-  return { soft: compte('soft'), vivid: compte('vivid') };
+  return intensitesDe(palette).map((intensite) => ({
+    intensite,
+    manquees: promesses.filter((promesse) => promesse.profil === intensite && promesse.verdict === 'manquee').length,
+  }));
 }
 
 /** Une garantie qui change avec l'ajustement, ou reste manquée : son état avant et après. */

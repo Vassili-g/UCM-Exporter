@@ -10,7 +10,9 @@
  * (E21).
  */
 import {
+  aUneIntensite,
   boutsDe,
+  rampeDe,
   ecrireArrondi,
   referenceDe,
   rgb8VersOklch,
@@ -322,16 +324,19 @@ export function createEditeur(gestes: GestesDeLEditeur): EditeurUi {
     if (!recette || !palette || !rampes || !ancrage) return;
     const focalisee = boutDe(document.activeElement);
     const lie = palette.derive.lien;
+    // Une palette à une intensité n'a qu'une dérive, rangée liée sous les deux clés ([ENT-14]) : un seul tracé, et ni lien ni profil à choisir.
+    const une = aUneIntensite(palette);
     // Synchronisés, les deux profils se règlent ensemble : l'éditeur montre le porteur de la référence.
-    if (lie) profil = ancrage.profil;
+    if (lie) profil = ancrage.profil === 'unique' ? 'vivid' : ancrage.profil;
     if (!analyse) return;
-    graphe.afficher({ recette, palette, profil, rampe: rampes[profil].light, ancrage, grille: analyse.grille, echelle: echelleCourante() });
+    graphe.afficher({ recette, palette, profil, rampe: rampeDe(rampes, une ? 'unique' : profil).light, ancrage, grille: analyse.grille, echelle: echelleCourante() });
     // Le graphe s'est redessiné : la poignée qui avait le focus le reprend.
     if (focalisee) graphe.poignees()[focalisee]?.focus();
 
     const derive = palette.derive[profil];
     choixDuPrereglage.value = derive.origine;
     lien.checked = lie;
+    etiquetteDuLien.hidden = une;
     profils.hidden = lie;
     for (const { valeur, choix } of boutonsDeProfil) choix.setAttribute('aria-pressed', String(valeur === profil));
     confirmation.hidden = !confirmationOuverte;

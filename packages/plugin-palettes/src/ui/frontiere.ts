@@ -17,10 +17,9 @@ import type { PluginMessage, UiRequest } from '../messages';
 /** Ce que l'indication de rangement affiche. */
 export type StatutDuRangement = 'lu' | 'en-cours' | 'range' | 'refuse' | 'invalide';
 
-/** Ce qu'un dessin demande : des palettes, la grille, et les calques étrangers que le designer accepte de perdre (D-H). */
+/** Ce qu'un dessin demande : des palettes, et les calques étrangers que le designer accepte de perdre (D-H). */
 export interface DemandeDeDessin {
   readonly palettes: readonly string[];
-  readonly grille: boolean;
   readonly etrangersConfirmes: readonly string[];
 }
 
@@ -84,13 +83,12 @@ export function createFrontiere(
     surStatut(statut, refus);
   }
 
-  function envoyerDessin({ palettes, grille, etrangersConfirmes }: DemandeDeDessin): void {
+  function envoyerDessin({ palettes, etrangersConfirmes }: DemandeDeDessin): void {
     dernierDessin = numeroter();
     envoyer({
       type: 'dessiner',
       demande: dernierDessin,
       palettes: [...palettes],
-      grille,
       empreinteLue: empreinte,
       etrangersConfirmes: [...etrangersConfirmes],
     });

@@ -24,6 +24,12 @@ export const CRANS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
 /** Les parts de chroma des deux profils, en fraction du plafond du gamut. */
 const PROFILS = { doux: 0.45, vibrant: 0.95 };
+/**
+ * Les fonds du thème Dark : la part d'un cran y est multipliée par un facteur
+ * qui vaut ce nombre au cran 50 et remonte linéairement en clarté jusqu'à 1
+ * au cran 400. Le thème Light garde la part entière.
+ */
+const FONDS_SOMBRES = 0.30;
 /** Toutes les teintes entières du cercle. Un pire cas se cache entre deux teintes d'un échantillon. */
 const TEINTES = Array.from({ length: 360 }, (_, i) => i);
 /**
@@ -84,10 +90,17 @@ export function contraste(a, b) {
 
 const rang = (cran) => CRANS.indexOf(cran);
 
-/** La couleur d'un cran : sa clarté vient de la courbe du mode, sa chroma du profil. */
+/** Le facteur de la part d'un cran du thème Dark, à la clarté `L`. */
+function facteurSombre(L) {
+  const [bas, haut] = [COURBES.dark[rang(50)], COURBES.dark[rang(400)]];
+  return FONDS_SOMBRES + (1 - FONDS_SOMBRES) * Math.min(1, Math.max(0, (L - bas) / (haut - bas)));
+}
+
+/** La couleur d'un cran : sa clarté vient de la courbe du mode, sa chroma du profil, atténuée sur un fond sombre. */
 export function couleur(mode, cran, teinte, part) {
   const L = COURBES[mode][rang(cran)];
-  return { L, C: part * chromaMaximale(L, teinte), H: teinte };
+  const facteur = mode === 'dark' ? facteurSombre(L) : 1;
+  return { L, C: part * facteur * chromaMaximale(L, teinte), H: teinte };
 }
 
 /**
@@ -99,13 +112,13 @@ const fondDePage = (mode) => couleur(mode, 50, 0, 0);
 const colonne = (x, n = 7) => String(x).padStart(n);
 const titre = (t) => console.log(`\n## ${t}\n`);
 
-/** Le pire cas d'une paire, sur toutes les teintes, les deux profils et les deux modes. */
-function pireCas(paire) {
+/** Le pire cas d'une paire, sur toutes les teintes, les deux profils ou les parts données, et les deux modes. */
+function pireCas(paire, parts = PROFILS) {
   let min = Infinity;
   let max = 0;
   let ou = null;
   for (const mode of Object.keys(COURBES)) {
-    for (const [profil, part] of Object.entries(PROFILS)) {
+    for (const [profil, part] of Object.entries(parts)) {
       for (const teinte of TEINTES) {
         const k = contraste(...paire(mode, teinte, part));
         if (k < min) {
@@ -315,6 +328,23 @@ function sectionAncre() {
   }
 }
 
+/** Les parts de 0 à 1 par pas de 0,05 : une palette à une intensité prend la part quelconque de sa référence. */
+const PARTS_QUELCONQUES = Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`part ${(i / 20).toFixed(2)}`, i / 20]));
+
+function sectionIntensites() {
+  titre('9. Une palette à une intensité tient-elle les mêmes promesses ?');
+  console.log('Sur 360 teintes, les parts de 0 à 1 par pas de 0,05 et les deux modes.\n');
+  console.log(`  ${'promesse'.padEnd(44)}${colonne('seuil')}${colonne('min')}  pire cas`);
+  let echecs = 0;
+  for (const [nom, seuil, paire] of PROMESSES) {
+    const { min, ou } = pireCas(paire, PARTS_QUELCONQUES);
+    if (min < seuil) echecs += 1;
+    console.log(`  ${nom.padEnd(44)}${colonne(`${seuil}:1`)}${colonne(min.toFixed(2))}  ${min >= seuil ? `tenue, ${ou}` : `REFUSÉE, ${ou}`}`);
+  }
+  console.log(`\n  ${echecs} promesse(s) refusée(s).`);
+  return echecs;
+}
+
 const SECTIONS = {
   crans: sectionCrans,
   chroma: sectionChroma,
@@ -324,6 +354,7 @@ const SECTIONS = {
   anneau: sectionAnneau,
   etats: sectionEtats,
   ancre: sectionAncre,
+  intensites: sectionIntensites,
 };
 
 const demande = process.argv.find((a) => a.startsWith('--section='))?.slice('--section='.length);

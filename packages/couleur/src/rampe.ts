@@ -1,6 +1,7 @@
 /**
- * Fabriquer un cran, une rampe et les quatre rampes d'une palette ([MOT-09] à
- * [MOT-17]), avec la teinte pivotée autour de la couleur de référence.
+ * Fabriquer un cran, une rampe et les rampes d'une palette ([MOT-09] à
+ * [MOT-17]), avec la teinte pivotée autour de la couleur de référence, et la
+ * part des fonds du thème Dark ([MOT-28]).
  */
 import {
   ecrireHexa,
@@ -16,6 +17,13 @@ import { plafond, type Gamut } from './plafond';
 
 export type Profil = 'soft' | 'vivid';
 export type Mode = 'light' | 'dark';
+
+/**
+ * Une intensité d'une palette : l'un des deux profils d'une palette à deux
+ * intensités, ou la rampe `unique` d'une palette à une intensité, qui n'a pas
+ * de nom de profil ([ENT-14]).
+ */
+export type Intensite = Profil | 'unique';
 
 export const PROFILS: readonly Profil[] = ['soft', 'vivid'];
 export const MODES: readonly Mode[] = ['light', 'dark'];
@@ -99,6 +107,28 @@ export function cranFlottant(L: number, H: number, part: number, gamut: Gamut): 
   ];
 }
 
+/**
+ * Ce que les fonds du thème Dark retiennent de la part ([MOT-28]) : le facteur
+ * `depart` jusqu'à `clarteBasse`, la clarté du numéro 50 de la courbe Dark,
+ * puis un facteur qui remonte linéairement en clarté jusqu'à 1 à
+ * `clarteHaute`, celle du numéro 400, et au-delà.
+ */
+export interface FondsSombres {
+  readonly depart: number;
+  readonly clarteBasse: number;
+  readonly clarteHaute: number;
+}
+
+/**
+ * Le facteur de la part d'un cran du thème Dark de clarté `L`, la clarté que
+ * la courbe vise ([MOT-28]). Il vaut 1 dès `clarteHaute` : les accents
+ * gardent leur part.
+ */
+export function facteurSombre(L: number, fonds: FondsSombres): number {
+  const t = Math.min(1, Math.max(0, (L - fonds.clarteBasse) / (fonds.clarteHaute - fonds.clarteBasse)));
+  return fonds.depart + (1 - fonds.depart) * t;
+}
+
 /** Fabrique un cran (section 6.3). */
 export function fabriquerCran(L: number, H: number, part: number, gamut: Gamut): Cran {
   const couleur = lineaireVersRgb8(oklchVersLineaire(cranVise(L, H, part, gamut)));
@@ -106,7 +136,7 @@ export function fabriquerCran(L: number, H: number, part: number, gamut: Gamut):
   return { couleur, hexa: ecrireHexa(couleur), L: lu.L, C: lu.C, H: lu.H };
 }
 
-/** Ce qu'une rampe demande : une courbe, un pivot, une dérive, une part. */
+/** Ce qu'une rampe demande : une courbe, un pivot, une dérive, une part, et pour le thème Dark ses fonds. */
 export interface ParametresRampe {
   readonly courbe: readonly number[];
   readonly bouts: Bouts;
@@ -114,15 +144,18 @@ export interface ParametresRampe {
   readonly derive: Derive;
   readonly part: number;
   readonly gamut: Gamut;
+  /** Présent pour une rampe du thème Dark : la part de ses fonds baisse ([MOT-28]). */
+  readonly sombre?: FondsSombres;
 }
 
 /** Les crans d'une rampe, dans l'ordre de la courbe. */
 export function fabriquerRampe(parametres: ParametresRampe): Cran[] {
+  const { sombre } = parametres;
   return parametres.courbe.map((L) =>
     fabriquerCran(
       L,
       teinteA(L, parametres.reference, parametres.derive, parametres.bouts),
-      parametres.part,
+      sombre ? parametres.part * facteurSombre(L, sombre) : parametres.part,
       parametres.gamut,
     ));
 }
@@ -149,17 +182,35 @@ export interface EntreesPalette {
   readonly parts: Parts;
   readonly derives: { readonly soft: Derive; readonly vivid: Derive };
   readonly gamut: Gamut;
+  /** Absent, les fonds du thème Dark gardent la part de leur profil ([MOT-28]). */
+  readonly sombre?: FondsSombres;
 }
 
-/** Les quatre rampes d'une palette : `soft` et `vivid`, en clair et en sombre. */
-export type Rampes = { readonly [P in Profil]: { readonly [M in Mode]: Cran[] } };
+/** Une rampe par thème. */
+export type RampeParMode = { readonly [M in Mode]: Cran[] };
+
+/** Les quatre rampes des deux profils : `soft` et `vivid`, en clair et en sombre. */
+export type RampesDesProfils = { readonly [P in Profil]: RampeParMode };
 
 /**
- * Fabrique les quatre rampes communes d'une palette : la référence fixe le
+ * Les rampes d'une palette, une par intensité présente : `soft` et `vivid`,
+ * ou `unique` ([ENT-14]). Une intensité absente n'a pas de clé.
+ */
+export type Rampes = { readonly [I in Intensite]?: RampeParMode };
+
+/** La rampe d'une intensité que la palette porte ; une intensité absente est une faute de l'appelant. */
+export function rampeDe(rampes: Rampes, intensite: Intensite): RampeParMode {
+  const rampe = rampes[intensite];
+  if (!rampe) throw new Error(`Intensité absente de la palette : ${intensite}.`);
+  return rampe;
+}
+
+/**
+ * Fabrique les quatre rampes communes des deux profils : la référence fixe le
  * pivot de la teinte, et chaque cran suit sa courbe. `rampesDe` (palette.ts) y
  * ancre ensuite les octets exacts de la référence ([MOT-17]).
  */
-export function fabriquerPalette(entrees: EntreesPalette): Rampes {
+export function fabriquerPalette(entrees: EntreesPalette): RampesDesProfils {
   const reference = rgb8VersOklch(entrees.reference);
   const { bouts } = entrees;
   const rampe = (profil: Profil, mode: Mode): Cran[] =>
@@ -170,6 +221,7 @@ export function fabriquerPalette(entrees: EntreesPalette): Rampes {
       derive: entrees.derives[profil],
       part: entrees.parts[profil],
       gamut: entrees.gamut,
+      sombre: mode === 'dark' ? entrees.sombre : undefined,
     });
   return {
     soft: { light: rampe('soft', 'light'), dark: rampe('soft', 'dark') },

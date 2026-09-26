@@ -3,14 +3,14 @@
  * celles de l'aperçu (L6.14). Les deux viennent du même moteur et de la même
  * recette : un écart attendu vaut zéro, et tout écart se signale.
  */
-import { MODES, PROFILS, grilleDe, rampesDe, type Recette } from 'ucm-couleur';
+import { MODES, grilleDe, intensitesDe, rampeDe, rampesDe, type Recette } from 'ucm-couleur';
 
 import type { CouleurPeinte } from '../ecriture/planche';
 import { nomDePastille } from './modele';
 
 export interface EcartDePeinture {
   readonly palette: string;
-  /** Le nom de la pastille, `vivid/light/700` par exemple ([PLA-14]). */
+  /** Le nom de la pastille, `vivid/light/700` ou `light/700` par exemple ([PLA-14]). */
   readonly nom: string;
   /** L'hexa de l'aperçu, `null` quand la recette n'a pas cette pastille. */
   readonly apercu: string | null;
@@ -22,9 +22,9 @@ export function ecartsDePeinture(recette: Recette, peints: readonly CouleurPeint
   for (const palette of recette.palettes) {
     const rampes = rampesDe(recette, palette);
     const { crans } = grilleDe(recette, palette);
-    for (const profil of PROFILS) {
+    for (const intensite of intensitesDe(palette)) {
       for (const mode of MODES) {
-        rampes[profil][mode].forEach((cran, rang) => apercus.set(`${palette.id} ${nomDePastille(profil, mode, crans[rang])}`, cran.hexa));
+        rampeDe(rampes, intensite)[mode].forEach((cran, rang) => apercus.set(`${palette.id} ${nomDePastille(intensite, mode, crans[rang])}`, cran.hexa));
       }
     }
   }

@@ -32,7 +32,7 @@ export type UiRequest =
    * Seconde écriture : les cadres des palettes nommées, calculés par le sandbox
    * depuis la recette rangée, jamais depuis des hexas de l'interface ([ARC-11]).
    */
-  | { type: 'dessiner'; demande: number; palettes: string[]; grille: boolean; empreinteLue: string | null; etrangersConfirmes: string[] }
+  | { type: 'dessiner'; demande: number; palettes: string[]; empreinteLue: string | null; etrangersConfirmes: string[] }
   | { type: 'voir-sur-la-planche'; demande: number; page: string; cadres: string[] }
   /**
    * Troisième écriture : « Supprimer définitivement » le cadre d'une palette

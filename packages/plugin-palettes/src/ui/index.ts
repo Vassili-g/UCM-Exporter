@@ -118,9 +118,6 @@ const demandesDeLaRecette: DemandesDeLaRecette = {
   },
 };
 
-/** Chaque génération dessine la grille des contrastes (section 9.5, [UI-05]). */
-const AVEC_LA_GRILLE = true;
-
 const ongletPalettes = createOngletPalettes({
   ranger: (recette) => frontiere.ranger(recette),
   recharger: () => frontiere.lireLEtat(),
@@ -134,7 +131,7 @@ const ongletPalettes = createOngletPalettes({
 });
 const ongletPlanche = createOngletPlanche({
   ...gestesDuResultat,
-  dessiner: (palettes, noms) => suivi.dessiner(palettes, AVEC_LA_GRILLE, noms),
+  dessiner: (palettes, noms) => suivi.dessiner(palettes, noms),
   versLesPalettes: () => onglets.selectionner('palettes'),
   modifier(id, mode) {
     onglets.selectionner('palettes');

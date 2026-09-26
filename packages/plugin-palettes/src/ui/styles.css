@@ -959,6 +959,58 @@
   color: var(--texte-danger);
 }
 
+/*
+ * La fiche en disposition A (maquette Y2.2) : l'état du cadre en pastille à
+ * droite du nom, puis la référence et les garanties sur une ligne. La couleur
+ * de la pastille dit la sévérité : orange à mettre à jour, vert à jour, rouge
+ * introuvable ou illisible, gris jamais généré.
+ */
+.pastille-d-etat {
+  flex-shrink: 0;
+  padding: 0 var(--espace-controle);
+  border-radius: 10px;
+  background: var(--fond-note);
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.pastille-d-etat[data-etat='perimee'] {
+  background: var(--fond-avertissement);
+  color: var(--texte-avertissement);
+}
+
+.pastille-d-etat[data-etat='a-jour'] {
+  background: var(--fond-note);
+  color: var(--texte-succes);
+}
+
+.pastille-d-etat[data-etat='introuvable'],
+.pastille-d-etat[data-etat='illisible'] {
+  background: var(--fond-danger);
+  color: var(--texte-danger);
+}
+
+.fiche-information {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+.fiche-reference {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-serre);
+}
+
+.fiche-teinte {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--bordure);
+}
+
 .fiche-gestes {
   display: flex;
   flex-wrap: wrap;
@@ -1019,11 +1071,20 @@
   white-space: nowrap;
 }
 
+/*
+ * Les marges extérieures d'UCM Palettes : 8 px sur les côtés de la page et
+ * des cartes, au lieu des 16 et 12 px du socle, pour que l'aperçu, les rampes
+ * et l'interface de test prennent la largeur que la fenêtre leur donne.
+ */
+.container {
+  padding: var(--espace-page) var(--espace-controle);
+}
+
 .carte {
   display: grid;
   min-width: 0;
   gap: var(--espace-controle);
-  padding: var(--espace-bloc);
+  padding: var(--espace-bloc) var(--espace-controle);
   border: 1px solid var(--bordure);
   border-radius: 8px;
   background: var(--fond-bloc);
@@ -1099,11 +1160,21 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* Trois colonnes égales, libellé au-dessus du champ ([UI-11]). */
+/*
+ * Disposition P2 (maquette Y2.6) : le nom et la couleur de référence en deux
+ * colonnes égales, libellé au-dessus du champ ([UI-11]) ; le modèle et les
+ * intensités viennent dessous, chacun sur sa rangée.
+ */
 .colonnes-de-base {
   display: grid;
   gap: var(--espace-controle);
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Les segments du modèle gardent leur largeur naturelle sur leur rangée. */
+.carte-corps > .champ-colonne > .bascule-de-base {
+  justify-self: start;
+  min-width: 200px;
 }
 
 .champ-colonne {
@@ -1117,12 +1188,57 @@
   color: var(--texte-second);
 }
 
-/* Le modèle, puis la palette de base dans le modèle, dans la troisième colonne (W6.5). */
-.colonne-du-modele {
+/*
+ * Le choix des intensités ([ENT-14], maquette Y2.6) : deux cartes côte à côte,
+ * chacune un bouton radio qui montre la rampe qu'elle donnerait. La carte
+ * choisie prend la bordure de marque ; la suite du choix se pose sous son
+ * bouton.
+ */
+.choix-des-intensites {
+  display: grid;
+  gap: var(--espace-controle);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.carte-d-intensite {
   display: grid;
   min-width: 0;
   align-content: start;
-  gap: var(--espace-controle);
+  gap: var(--espace-serre);
+  padding: var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+}
+
+.carte-d-intensite[data-choisie='true'] {
+  border-color: var(--bordure-marque);
+  box-shadow: 0 0 0 1px var(--bordure-marque);
+}
+
+.carte-d-intensite-choix {
+  display: grid;
+  min-width: 0;
+  gap: var(--espace-serre);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texte);
+  cursor: pointer;
+  text-align: left;
+}
+
+.carte-d-intensite-choix:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.carte-d-intensite-titre {
+  font-weight: 600;
+}
+
+.carte-d-intensite-apercu .fiche-apercu {
+  padding: var(--espace-serre);
 }
 
 /* Les numéros d'une palette libre : une puce par multiple de 50, allumée quand la palette le porte (W3.5). */
@@ -1870,8 +1986,18 @@
  * par état : repos, survol, appui. La bascule et la carte gardent le thème
  * de Figma.
  */
-.bascule-de-l-essai {
-  justify-self: start;
+/* Les vues à gauche, le profil peint d'une palette à deux intensités au bord droit (Y2.6). */
+.essai-bascules {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+.bascule-de-l-essai,
+.bascule-du-profil-essaye {
+  flex: 0 0 auto;
 }
 
 .essai-surface {
@@ -2224,4 +2350,29 @@
 
 .essai-sans-etat {
   color: var(--essai-encre-seconde);
+}
+
+/* Les fonds du thème Dark, sous les deux intensités de la carte Intensités ([MOT-28]). */
+.bloc-des-fonds-sombres {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+/*
+ * La carte « Contenu des planches » ([PLA-28], C1) : deux groupes titrés, une
+ * ligne par partie, ses calques alignés à droite, avant l'interrupteur.
+ */
+.lignes-du-contenu {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+.groupe-du-contenu {
+  margin: 0;
+  font-weight: 600;
+}
+
+.calques-de-la-partie {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }

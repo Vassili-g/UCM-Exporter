@@ -18,10 +18,11 @@ import {
   cleDeLAssociation,
   etatDeLaPaire,
   lireHexa,
+  rampeDe,
   type Association,
   type Mode,
   type Palette,
-  type Profil,
+  type Intensite,
   type Promesse,
   type Recette,
   type Rgb8,
@@ -129,7 +130,7 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
 
   let entrees: EntreesDesGaranties | null = null;
   let palette = '';
-  let profil: Profil = 'vivid';
+  let profil: Intensite = 'vivid';
   let choisie = '';
 
   const boutonsDeProfil = PROFILS.map((valeur) => {
@@ -145,7 +146,7 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
   });
   carte.surBascule(() => rendre());
 
-  const promessesDe = (analyse: AnalyseDePalette, mode: Mode, duProfil: Profil): Promesse[] =>
+  const promessesDe = (analyse: AnalyseDePalette, mode: Mode, duProfil: Intensite): Promesse[] =>
     analyse.promesses.filter((promesse) => promesse.mode === mode && promesse.profil === duProfil);
 
   /** La réglette : la case `on-solid`, les nuances numérotées, et un arc par état de la garantie choisie. */
@@ -181,7 +182,7 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
       }
       for (const rang of ['premier', 'second'] as const) vises.add(numeroDuMembre(promesse, rang));
     }
-    const rampe = analyse.rampes[profil][mode];
+    const rampe = rampeDe(analyse.rampes, profil)[mode];
     rampe.forEach((cran, rang) => {
       svg.append(element('rect', { x: rang * PAS, y: 52, width: CASE, height: 22, rx: 3, fill: cran.hexa }));
       if (analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang) {
@@ -271,7 +272,7 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
     for (const promesse of echecs) echec.append(paragraphe(TEXTES_DES_GARANTIES.echec(etatDeLaPaire(promesse.paire), promesse.contraste, promesse.seuil)));
     const liens = document.createElement('div');
     liens.className = 'constat-liens';
-    for (const cible of ciblesDeLaPromesse()) {
+    for (const cible of ciblesDeLaPromesse(entrees!.palette)) {
       const lien = document.createElement('button');
       lien.type = 'button';
       lien.className = 'lien-de-constat';
@@ -288,10 +289,12 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
     if (!entrees) return;
     const { recette, analyse, mode } = entrees;
     const autre: Mode = MODES.find((candidat) => candidat !== mode) ?? mode;
-    const parProfil = (duProfil: Profil, dansLeMode: Mode) => manquees(promessesDe(analyse, dansLeMode, duProfil));
+    const parProfil = (duProfil: Intensite, dansLeMode: Mode) => manquees(promessesDe(analyse, dansLeMode, duProfil));
     carte.poserResume(carte.estOuverte()
       ? TEXTES_DES_GARANTIES.theme(mode)
-      : PROFILS.map((duProfil) => resultatDuProfil(duProfil, MODES.reduce((total, dansLeMode) => total + parProfil(duProfil, dansLeMode), 0))).join(' · '));
+      : analyse.intensites.map((duProfil) => resultatDuProfil(duProfil, MODES.reduce((total, dansLeMode) => total + parProfil(duProfil, dansLeMode), 0))).join(' · '));
+    // Une palette à une intensité n'a pas de profil à choisir : la bascule se retire ([ENT-14]).
+    bascule.hidden = analyse.intensites.length === 1;
     for (const { valeur, bouton } of boutonsDeProfil) {
       bouton.textContent = resultatDuProfil(valeur, parProfil(valeur, mode));
       bouton.dataset.verdict = parProfil(valeur, mode) === 0 ? 'tenue' : 'manquee';
@@ -331,7 +334,7 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
     lignes.push(decoratif);
     liste.replaceChildren(...lignes);
 
-    const ailleurs = PROFILS.reduce((total, duProfil) => total + parProfil(duProfil, autre), 0);
+    const ailleurs = analyse.intensites.reduce((total, duProfil) => total + parProfil(duProfil, autre), 0);
     autreTheme.hidden = ailleurs === 0;
     if (ailleurs > 0) {
       const voir = document.createElement('button');
@@ -346,8 +349,8 @@ export function createGaranties(gestes: GestesDesGaranties): GarantiesUi {
   return {
     element: carte.element,
     afficher(suivantes) {
-      // Une autre palette : son profil porteur, et sa première garantie en échec, sinon text sur surface.
-      if (suivantes.palette.id !== palette) {
+      // Une autre palette, ou une intensité qu'elle ne porte plus : son intensité porteuse, et sa première garantie en échec, sinon text sur surface.
+      if (suivantes.palette.id !== palette || !suivantes.analyse.intensites.includes(profil)) {
         palette = suivantes.palette.id;
         profil = suivantes.analyse.ancrage.profil;
         const enEchec = promessesDe(suivantes.analyse, suivantes.mode, profil).find((promesse) => promesse.verdict === 'manquee');

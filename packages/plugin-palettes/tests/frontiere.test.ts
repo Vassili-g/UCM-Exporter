@@ -88,10 +88,10 @@ test('E13 : un dessin demandé pendant un rangement part après lui, sur l’emp
   frontiere.lireLEtat();
   etat(1, 'aaaaaaaa');
   frontiere.ranger(AUTRE);
-  frontiere.dessiner({ palettes: ['p-0000000a'], grille: true, etrangersConfirmes: ['12:40'] }, () => assert.fail('aucun abandon'));
+  frontiere.dessiner({ palettes: ['p-0000000a'], etrangersConfirmes: ['12:40'] }, () => assert.fail('aucun abandon'));
   assert.equal(envoyees.length, 2, 'le dessin attend le rangement');
   rangee(2, 'bbbbbbbb');
-  assert.deepEqual(envoyees[2], { type: 'dessiner', demande: 3, palettes: ['p-0000000a'], grille: true, empreinteLue: 'bbbbbbbb', etrangersConfirmes: ['12:40'] });
+  assert.deepEqual(envoyees[2], { type: 'dessiner', demande: 3, palettes: ['p-0000000a'], empreinteLue: 'bbbbbbbb', etrangersConfirmes: ['12:40'] });
   assert.equal(frontiere.accepterDessin({ type: 'progression', demande: 3, fait: 0, total: 1, nom: 'Bleu' }), true);
   assert.equal(frontiere.accepterDessin({ type: 'progression', demande: 2, fait: 0, total: 1, nom: 'Bleu' }), false);
 });
@@ -102,7 +102,7 @@ test('E13 : un rangement refusé abandonne le dessin qui l’attendait, et le di
   etat(1, 'aaaaaaaa');
   frontiere.ranger(AUTRE);
   let abandons = 0;
-  frontiere.dessiner({ palettes: ['p-0000000a'], grille: false, etrangersConfirmes: [] }, () => { abandons += 1; });
+  frontiere.dessiner({ palettes: ['p-0000000a'], etrangersConfirmes: [] }, () => { abandons += 1; });
   frontiere.recevoirRangement({ type: 'rangement', demande: 2, issue: { issue: 'modifiee-ailleurs' } });
   assert.equal(abandons, 1);
   assert.deepEqual(statuts.slice(-1), ['refuse']);
@@ -124,12 +124,12 @@ test('V12.1 : pendant un conflit, un dessin ne part pas et s’abandonne, jusqu�
   frontiere.ranger(RECETTE);
   frontiere.recevoirRangement({ type: 'rangement', demande: 2, issue: { issue: 'modifiee-ailleurs' } });
   let abandons = 0;
-  frontiere.dessiner({ palettes: ['p-0000000a'], grille: true, etrangersConfirmes: [] }, () => { abandons += 1; });
+  frontiere.dessiner({ palettes: ['p-0000000a'], etrangersConfirmes: [] }, () => { abandons += 1; });
   assert.equal(abandons, 1);
   assert.deepEqual(envoyees.map((demande) => demande.type), ['lire-etat', 'ranger-recette']);
   frontiere.lireLEtat();
   etat(3, 'eeeeeeee');
-  frontiere.dessiner({ palettes: ['p-0000000a'], grille: true, etrangersConfirmes: [] }, () => { abandons += 1; });
+  frontiere.dessiner({ palettes: ['p-0000000a'], etrangersConfirmes: [] }, () => { abandons += 1; });
   assert.equal(envoyees.at(-1)?.type, 'dessiner');
   assert.equal(abandons, 1);
 });

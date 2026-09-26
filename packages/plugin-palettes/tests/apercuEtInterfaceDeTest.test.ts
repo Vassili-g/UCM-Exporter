@@ -10,7 +10,7 @@ import { couleursDeLInterface } from '../src/ui/interfaceDeTest';
 import { memeChoix, type Choix } from '../src/ui/nuancier';
 
 const VIDE = recetteParDefaut();
-const BLEU = nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9')!;
+const BLEU = nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9', 2)!;
 const RECETTE = ajouter(VIDE, BLEU);
 const ANALYSE = analyserPalette(RECETTE, BLEU);
 
@@ -27,7 +27,7 @@ test('[UI-04] le même clic sur la même nuance la relâche ; une autre nuance, 
 test('[UI-14] chaque élément de l’interface de test prend la nuance de son emploi et de son état, dans le profil porteur et le thème montré', () => {
   for (const mode of ['light', 'dark'] as const) {
     const couleurs = couleursDeLInterface(RECETTE, ANALYSE, mode);
-    const rampe = ANALYSE.rampes[ANALYSE.ancrage.profil][mode];
+    const rampe = ANALYSE.rampes[ANALYSE.ancrage.profil]![mode];
     const nuance = (numero: number) => rampe[ANALYSE.grille.crans.indexOf(numero)].hexa;
     assert.equal(couleurs.fond, RECETTE.fonds[mode], 'on-solid : le fond du thème');
     assert.deepEqual([0, 1, 2].map((etat) => couleurs.emploi('solid', etat as 0 | 1 | 2)), [nuance(700), nuance(800), nuance(900)]);

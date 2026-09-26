@@ -11,7 +11,7 @@ const VIDE = recetteParDefaut();
 function avecTrois(): Recette {
   let recette = VIDE;
   for (const [id, hexa] of [['p-0000000a', '#1E6FD9'], ['p-0000000b', '#F2A900'], ['p-0000000c', '#16A34A']]) {
-    recette = ajouter(recette, nouvellePalette(recette, id, hexa)!);
+    recette = ajouter(recette, nouvellePalette(recette, id, hexa, 2)!);
   }
   return recette;
 }
@@ -27,12 +27,12 @@ test('D-K : un identifiant neuf a la forme p- et huit chiffres hexadécimaux, et
 });
 
 test('[ENT-03] une palette créée est valide, au préréglage Tailwind, profils liés', () => {
-  const palette = nouvellePalette(VIDE, 'p-0000000a', '1e6fd9')!;
+  const palette = nouvellePalette(VIDE, 'p-0000000a', '1e6fd9', 2)!;
   assert.equal(palette.reference, '#1E6FD9');
   assert.equal(palette.derive.lien, true);
   assert.equal(palette.derive.soft.origine, 'tailwind');
   assert.ok('recette' in validerRecette(ajouter(VIDE, palette)));
-  assert.equal(nouvellePalette(VIDE, 'p-0000000a', '#12'), null);
+  assert.equal(nouvellePalette(VIDE, 'p-0000000a', '#12', 2), null);
 });
 
 test('[ENT-03] une copie se place juste après sa palette, sous un autre identifiant et un autre nom', () => {

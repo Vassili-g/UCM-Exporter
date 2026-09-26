@@ -234,7 +234,6 @@ export type ResultatDuDessin =
 /** Ce que l'interface demande : des palettes par leur identifiant, sur la recette qu'elle a lue. */
 export interface DemandeDeLInterface {
   readonly palettes: readonly string[];
-  readonly grille: boolean;
   readonly empreinteLue: string | null;
   /** Les calques étrangers que le designer a accepté de perdre (D-H). */
   readonly etrangersConfirmes: readonly string[];
@@ -260,17 +259,15 @@ export async function dessinerLaRecetteRangee(
     recette: classement.recette,
     profil: lu.profil,
     palettes,
-    grille: demande.grille,
     etrangersConfirmes: demande.etrangersConfirmes,
   }, surProgression);
 }
 
-/** Ce qu'un dessin reçoit : la recette rangée, le profil du document, et les palettes à dessiner. */
+/** Ce qu'un dessin reçoit : la recette rangée, qui dit aussi ce qu'un cadre montre, le profil du document, et les palettes à dessiner. */
 export interface DemandeDeDessin {
   readonly recette: Recette;
   readonly profil: ProfilDuDocument;
   readonly palettes: readonly Palette[];
-  readonly grille: boolean;
   readonly etrangersConfirmes?: readonly string[];
 }
 
@@ -340,7 +337,7 @@ export async function dessinerLaPlanche(
   };
 
   for (const [rang, palette] of demande.palettes.entries()) {
-    const modele = modeleDeCadre(demande.recette, palette, demande.profil, { grille: demande.grille });
+    const modele = modeleDeCadre(demande.recette, palette, demande.profil);
     surProgression(rang, demande.palettes.length, modele.nom);
     const ancien = possedes.get(palette.id);
     // Un cadre neuf se range parmi les cadres du premier niveau de la page (E17).
@@ -360,7 +357,7 @@ export async function dessinerLaPlanche(
       neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.cadre, palette.id);
       neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.proprietaire, neuf.id);
       neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.empreinte, modele.empreinte);
-      neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.grille, demande.grille ? '1' : '');
+      neuf.setSharedPluginData(ESPACE_PARTAGE, CLES_DU_CADRE.grille, demande.recette.contenuDesPlanches.grilles ? '1' : '');
     } catch (erreur) {
       for (const calque of crees.reverse()) if (!calque.removed) calque.remove();
       ranger();

@@ -7,10 +7,10 @@
 import { lireHexa, rgb8VersOklch, type Rgb8 } from './conversions';
 import { distanceOk, partDeChroma } from './contraste';
 import { EMPLOIS, EMPLOIS_FACULTATIFS, TABLE_DES_EMPLOIS, rangDuCranLeger } from './emplois';
-import { estPresqueGrise, partsDe, rampesDe, referenceDe } from './palette';
+import { aUneIntensite, estPresqueGrise, fondsSombresDe, intensitesDe, partsDe, rampesDe, referenceDe } from './palette';
 import { estLibre, etendueDe, grilleDe } from './nuances';
 import { decalagesDeLEmploi } from './promesses';
-import { arrondir, MODES, type Mode } from './rampe';
+import { arrondir, facteurSombre, MODES, rampeDe, type Intensite, type Mode } from './rampe';
 import type { Palette, Recette } from './recette';
 
 /** Un cran où `soft` et `vivid` se confondent. */
@@ -32,7 +32,7 @@ export type Alerte =
 /** La tolérance sur la clarté d'un fond : `#121212` vaut 0,1822 contre une courbe à 0,18 ([ENT-06]). */
 export const TOLERANCE_FOND = 0.005;
 
-/** Les crans où l'on compare les deux profils pour juger deux palettes proches. */
+/** Les crans où l'on compare deux palettes pour les juger proches. */
 export const CRANS_PALETTES_PROCHES: readonly number[] = [500, 600, 700];
 
 /**
@@ -58,23 +58,31 @@ export function rangsDesEmplois(recette: Recette): number[] {
  * Les nuances d'une palette où `soft` et `vivid` se confondent, sur toute sa
  * liste : le repère ≈ de l'aperçu et de la planche ([PLA-15]). Des parts
  * `grise` rendent les deux profils égaux par construction : rien ne se
- * signale ([ENT-09]).
+ * signale ([ENT-09]). Une palette à une intensité n'a qu'une rampe ([ENT-14]).
  */
 export function confusionsDe(recette: Recette, palette: Palette): Confusion[] {
-  if (palette.parts?.origine === 'grise') return [];
+  if (palette.parts?.origine === 'grise' || aUneIntensite(palette)) return [];
   const rampes = rampesDe(recette, palette);
+  const [soft, vivid] = [rampeDe(rampes, 'soft'), rampeDe(rampes, 'vivid')];
   const { crans } = grilleDe(recette, palette);
   return MODES.flatMap((mode) => crans.flatMap((cran, rang) => {
-    const distance = distanceOk(rampes.soft[mode][rang].couleur, rampes.vivid[mode][rang].couleur);
+    const distance = distanceOk(soft[mode][rang].couleur, vivid[mode][rang].couleur);
     return distance < recette.seuils.profilsConfondus ? [{ mode, cran, distance }] : [];
   }));
 }
 
-/** L'alerte ne vise que les nuances des emplois ([VER-11]) : une palette libre n'en a pas. */
+/**
+ * L'alerte ne vise que les nuances des emplois ([VER-11]) : une palette libre
+ * n'en a pas. Elle se tait sur les fonds du thème Dark dont la part baisse
+ * ([MOT-28]) : les deux profils s'y rapprochent par construction.
+ */
 function profilsConfondus(recette: Recette, palette: Palette): Alerte | null {
   if (estLibre(palette)) return null;
   const emplois = new Set(rangsDesEmplois(recette).map((rang) => recette.crans[rang]));
-  const crans = confusionsDe(recette, palette).filter(({ cran }) => emplois.has(cran));
+  const fonds = fondsSombresDe(recette);
+  const attenue = ({ mode, cran }: Confusion): boolean =>
+    mode === 'dark' && facteurSombre(recette.courbes.dark[recette.crans.indexOf(cran)], fonds) < 1;
+  const crans = confusionsDe(recette, palette).filter((confusion) => emplois.has(confusion.cran) && !attenue(confusion));
   return crans.length > 0
     ? { code: 'profils-confondus', palette: palette.id, crans, seuil: recette.seuils.profilsConfondus }
     : null;
@@ -96,8 +104,9 @@ export function alertesDePalette(recette: Recette, palette: Palette): Alerte[] {
   if (estPresqueGrise(recette, palette)) {
     alertes.push({ code: 'couleur-presque-grise', palette: palette.id, chroma: lue.C, seuil: recette.seuils.chromaGrise });
   }
-  if (part < parts.soft) alertes.push({ code: 'reference-plus-terne', palette: palette.id, part, partSoft: parts.soft });
-  if (part > parts.vivid) alertes.push({ code: 'reference-plus-vive', palette: palette.id, part, partVivid: parts.vivid });
+  // Une palette à une intensité prend la part de sa référence : elle n'est ni plus terne ni plus vive ([ENT-14]).
+  if (parts.soft !== undefined && part < parts.soft) alertes.push({ code: 'reference-plus-terne', palette: palette.id, part, partSoft: parts.soft });
+  if (parts.vivid !== undefined && part > parts.vivid) alertes.push({ code: 'reference-plus-vive', palette: palette.id, part, partVivid: parts.vivid });
   if (lue.L > bouts.clair || lue.L < bouts.sombre) {
     alertes.push({ code: 'reference-hors-rampe', palette: palette.id, clarte: lue.L, boutClair: bouts.clair, boutSombre: bouts.sombre });
   }
@@ -105,21 +114,42 @@ export function alertesDePalette(recette: Recette, palette: Palette): Alerte[] {
 }
 
 /**
- * La distance moyenne de deux palettes sur les crans 500, 600 et 700 de
- * `vivid`, en clair, chacune lue sur sa liste ; `null` si l'une manque d'un de
- * ces crans. Deux palettes libres se comparent donc dès qu'elles les portent.
+ * Les rampes où deux palettes se comparent ([VER-17]) : Vivid contre Vivid
+ * entre deux palettes à deux intensités, la rampe unique contre la rampe
+ * unique, et une rampe unique contre Soft et contre Vivid, la plus petite
+ * distance l'emportant : sa part est quelconque, et elle ressemble au profil
+ * le plus proche d'elle.
+ */
+function rampesComparees(a: Palette, b: Palette): [Intensite, Intensite][] {
+  const [unA, unB] = [aUneIntensite(a), aUneIntensite(b)];
+  if (!unA && !unB) return [['vivid', 'vivid']];
+  const cotesA = unA ? ['unique' as const] : intensitesDe(a);
+  const cotesB = unB ? ['unique' as const] : intensitesDe(b);
+  return cotesA.flatMap((cote) => cotesB.map((autre): [Intensite, Intensite] => [cote, autre]));
+}
+
+/**
+ * La distance moyenne de deux palettes sur les crans 500, 600 et 700, en
+ * clair, chacune lue sur sa liste, et sur les rampes que `rampesComparees`
+ * désigne ; `null` si l'une manque d'un de ces crans. Deux palettes libres se
+ * comparent donc dès qu'elles les portent.
  */
 export function distanceDePalettes(recette: Recette, a: Palette, b: Palette): number | null {
   const lire = (palette: Palette) => {
     const { crans } = grilleDe(recette, palette);
     const rangs = CRANS_PALETTES_PROCHES.map((cran) => crans.indexOf(cran));
-    return rangs.some((rang) => rang < 0) ? null : rangs.map((rang) => rampesDe(recette, palette).vivid.light[rang].couleur);
+    if (rangs.some((rang) => rang < 0)) return null;
+    const rampes = rampesDe(recette, palette);
+    return (intensite: Intensite) => rangs.map((rang) => rampeDe(rampes, intensite).light[rang].couleur);
   };
   const nuancesA = lire(a);
   const nuancesB = lire(b);
   if (!nuancesA || !nuancesB) return null;
-  const somme = nuancesA.reduce((total, couleur, rang) => total + distanceOk(couleur, nuancesB[rang]), 0);
-  return somme / nuancesA.length;
+  const distances = rampesComparees(a, b).map(([cote, autre]) => {
+    const [deA, deB] = [nuancesA(cote), nuancesB(autre)];
+    return deA.reduce((total, couleur, rang) => total + distanceOk(couleur, deB[rang]), 0) / deA.length;
+  });
+  return Math.min(...distances);
 }
 
 /** Un fond plus sombre que le cran 50 clair, ou plus clair que le cran 50 sombre, à 0,005 près ([ENT-06]). */

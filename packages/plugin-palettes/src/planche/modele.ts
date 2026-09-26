@@ -6,15 +6,16 @@
  * hors de Figma.
  *
  * Le cadre répond à une question : quelle nuance pour quel usage (récit R1,
- * maquette W3.6). Chaque thème, peint de son fond, montre les deux rampes,
- * puis les usages du profil porteur dans leurs états `default`, `hover` et
- * `active`, chacun avec les garanties qu'il porte et leur niveau WCAG, puis
- * les grilles des contrastes, alignées sur les rampes. L'interface d'exemple
- * n'est pas sur la planche : l'onglet Palettes la montre ([UI-14]).
+ * maquette W3.6). Chaque thème, peint de son fond, montre les rampes des
+ * intensités de la palette, puis les usages de chacune dans leurs états
+ * `default`, `hover` et `active`, chacun avec les garanties qu'il porte et
+ * leur niveau WCAG, puis les grilles des contrastes, alignées sur les rampes
+ * ([PLA-18]). La recette dit quelles parties se dessinent ([PLA-28]).
+ * L'interface d'exemple n'est pas sur la planche : l'onglet Palettes la
+ * montre ([UI-14]).
  */
 import {
   MODES,
-  PROFILS,
   TABLE_DES_EMPLOIS,
   atteintLeSeuil,
   contraste,
@@ -23,15 +24,17 @@ import {
   emploiPresent,
   ecrireHexa,
   empreinte,
+  intensitesDe,
   lireHexa,
+  rampeDe,
   referenceDe,
   rgb8VersP3,
   type Cran,
   type Emploi,
+  type Intensite,
   type MembrePaire,
   type Mode,
   type Palette,
-  type Profil,
   type Promesse,
   type Recette,
   type Rgb8,
@@ -201,9 +204,13 @@ function melanger(encre: Rgb8, fond: Rgb8, part: number): Rgb8 {
   return [0, 1, 2].map((canal) => Math.round(fond[canal] + (encre[canal] - fond[canal]) * part)) as unknown as Rgb8;
 }
 
-/** Le nom de calque d'une pastille ([PLA-14]) : `vivid/light/700`. */
-export function nomDePastille(profil: Profil, mode: Mode, cran: number): string {
-  return `${profil}/${mode}/${cran}`;
+/**
+ * Le nom de calque d'une pastille ([PLA-14]) : `vivid/light/700`, ou
+ * `light/700` pour la rampe d'une palette à une intensité, qui n'a pas de
+ * profil ([ENT-14]).
+ */
+export function nomDePastille(intensite: Intensite, mode: Mode, cran: number): string {
+  return intensite === 'unique' ? `${mode}/${cran}` : `${intensite}/${mode}/${cran}`;
 }
 
 /** Les encres d'un thème, toutes lisibles sur son fond : texte, texte second, filet, aplat neutre et danger. */
@@ -266,13 +273,13 @@ function encresDuTheme(fond: Rgb8, profil: ProfilDuDocument): Encres {
 }
 
 /** La nuance d'une rampe à son numéro. */
-function nuance(contexte: Contexte, profil: Profil, mode: Mode, numero: number): Cran {
+function nuance(contexte: Contexte, intensite: Intensite, mode: Mode, numero: number): Cran {
   const rang = contexte.analyse.grille.crans.indexOf(numero);
   if (rang < 0) throw new Error(`La nuance ${numero} manque aux crans de la recette.`);
-  return contexte.analyse.rampes[profil][mode][rang];
+  return rampeDe(contexte.analyse.rampes, intensite)[mode][rang];
 }
 
-/* Les deux rampes */
+/* Les rampes */
 
 /** La ligne des numéros, au-dessus des rampes. */
 function numeros(contexte: Contexte, encres: Encres): NoeudCadre {
@@ -285,17 +292,18 @@ function numeros(contexte: Contexte, encres: Encres): NoeudCadre {
 /**
  * Une rampe en rangée de pastilles, chacune nommée `profil/mode/cran`
  * ([PLA-14]) : ◆ sur la référence exacte ([MOT-17]), ≈ quand les deux profils
- * s'y confondent ([PLA-15]), et son code dessous.
+ * s'y confondent ([PLA-15]), et son code dessous. La rampe d'une palette à
+ * une intensité ne porte pas de nom de profil.
  */
-function rangeeDeRampe(contexte: Contexte, profil: Profil, mode: Mode, encres: Encres): NoeudCadre {
+function rangeeDeRampe(contexte: Contexte, intensite: Intensite, mode: Mode, encres: Encres): NoeudCadre {
   const { analyse } = contexte;
   const { crans } = analyse.grille;
-  const colonnes = analyse.rampes[profil][mode].map((cran, rang) => {
-    const nom = nomDePastille(profil, mode, crans[rang]);
+  const colonnes = rampeDe(analyse.rampes, intensite)[mode].map((cran, rang) => {
+    const nom = nomDePastille(intensite, mode, crans[rang]);
     contexte.peints.push({ nom, hexa: cran.hexa });
     const surLaPastille = peinture(noirOuBlanc(cran.couleur), contexte.profil);
     const reperes = [
-      ...(analyse.ancrage.profil === profil && analyse.ancrage.rangs[mode] === rang ? [texte('référence', TEXTES_DE_LA_PLANCHE.reperage, 'valeur', surLaPastille)] : []),
+      ...(analyse.ancrage.profil === intensite && analyse.ancrage.rangs[mode] === rang ? [texte('référence', TEXTES_DE_LA_PLANCHE.reperage, 'valeur', surLaPastille)] : []),
       ...(analyse.confusions.some((confusion) => confusion.mode === mode && confusion.cran === crans[rang]) ? [texte('confondu', TEXTES_DE_LA_PLANCHE.confondu, 'valeur', surLaPastille)] : []),
     ];
     return cadre(`colonne ${crans[rang]}`, 'VERTICAL', [
@@ -303,17 +311,25 @@ function rangeeDeRampe(contexte: Contexte, profil: Profil, mode: Mode, encres: E
       texte('code', cran.hexa.slice(1), 'note', encres.seconde),
     ], { espacement: 0, largeur: COLONNE.largeur });
   });
-  return cadre(`rampe ${profil}`, 'HORIZONTAL', [texte('profil', NOM_DU_PROFIL[profil], 'role', encres.encre, COLONNE.libelle), ...colonnes]);
+  const libelle = intensite === 'unique' ? espace(COLONNE.libelle, 1) : texte('profil', NOM_DU_PROFIL[intensite], 'role', encres.encre, COLONNE.libelle);
+  return cadre(intensite === 'unique' ? 'rampe' : `rampe ${intensite}`, 'HORIZONTAL', [libelle, ...colonnes]);
 }
 
+/**
+ * Les rampes des intensités de la palette, sous leur titre, puis la note des
+ * repères quand le contenu la demande : ≈ ne s'explique qu'avec deux
+ * intensités, qui seules se confondent ([PLA-15]).
+ */
 function sectionDesRampes(contexte: Contexte, mode: Mode, encres: Encres): NoeudCadre {
-  const { analyse } = contexte;
+  const { analyse, palette, recette } = contexte;
+  const intensites = intensitesDe(palette);
   const confondus = analyse.confusions.some((confusion) => confusion.mode === mode);
-  return cadre('les deux rampes', 'VERTICAL', [
-    texte('titre', TEXTES_DE_LA_PLANCHE.rampes, 'theme', encres.encre),
+  const note = confondus ? `${TEXTES_DE_LA_PLANCHE.noteDuRepere} ${TEXTES_DE_LA_PLANCHE.noteDesConfondus}` : TEXTES_DE_LA_PLANCHE.noteDuRepere;
+  return cadre(intensites.length === 1 ? 'la rampe' : 'les deux rampes', 'VERTICAL', [
+    texte('titre', intensites.length === 1 ? TEXTES_DE_LA_PLANCHE.rampe : TEXTES_DE_LA_PLANCHE.rampes, 'theme', encres.encre),
     numeros(contexte, encres),
-    ...PROFILS.map((profil) => rangeeDeRampe(contexte, profil, mode, encres)),
-    texte('note', confondus ? `${TEXTES_DE_LA_PLANCHE.noteDuRepere} ${TEXTES_DE_LA_PLANCHE.noteDesConfondus}` : TEXTES_DE_LA_PLANCHE.noteDuRepere, 'note', encres.seconde),
+    ...intensites.map((intensite) => rangeeDeRampe(contexte, intensite, mode, encres)),
+    ...(recette.contenuDesPlanches.note ? [texte('note', note, 'note', encres.seconde)] : []),
   ]);
 }
 
@@ -324,9 +340,8 @@ function sectionDesRampes(contexte: Contexte, mode: Mode, encres: Encres): Noeud
  * `surface` et `solid`, un lien pour `text`, un champ pour `border-control`,
  * un anneau pour `focus`, un filet pour `border-decorative`.
  */
-function specimen(contexte: Contexte, emploi: Emploi, couleur: Rgb8, mode: Mode, encres: Encres): NoeudCadre {
-  const { analyse } = contexte;
-  const porteur = analyse.ancrage.profil;
+function specimen(contexte: Contexte, intensite: Intensite, emploi: Emploi, couleur: Rgb8, mode: Mode, encres: Encres): NoeudCadre {
+  const porteur = intensite;
   const peint = peinture(couleur, contexte.profil);
   const fond = peinture(encres.fond, contexte.profil);
   const texteColore = peinture(nuance(contexte, porteur, mode, TABLE_DES_EMPLOIS.text).couleur, contexte.profil);
@@ -334,7 +349,7 @@ function specimen(contexte: Contexte, emploi: Emploi, couleur: Rgb8, mode: Mode,
   const a = TEXTES_DE_LA_PLANCHE.specimens;
   switch (emploi) {
     case 'surface':
-      return cadre('spécimen', 'HORIZONTAL', [texte('libellé', a.soft, 'role', texteColore)], { ...boite, fond: peint, margeLaterale: TRAME, alignement: A_GAUCHE });
+      return cadre('spécimen', 'HORIZONTAL', [texte('libellé', a.surface, 'role', texteColore)], { ...boite, fond: peint, margeLaterale: TRAME, alignement: A_GAUCHE });
     case 'surface-card': {
       // Une carte a la clarté du fond : le filet de `border-decorative` la borde.
       const filetDeCarte = peinture(nuance(contexte, porteur, mode, TABLE_DES_EMPLOIS['border-decorative']).couleur, contexte.profil);
@@ -374,15 +389,15 @@ function partenaire(membre: MembrePaire, designe: Promesse['premier']): string {
 }
 
 /**
- * Les garanties qu'un état porte, dans le profil porteur : une ligne par
- * paire dont il est membre, « sur » son second membre quand il est premier,
+ * Les garanties qu'un état porte, dans une intensité : une ligne par paire
+ * dont il est membre, « sur » son second membre quand il est premier,
  * « dessus » quand il est second. Chaque paire du moteur apparaît ainsi sous
  * chacun de ses membres qui a un usage sur la planche.
  */
-function garantiesDeLEtat(contexte: Contexte, emploi: Emploi, decalage: number, mode: Mode, encres: Encres): NoeudTexte[] {
+function garantiesDeLEtat(contexte: Contexte, intensite: Intensite, emploi: Emploi, decalage: number, mode: Mode, encres: Encres): NoeudTexte[] {
   const { analyse } = contexte;
   return analyse.promesses
-    .filter((promesse) => promesse.mode === mode && promesse.profil === analyse.ancrage.profil)
+    .filter((promesse) => promesse.mode === mode && promesse.profil === intensite)
     .flatMap((promesse) => {
       const { premier, second } = promesse.paire;
       const sens = estLeMembre(premier, emploi, decalage)
@@ -395,18 +410,17 @@ function garantiesDeLEtat(contexte: Contexte, emploi: Emploi, decalage: number, 
     });
 }
 
-function ligneDUsage(contexte: Contexte, emploi: Emploi, mode: Mode, encres: Encres): NoeudCadre {
-  const porteur = contexte.analyse.ancrage.profil;
+function ligneDUsage(contexte: Contexte, intensite: Intensite, emploi: Emploi, mode: Mode, encres: Encres): NoeudCadre {
   const usage = TEXTES_DE_LA_PLANCHE.usages[emploi as keyof typeof TEXTES_DE_LA_PLANCHE.usages];
   const depart = TABLE_DES_EMPLOIS[emploi];
   if (depart === 'fond') throw new Error(`${emploi} n'a pas de nuance sur la planche.`);
   const rangDeDepart = contexte.analyse.grille.crans.indexOf(depart);
   const etats = decalagesDeLEmploi(emploi).map((decalage) => {
     const numero = contexte.analyse.grille.crans[rangDeDepart + decalage];
-    const couleur = contexte.analyse.rampes[porteur][mode][rangDeDepart + decalage].couleur;
+    const couleur = rampeDe(contexte.analyse.rampes, intensite)[mode][rangDeDepart + decalage].couleur;
     return cadre(`${emploi} ${ETATS[decalage]}`, 'VERTICAL', [
-      specimen(contexte, emploi, couleur, mode, encres),
-      cadre('mesures', 'VERTICAL', [texte('numéro', String(numero), 'chiffre', encres.encre), ...garantiesDeLEtat(contexte, emploi, decalage, mode, encres)], { espacement: 0 }),
+      specimen(contexte, intensite, emploi, couleur, mode, encres),
+      cadre('mesures', 'VERTICAL', [texte('numéro', String(numero), 'chiffre', encres.encre), ...garantiesDeLEtat(contexte, intensite, emploi, decalage, mode, encres)], { espacement: 0 }),
     ], { largeur: USAGE.etat });
   });
   return cadre(`usage ${emploi}`, 'HORIZONTAL', [
@@ -419,33 +433,40 @@ function ligneDUsage(contexte: Contexte, emploi: Emploi, mode: Mode, encres: Enc
   ], { espacement: 2 * TRAME });
 }
 
-function sectionDesUsages(contexte: Contexte, mode: Mode, encres: Encres, largeur: number): NoeudCadre {
+/**
+ * Les usages d'une intensité ([PLA-18]) : « · Soft » ou « · Vivid » au titre
+ * d'une palette à deux intensités, rien pour la rampe d'une palette à une
+ * intensité.
+ */
+function sectionDesUsages(contexte: Contexte, intensite: Intensite, mode: Mode, encres: Encres, largeur: number): NoeudCadre {
   const entete = cadre('états', 'HORIZONTAL', [
     espace(USAGE.libelle, 1),
     ...ETATS.map((etat) => texte(etat, etat, 'chiffre', encres.seconde, USAGE.etat)),
   ], { espacement: 2 * TRAME });
-  return cadre('quelle nuance pour quel usage', 'VERTICAL', [
-    texte('titre', TEXTES_DE_LA_PLANCHE.titreDesUsages(NOM_DU_PROFIL[contexte.analyse.ancrage.profil]), 'theme', encres.encre),
+  const titre = TEXTES_DE_LA_PLANCHE.titreDesUsages(intensite === 'unique' ? null : NOM_DU_PROFIL[intensite]);
+  return cadre(intensite === 'unique' ? 'quelle nuance pour quel usage' : `quelle nuance pour quel usage ${intensite}`, 'VERTICAL', [
+    texte('titre', titre, 'theme', encres.encre),
     entete,
-    ...USAGES.filter((emploi) => emploiPresent(emploi, contexte.analyse.grille.crans)).flatMap((emploi) => [filet(encres.filet), ligneDUsage(contexte, emploi, mode, encres)]),
+    ...USAGES.filter((emploi) => emploiPresent(emploi, contexte.analyse.grille.crans)).flatMap((emploi) => [filet(encres.filet), ligneDUsage(contexte, intensite, emploi, mode, encres)]),
   ], { espacement: 2 * TRAME, largeur });
 }
 
 /* Les contrastes, nuance par nuance */
 
 /**
- * La grille d'un profil, sous ses pastilles et dans leurs colonnes : la ligne
- * donne le fond, la colonne le texte. Une paire à 3:1 ou plus se peint telle
- * qu'elle se lira, le ratio en gras à partir du minimum des textes, suivi du
- * niveau WCAG qu'un texte y atteint ; en dessous de 3:1, la case s'efface
- * ([PLA-16], [VER-13]).
+ * La grille d'une intensité, sous ses pastilles et dans leurs colonnes : la
+ * ligne donne le fond, la colonne le texte. Une paire à 3:1 ou plus se peint
+ * telle qu'elle se lira, le ratio en gras à partir du minimum des textes,
+ * suivi du niveau WCAG qu'un texte y atteint ; en dessous de 3:1, la case
+ * s'efface ([PLA-16], [VER-13]).
  */
-function grilleDuProfil(contexte: Contexte, profil: Profil, mode: Mode, encres: Encres): NoeudCadre {
+function grilleDuProfil(contexte: Contexte, intensite: Intensite, mode: Mode, encres: Encres): NoeudCadre {
   const { recette, analyse } = contexte;
   const { crans } = analyse.grille;
-  const rampe = analyse.rampes[profil][mode];
-  const tete = cadre(`teintes ${profil}`, 'HORIZONTAL', [
-    texte('profil', NOM_DU_PROFIL[profil], 'role', encres.encre, COLONNE.libelle),
+  const rampe = rampeDe(analyse.rampes, intensite)[mode];
+  const suffixe = intensite === 'unique' ? '' : ` ${intensite}`;
+  const tete = cadre(`teintes${suffixe}`, 'HORIZONTAL', [
+    intensite === 'unique' ? espace(COLONNE.libelle, 1) : texte('profil', NOM_DU_PROFIL[intensite], 'role', encres.encre, COLONNE.libelle),
     ...rampe.map((cran, rang) => cadre(`teinte ${crans[rang]}`, 'HORIZONTAL', [], { fond: peinture(cran.couleur, contexte.profil), largeur: COLONNE.largeur, hauteur: 24, rayon: 6 })),
   ]);
   const lignes = rampe.map((fond, i) => cadre(`fond ${crans[i]}`, 'HORIZONTAL', [
@@ -465,7 +486,7 @@ function grilleDuProfil(contexte: Contexte, profil: Profil, mode: Mode, encres: 
       ], { fond: lisible ? peinture(fond.couleur, contexte.profil) : encres.neutre, largeur: COLONNE.largeur, hauteur: 24, rayon: 4, alignement: CENTRE });
     }),
   ]));
-  return cadre(`grille ${mode} ${profil}`, 'VERTICAL', [tete, ...lignes]);
+  return cadre(`grille ${mode}${suffixe}`, 'VERTICAL', [tete, ...lignes]);
 }
 
 function sectionDesContrastes(contexte: Contexte, mode: Mode, encres: Encres, largeur: number): NoeudCadre {
@@ -474,18 +495,19 @@ function sectionDesContrastes(contexte: Contexte, mode: Mode, encres: Encres, la
       texte('titre', TEXTES_DE_LA_PLANCHE.contrastes, 'theme', encres.encre),
       texte('légende', legendeDesContrastes(contexte.recette.seuils), 'note', encres.seconde),
     ], { largeur, alignement: { principal: 'SPACE_BETWEEN', secondaire: 'CENTER' } }),
-    ...PROFILS.map((profil) => grilleDuProfil(contexte, profil, mode, encres)),
+    ...intensitesDe(contexte.palette).map((intensite) => grilleDuProfil(contexte, intensite, mode, encres)),
   ], { espacement: 2 * TRAME });
 }
 
 /* Le cadre */
 
 /**
- * Un thème : son en-tête et son verdict, puis les rampes, les usages et les
- * grilles. Une palette libre sort du modèle : pas d'usages, et son en-tête
- * dit « Palette libre · N nuances » à la place du verdict (W6.6).
+ * Un thème : son en-tête et son verdict, puis les rampes, les usages de
+ * chaque intensité et les grilles, selon le contenu rangé ([PLA-28]). Une
+ * palette libre sort du modèle : pas d'usages, et son en-tête dit « Palette
+ * libre · N nuances » à la place du verdict (W6.6).
  */
-function sectionDuTheme(contexte: Contexte, mode: Mode, grille: boolean): NoeudCadre {
+function sectionDuTheme(contexte: Contexte, mode: Mode): NoeudCadre {
   const { recette, analyse } = contexte;
   const encres = encresDuTheme(hexaLu(recette.fonds[mode]), contexte.profil);
   const largeur = COLONNE.libelle + analyse.grille.crans.length * (COLONNE.largeur + TRAME);
@@ -495,14 +517,15 @@ function sectionDuTheme(contexte: Contexte, mode: Mode, grille: boolean): NoeudC
     fond: encres.neutre, hauteur: 24, margeLaterale: TRAME, rayon: 12, alignement: CENTRE,
   });
   const section = (enfant: NoeudCadre): NoeudCadre[] => [filet(encres.filet), enfant];
-  const modele = analyse.libre ? [] : section(sectionDesUsages(contexte, mode, encres, largeur));
+  const { contenuDesPlanches: contenu } = recette;
+  const usages = analyse.libre || !contenu.usages ? [] : intensitesDe(contexte.palette).flatMap((intensite) => section(sectionDesUsages(contexte, intensite, mode, encres, largeur)));
   return cadre(`thème ${mode}`, 'VERTICAL', [
     cadre('en-tête', 'HORIZONTAL', [texte('titre', enTeteDuTheme(mode, recette.fonds[mode]), 'chiffre', encres.seconde), verdict], {
       largeur, alignement: { principal: 'SPACE_BETWEEN', secondaire: 'CENTER' },
     }),
     sectionDesRampes(contexte, mode, encres),
-    ...modele,
-    ...(grille ? section(sectionDesContrastes(contexte, mode, encres, largeur)) : []),
+    ...usages,
+    ...(contenu.grilles ? section(sectionDesContrastes(contexte, mode, encres, largeur)) : []),
   ], {
     fond: peinture(encres.fond, contexte.profil),
     trait: { couleur: peinture(hexaLu(COULEURS_DE_LA_PLANCHE.filet), contexte.profil), epaisseur: 1, tirets: false },
@@ -512,7 +535,7 @@ function sectionDuTheme(contexte: Contexte, mode: Mode, grille: boolean): NoeudC
   });
 }
 
-function construire(recette: Recette, palette: Palette, profil: ProfilDuDocument, peints: { nom: string; hexa: string }[], grille: boolean): NoeudCadre {
+function construire(recette: Recette, palette: Palette, profil: ProfilDuDocument, peints: { nom: string; hexa: string }[]): NoeudCadre {
   const analyse = analyserPalette(recette, palette);
   const contexte: Contexte = { recette, palette, profil, analyse, peints };
   const blanc = hexaLu(COULEURS_DE_LA_PLANCHE.fondDuCadre);
@@ -521,25 +544,47 @@ function construire(recette: Recette, palette: Palette, profil: ProfilDuDocument
       texte('titre', nomDeLaPalette(palette), 'palette', peinture(hexaLu(COULEURS_DE_LA_PLANCHE.encre), profil)),
       texte('référence', enTeteDeLaReference(ecrireHexa(referenceDe(palette)), analyse.ancrage), 'valeur', peinture(hexaLu(COULEURS_DE_LA_PLANCHE.encreSecondaire), profil)),
     ]),
-    ...MODES.map((mode) => sectionDuTheme(contexte, mode, grille)),
+    ...MODES.filter((mode) => recette.contenuDesPlanches[mode]).map((mode) => sectionDuTheme(contexte, mode)),
   ], { fond: peinture(blanc, profil), marge: 3 * TRAME, espacement: 2 * TRAME, rayon: TRAME });
 }
 
 /**
  * L'empreinte du modèle du cadre d'une palette ([PLA-19], E2) : elle change
- * avec tout ce que le cadre montre, styles de texte compris, et seulement avec
- * cela (V10.10). Aucun texte du cadre ne l'imprime ([PLA-07]) : elle se range
- * dans les données de plugin du cadre.
+ * avec tout ce que le cadre montre, styles de texte et parties dessinées
+ * compris, et seulement avec cela (V10.10). Aucun texte du cadre ne
+ * l'imprime ([PLA-07]) : elle se range dans les données de plugin du cadre.
  */
-export function empreinteDuModele(recette: Recette, palette: Palette, profil: ProfilDuDocument, options: { grille: boolean } = { grille: false }): string {
-  return empreinte({ styles: STYLES_DE_TEXTE, racine: construire(recette, palette, profil, [], options.grille) });
+export function empreinteDuModele(recette: Recette, palette: Palette, profil: ProfilDuDocument): string {
+  return empreinte({ styles: STYLES_DE_TEXTE, racine: construire(recette, palette, profil, []) });
 }
 
 /** Le modèle du cadre d'une palette, et son empreinte. */
-export function modeleDeCadre(recette: Recette, palette: Palette, profil: ProfilDuDocument, options: { grille: boolean } = { grille: false }): ModeleDeCadre {
+export function modeleDeCadre(recette: Recette, palette: Palette, profil: ProfilDuDocument): ModeleDeCadre {
   const peints: { nom: string; hexa: string }[] = [];
-  const racine = construire(recette, palette, profil, peints, options.grille);
+  const racine = construire(recette, palette, profil, peints);
   return { palette: palette.id, nom: nomDeLaPalette(palette), empreinte: empreinte({ styles: STYLES_DE_TEXTE, racine }), racine, peints };
+}
+
+/** Les calques de chaque partie d'un cadre que le designer peut retirer ([PLA-28]), comptés sur le cadre complet. */
+export interface CalquesDesParties {
+  readonly total: number;
+  readonly note: number;
+  readonly usages: number;
+  readonly grilles: number;
+  readonly light: number;
+  readonly dark: number;
+}
+
+/**
+ * Ce que chaque partie pèse dans le cadre d'une palette : le cadre complet,
+ * moins le cadre sans elle. La carte « Contenu des planches » les écrit.
+ */
+export function calquesDesParties(recette: Recette, palette: Palette, profil: ProfilDuDocument): CalquesDesParties {
+  const complete = { ...recette, contenuDesPlanches: { note: true, usages: true, grilles: true, light: true, dark: true } };
+  const total = compterCalques(construire(complete, palette, profil, []));
+  const sans = (partie: keyof CalquesDesParties) =>
+    total - compterCalques(construire({ ...complete, contenuDesPlanches: { ...complete.contenuDesPlanches, [partie]: false } }, palette, profil, []));
+  return { total, note: sans('note'), usages: sans('usages'), grilles: sans('grilles'), light: sans('light'), dark: sans('dark') };
 }
 
 /** Le nombre de calques qu'un modèle pose, racine comprise. */

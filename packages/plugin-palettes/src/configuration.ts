@@ -1,23 +1,28 @@
 /**
  * Ce que la configuration de la recette modifie (section 8.3) : le préréglage
- * du nombre de nuances, les deux courbes, les parts des profils, les deux
- * fonds et les cinq seuils, rangés en cinq cartes que « Rétablir » remet une à
- * une aux valeurs par défaut (V9.5). Une autre liste que les trois
- * préréglages ne vient que d'un import ([ENT-08]).
+ * du nombre de nuances, les deux courbes, les parts des profils et celle des
+ * fonds du thème Dark, les deux fonds, les cinq seuils et le contenu des
+ * planches, rangés en six cartes que « Rétablir » remet une à une aux valeurs
+ * par défaut (V9.5). Une autre liste que les trois préréglages ne vient que
+ * d'un import ([ENT-08]).
  */
 import {
+  CONTENU_COMPLET,
   MODES,
   PREREGLAGES,
-  PROFILS,
+  aUneIntensite,
   ajusterPartsGrises,
   ecrireHexa,
   grilleAuPrereglage,
   grilleDe,
+  intensitesDe,
   lireHexa,
   nombreDeNuancesDe,
+  rampeDe,
   rampesDe,
   recetteParDefaut,
   type Mode,
+  type ContenuDesPlanches,
   type NombreDeNuances,
   type Palette,
   type Profil,
@@ -29,10 +34,11 @@ import {
 export type ChampDeConfiguration =
   | { readonly courbe: Mode; readonly rang: number }
   | { readonly part: Profil }
+  | { readonly fondsSombres: true }
   | { readonly seuil: keyof Seuils };
 
 /** Les groupes de champs, chacun avec le compte des palettes qu'il modifie ([ENT-07]). */
-export type GroupeDeConfiguration = 'courbes' | 'parts' | 'fonds' | 'contraste' | 'profilsConfondus' | 'palettesProches' | 'chromaGrise';
+export type GroupeDeConfiguration = 'courbes' | 'parts' | 'fondsSombres' | 'fonds' | 'contraste' | 'profilsConfondus' | 'palettesProches' | 'chromaGrise' | 'contenu';
 
 /**
  * Un nombre saisi, à virgule ou à point, signe moins ordinaire ou
@@ -58,6 +64,7 @@ export function poserValeur(recette: Recette, champ: ChampDeConfiguration, valeu
   if ('part' in champ) {
     return { ...recette, profils: { ...recette.profils, [champ.part]: { part: valeur } } };
   }
+  if ('fondsSombres' in champ) return { ...recette, intensiteDesFondsSombres: valeur };
   const suivante = { ...recette, seuils: { ...recette.seuils, [champ.seuil]: valeur } };
   if (champ.seuil !== 'chromaGrise') return suivante;
   return { ...suivante, palettes: suivante.palettes.map((palette) => ajusterPartsGrises(suivante, palette)) };
@@ -67,6 +74,7 @@ export function poserValeur(recette: Recette, champ: ChampDeConfiguration, valeu
 export function valeurDe(recette: Recette, champ: ChampDeConfiguration): number {
   if ('courbe' in champ) return recette.courbes[champ.courbe][champ.rang];
   if ('part' in champ) return recette.profils[champ.part].part;
+  if ('fondsSombres' in champ) return recette.intensiteDesFondsSombres;
   return recette.seuils[champ.seuil];
 }
 
@@ -76,10 +84,17 @@ export function poserFond(recette: Recette, mode: Mode, saisie: string): Recette
   return couleur ? { ...recette, fonds: { ...recette.fonds, [mode]: ecrireHexa(couleur) } } : null;
 }
 
+/** La recette où une partie des cadres de la planche se dessine ou non ([PLA-28]) ; la validation refuse un cadre sans thème. */
+export function poserPartie(recette: Recette, partie: keyof ContenuDesPlanches, dessinee: boolean): Recette {
+  return { ...recette, contenuDesPlanches: { ...recette.contenuDesPlanches, [partie]: dessinee } };
+}
+
 /**
  * Le nombre de palettes qu'un groupe de champs modifie ([ENT-07]). Courbes,
- * fonds et seuils de contraste les modifient toutes. Une part de profil
- * épargne les palettes qui portent leurs parts propres. Le seuil des profils
+ * fonds, fonds du thème Dark, seuils de contraste et contenu des planches les
+ * modifient toutes. Une part de profil épargne les palettes qui portent leurs
+ * parts propres et celles à une intensité, qui prennent la part de leur
+ * référence ([ENT-14]). Le seuil des profils
  * confondus épargne les palettes aux parts `grise`, pour lesquelles l'alerte
  * se tait ; celui de chroma grise, les palettes aux parts du designer, qu'il
  * ne touche jamais. Le seuil des palettes proches compare deux palettes : seul,
@@ -88,7 +103,7 @@ export function poserFond(recette: Recette, mode: Mode, saisie: string): Recette
 export function palettesModifiees(recette: Recette, groupe: GroupeDeConfiguration): number {
   const { palettes } = recette;
   switch (groupe) {
-    case 'parts': return palettes.filter((palette) => !palette.parts).length;
+    case 'parts': return palettes.filter((palette) => !palette.parts && !aUneIntensite(palette)).length;
     case 'profilsConfondus': return palettes.filter((palette) => palette.parts?.origine !== 'grise').length;
     case 'chromaGrise': return palettes.filter((palette) => palette.parts?.origine !== 'designer').length;
     case 'palettesProches': return palettes.length < 2 ? 0 : palettes.length;
@@ -102,10 +117,11 @@ export function palettesModifiees(recette: Recette, groupe: GroupeDeConfiguratio
  */
 export const CARTES_DES_REGLAGES = {
   fonds: ['fonds'],
-  parts: ['parts'],
+  parts: ['parts', 'fondsSombres'],
   courbes: ['courbes'],
   minimums: ['contraste'],
   proches: ['profilsConfondus', 'palettesProches', 'chromaGrise'],
+  contenu: ['contenu'],
 } as const satisfies Record<string, readonly GroupeDeConfiguration[]>;
 
 export type CarteDesReglages = keyof typeof CARTES_DES_REGLAGES;
@@ -136,7 +152,8 @@ export function retablir(recette: Recette, carte: CarteDesReglages): Recette | n
   const defaut = recetteParDefaut();
   switch (carte) {
     case 'fonds': return { ...recette, fonds: defaut.fonds };
-    case 'parts': return { ...recette, profils: defaut.profils };
+    case 'parts': return { ...recette, profils: defaut.profils, intensiteDesFondsSombres: defaut.intensiteDesFondsSombres };
+    case 'contenu': return { ...recette, contenuDesPlanches: { ...CONTENU_COMPLET } };
     case 'courbes': {
       const courbes = courbesParDefaut(recette);
       return courbes ? { ...recette, courbes: { light: [...courbes.light], dark: [...courbes.dark] } } : null;
@@ -150,7 +167,9 @@ export function estParDefaut(recette: Recette, carte: CarteDesReglages): boolean
   const defaut = recetteParDefaut();
   switch (carte) {
     case 'fonds': return MODES.every((mode) => recette.fonds[mode] === defaut.fonds[mode]);
-    case 'parts': return recette.profils.soft.part === defaut.profils.soft.part && recette.profils.vivid.part === defaut.profils.vivid.part;
+    case 'parts': return recette.profils.soft.part === defaut.profils.soft.part && recette.profils.vivid.part === defaut.profils.vivid.part
+      && recette.intensiteDesFondsSombres === defaut.intensiteDesFondsSombres;
+    case 'contenu': return Object.values(recette.contenuDesPlanches).every(Boolean);
     case 'courbes': {
       const courbes = courbesParDefaut(recette);
       return courbes !== null && MODES.every((mode) => recette.courbes[mode].join(',') === courbes[mode].join(','));
@@ -173,13 +192,13 @@ export interface EffetDuPrereglage {
   readonly changees: readonly Palette[];
 }
 
-/** Les couleurs d'une palette, par profil, thème et numéro. */
+/** Les couleurs d'une palette, par intensité, thème et numéro. */
 function couleursParNumero(recette: Recette, palette: Palette): Map<string, string> {
   const rampes = rampesDe(recette, palette);
   const { crans } = grilleDe(recette, palette);
   const couleurs = new Map<string, string>();
-  for (const profil of PROFILS) {
-    for (const mode of MODES) rampes[profil][mode].forEach((cran, rang) => couleurs.set(`${profil}/${mode}/${crans[rang]}`, cran.hexa));
+  for (const intensite of intensitesDe(palette)) {
+    for (const mode of MODES) rampeDe(rampes, intensite)[mode].forEach((cran, rang) => couleurs.set(`${intensite}/${mode}/${crans[rang]}`, cran.hexa));
   }
   return couleurs;
 }

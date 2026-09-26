@@ -7,7 +7,7 @@ import { recetteParDefaut, validerRecette, type Palette } from 'ucm-couleur';
 import {
   changementAuPasVoisin,
   garantiesComparees,
-  manqueesParProfil,
+  manqueesParIntensite,
   nuancesVisees,
   pasALOuverture,
   pasLePlusProche,
@@ -16,7 +16,7 @@ import {
 import { ajouter, appliquerLAjustement, changerReference, nouvellePalette, revenirALOriginale } from '../src/edition';
 
 const RECETTE = recetteParDefaut();
-const VERT: Palette = { ...nouvellePalette(RECETTE, 'p-0000000b', '#16A34A')!, nom: 'Vert' };
+const VERT: Palette = { ...nouvellePalette(RECETTE, 'p-0000000b', '#16A34A', 2)!, nom: 'Vert' };
 
 test('W7.2 : sans pas, la proposition est l’originale elle-même ; un pas sombre sur #16A34A donne #0DA047', () => {
   assert.equal(pasALOuverture(RECETTE, VERT), 0);
@@ -65,10 +65,12 @@ test('W7.2 : un pas qui changerait le numéro de la référence s’annonce avan
 
 test('W7.2 : les garanties se comparent avant et après : #16A34A en manque en Light, #0DA047 les tient', () => {
   const ajustee = appliquerLAjustement(RECETTE, VERT, '#0DA047')!;
-  const avant = manqueesParProfil(RECETTE, VERT);
-  const apres = manqueesParProfil(RECETTE, ajustee);
-  assert.ok(avant.vivid > 0, 'l’originale manque des garanties en Vivid');
-  assert.equal(apres.vivid, 0);
+  const vivid = (liste: ReturnType<typeof manqueesParIntensite>) => liste.find(({ intensite }) => intensite === 'vivid')!.manquees;
+  const avant = manqueesParIntensite(RECETTE, VERT);
+  const apres = manqueesParIntensite(RECETTE, ajustee);
+  assert.deepEqual(avant.map(({ intensite }) => intensite), ['soft', 'vivid']);
+  assert.ok(vivid(avant) > 0, 'l’originale manque des garanties en Vivid');
+  assert.equal(vivid(apres), 0);
   const comparees = garantiesComparees(RECETTE, VERT, ajustee);
   assert.ok(comparees.length > 0);
   assert.ok(comparees.every(({ avant: a, apres: b }) => a.paire.numero === b.paire.numero && a.mode === b.mode && a.profil === b.profil));

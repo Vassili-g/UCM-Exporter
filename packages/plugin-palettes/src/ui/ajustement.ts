@@ -16,7 +16,7 @@ import { createButton } from 'ucm-plugin-socle/src/ui/Button';
 import {
   changementAuPasVoisin,
   garantiesComparees,
-  manqueesParProfil,
+  manqueesParIntensite,
   nuancesVisees,
   paletteAjustee,
   pasALOuverture,
@@ -184,11 +184,11 @@ export function createAjustement(appliquer: (proposition: string) => void, refer
       garanties.hidden = true;
       return;
     }
-    const manqueesAvant = manqueesParProfil(lue, avant);
-    const manqueesApres = manqueesParProfil(lue, apres);
+    const manqueesAvant = manqueesParIntensite(lue, avant);
+    const manqueesApres = manqueesParIntensite(lue, apres);
     const comparees = garantiesComparees(lue, avant, apres);
     garanties.hidden = false;
-    const bilan = (['soft', 'vivid'] as const).map((profil) => bilanDeLAjustement(profil, manqueesAvant[profil], manqueesApres[profil])).join(' · ');
+    const bilan = manqueesAvant.map(({ intensite, manquees }, rang) => bilanDeLAjustement(intensite, manquees, manqueesApres[rang].manquees)).join(' · ');
     const lignes = comparees.map(({ avant: promesseAvant, apres: promesseApres }) => {
       const ligne = paragraphe(garantieAvantApres(
         associationEcrite(associationDe(promesseAvant.paire), etatDeLaPaire(promesseAvant.paire)),

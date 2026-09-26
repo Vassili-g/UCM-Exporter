@@ -12,6 +12,7 @@ import {
   ancrageDe,
   boutsDe,
   fabriquerPalette,
+  fondsSombresDe,
   lireHexa,
   partDeChroma,
   partsDe,
@@ -105,11 +106,11 @@ test('[MOT-17] à égalité de clarté, le premier rang porte la référence, da
 test('[MOT-17] #1E6FD9 est le 600 de vivid dans les deux modes ; ses voisins restent ceux du relevé', () => {
   const bleu = paletteTailwind('p-0000000a', '#1E6FD9');
   const rampes = rampesDe(recetteAvec(bleu), bleu);
-  assert.equal(rampes.vivid.light[6].hexa, '#1E6FD9');
-  assert.equal(rampes.vivid.dark[6].hexa, '#1E6FD9');
-  assert.equal(rampes.vivid.light[7].hexa, '#0E5DC6');
-  assert.equal(rampes.vivid.dark[7].hexa, '#4596FA');
-  assert.notEqual(rampes.soft.light[6].hexa, '#1E6FD9');
+  assert.equal(rampes.vivid!.light[6].hexa, '#1E6FD9');
+  assert.equal(rampes.vivid!.dark[6].hexa, '#1E6FD9');
+  assert.equal(rampes.vivid!.light[7].hexa, '#0E5DC6');
+  assert.equal(rampes.vivid!.dark[7].hexa, '#4596FA');
+  assert.notEqual(rampes.soft!.light[6].hexa, '#1E6FD9');
 });
 
 /** Générateur à congruence linéaire, graine fixe : un échec se rejoue à l'identique. */
@@ -135,9 +136,10 @@ test('[MOT-17] sur deux mille références, le profil porteur contient les octet
       reference: lireHexa(hexa)!,
       courbes: r.courbes,
       bouts: boutsDe(r),
-      parts: partsDe(r, palette),
+      parts: partsDe(r, palette) as { soft: number; vivid: number },
       derives: { soft: palette.derive.soft, vivid: palette.derive.vivid },
       gamut: r.gamut,
+      sombre: fondsSombresDe(r),
     });
     const L = rgb8VersOklch(octets).L;
     for (const mode of MODES) {
@@ -148,7 +150,7 @@ test('[MOT-17] sur deux mille références, le profil porteur contient les octet
       }
       if (ancrage.crans[mode] !== r.crans[rang]) fautes.push(`${hexa} ${mode} : numéro ${ancrage.crans[mode]}`);
       for (const profil of PROFILS) {
-        rampes[profil][mode].forEach((cran, autre) => {
+        rampes[profil]![mode].forEach((cran, autre) => {
           const ancre = profil === ancrage.profil && autre === rang;
           const attendu = ancre ? hexa : communes[profil][mode][autre].hexa;
           if (cran.hexa !== attendu) fautes.push(`${hexa} ${profil} ${mode} ${r.crans[autre]} : ${cran.hexa} pour ${attendu}`);

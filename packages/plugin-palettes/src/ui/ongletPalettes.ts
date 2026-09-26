@@ -12,7 +12,11 @@
  * pendant la saisie.
  */
 import {
+  aUneIntensite,
+  ecrireArrondi,
   estPresqueGrise,
+  partDeLaReference,
+  partsDesProfils,
   profilAutomatique,
   type Classement,
   type Mode,
@@ -31,6 +35,7 @@ import {
   basculerNuance,
   changerReference,
   choisirLaBase,
+  choisirLesIntensites,
   cransLibresParDefaut,
   deplacer,
   dupliquer,
@@ -47,10 +52,11 @@ import { CIBLES_COMMUNES, carteDuMessage, type CarteDuMessage, type CibleDAction
 import { blocDeConstat, listeDesMessages, type Message } from './constats';
 import { createAjustement } from './ajustement';
 import { createCarte } from './carte';
-import { champEnColonne, createChoixDeBase, createChoixDuModele, createPuces, type ChoixDeBase } from './champs';
+import { apercuCompact } from './apercuCompact';
+import { champEnColonne, createChoixDesIntensites, createChoixDuModele, createPuces, type ChoixDeBase } from './champs';
 import { nuancesProposees } from './couleur/propositions';
 import { createPipette, fermerLeSelecteur } from './couleur/selecteur';
-import { createCreation } from './creation';
+import { createCreation, type ApercuDeLaSaisie } from './creation';
 import { createEditeur } from './derive/editeur';
 import type { StatutDuRangement } from './frontiere';
 import { createGaranties } from './garanties';
@@ -152,8 +158,9 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
   barre.append(selecteur.element, plus, menu.element);
 
   const creation = createCreation({
-    onCreer: (saisie, nom, base, crans) => creer(saisie, nom, base, crans),
+    onCreer: (saisie, nom, intensites, base, crans) => creer(saisie, nom, intensites, base, crans),
     cransLibres: () => (recette ? cransLibresParDefaut(recette) : []),
+    apercuDeLaSaisie: (saisie) => apercuDeLaSaisie(saisie),
     onAnnuler: () => {
       creationOuverte = false;
       rendre();
@@ -265,16 +272,26 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     note = null;
     valider(remplacerPalette(recette, ajustee));
   }, () => fermerLeSelecteur(true));
-  // La palette de base : Auto, Soft ou Vivid ([UI-11], [ENT-11]).
-  const choixDeBase = createChoixDeBase((valeur) => {
+  /*
+   * Les intensités, en deux cartes ([ENT-14], maquette Y2.6) ; le profil qui
+   * porte la référence, Auto, Soft ou Vivid, se choisit dans la carte « Deux
+   * intensités » ([ENT-11]). Passer de deux à une ne demande pas de
+   * confirmation (Y2.1).
+   */
+  const choixDesIntensites = createChoixDesIntensites((nombre) => {
+    const courante = ouverte();
+    if (recette && courante) valider(remplacerPalette(recette, choisirLesIntensites(recette, courante, nombre)));
+  }, (valeur) => {
     const courante = ouverte();
     if (recette && courante) valider(remplacerPalette(recette, choisirLaBase(courante, valeur)));
   });
+  const choixDeBase = choixDesIntensites.base;
   const choixAutomatique = choixDeBase.aide;
   /*
-   * Le modèle prend la troisième colonne (W6.5, maquette W3.5) : dans le
-   * modèle, la palette de base se règle dessous ; une palette libre n'en a
-   * pas, et ses numéros se choisissent sous les trois colonnes.
+   * Disposition P2 (maquette Y2.6), la même que la création : le nom et la
+   * couleur de référence sur une ligne, puis le modèle et les intensités,
+   * chacun sur sa rangée. Une palette libre n'a pas de choix d'intensités :
+   * ses numéros se choisissent à sa place.
    */
   const choixDuModele = createChoixDuModele((valeur) => {
     const courante = ouverte();
@@ -285,16 +302,12 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     const courante = ouverte();
     if (recette && courante) valider(remplacerPalette(recette, basculerNuance(courante, numero)));
   });
-  const colonneDuModele = document.createElement('div');
-  colonneDuModele.className = 'colonne-du-modele';
-  colonneDuModele.append(choixDuModele.element, choixDeBase.element);
-
   const colonnes = document.createElement('div');
   colonnes.className = 'colonnes-de-base';
-  colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference, colonneDuModele);
+  colonnes.append(champEnColonne(TEXTES.nom, nom), colonneDeLaReference);
   const carteDeBase = createCarte({ titre: TEXTES_DE_L_ONGLET.configuration });
   const messagesDeBase = document.createElement('div');
-  carteDeBase.corps.append(colonnes, puces.element, messagesDeBase);
+  carteDeBase.corps.append(colonnes, choixDuModele.element, choixDesIntensites.element, puces.element, messagesDeBase);
 
   // Carte d'aperçu sans titre ([UI-04]) : thèmes et fond dans l'en-tête, la référence sous la surface.
   const nuancier = createNuancier({
@@ -419,10 +432,23 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     creation.focaliser();
   }
 
-  function creer(saisie: string, nomSaisi: string, base: ChoixDeBase, crans: readonly number[] | null): void {
+  /** Ce que la couleur saisie dans la création donnerait, à une intensité et à deux ([ENT-14]). */
+  function apercuDeLaSaisie(saisie: string): ApercuDeLaSaisie | null {
+    const lue = recette;
+    if (!lue || !MOTIF_HEXA.test(saisie.trim())) return null;
+    const [une, deux] = [nouvellePalette(lue, 'p-00000000', saisie, 1), nouvellePalette(lue, 'p-00000000', saisie, 2)];
+    if (!une || !deux) return null;
+    return {
+      apercu: (nombre) => apercuCompact(lue, analyserPalette(lue, nombre === 1 ? une : deux), 'light'),
+      part: ecrireArrondi(partDeLaReference(lue, une), 2),
+      porteur: profilAutomatique(lue, deux),
+    };
+  }
+
+  function creer(saisie: string, nomSaisi: string, intensites: 1 | 2, base: ChoixDeBase, crans: readonly number[] | null): void {
     if (!recette) return;
     const id = nouvelIdentifiant(recette, demandes.tirer);
-    const palette = nouvellePalette(recette, id, saisie);
+    const palette = nouvellePalette(recette, id, saisie, crans ? 2 : intensites);
     if (!palette) {
       creation.signaler(hexaInvalide(saisie));
       return;
@@ -572,9 +598,18 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     poser(nom, courante.nom ?? '');
     nom.placeholder = courante.reference;
     titreDeConfiguration.textContent = TEXTES_DE_L_ONGLET.titre(nomDeLaPalette(courante));
-    choixDeBase.poser(courante.base ?? 'auto');
     choixDuModele.poser(analyse.libre ? 'libre' : 'modele');
-    choixDeBase.element.hidden = analyse.libre;
+    const une = aUneIntensite(courante);
+    choixDesIntensites.poser({
+      intensites: une ? 1 : 2,
+      apercu: (nombre) => {
+        const variante = choisirLesIntensites(lue, courante, nombre);
+        return apercuCompact(lue, variante === courante ? analyse : analyserPalette(lue, variante), 'light');
+      },
+      part: ecrireArrondi(partDeLaReference(lue, courante), 2),
+    });
+    choixDesIntensites.element.hidden = analyse.libre;
+    choixDeBase.poser(courante.base ?? 'auto');
     puces.element.hidden = !analyse.libre;
     puces.poser(analyse.grille.crans);
     choixAutomatique.textContent = courante.base ? '' : TEXTES_DE_LA_BASE.choixAutomatique(profilAutomatique(lue, courante));
@@ -591,9 +626,13 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     // Une palette libre n'a pas de garantie : sa carte se retire (W6.5).
     garanties.element.hidden = analyse.libre;
     if (!analyse.libre) garanties.afficher({ recette: lue, palette: courante, analyse, mode: nuancier.mode() });
-    intensites.afficher(lue, courante, analyse.part, messages.intensite);
-    const pointsDIntensite = messages.intensite.filter((message) => message.severite !== 'notice').length;
-    carteDesIntensites.poserResume(resumeDesIntensites(courante.parts?.origine, courante.base, analyse.parts, pointsDIntensite));
+    // Une palette à une intensité prend la part de sa référence : elle n'a pas de carte Intensités (I1, [ENT-14]).
+    carteDesIntensites.element.hidden = une || analyse.libre;
+    if (!une) {
+      intensites.afficher(lue, courante, analyse.part, messages.intensite);
+      const pointsDIntensite = messages.intensite.filter((message) => message.severite !== 'notice').length;
+      carteDesIntensites.poserResume(resumeDesIntensites(courante.parts?.origine, courante.base, partsDesProfils(lue, courante), pointsDIntensite));
+    }
     poserLesMessages(messages.liste);
 
     // Une référence presque grise n'a pas de teinte : l'éditeur se désactive ([DER-15]).
@@ -602,7 +641,7 @@ export function createOngletPalettes(demandes: DemandesDeLOnglet): OngletPalette
     carteDeLaDerive.poserResume(resumeDeLaDerive(courante, grise, pointsDeDerive));
     carteDeLaDerive.desactiver(grise ? TEXTES_DE_LA_DERIVE.grisDesactive : null);
     if (carteDeLaDerive.estOuverte()) editeur.afficher(lue, courante, analyse.rampes, analyse.ancrage, analyse);
-    interfaceDeTest.afficher(lue, analyse, nuancier.mode());
+    interfaceDeTest.afficher(lue, analyse, nuancier.mode(), courante.id);
   }
 
   /**

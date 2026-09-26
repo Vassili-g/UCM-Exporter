@@ -13,16 +13,18 @@ import { ecartsDePeinture } from '../src/planche/peints';
 import { FauxFigma } from './figmaDeTest';
 
 const VIDE = recetteParDefaut();
-const BLEU = { ...nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9')!, nom: 'Bleu' };
-const AMBRE = { ...nouvellePalette(VIDE, 'p-0000000b', '#F2A900')!, nom: 'Ambre' };
-const VERT = { ...nouvellePalette(VIDE, 'p-0000000c', '#16A34A')!, nom: 'Vert' };
+const BLEU = { ...nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9', 2)!, nom: 'Bleu' };
+const AMBRE = { ...nouvellePalette(VIDE, 'p-0000000b', '#F2A900', 2)!, nom: 'Ambre' };
+const VERT = { ...nouvellePalette(VIDE, 'p-0000000c', '#16A34A', 2)!, nom: 'Vert' };
 const RECETTE: Recette = [BLEU, AMBRE, VERT].reduce(ajouter, VIDE);
+/** La recette, sans les grilles de contrastes sur la planche ([PLA-28]). */
+const SANS_GRILLES: Recette = { ...RECETTE, contenuDesPlanches: { ...RECETTE.contenuDesPlanches, grilles: false } };
 
 /** Bleu dessiné avec la grille, Ambre sans, Vert jamais. */
 async function plancheDessinee(): Promise<FauxFigma> {
   const figma = new FauxFigma();
-  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], grille: true });
-  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [AMBRE], grille: false });
+  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU] });
+  await dessinerLaPlanche(figma.api(), { recette: SANS_GRILLES, profil: 'SRGB', palettes: [AMBRE] });
   return figma;
 }
 
@@ -53,8 +55,8 @@ test('[PLA-01] la lecture charge la seule page de la planche et relève ses cadr
     page: page.id,
     nomDeLaPage: 'Palettes',
     cadres: [
-      { palette: BLEU.id, cadre: bleu.id, nom: 'Bleu', ...sur, empreinte: modeleDeCadre(RECETTE, BLEU, 'SRGB', { grille: true }).empreinte, grille: true, possede: true },
-      { palette: AMBRE.id, cadre: ambre.id, nom: 'Ambre', ...sur, empreinte: modeleDeCadre(RECETTE, AMBRE, 'SRGB').empreinte, grille: false, possede: true },
+      { palette: BLEU.id, cadre: bleu.id, nom: 'Bleu', ...sur, empreinte: modeleDeCadre(RECETTE, BLEU, 'SRGB').empreinte, grille: true, possede: true },
+      { palette: AMBRE.id, cadre: ambre.id, nom: 'Ambre', ...sur, empreinte: modeleDeCadre(SANS_GRILLES, AMBRE, 'SRGB').empreinte, grille: false, possede: true },
       { palette: BLEU.id, cadre: copie.id, nom: 'Bleu copie', ...sur, empreinte: bleu.getSharedPluginData('ucm_palettes', 'empreinte'), grille: true, possede: false },
     ],
     manquants: [],
@@ -76,7 +78,7 @@ test('[PLA-04] sans planche rangée, la planche est vide ; quand sa page a dispa
 
 test('[PLA-26] V8.6 : un cadre rangé dans une section, ou déplacé sur une autre page, se retrouve par son identifiant', async () => {
   const figma = new FauxFigma(['Page 1', 'Archives']);
-  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU, AMBRE], grille: true });
+  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU, AMBRE] });
   const page = figma.page('Palettes');
   const [bleu, ambre] = page.enfants;
   figma.section(page).appendChild(bleu);
@@ -96,7 +98,7 @@ test('[PLA-26] V8.6 : un cadre rangé dans une section, ou déplacé sur une aut
 
 test('[PLA-26] V8.6 : la recherche de secours reste sur la page de la planche ; au geste du designer, elle parcourt tout le fichier', async () => {
   const figma = new FauxFigma(['Page 1', 'Archives']);
-  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], grille: true });
+  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU] });
   const [bleu] = figma.page('Palettes').enfants;
   // Coupé puis collé : Figma donne un nouvel identifiant, et le marqueur de propriété ne le désigne plus.
   const archives = figma.page('Archives');
@@ -119,7 +121,7 @@ test('[PLA-26] V8.6 : la recherche de secours reste sur la page de la planche ; 
 
 test('[PLA-04] V8.2 : un cadre que Figma refuse de lire est illisible, pas « jamais généré »', async () => {
   const figma = new FauxFigma(['Page 1', 'Archives']);
-  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU, AMBRE], grille: false });
+  await dessinerLaPlanche(figma.api(), { recette: SANS_GRILLES, profil: 'SRGB', palettes: [BLEU, AMBRE] });
   const [bleu] = figma.page('Palettes').enfants;
   figma.page('Archives').appendChild(bleu);
   figma.illisibles.add(bleu.id);
@@ -183,7 +185,7 @@ test('[ENT-03] [PLA-25] le cadre d’une palette supprimée est orphelin ; une c
 
 test('L6.14 : les couleurs relues d’un dessin n’ont aucun écart avec l’aperçu ; une couleur changée en a un', async () => {
   const figma = new FauxFigma();
-  const issue = await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU, AMBRE], grille: false });
+  const issue = await dessinerLaPlanche(figma.api(), { recette: SANS_GRILLES, profil: 'SRGB', palettes: [BLEU, AMBRE] });
   assert.ok(issue.issue === 'dessinee');
   assert.deepEqual(ecartsDePeinture(RECETTE, issue.peints), []);
 
@@ -197,9 +199,9 @@ test('L6.14 : les couleurs relues d’un dessin n’ont aucun écart avec l’ap
 
 test('V12.2 : un import dit quels cadres à jour passeraient « À mettre à jour », et lesquels resteraient sans palette', async () => {
   const figma = new FauxFigma();
-  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU, AMBRE], grille: true });
+  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU, AMBRE] });
   // Vert, dessiné sans la grille, est déjà à mettre à jour : l'import ne le change pas.
-  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [VERT], grille: false });
+  await dessinerLaPlanche(figma.api(), { recette: SANS_GRILLES, profil: 'SRGB', palettes: [VERT] });
   const planche = await lireLaPlanche(figma.api());
   const importee: Recette = { ...RECETTE, palettes: [{ ...BLEU, nom: 'Marine' }, VERT] };
   const { aMettreAJour, orphelins } = consequenceDeLImport(RECETTE, importee, 'SRGB', planche);

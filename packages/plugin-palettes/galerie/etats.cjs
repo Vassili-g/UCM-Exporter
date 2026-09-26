@@ -84,8 +84,8 @@ const TROIS_PALETTES = [
 function cadreDessine(texte, palette, cadre, { profil = 'SRGB', ...reglages } = {}) {
   const recette = classerRecette(texte).recette;
   const rangeeDansLaRecette = recette.palettes.find((candidate) => candidate.id === palette.id) ?? palette;
-  const empreinte = modeleDeCadre(recette, rangeeDansLaRecette, profil, { grille: true }).empreinte;
-  return { palette: palette.id, cadre, nom: palette.nom, page: PAGE_DE_LA_PLANCHE, nomDeLaPage: 'Palettes', empreinte, grille: true, possede: true, ...reglages };
+  const empreinte = modeleDeCadre(recette, rangeeDansLaRecette, profil).empreinte;
+  return { palette: palette.id, cadre, nom: palette.nom, page: PAGE_DE_LA_PLANCHE, nomDeLaPage: 'Palettes', empreinte, grille: recette.contenuDesPlanches.grilles, possede: true, ...reglages };
 }
 const PAGE_DE_LA_PLANCHE = '40:1';
 
@@ -462,7 +462,7 @@ const ETATS = [
     id: 'creation-ouverte',
     titre: 'Création ouverte',
     quand: 'Le designer clique « Nouvelle palette » : la création s’ouvre sous le sélecteur.',
-    regarder: 'La carte « Nouvelle palette » : nom, couleur de référence, puis Modèle Standard pressé et palette de base en Auto dans la troisième colonne ; « Créer la palette » puis « Annuler » à gauche, le focus dans le code.',
+    regarder: 'La carte « Nouvelle palette » en disposition P2 : nom et couleur de référence sur une ligne, puis Modèle Standard pressé, puis les deux cartes d’intensités, « Une intensité » choisie, sans rampe avant un code lisible ; « Créer la palette » puis « Annuler » à gauche, le focus dans le code.',
     existe: true,
     atteinte: [etatDuFichier(rangee([BLEU])), { clic: '.bouton-de-barre' }],
   },
@@ -508,9 +508,9 @@ const ETATS = [
     id: 'palette-de-base-forcee',
     titre: 'Palette de base forcée',
     quand: 'Le designer force Soft sur une référence saturée, #1E6FD9, qu’Auto confiait à Vivid.',
-    regarder: 'Soft pressé dans la carte Couleur de base, le ◆ passé dans la rangée Soft avec le même code, et le résumé « Palette de base Soft » de la carte Intensités.',
+    regarder: 'Soft pressé sous « Référence exacte dans », dans la carte « Deux intensités », le ◆ passé dans la rangée Soft avec le même code, et le résumé « Référence dans Soft » de la carte Intensités.',
     existe: true,
-    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '.bascule-de-base .bascule-option:nth-child(2)' }],
+    atteinte: [etatDuFichier(rangee([BLEU])), { clic: '.carte-d-intensite .bascule-de-base .bascule-option:nth-child(2)' }],
   },
   {
     id: 'garanties-respectees',
@@ -611,7 +611,7 @@ const ETATS = [
     id: 'palette-libre',
     titre: 'Palette libre',
     quand: 'Une palette sort du modèle du design system : six nuances, numérotées par le designer.',
-    regarder: 'Le modèle Libre pressé et « Sans rôles ni garanties » dans la troisième colonne, les puces 100, 200, 400, 600, 800 et 900 allumées, l’aperçu à six colonnes sans on-solid ni accolades, et aucune carte des garanties.',
+    regarder: 'Le modèle Libre pressé et « Sans rôles ni garanties » sur sa rangée, pas de choix des intensités, les puces 100, 200, 400, 600, 800 et 900 allumées, l’aperçu à six colonnes sans on-solid ni accolades, et aucune carte des garanties.',
     existe: true,
     atteinte: [etatDuFichier(rangee([{ ...BLEU, crans: [100, 200, 400, 600, 800, 900] }]))],
   },
@@ -687,41 +687,52 @@ const ETATS = [
     id: 'palette-une-intensite',
     titre: 'Palette à une intensité',
     quand: 'Bleu porte une seule intensité, celle de sa couleur de référence.',
-    regarder: null,
-    existe: false,
-    attendu: 'Y4.1',
+    regarder: 'La carte « Une intensité » choisie, sa rampe et « Intensité : 0,89 » ; l’aperçu à une rangée par thème, sans nom de profil ; ni carte Intensités, ni bascule Soft et Vivid dans les garanties, ni lien de synchronisation dans la dérive.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([{ ...BLEU, intensites: 1 }]))],
   },
   {
     id: 'palette-deux-intensites',
     titre: 'Palette à deux intensités',
-    quand: 'Bleu porte Soft et Vivid ; « Référence exacte dans » se règle dans la carte « Deux intensités ».',
-    regarder: null,
-    existe: false,
-    attendu: 'Y4.1',
+    quand: 'Bleu porte Soft et Vivid.',
+    regarder: 'La carte « Deux intensités » choisie, ses deux rampes, et « Référence exacte dans » Auto pressé avec « Auto a choisi Vivid » dans la carte ; Soft et Vivid dans l’aperçu.',
+    existe: true,
+    atteinte: [etatDuFichier(rangee([BLEU]))],
   },
   {
     id: 'fiche-refaite',
     titre: 'Fiche d’une palette',
-    quand: 'Trois palettes dans l’onglet Planches, à jour, périmée et jamais générée.',
-    regarder: null,
-    existe: false,
-    attendu: 'Y6.1',
+    quand: 'Trois palettes dans l’onglet Planches : Bleu à jour, Jaune périmée, Ardoise jamais générée.',
+    regarder: 'Chaque fiche en disposition A : le nom et l’état en pastille, verte, orange ou grise ; les rampes ; la référence et les garanties sur une ligne ; puis les gestes, sans premier geste pour Bleu.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee(TROIS_PALETTES), 'SRGB', plancheLue([cadreDessine(rangee(TROIS_PALETTES), BLEU, '40:2'), cadreDessine(rangee(TROIS_PALETTES), JAUNE, '40:3', { empreinte: '0badc0de' })])),
+      ouvrirLaPlanche,
+    ],
   },
   {
     id: 'contenu-des-planches',
     titre: 'Contenu des planches',
-    quand: 'Le designer déplie la carte « Contenu des planches » des Réglages communs.',
-    regarder: null,
-    existe: false,
-    attendu: 'Y5.3',
+    quand: 'Les grilles ne se dessinent plus ; le designer déplie la carte « Contenu des planches » des Réglages communs.',
+    regarder: 'Les parties d’un cadre et les thèmes, chacun avec ses calques dans le cadre de Bleu ; « En-tête et rampes » bloqué allumé, les grilles éteintes, « Sans grilles » en résumé, et l’effet sur le cadre de Bleu.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU], (recette) => ({ ...recette, contenuDesPlanches: { ...recette.contenuDesPlanches, grilles: false } }))),
+      ouvrirLaConfiguration,
+      { clic: '[aria-label="Contenu des planches"] .carte-bascule' },
+    ],
   },
   {
     id: 'fonds-sombres',
     titre: 'Fonds du thème Dark',
-    quand: 'Le designer règle « Fonds du thème Dark » dans la carte Intensités des Réglages communs.',
-    regarder: null,
-    existe: false,
-    attendu: 'Y7.5',
+    quand: 'Le designer règle « Fonds du thème Dark » à 0,5 dans la carte Intensités des Réglages communs.',
+    regarder: 'La ligne « Fonds du thème Dark » sous Soft et Vivid, son aide, le compte des palettes, « Rétablir » actif, et l’aperçu compact en tête qui suit.',
+    existe: true,
+    atteinte: [
+      etatDuFichier(rangee([BLEU])),
+      ouvrirLaConfiguration,
+      { saisie: { dans: 'input.champ-nombre[aria-label="Fonds du thème Dark"]', valeur: '0,5' } },
+    ],
   },
 ];
 

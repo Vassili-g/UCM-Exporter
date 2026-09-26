@@ -7,7 +7,7 @@ import { recetteParDefaut, type Palette } from 'ucm-couleur';
 import { appliquerPrereglage, lierLesProfils, nouvellePalette, origineDe, prereglageDe, reglerBout } from '../src/edition';
 
 const RECETTE = recetteParDefaut();
-const BLEU = nouvellePalette(RECETTE, 'p-0000000a', '#1E6FD9')!;
+const BLEU = nouvellePalette(RECETTE, 'p-0000000a', '#1E6FD9', 2)!;
 const TAILWIND = prereglageDe(RECETTE, BLEU);
 const DELIEE: Palette = lierLesProfils(BLEU, false);
 

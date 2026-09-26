@@ -11,13 +11,15 @@ import { compterCalques, modeleDeCadre } from '../src/planche/modele';
 import { FauxFigma } from './figmaDeTest';
 
 const VIDE = recetteParDefaut();
-const BLEU = { ...nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9')!, nom: 'Bleu' };
-const AMBRE = { ...nouvellePalette(VIDE, 'p-0000000b', '#F2A900')!, nom: 'Ambre' };
-const VERT = { ...nouvellePalette(VIDE, 'p-0000000c', '#16A34A')!, nom: 'Vert' };
+const BLEU = { ...nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9', 2)!, nom: 'Bleu' };
+const AMBRE = { ...nouvellePalette(VIDE, 'p-0000000b', '#F2A900', 2)!, nom: 'Ambre' };
+const VERT = { ...nouvellePalette(VIDE, 'p-0000000c', '#16A34A', 2)!, nom: 'Vert' };
 const RECETTE: Recette = [BLEU, AMBRE, VERT].reduce(ajouter, VIDE);
+/** La recette, sans les grilles de contrastes sur la planche ([PLA-28]). */
+const SANS_GRILLES: Recette = { ...RECETTE, contenuDesPlanches: { ...RECETTE.contenuDesPlanches, grilles: false } };
 
 const dessiner = (figma: FauxFigma, palettes: Palette[], progression?: (fait: number, total: number, nom: string) => void) =>
-  dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes, grille: false }, progression);
+  dessinerLaPlanche(figma.api(), { recette: SANS_GRILLES, profil: 'SRGB', palettes }, progression);
 
 const cadres = (figma: FauxFigma, page = 'Palettes') => figma.page(page).enfants;
 
@@ -30,7 +32,7 @@ test('[PLA-01] [PLA-02] un premier dessin crée la page « Palettes », un cadre
   for (const [cadre, palette] of [[bleu, BLEU], [ambre, AMBRE]] as const) {
     assert.equal(cadre.getSharedPluginData('ucm_palettes', 'cadre'), palette.id);
     assert.equal(cadre.getSharedPluginData('ucm_palettes', 'proprietaire'), cadre.id);
-    assert.equal(cadre.getSharedPluginData('ucm_palettes', 'empreinte'), modeleDeCadre(RECETTE, palette, 'SRGB').empreinte);
+    assert.equal(cadre.getSharedPluginData('ucm_palettes', 'empreinte'), modeleDeCadre(SANS_GRILLES, palette, 'SRGB').empreinte);
   }
   assert.deepEqual(lirePlanche(figma.root), { version: 2, page: figma.page('Palettes').id, cadres: { [BLEU.id]: bleu.id, [AMBRE.id]: ambre.id } });
 });
@@ -39,7 +41,7 @@ test('D-H : chaque calque posé porte le marqueur du plugin', async () => {
   const figma = new FauxFigma();
   await dessiner(figma, [BLEU]);
   const poses = figma.sous(cadres(figma)[0]);
-  assert.equal(poses.length, compterCalques(modeleDeCadre(RECETTE, BLEU, 'SRGB').racine));
+  assert.equal(poses.length, compterCalques(modeleDeCadre(SANS_GRILLES, BLEU, 'SRGB').racine));
   assert.deepEqual(poses.filter((noeud) => noeud.getSharedPluginData('ucm_palettes', 'calque') !== '1'), []);
 });
 
@@ -156,20 +158,20 @@ const creations = (figma: FauxFigma) => figma.journal.filter((entree) => entree.
 
 test('E13 : une recette rangée qui n’est plus celle lue n’est pas dessinée', async () => {
   const { figma } = fichierRange();
-  const issue = await dessinerLaRecetteRangee(figma.api(), { palettes: [BLEU.id], grille: false, empreinteLue: '00000000', etrangersConfirmes: [] });
+  const issue = await dessinerLaRecetteRangee(figma.api(), { palettes: [BLEU.id], empreinteLue: '00000000', etrangersConfirmes: [] });
   assert.deepEqual(issue, { issue: 'modifiee-ailleurs' });
   assert.deepEqual(creations(figma), []);
 });
 
 test('[REC-04] sans recette rangée, rien ne se dessine', async () => {
   const figma = new FauxFigma();
-  assert.deepEqual(await dessinerLaRecetteRangee(figma.api(), { palettes: [BLEU.id], grille: false, empreinteLue: null, etrangersConfirmes: [] }), { issue: 'sans-recette' });
+  assert.deepEqual(await dessinerLaRecetteRangee(figma.api(), { palettes: [BLEU.id], empreinteLue: null, etrangersConfirmes: [] }), { issue: 'sans-recette' });
   assert.deepEqual(creations(figma), []);
 });
 
 test('[ARC-11] le dessin prend les palettes nommées dans la recette rangée, dans son ordre', async () => {
   const { figma, empreinte } = fichierRange();
-  const issue = await dessinerLaRecetteRangee(figma.api(), { palettes: [VERT.id, 'p-inconnue', BLEU.id], grille: false, empreinteLue: empreinte, etrangersConfirmes: [] });
+  const issue = await dessinerLaRecetteRangee(figma.api(), { palettes: [VERT.id, 'p-inconnue', BLEU.id], empreinteLue: empreinte, etrangersConfirmes: [] });
   assert.equal(issue.issue, 'dessinee');
   assert.deepEqual(cadres(figma).map((cadre) => cadre.name), ['Bleu', 'Vert']);
   assert.equal(cadres(figma)[1].getSharedPluginData('ucm_palettes', 'empreinte'), modeleDeCadre(RECETTE, VERT, 'SRGB').empreinte);
@@ -177,11 +179,11 @@ test('[ARC-11] le dessin prend les palettes nommées dans la recette rangée, da
 
 test('[PLA-19] chaque cadre range son empreinte et la grille avec laquelle il a été dessiné', async () => {
   const figma = new FauxFigma();
-  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], grille: true });
+  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU] });
   await dessiner(figma, [AMBRE]);
   const [bleu, ambre] = cadres(figma);
   assert.equal(bleu.getSharedPluginData('ucm_palettes', 'grille'), '1');
-  assert.equal(bleu.getSharedPluginData('ucm_palettes', 'empreinte'), modeleDeCadre(RECETTE, BLEU, 'SRGB', { grille: true }).empreinte);
+  assert.equal(bleu.getSharedPluginData('ucm_palettes', 'empreinte'), modeleDeCadre(RECETTE, BLEU, 'SRGB').empreinte);
   assert.equal(ambre.getSharedPluginData('ucm_palettes', 'grille'), '');
 });
 
@@ -211,7 +213,7 @@ test('[PLA-03] D-H : un calque ajouté par le designer arrête le redessin avant
 
 test('D-H : les calques confirmés disparaissent au redessin ; un calque ajouté depuis redemande confirmation', async () => {
   const { figma, cadre, note, fleche } = await cadreAnnote();
-  const confirme = await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], grille: false, etrangersConfirmes: [note.id, fleche.id] });
+  const confirme = await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], etrangersConfirmes: [note.id, fleche.id] });
   assert.equal(confirme.issue, 'dessinee');
   assert.equal(cadre.removed, true);
   assert.equal(note.removed, true);
@@ -220,7 +222,7 @@ test('D-H : les calques confirmés disparaissent au redessin ; un calque ajouté
   const autre = figma.createFrame();
   autre.name = 'Commentaire';
   neuf.appendChild(autre);
-  const issue = await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], grille: false, etrangersConfirmes: [note.id, fleche.id] });
+  const issue = await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU], etrangersConfirmes: [note.id, fleche.id] });
   assert.deepEqual(issue, { issue: 'etrangers', cadres: [{ palette: BLEU.id, calques: [{ id: autre.id, nom: 'Commentaire' }] }] });
 });
 
@@ -228,7 +230,7 @@ test('L6.14 : le dessin relit la couleur de chaque pastille posée, égale au mo
   for (const profil of ['SRGB', 'DISPLAY_P3'] as const) {
     const figma = new FauxFigma();
     figma.root.documentColorProfile = profil;
-    const issue = await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil, palettes: [BLEU, AMBRE], grille: false });
+    const issue = await dessinerLaPlanche(figma.api(), { recette: SANS_GRILLES, profil, palettes: [BLEU, AMBRE] });
     assert.ok(issue.issue === 'dessinee');
     const attendus = [BLEU, AMBRE].flatMap((palette) => modeleDeCadre(RECETTE, palette, profil).peints.map(({ nom, hexa }) => ({ palette: palette.id, nom, hexa })));
     assert.equal(attendus.length, 88);

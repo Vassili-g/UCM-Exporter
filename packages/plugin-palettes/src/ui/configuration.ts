@@ -1,9 +1,10 @@
 /**
  * Les Réglages communs, derrière l'engrenage ([UI-02], section 8.3, lot V9).
  * En tête, l'aperçu compact de la palette ouverte et le résultat de ses
- * garanties (V9.3). Suivent cinq cartes, dans l'ordre de V9.2 : Couleurs de
- * fond, Intensités, Luminosité des nuances, puis, repliées, Minimums des
- * promesses et Détection des couleurs proches. Chaque groupe dit combien de
+ * garanties (V9.3). Suivent six cartes, dans l'ordre de V9.2 : Couleurs de
+ * fond, Intensités, fonds du thème Dark compris ([MOT-28]), Luminosité des
+ * nuances, puis, repliées, Minimums des promesses, Détection des couleurs
+ * proches et Contenu des planches ([PLA-28]). Chaque groupe dit combien de
  * palettes il modifie ([ENT-07]) ; chaque carte se remet aux valeurs par
  * défaut sans toucher aux autres ni aux palettes (V9.5).
  *
@@ -16,6 +17,7 @@ import {
   MODES,
   PROFILS,
   garantieDesCourbes,
+  type ContenuDesPlanches,
   nombreDeNuancesDe,
   rgb8VersOklch,
   referenceDe,
@@ -35,6 +37,7 @@ import {
   lireNombre,
   palettesModifiees,
   poserFond,
+  poserPartie,
   poserValeur,
   retablir,
   valeurDe,
@@ -42,6 +45,9 @@ import {
   type ChampDeConfiguration,
   type GroupeDeConfiguration,
 } from '../configuration';
+import { createInterrupteur, type InterrupteurUi } from 'ucm-plugin-socle/src/ui/Interrupteur';
+
+import { calquesDesParties } from '../planche/modele';
 import { apercuCompact, resultatsDesGaranties } from './apercuCompact';
 import { createCarte, type CarteUi } from './carte';
 import { champEnColonne } from './champs';
@@ -52,6 +58,7 @@ import {
   NOM_DU_PROFIL,
   TEXTES_DE_CONFIGURATION,
   TEXTES_DES_INTENSITES,
+  TEXTES_DU_CONTENU,
   TEXTES_DU_PREREGLAGE,
   TEXTES_DU_SELECTEUR,
   constatDeGarantie,
@@ -119,7 +126,11 @@ const TITRES: Record<CarteDesReglages, string> = {
   courbes: TEXTES_DE_CONFIGURATION.courbes,
   minimums: TEXTES_DE_CONFIGURATION.seuilsDeContraste,
   proches: TEXTES_DE_CONFIGURATION.couleursProches,
+  contenu: TEXTES_DE_CONFIGURATION.contenu,
 };
+
+/** Les parties d'un cadre que le designer choisit, dans l'ordre de la carte ([PLA-28]). */
+const PARTIES: readonly (keyof ContenuDesPlanches)[] = ['note', 'usages', 'grilles', 'light', 'dark'];
 
 export function createConfiguration(recette: RecetteDeLaConfiguration): ConfigurationUi {
   const element = document.createElement('div');
@@ -130,7 +141,7 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
   // Les cartes, fixes ou repliées ; chacune a son erreur et son « Rétablir ».
   const cartes = {} as Record<CarteDesReglages, { readonly ui: CarteUi; readonly erreur: HTMLParagraphElement; readonly retablir: HTMLButtonElement }>;
   for (const carte of Object.keys(TITRES) as CarteDesReglages[]) {
-    const repliee = carte === 'minimums' || carte === 'proches';
+    const repliee = carte === 'minimums' || carte === 'proches' || carte === 'contenu';
     const ui = createCarte({ titre: TITRES[carte], ...(repliee ? { repliable: { ouverte: false } } : {}) });
     ui.element.classList.add('carte-de-reglage');
     const erreur = paragraphe('', 'field-error');
@@ -252,6 +263,36 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
   });
   cartes.parts.ui.corps.prepend(reglagesDesParts, paragraphe(TEXTES_DE_CONFIGURATION.aideParts, 'ligne-secondaire'));
   groupeDeCarte('parts', 'parts', reglagesDesParts);
+
+  // Les fonds du thème Dark : leur part à la nuance 50, sous les deux intensités ([MOT-28], maquette Y2.5).
+  const ligneDesFondsSombres = document.createElement('div');
+  ligneDesFondsSombres.className = 'intensite';
+  const libelleDesFondsSombres = document.createElement('span');
+  libelleDesFondsSombres.className = 'field-label';
+  libelleDesFondsSombres.textContent = TEXTES_DE_CONFIGURATION.fondsSombres;
+  const pisteDesFondsSombres = document.createElement('span');
+  pisteDesFondsSombres.className = 'reglette-piste';
+  const curseurDesFondsSombres = document.createElement('input');
+  curseurDesFondsSombres.type = 'range';
+  curseurDesFondsSombres.min = '0';
+  curseurDesFondsSombres.max = '1';
+  curseurDesFondsSombres.step = '0.01';
+  curseurDesFondsSombres.className = 'reglette-curseur';
+  curseurDesFondsSombres.setAttribute('aria-label', TEXTES_DE_CONFIGURATION.fondsSombres);
+  const glisserLesFondsSombres = (fin: boolean) => {
+    const lue = recette.lire();
+    if (lue) proposer(poserValeur(lue, { fondsSombres: true }, Number(curseurDesFondsSombres.value)), 'parts', fin);
+  };
+  curseurDesFondsSombres.addEventListener('input', () => glisserLesFondsSombres(false));
+  curseurDesFondsSombres.addEventListener('change', () => glisserLesFondsSombres(true));
+  pisteDesFondsSombres.append(curseurDesFondsSombres);
+  ligneDesFondsSombres.append(libelleDesFondsSombres, pisteDesFondsSombres, champDeSaisie({ fondsSombres: true }, 'parts', TEXTES_DE_CONFIGURATION.fondsSombres));
+  const compteDesFondsSombres = paragraphe('', 'ligne-secondaire');
+  const blocDesFondsSombres = document.createElement('div');
+  blocDesFondsSombres.className = 'bloc-des-fonds-sombres';
+  blocDesFondsSombres.append(ligneDesFondsSombres, paragraphe(TEXTES_DE_CONFIGURATION.aideFondsSombres, 'ligne-secondaire'), compteDesFondsSombres);
+  cartes.parts.ui.corps.insertBefore(blocDesFondsSombres, cartes.parts.erreur);
+  groupes.fondsSombres = { carte: 'parts', element: blocDesFondsSombres, compter: (texte) => { compteDesFondsSombres.textContent = texte; } };
 
   /*
    * Luminosité des nuances (W3.2, disposition A) : le tracé prend la largeur
@@ -380,6 +421,65 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
   }
   // L'unité ΔEok reste (W3.3) : l'aide de la carte dit ce qu'elle compare.
   cartes.proches.ui.corps.prepend(lignesProches, paragraphe(TEXTES_DE_CONFIGURATION.aideEcarts, 'ligne-secondaire'));
+
+  /*
+   * Contenu des planches, repliée en dernier (C1) : un interrupteur par partie
+   * d'un cadre, avec ses calques dans le cadre de la palette ouverte. L'en-tête
+   * et les rampes se dessinent toujours ; le dernier thème allumé se bloque.
+   */
+  const compteDuContenu = paragraphe('', 'ligne-secondaire');
+  const lignesDuContenu = document.createElement('div');
+  lignesDuContenu.className = 'lignes-du-contenu';
+  const interrupteurs = {} as Record<keyof ContenuDesPlanches | 'rampes', { ui: InterrupteurUi; calques: HTMLSpanElement; aide: HTMLParagraphElement }>;
+  const titreDeGroupe = (texte: string) => {
+    const titre = paragraphe(texte);
+    titre.className = 'groupe-du-contenu';
+    return titre;
+  };
+  for (const partie of ['rampes', ...PARTIES] as const) {
+    if (partie === 'rampes') lignesDuContenu.append(titreDeGroupe(TEXTES_DU_CONTENU.parties));
+    if (partie === 'light') lignesDuContenu.append(titreDeGroupe(TEXTES_DU_CONTENU.themes));
+    const ui = createInterrupteur(`contenu-${partie}`, TEXTES_DU_CONTENU.lignes[partie].nom, '', (active) => {
+      const lue = recette.lire();
+      if (lue && partie !== 'rampes') proposer(poserPartie(lue, partie, active), 'contenu', true);
+    });
+    const calques = document.createElement('span');
+    calques.className = 'ligne-secondaire calques-de-la-partie';
+    ui.element.firstElementChild?.insertBefore(calques, ui.bouton);
+    const aide = ui.element.querySelector<HTMLParagraphElement>('.field-help')!;
+    interrupteurs[partie] = { ui, calques, aide };
+    lignesDuContenu.append(ui.element);
+  }
+  const effetDuContenu = paragraphe('', 'ligne-secondaire');
+  cartes.contenu.ui.corps.prepend(compteDuContenu, lignesDuContenu, effetDuContenu);
+  groupes.contenu = { carte: 'contenu', element: lignesDuContenu, compter: (texte) => { compteDuContenu.textContent = texte; } };
+
+  /** Les interrupteurs, leurs calques dans le cadre de la palette ouverte, et l'effet du contenu choisi. */
+  function rendreLeContenu(lue: Recette): void {
+    const contenu = lue.contenuDesPlanches;
+    const ouverte = recette.ouverte();
+    const palette = ouverte ? lue.palettes.find((candidate) => candidate.id === ouverte.id) : undefined;
+    const calques = palette ? calquesDesParties(lue, palette, 'SRGB') : null;
+    const unSeulTheme = !contenu.light || !contenu.dark;
+    for (const partie of ['rampes', ...PARTIES] as const) {
+      const { ui, calques: nombre, aide } = interrupteurs[partie];
+      const allumee = partie === 'rampes' || contenu[partie];
+      ui.poser(allumee);
+      const theme = partie === 'light' || partie === 'dark';
+      const bloquee = partie === 'rampes' || (theme && unSeulTheme && allumee);
+      ui.bouton.disabled = bloquee;
+      const ligne = TEXTES_DU_CONTENU.lignes[partie];
+      aide.textContent = `${typeof ligne.aide === 'string' ? ligne.aide : ligne.aide(lue.fonds[partie as 'light' | 'dark'])}${theme && bloquee ? TEXTES_DU_CONTENU.auMoinsUnTheme : ''}`;
+      nombre.textContent = calques && partie !== 'rampes' ? TEXTES_DU_CONTENU.calques(calques[partie]) : '';
+      nombre.hidden = nombre.textContent === '';
+    }
+    const retirees = PARTIES.filter((partie) => !contenu[partie]);
+    cartes.contenu.ui.poserResume(retirees.length === 0 ? TEXTES_DU_CONTENU.resume.tout : retirees.map((partie) => TEXTES_DU_CONTENU.resume[partie]).join(' · '));
+    const retires = calques ? retirees.reduce((total, partie) => total + calques[partie], 0) : 0;
+    effetDuContenu.textContent = retirees.length === 0
+      ? TEXTES_DU_CONTENU.toutGenere
+      : palette && calques ? TEXTES_DU_CONTENU.effet(nomDeLaPalette(palette), calques.total, calques.total - retires) : '';
+  }
 
   const vue = document.createElement('div');
   vue.className = 'page-stack colonne';
@@ -539,6 +639,9 @@ export function createConfiguration(recette: RecetteDeLaConfiguration): Configur
       if (document.activeElement !== curseur) curseur.value = String(lue.profils[profil].part);
       curseur.setAttribute('aria-valuetext', nombreEcrit(lue.profils[profil].part));
     }
+    if (document.activeElement !== curseurDesFondsSombres) curseurDesFondsSombres.value = String(lue.intensiteDesFondsSombres);
+    curseurDesFondsSombres.setAttribute('aria-valuetext', nombreEcrit(lue.intensiteDesFondsSombres));
+    rendreLeContenu(lue);
     for (const [nom, groupe] of Object.entries(groupes) as [GroupeDeConfiguration, Groupe][]) {
       groupe.compter(palettesConcernees(palettesModifiees(lue, nom)));
     }

@@ -127,7 +127,7 @@ for (const [numero, , , , cranPremier, cranSecond] of TABLE_11_2) {
         for (const [designation, attendu] of [[p.premier, cranPremier], [p.second, cranSecond]] as const) {
           const couleur = attendu === 'fond'
             ? lireHexa(recette.fonds[mode])
-            : rampesDe(recette, BLEU)[profil][mode][recette.crans.indexOf(attendu)].couleur;
+            : rampesDe(recette, BLEU)[profil]![mode][recette.crans.indexOf(attendu)].couleur;
           assert.deepEqual(designation.couleur, couleur, `couleur visée, ${mode}`);
           if (designation.nature === 'cran') assert.equal(designation.cran, attendu);
         }

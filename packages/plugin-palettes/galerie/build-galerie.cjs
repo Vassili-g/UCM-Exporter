@@ -9,7 +9,7 @@ const { ETATS } = require('./etats.cjs');
 
 const racine = path.resolve(__dirname, '..');
 const GALERIES = [
-  { racine, etats: ETATS, largeur: 650, hauteur: 720 },
+  { racine, etats: ETATS, largeur: 750, hauteur: 720 },
   { racine, etats: ETATS, largeur: 500, hauteur: 520, dossier: 'galerie-minimale' },
 ];
 

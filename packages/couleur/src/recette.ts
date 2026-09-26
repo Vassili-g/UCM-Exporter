@@ -14,11 +14,13 @@ import { RELEVE_TAILWIND, type PaireDeDerive } from './tailwind';
 
 /**
  * La version de la forme de la recette que ce paquet écrit. La version 2
- * ajoute `base` à une palette ; la version 3, `crans` et `originale`. Un
- * plugin qui lit une version antérieure classe donc la recette « future » au
- * lieu de refuser une clé inconnue.
+ * ajoute `base` à une palette ; la version 3, `crans` et `originale` ; la
+ * version 4, `intensites` à une palette, `intensiteDesFondsSombres` et
+ * `contenuDesPlanches` à la recette. Un plugin qui lit une version
+ * antérieure classe donc la recette « future » au lieu de refuser une clé
+ * inconnue.
  */
-export const FORMAT_RECETTE = 3;
+export const FORMAT_RECETTE = 4;
 
 export type OrigineDerive = 'tailwind' | 'constante' | 'libre';
 
@@ -52,7 +54,27 @@ export interface Palette {
   readonly crans?: readonly number[];
   /** La référence d'avant le premier ajustement (W7), en majuscules. Absente, aucun ajustement. */
   readonly originale?: string;
+  /**
+   * `1` : la palette porte une seule intensité, celle de sa référence, sans nom
+   * de profil ([ENT-14]). Absent, elle porte Soft et Vivid.
+   */
+  readonly intensites?: 1;
 }
+
+/** Les parties d'un cadre de la planche que le designer choisit de dessiner ([PLA-28]). */
+export interface ContenuDesPlanches {
+  readonly note: boolean;
+  readonly usages: boolean;
+  readonly grilles: boolean;
+  readonly light: boolean;
+  readonly dark: boolean;
+}
+
+/** Tout se dessine : le contenu d'une recette qui ne l'a jamais réglé. */
+export const CONTENU_COMPLET: ContenuDesPlanches = { note: true, usages: true, grilles: true, light: true, dark: true };
+
+/** Le facteur de la part des fonds du thème Dark au numéro 50, par défaut ([MOT-28]). */
+export const INTENSITE_DES_FONDS_SOMBRES = 0.3;
 
 export interface Seuils {
   readonly texte: number;
@@ -71,6 +93,9 @@ export interface Recette {
   readonly fonds: { readonly light: string; readonly dark: string };
   readonly seuils: Seuils;
   readonly derives: readonly PaireDeDerive[];
+  /** Le facteur de la part des fonds du thème Dark au numéro 50, entre 0 et 1 ([MOT-28]). */
+  readonly intensiteDesFondsSombres: number;
+  readonly contenuDesPlanches: ContenuDesPlanches;
   readonly palettes: readonly Palette[];
 }
 
@@ -85,6 +110,8 @@ export function recetteParDefaut(): Recette {
     fonds: { light: '#F7F7F7', dark: '#121212' },
     seuils: { texte: 4.5, nonTexte: 3, profilsConfondus: 0.02, palettesProches: 0.05, chromaGrise: 0.03 },
     derives: RELEVE_TAILWIND.map(([nom, clair, sombre]) => [nom, clair, sombre] as PaireDeDerive),
+    intensiteDesFondsSombres: INTENSITE_DES_FONDS_SOMBRES,
+    contenuDesPlanches: { ...CONTENU_COMPLET },
     palettes: [],
   };
 }
@@ -117,7 +144,11 @@ export type RegleRecette =
   | 'crans-libres-nombre'
   | 'crans-libres-numeros'
   | 'base-libre'
-  | 'originale-identique';
+  | 'originale-identique'
+  | 'intensites-valeur'
+  | 'intensites-incompatible'
+  | 'fonds-sombres-bornes'
+  | 'contenu-sans-theme';
 
 /** Un refus : la règle, le chemin du champ fautif, et la valeur lue quand elle se montre. */
 export interface Refus {
@@ -271,8 +302,23 @@ function validerDerivePalette(releve: Releve, derive: unknown, chemin: string): 
   }
 }
 
+/**
+ * Une palette à une intensité ([ENT-14]) : `intensites` ne vaut que 1, sans
+ * quoi deux textes décriraient la même palette. Sa part est celle de la
+ * référence et sa rampe n'a pas de profil : ni `base`, ni `parts`, ni une
+ * dérive déliée. Une palette libre n'en porte pas.
+ */
+function validerIntensites(releve: Releve, palette: Objet, chemin: string): void {
+  if (!('intensites' in palette)) return;
+  if (palette.intensites !== 1) releve.refuser('intensites-valeur', `${chemin}.intensites`, palette.intensites);
+  for (const cle of ['base', 'parts', 'crans']) {
+    if (cle in palette) releve.refuser('intensites-incompatible', `${chemin}.${cle}`);
+  }
+  if (estObjet(palette.derive) && palette.derive.lien === false) releve.refuser('intensites-incompatible', `${chemin}.derive.lien`);
+}
+
 function validerPalette(releve: Releve, palette: unknown, chemin: string): void {
-  if (!releve.objet(palette, chemin, ['id', 'reference', 'derive'], ['nom', 'parts', 'base', 'crans', 'originale'])) return;
+  if (!releve.objet(palette, chemin, ['id', 'reference', 'derive'], ['nom', 'parts', 'base', 'crans', 'originale', 'intensites'])) return;
   if (typeof palette.id !== 'string' || !MOTIF_IDENTIFIANT.test(palette.id)) {
     releve.refuser('identifiant-forme', `${chemin}.id`, palette.id);
   }
@@ -289,6 +335,8 @@ function validerPalette(releve: Releve, palette: unknown, chemin: string): void 
       && palette.originale.toUpperCase() === palette.reference.toUpperCase();
     if (identique) releve.refuser('originale-identique', `${chemin}.originale`, palette.originale as string);
   }
+
+  validerIntensites(releve, palette, chemin);
 
   const derive = palette.derive;
   if (releve.objet(derive, `${chemin}.derive`, ['lien', 'soft', 'vivid'])) {
@@ -322,8 +370,21 @@ const CLES_RECETTE = [
   'fonds',
   'seuils',
   'derives',
+  'intensiteDesFondsSombres',
+  'contenuDesPlanches',
   'palettes',
 ] as const;
+
+const PARTIES_DU_CONTENU = ['note', 'usages', 'grilles', 'light', 'dark'] as const;
+
+function validerContenu(releve: Releve, contenu: unknown): void {
+  if (!releve.objet(contenu, 'contenuDesPlanches', PARTIES_DU_CONTENU)) return;
+  for (const partie of PARTIES_DU_CONTENU) {
+    if (typeof contenu[partie] !== 'boolean') releve.refuser('forme', `contenuDesPlanches.${partie}`);
+  }
+  // Un cadre dessine au moins un thème ([PLA-28]).
+  if (contenu.light === false && contenu.dark === false) releve.refuser('contenu-sans-theme', 'contenuDesPlanches');
+}
 
 /**
  * Valide la forme d'une recette de la version courante ([REC-05]). Rend la
@@ -364,6 +425,12 @@ export function validerRecette(entree: unknown): { recette: Recette } | { refus:
 
   validerDerives(releve, entree.derives);
 
+  const fondsSombres = entree.intensiteDesFondsSombres;
+  if (releve.nombre(fondsSombres, 'intensiteDesFondsSombres') && (fondsSombres < 0 || fondsSombres > 1)) {
+    releve.refuser('fonds-sombres-bornes', 'intensiteDesFondsSombres', fondsSombres);
+  }
+  validerContenu(releve, entree.contenuDesPlanches);
+
   if (!Array.isArray(entree.palettes)) {
     releve.refuser('forme', 'palettes');
   } else {
@@ -387,11 +454,20 @@ export type Migrations = Readonly<Record<number, (ancienne: Objet) => Objet>>;
  * Les migrations connues. De 1 à 2, `base`, et de 2 à 3, `crans` et
  * `originale`, sont facultatifs : rien d'autre ne change dans le texte. Les
  * couleurs d'une liste importée qui ne porte pas 50 ou 950 changent pourtant,
- * les bouts de la dérive se lisant désormais à ces numéros.
+ * les bouts de la dérive se lisant désormais à ces numéros. De 3 à 4,
+ * `intensites` est facultatif et chaque palette garde ses deux intensités ;
+ * la recette reçoit les valeurs par défaut de `intensiteDesFondsSombres` et
+ * de `contenuDesPlanches`. Les fonds du thème Dark changent donc de couleur.
  */
 export const MIGRATIONS: Migrations = {
   1: (ancienne) => ({ ...ancienne, formatVersion: 2 }),
   2: (ancienne) => ({ ...ancienne, formatVersion: 3 }),
+  3: (ancienne) => ({
+    ...ancienne,
+    formatVersion: 4,
+    intensiteDesFondsSombres: INTENSITE_DES_FONDS_SOMBRES,
+    contenuDesPlanches: { ...CONTENU_COMPLET },
+  }),
 };
 
 /** Ce que la lecture conclut d'une recette rangée ([REC-03]). */

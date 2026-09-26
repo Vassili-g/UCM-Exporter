@@ -5,14 +5,17 @@
 import * as socle from 'ucm-plugin-socle/src/fenetre';
 
 /** La taille d'ouverture, tant que rien n'a été rangé. */
-export const TAILLE_PAR_DEFAUT = { largeur: 650, hauteur: 720 } as const;
+export const TAILLE_PAR_DEFAUT = { largeur: 750, hauteur: 720 } as const;
 
 /**
- * L'ancien défaut. Une fenêtre que le designer n'a jamais redimensionnée l'a
- * rangé à sa fermeture : elle s'ouvre au nouveau défaut, et toute autre
- * taille rangée se garde.
+ * Les anciens défauts. Une fenêtre que le designer n'a jamais redimensionnée
+ * en a rangé un à sa fermeture : elle s'ouvre au nouveau défaut, et toute
+ * autre taille rangée se garde.
  */
-export const ANCIEN_DEFAUT = { largeur: 600, hauteur: 720 } as const;
+export const ANCIENS_DEFAUTS = [
+  { largeur: 600, hauteur: 720 },
+  { largeur: 650, hauteur: 720 },
+] as const;
 
 /** En dessous, les trois colonnes de la couleur de base et l'aperçu ne tiennent plus en largeur. */
 export const TAILLE_MINIMALE = { largeur: 500, hauteur: 520 } as const;
@@ -27,9 +30,9 @@ export function tailleValide(brut: Partial<socle.TailleFenetre> | null | undefin
   return socle.tailleValide(brut, BORNES);
 }
 
-/** La taille d'ouverture d'une taille rangée : l'ancien défaut devient le nouveau. */
+/** La taille d'ouverture d'une taille rangée : un ancien défaut devient le nouveau. */
 export function tailleALOuverture(rangee: socle.TailleFenetre): socle.TailleFenetre {
-  const ancienDefaut = rangee.largeur === ANCIEN_DEFAUT.largeur && rangee.hauteur === ANCIEN_DEFAUT.hauteur;
+  const ancienDefaut = ANCIENS_DEFAUTS.some(({ largeur, hauteur }) => rangee.largeur === largeur && rangee.hauteur === hauteur);
   return ancienDefaut ? { ...TAILLE_PAR_DEFAUT } : rangee;
 }
 

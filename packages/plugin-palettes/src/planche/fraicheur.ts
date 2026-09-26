@@ -33,17 +33,16 @@ export interface FraicheurDeLaPlanche {
 }
 
 /**
- * Le cadre d'une seule palette : ce que l'onglet Palettes montre à côté de
- * « Générer sur Figma » ([UI-05]). Le calcul reconstruit le modèle de ce seul
- * cadre. Le modèle attendu porte la grille des contrastes, que chaque
- * génération dessine (section 9.5) : un cadre dessiné sans elle est à mettre
- * à jour.
+ * Le cadre d'une seule palette : l'état que sa fiche de l'onglet Planches
+ * montre ([UI-05]). Le calcul reconstruit le modèle de ce seul cadre, avec les
+ * parties que la recette dessine ([PLA-28]) : un cadre dessiné avec d'autres
+ * parties est à mettre à jour.
  */
 export function fraicheurDUnePalette(recette: Recette, profil: ProfilDuDocument, planche: EtatDeLaPlanche, id: string): CadreDUnePalette {
   const palette = recette.palettes.find((candidate) => candidate.id === id);
   const cadre = planche.cadres.find((candidat) => candidat.possede && candidat.palette === id);
   if (palette && cadre) {
-    const attendue = empreinteDuModele(recette, palette, profil, { grille: true });
+    const attendue = empreinteDuModele(recette, palette, profil);
     return { etat: attendue === cadre.empreinte ? 'a-jour' : 'perimee', cadre: cadre.cadre, page: cadre.page, nomDeLaPage: cadre.nomDeLaPage };
   }
   const manquant = planche.manquants.find((candidat) => candidat.palette === id);

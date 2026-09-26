@@ -24,7 +24,7 @@ function banc() {
 
 test('[PLA-24] V8.4 : « Réessayer » reprend une génération interrompue à la palette fautive', () => {
   const { suivi, demandes, interrompre } = banc();
-  suivi.dessiner(['a', 'b', 'c'], true, NOMS);
+  suivi.dessiner(['a', 'b', 'c'], NOMS);
   interrompre('b');
   const fini = suivi.etat();
   assert.ok(fini.phase === 'fini');
@@ -35,7 +35,7 @@ test('[PLA-24] V8.4 : « Réessayer » reprend une génération interrompue à l
 
 test('[PLA-24] V8.4 : interrompue à la première palette, la génération reprend entière', () => {
   const { suivi, demandes, interrompre } = banc();
-  suivi.dessiner(['a', 'b', 'c'], true, NOMS);
+  suivi.dessiner(['a', 'b', 'c'], NOMS);
   interrompre('a');
   suivi.reessayer();
   assert.deepEqual(demandes, [['a', 'b', 'c'], ['a', 'b', 'c']]);

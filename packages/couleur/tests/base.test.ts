@@ -107,10 +107,10 @@ test('[ENT-11] propriété : sur des teintes, clartés et intensités communes v
           const nom = `${reference} ${base} ${soft}/${vivid}`;
           assert.ok('recette' in validerRecette(avec), nom);
           const parts = partsDe(avec, palette);
-          assert.ok(parts.soft <= parts.vivid, nom);
+          assert.ok(parts.soft! <= parts.vivid!, nom);
           assert.equal(ancrageDe(avec, palette).profil, base, nom);
           const rampes = rampesDe(avec, palette);
-          for (const mode of MODES) assert.equal(rampes[base][mode][ancrageDe(avec, palette).rangs[mode]].hexa, reference, `${nom} ${mode}`);
+          for (const mode of MODES) assert.equal(rampes[base]![mode][ancrageDe(avec, palette).rangs[mode]].hexa, reference, `${nom} ${mode}`);
           if (palette.parts?.origine !== 'grise') {
             assert.ok(!codesDAlerte(avec, palette).some((code) => code === 'reference-plus-terne' || code === 'reference-plus-vive'), nom);
           }
@@ -127,15 +127,15 @@ test('[REC-05] une palette de base autre que soft ou vivid est refusée', () => 
   assert.deepEqual(lue.refus, [{ regle: 'base-inconnue', chemin: 'palettes[0].base', valeur: 'auto' }]);
 });
 
-test('[REC-03] une recette de format 1 se migre jusqu’au format 3 sans changer ses palettes', () => {
-  assert.equal(FORMAT_RECETTE, 3);
+test('[REC-03] une recette de format 1 se migre jusqu’au format 4 sans changer ses palettes', () => {
+  assert.equal(FORMAT_RECETTE, 4);
   const grise = ajusterPartsGrises(recetteParDefaut(), paletteTailwind('p-000000b2', '#6B7280'));
   const designer = paletteTailwind('p-000000b3', '#1E6FD9', { parts: { soft: 0.3, vivid: 0.8, origine: 'designer' } });
   const ancienne = { ...recetteParDefaut(), formatVersion: 1, palettes: [grise, designer] };
   const classement = classerRecette(jsonCanonique(ancienne));
   assert.ok(classement.etat === 'migree' && classement.depuis === 1);
   assert.deepEqual(classement.recette.palettes, [grise, designer]);
-  assert.equal(classement.recette.formatVersion, 3);
+  assert.equal(classement.recette.formatVersion, 4);
 });
 
 /** Un hexa depuis teinte, saturation et luminosité HSL, en entiers. */

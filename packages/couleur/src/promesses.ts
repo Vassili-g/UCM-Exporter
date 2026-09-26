@@ -1,14 +1,14 @@
 /**
  * Les promesses des emplois : seize paires par palette, par mode et par
- * profil, jugées sur la table fixe des emplois ([VER-03] à [VER-07], section
- * 11.2 de la spécification). Les paires d'un emploi facultatif ne se jugent
- * que dans une liste qui porte son cran.
+ * intensité présente, jugées sur la table fixe des emplois ([VER-03] à
+ * [VER-07], section 11.2 de la spécification). Les paires d'un emploi
+ * facultatif ne se jugent que dans une liste qui porte son cran.
  */
 import { lireHexa, type Rgb8 } from './conversions';
 import { atteintLeSeuil, contraste } from './contraste';
 import { EMPLOIS, EMPLOIS_FACULTATIFS, TABLE_DES_EMPLOIS, emploiPresent, type Emploi } from './emplois';
-import { rampesDe } from './palette';
-import { MODES, PROFILS, type Mode, type Profil, type Rampes } from './rampe';
+import { intensitesDe, rampesDe } from './palette';
+import { MODES, rampeDe, type Intensite, type Mode, type Rampes } from './rampe';
 import type { Palette, Recette, Seuils } from './recette';
 
 /** Un membre de paire : un emploi, avancé de `decalage` crans, ou le fond de référence du mode. */
@@ -126,7 +126,8 @@ export type Verdict = 'tenue' | 'manquee';
 export interface Promesse {
   readonly paire: Paire;
   readonly mode: Mode;
-  readonly profil: Profil;
+  /** L'intensité jugée : `soft`, `vivid` ou `unique` ([ENT-14]). */
+  readonly profil: Intensite;
   readonly premier: Designation;
   readonly second: Designation;
   readonly seuil: number;
@@ -145,7 +146,7 @@ interface Contexte {
  * Un cran avancé reste dans la rampe : `[REC-05]` exige chaque cran de
  * `CRANS_DES_EMPLOIS`, qui compte deux crans après 700.
  */
-function designer(membre: MembrePaire, mode: Mode, profil: Profil, contexte: Contexte): Designation {
+function designer(membre: MembrePaire, mode: Mode, profil: Intensite, contexte: Contexte): Designation {
   if ('fond' in membre) return { nature: 'fond', couleur: contexte.fonds[mode] };
   const cible = TABLE_DES_EMPLOIS[membre.emploi];
   if (cible === 'fond') return { nature: 'fond', couleur: contexte.fonds[mode] };
@@ -155,12 +156,12 @@ function designer(membre: MembrePaire, mode: Mode, profil: Profil, contexte: Con
   if (depart < 0 || rang >= crans.length) {
     throw new Error(`Cran ${cible} absent ou sans cran suivant. La recette n'a pas été validée.`);
   }
-  return { nature: 'cran', cran: crans[rang], couleur: contexte.rampes[profil][mode][rang].couleur };
+  return { nature: 'cran', cran: crans[rang], couleur: rampeDe(contexte.rampes, profil)[mode][rang].couleur };
 }
 
 const valeurDuSeuil = (paire: Paire, seuils: Seuils): number => seuils[paire.seuil];
 
-function juger(paire: Paire, mode: Mode, profil: Profil, contexte: Contexte): Promesse {
+function juger(paire: Paire, mode: Mode, profil: Intensite, contexte: Contexte): Promesse {
   const premier = designer(paire.premier, mode, profil, contexte);
   const second = designer(paire.second, mode, profil, contexte);
   const seuil = valeurDuSeuil(paire, contexte.recette.seuils);
@@ -197,9 +198,10 @@ export function paireJugeable(paire: Paire, crans: readonly number[]): boolean {
 }
 
 /**
- * Les promesses d'une palette : soixante-quatre, seize par mode et par profil,
- * ou cinquante-six dans une liste sans 50, rangées par mode, puis par profil,
- * puis dans l'ordre des paires.
+ * Les promesses d'une palette : seize par mode et par intensité, quatorze
+ * dans une liste sans 50, soit soixante-quatre pour deux intensités et
+ * trente-deux pour une, rangées par mode, puis par intensité, puis dans
+ * l'ordre des paires.
  */
 export function verifierPromesses(recette: Recette, palette: Palette): Promesse[] {
   // Une palette libre sort du modèle : elle n'a ni emplois ni promesses (W6).
@@ -207,7 +209,7 @@ export function verifierPromesses(recette: Recette, palette: Palette): Promesse[
   const contexte = contexteDe(recette, palette);
   const paires = PAIRES.filter((paire) => paireJugeable(paire, recette.crans));
   return MODES.flatMap((mode) =>
-    PROFILS.flatMap((profil) => paires.map((paire) => juger(paire, mode, profil, contexte))));
+    intensitesDe(palette).flatMap((profil) => paires.map((paire) => juger(paire, mode, profil, contexte))));
 }
 
 /** Le nombre de promesses manquées, qui fait le verdict de la palette ([VER-07]). */

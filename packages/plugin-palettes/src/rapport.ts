@@ -6,7 +6,7 @@
  * écarts de peinture du dernier dessin (L6.14). Les nombres sont ceux du
  * moteur, sans arrondi : un outil qui relit le rapport juge lui-même.
  */
-import { lireHexa, mesurerCran, type Alerte, type Ancrage, type Mode, type Profil, type Promesse, type Recette } from 'ucm-couleur';
+import { aUneIntensite, lireHexa, mesurerCran, rampeDe, type Alerte, type Intensite, type Mode, type Profil, type Promesse, type Recette } from 'ucm-couleur';
 
 import { analyserPalette } from './analyse';
 import type { ProfilDuDocument } from './lecture';
@@ -29,9 +29,16 @@ export interface PaletteDuRapport {
   readonly originale: string | null;
   /** Vrai pour une palette libre (W6) : ses crans sont ceux de sa liste, et elle n'a aucune promesse. */
   readonly libre: boolean;
-  /** Le profil et les crans qui portent la référence exacte ([MOT-17]). */
-  readonly ancrage: Ancrage;
-  readonly crans: { readonly [M in Mode]: { readonly [P in Profil]: readonly CranDuRapport[] } };
+  /** Le nombre d'intensités de la palette ([ENT-14]) : une rampe sans nom de profil, ou Soft et Vivid. */
+  readonly intensites: 1 | 2;
+  /** Les crans qui portent la référence exacte, et son profil pour une palette à deux intensités ([MOT-17]). */
+  readonly ancrage: {
+    readonly profil?: Profil;
+    readonly rangs: { readonly [M in Mode]: number };
+    readonly crans: { readonly [M in Mode]: number };
+  };
+  /** Par mode, la liste des crans d'une palette à une intensité, ou une liste par profil. */
+  readonly crans: { readonly [M in Mode]: readonly CranDuRapport[] | { readonly [P in Profil]: readonly CranDuRapport[] } };
   readonly promesses: readonly Promesse[];
   readonly alertes: readonly Alerte[];
 }
@@ -39,9 +46,10 @@ export interface PaletteDuRapport {
 /**
  * La version de la forme du rapport (section 10.2). Un champ ajouté la garde ;
  * un champ ou un code d'alerte retiré ou renommé la monte. La 1, sans ce
- * champ, portait l'alerte `reference-plus-claire-que-bouton`.
+ * champ, portait l'alerte `reference-plus-claire-que-bouton` ; la 2 donnait
+ * toujours des crans et un ancrage par profil.
  */
-export const FORMAT_DU_RAPPORT = 2;
+export const FORMAT_DU_RAPPORT = 3;
 
 export interface Rapport {
   readonly formatDuRapport: number;
@@ -73,19 +81,23 @@ export function rapportDeLaRecette(
     seuils: recette.seuils,
     palettes: recette.palettes.map((palette) => {
       const analyse = analyserPalette(recette, palette);
-      const cransDu = (mode: Mode, profilDeRampe: Profil): CranDuRapport[] =>
-        analyse.rampes[profilDeRampe][mode].map((cran, rang) => {
+      const cransDu = (mode: Mode, intensite: Intensite): CranDuRapport[] =>
+        rampeDe(analyse.rampes, intensite)[mode].map((cran, rang) => {
           const mesure = mesurerCran(cran.couleur, fonds[mode], recette.seuils);
           return { cran: analyse.grille.crans[rang], hexa: cran.hexa, fond: mesure.fond, blanc: mesure.blanc, noir: mesure.noir };
         });
-      const parMode = (mode: Mode) => ({ soft: cransDu(mode, 'soft'), vivid: cransDu(mode, 'vivid') });
+      // Une palette à une intensité n'a pas de profil : ses crans et son ancrage n'en nomment pas ([ENT-14]).
+      const une = aUneIntensite(palette);
+      const parMode = (mode: Mode) => (une ? cransDu(mode, 'unique') : { soft: cransDu(mode, 'soft'), vivid: cransDu(mode, 'vivid') });
+      const { profil: porteur, ...ancrage } = analyse.ancrage;
       return {
         id: palette.id,
         nom: palette.nom ?? null,
         reference: palette.reference,
         originale: palette.originale ?? null,
         libre: analyse.libre,
-        ancrage: analyse.ancrage,
+        intensites: une ? 1 : 2,
+        ancrage: porteur === 'unique' ? ancrage : { profil: porteur, ...ancrage },
         crans: { light: parMode('light'), dark: parMode('dark') },
         promesses: analyse.promesses,
         alertes: analyse.alertes,

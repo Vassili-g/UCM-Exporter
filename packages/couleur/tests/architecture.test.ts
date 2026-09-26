@@ -3,8 +3,8 @@
  *
  * `verifier-courbes.mjs` (dossier « Archi Tokens Multi-marques ») éprouve le
  * câblage par défaut sur les 360 teintes entières, les deux profils et les deux
- * modes, à teinte constante et en virgule flottante. Ses minima, relevés au lot
- * 0 du plan du plugin Palettes, sont figés ici : le chemin sans arrondi du
+ * modes, à teinte constante et en virgule flottante, fonds du thème Dark
+ * atténués ([MOT-28]). Ses minima sont figés ici : le chemin sans arrondi du
  * moteur doit les rendre à 0,01 près. Le même balayage, arrondi à 8 bits, doit
  * tenir chaque seuil.
  */
@@ -16,6 +16,7 @@ import {
   contraste,
   cranFlottant,
   fabriquerCran,
+  facteurSombre,
   luminanceLineaire,
   rapportDeLuminances,
   type Mode,
@@ -35,27 +36,31 @@ type Membre = number | 'fond';
 /** Nom, seuil, les deux membres, et le minimum relevé par `verifier-courbes.mjs`. */
 const PROMESSES: [string, number, Membre, Membre, number][] = [
   ['text sur fond de page', 4.5, 700, 'fond', 5.23],
-  ['text sur surface au repos', 4.5, 700, 100, 4.99],
+  ['text sur surface au repos', 4.5, 700, 100, 4.95],
   ['text survolé sur surface survolée', 4.5, 800, 200, 6.32],
   ['text pressé sur surface pressée', 4.5, 900, 300, 7.28],
   ['on-solid sur solid', 4.5, 'fond', 700, 5.23],
   ['on-solid sur solid survolé', 4.5, 'fond', 800, 7.45],
   ['on-solid sur solid pressé', 4.5, 'fond', 900, 10.5],
   ['border-control sur fond de page', 3, 600, 'fond', 3.63],
-  ['border-control sur surface au repos', 3, 600, 100, 3.46],
-  ['border-control survolé sur surface survolée', 3, 700, 200, 4.46],
+  ['border-control sur surface au repos', 3, 600, 100, 3.45],
+  ['border-control survolé sur surface survolée', 3, 700, 200, 4.36],
   ['border-control pressé sur surface pressée', 3, 800, 300, 5.25],
   ['focus sur fond de page', 3, 600, 'fond', 3.63],
-  ['focus sur surface au repos', 3, 600, 100, 3.46],
+  ['focus sur surface au repos', 3, 600, 100, 3.45],
   ['solid survolé sur fond de page', 3, 800, 'fond', 7.45],
   ['text sur surface-card', 4.5, 700, 50, 5.3],
   ['border-control sur surface-card', 3, 600, 50, 3.68],
 ];
 
-/** Clarté, teinte et part d'un membre : le fond est gris, sa teinte ne compte pas. */
+/** Les fonds du thème Dark de la recette par défaut : 0,30 au numéro 50, 1 dès le 400 ([MOT-28]). */
+const FONDS_SOMBRES = { depart: 0.3, clarteBasse: COURBES.dark[0], clarteHaute: COURBES.dark[4] };
+
+/** Clarté, teinte et part d'un membre : le fond est gris, sa teinte ne compte pas ; un fond du thème Dark perd de la part. */
 function membre(mode: Mode, quoi: Membre, teinte: number, part: number): [number, number, number] {
   if (quoi === 'fond') return [COURBES[mode][0], 0, 0];
-  return [COURBES[mode][CRANS.indexOf(quoi)], teinte, part];
+  const L = COURBES[mode][CRANS.indexOf(quoi)];
+  return [L, teinte, mode === 'dark' ? part * facteurSombre(L, FONDS_SOMBRES) : part];
 }
 
 /** Le plus petit contraste d'une paire sur tout le balayage, pour une mesure donnée. */

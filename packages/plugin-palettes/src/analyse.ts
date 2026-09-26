@@ -13,6 +13,7 @@ import {
   distanceDePalettes,
   estLibre,
   grilleDe,
+  intensitesDe,
   partDeChroma,
   partsDe,
   rampesDe,
@@ -22,8 +23,9 @@ import {
   type Ancrage,
   type Confusion,
   type Grille,
+  type Intensite,
   type Palette,
-  type Parts,
+  type PartsDePalette,
   type Promesse,
   type Rampes,
   type Recette,
@@ -38,15 +40,17 @@ export interface AnalyseDePalette {
   readonly grille: Grille;
   /** Vrai pour une palette libre, sortie du modèle : ni rôles, ni garanties. */
   readonly libre: boolean;
+  /** Les intensités que la palette porte, dans l'ordre de l'affichage ([ENT-14]) : toute vue les lit ici. */
+  readonly intensites: readonly Intensite[];
   readonly rampes: Rampes;
   readonly promesses: readonly Promesse[];
   readonly manquees: number;
   /** Toutes les alertes qui concernent la palette, dans l'ordre du moteur : le rapport les garde toutes. */
   readonly alertes: readonly Alerte[];
-  /** La part de chroma de la référence, et celles que la palette emploie. */
+  /** La part de chroma de la référence, et celles que la palette emploie, par intensité présente. */
   readonly part: number;
-  readonly parts: Parts;
-  /** Le profil et les nuances qui portent la référence exacte ([MOT-17]). */
+  readonly parts: PartsDePalette;
+  /** L'intensité et les nuances qui portent la référence exacte ([MOT-17]). */
   readonly ancrage: Ancrage;
   /** Les nuances où Soft et Vivid se confondent, sur toute la liste : le repère ≈ ([PLA-15]). */
   readonly confusions: readonly Confusion[];
@@ -75,6 +79,7 @@ export function analyserPalette(recette: Recette, palette: Palette): AnalyseDePa
   return {
     grille: grilleDe(recette, palette),
     libre: estLibre(palette),
+    intensites: intensitesDe(palette),
     rampes: rampesDe(recette, palette),
     promesses,
     manquees: compterManquees(promesses),

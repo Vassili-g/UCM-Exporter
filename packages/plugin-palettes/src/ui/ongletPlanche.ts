@@ -1,7 +1,8 @@
 /**
  * L'onglet Planches (section 13.2, [UI-02]) : une fiche par palette, dans
- * l'ordre de la recette, avec ses rampes Soft et Vivid dans le thème choisi
- * en tête, sa référence, le résultat de ses garanties et l'état de son cadre
+ * l'ordre de la recette, disposée en A (maquette Y2.2) : le nom et l'état du
+ * cadre en pastille, les rampes de ses intensités dans le thème choisi en
+ * tête, puis sa référence et le résultat de ses garanties sur une ligne
  * (V8.1, V8.2). Chaque fiche porte ses gestes dans cet ordre : « Générer sur
  * Figma » ou « Actualiser sur Figma », bouton principal, quand le cadre en
  * demande un ; « Afficher » pour un cadre localisé ; « Modifier ». Tous ont la
@@ -10,8 +11,9 @@
  * ([PLA-27]), les notices, puis la carte repliée « Palettes et réglages »
  * (V8.5).
  *
- * Chaque génération dessine la grille des contrastes (section 9.5). Au-delà de
- * six palettes, une génération groupée demande confirmation ([PLA-24], D-I).
+ * Chaque génération dessine les parties que la recette choisit ([PLA-28]).
+ * Au-delà de six palettes, une génération groupée demande confirmation
+ * ([PLA-24], D-I).
  */
 import { MODES, type Classement, type Mode, type Recette } from 'ucm-couleur';
 import { createButton } from 'ucm-plugin-socle/src/ui/Button';
@@ -32,11 +34,11 @@ import {
   confirmationDuDessin,
   copieDeCadre,
   detailsTechniques,
+  avecLeNom,
   enTeteDeLaPlanche,
   etatDuCadreEcrit,
   genererLesPalettesPasAJour,
   genererToutesLesPalettes,
-  ligneDeLaReference,
   nomDeLaPalette,
   noticeDisplayP3,
   pageDuCadre,
@@ -233,6 +235,21 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
   const noms = (): { [id: string]: string } =>
     Object.fromEntries((recette?.palettes ?? []).map((palette) => [palette.id, nomDeLaPalette(palette)]));
 
+  /**
+   * Le geste d'une fiche qui a lancé la génération en cours : le panneau
+   * inerte perd le focus, qui revient à ce geste, ou au premier geste de la
+   * même fiche quand le cadre n'en demande plus (Y6.3).
+   */
+  let gesteDeLaGeneration: { readonly palette: string; readonly geste: string } | null = null;
+
+  /** Rend le focus au geste qui a lancé la génération, une fois qu'elle n'est plus en cours. */
+  function rendreLeFocus(): void {
+    if (!gesteDeLaGeneration || enCours) return;
+    const fiche = liste.querySelector<HTMLElement>(`.fiche-planche[data-palette="${gesteDeLaGeneration.palette}"]`);
+    const cible = fiche?.querySelector<HTMLElement>(`[data-geste="${gesteDeLaGeneration.geste}"]`) ?? fiche?.querySelector<HTMLElement>('.fiche-gestes button');
+    cible?.focus();
+  }
+
   function lancer(palettes: readonly string[]): void {
     aConfirmer = null;
     confirmation.hidden = true;
@@ -260,24 +277,37 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     fiche.element.dataset.palette = id;
     fiche.element.dataset.etat = cadre.etat;
 
-    const reference = document.createElement('p');
-    reference.className = 'ligne-secondaire';
-    reference.textContent = `◆ ${ligneDeLaReference(analyse.ancrage, mode)}`;
+    // La référence : sa pastille, son code, et la nuance qui la porte dans le thème des fiches.
+    const reference = document.createElement('span');
+    reference.className = 'fiche-reference ligne-secondaire';
+    const teinte = document.createElement('i');
+    teinte.className = 'fiche-teinte';
+    teinte.style.background = palette.reference;
+    reference.append(teinte, `${palette.reference} ◆ ${avecLeNom(analyse.ancrage.profil, `nuance ${analyse.ancrage.crans[mode]}`)}`);
+    const information = document.createElement('div');
+    information.className = 'fiche-information';
+    information.append(reference, resultatsDesGaranties(analyse, mode));
 
-    // L'état du cadre est un autre sujet que les garanties : un ratio manqué n'est pas une panne (V8.2).
-    const etat = document.createElement('p');
-    etat.className = 'etat-du-cadre';
+    // L'état du cadre, en pastille à côté du nom : un autre sujet que les garanties, un ratio manqué n'est pas une panne (V8.2).
+    const etat = document.createElement('span');
+    etat.className = 'etat-du-cadre pastille-d-etat';
     etat.dataset.etat = cadre.etat;
     const horsDeLaPlanche = cadre.page !== null && planche !== null && cadre.page !== planche.page && cadre.nomDeLaPage;
     etat.textContent = horsDeLaPlanche ? `${etatDuCadreEcrit(cadre.etat)} · ${pageDuCadre(cadre.nomDeLaPage!)}` : etatDuCadreEcrit(cadre.etat);
-    // Un cadre jamais dessiné n'a pas d'état écrit : « Générer sur Figma » le dit.
-    etat.hidden = etat.textContent === '';
+    fiche.tete.append(etat);
 
     const gestesDeLaFiche = document.createElement('div');
     gestesDeLaFiche.className = 'fiche-gestes';
     const premier = sansGeneration ? null : premierGesteDeLaFiche(cadre.etat);
     if (premier) {
-      const generer = createButton({ label: premier, compact: true, onClick: () => lancer([id]) });
+      const generer = createButton({
+        label: premier,
+        compact: true,
+        onClick: () => {
+          gesteDeLaGeneration = { palette: id, geste: 'generer' };
+          lancer([id]);
+        },
+      });
       generer.dataset.geste = 'generer';
       generer.disabled = enCours || blocage !== null;
       generer.title = blocage ?? '';
@@ -292,7 +322,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     modifier.dataset.geste = 'modifier';
     gestesDeLaFiche.append(modifier);
 
-    fiche.corps.append(apercuCompact(lue, analyse, mode), reference, resultatsDesGaranties(analyse, mode), etat, gestesDeLaFiche);
+    fiche.corps.append(apercuCompact(lue, analyse, mode), information, gestesDeLaFiche);
     return fiche.element;
   }
 
@@ -329,7 +359,7 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
     liste.replaceChildren(...fraicheur.palettes.map((cadre) => ficheDePalette(lue, cadre.palette, cadre, planche!.suiviFutur)));
     if (repere?.palette && repere.geste) {
       liste.querySelector<HTMLElement>(`.fiche-planche[data-palette="${repere.palette}"] [data-geste="${repere.geste}"]`)?.focus();
-    }
+    } else rendreLeFocus();
 
     pied.hidden = palettes.length === 0 || planche.suiviFutur;
     genererPasAJour.hidden = pasAJour.length === 0;
@@ -400,6 +430,9 @@ export function createOngletPlanche(gestes: GestesDeLaPlanche): OngletPlancheUi 
       const resultat = blocDuResultat(etat, nomsDuDessin, gestes);
       zoneDuResultat.replaceChildren(...(resultat ? [resultat] : []));
       zoneDuResultat.hidden = !resultat;
+      // Un résultat qui demande un geste, un refus ou une confirmation, garde le focus sur lui.
+      if (etat.phase === 'fini' && resultat) gesteDeLaGeneration = null;
+      rendreLeFocus();
     },
     bloquer(raison) {
       blocage = raison;

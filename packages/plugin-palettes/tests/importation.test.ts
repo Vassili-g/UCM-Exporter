@@ -8,9 +8,9 @@ import { ajouter, nouvellePalette, renommer } from '../src/edition';
 import { ecartDImport, lireLImport, natureDeLEcart } from '../src/importation';
 
 const VIDE = recetteParDefaut();
-const BLEU = { ...nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9')!, nom: 'Bleu' };
-const AMBRE = { ...nouvellePalette(VIDE, 'p-0000000b', '#F2A900')!, nom: 'Ambre' };
-const VERT = { ...nouvellePalette(VIDE, 'p-0000000c', '#16A34A')!, nom: 'Vert' };
+const BLEU = { ...nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9', 2)!, nom: 'Bleu' };
+const AMBRE = { ...nouvellePalette(VIDE, 'p-0000000b', '#F2A900', 2)!, nom: 'Ambre' };
+const VERT = { ...nouvellePalette(VIDE, 'p-0000000c', '#16A34A', 2)!, nom: 'Vert' };
 const ACTUELLE: Recette = [BLEU, AMBRE].reduce(ajouter, VIDE);
 
 test('[REC-08] l’écart nomme les palettes ajoutées, retirées et modifiées, par identifiant, et les paramètres communs changés', () => {
@@ -35,7 +35,7 @@ test('[REC-08] une palette déplacée mais identique n’est pas modifiée ; une
 test('[REC-11] sans recette lisible dans le fichier, tout l’import est un ajout', () => {
   const ecart = ecartDImport(null, ACTUELLE);
   assert.deepEqual(ecart.ajoutees.map(({ id }) => id), [BLEU.id, AMBRE.id]);
-  assert.deepEqual(ecart.parametres, ['crans', 'courbes', 'profils', 'fonds', 'seuils', 'derives', 'gamut']);
+  assert.deepEqual(ecart.parametres, ['crans', 'courbes', 'profils', 'intensiteDesFondsSombres', 'fonds', 'seuils', 'derives', 'gamut', 'contenuDesPlanches']);
 });
 
 test('[REC-03] un fichier cassé, vide, invalide ou futur se refuse ; un fichier valide est prêt, avec son écart', () => {

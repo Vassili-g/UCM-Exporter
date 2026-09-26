@@ -7,11 +7,11 @@
 import { classerRecette, jsonCanonique, type Palette, type Recette, type Refus, type Seuils } from 'ucm-couleur';
 
 /** Les paramètres communs, dans l'ordre où l'écart les nomme. */
-export const PARAMETRES_COMMUNS = ['crans', 'courbes', 'profils', 'fonds', 'seuils', 'derives', 'gamut'] as const;
+export const PARAMETRES_COMMUNS = ['crans', 'courbes', 'profils', 'intensiteDesFondsSombres', 'fonds', 'seuils', 'derives', 'gamut', 'contenuDesPlanches'] as const;
 export type ParametreCommun = (typeof PARAMETRES_COMMUNS)[number];
 
-/** Les champs d'une palette que l'écart nomme, palette de base, liste libre et originale comprises (V12.2, W6.3). */
-export const CHAMPS_DE_PALETTE = ['nom', 'reference', 'base', 'parts', 'derive', 'crans', 'originale'] as const;
+/** Les champs d'une palette que l'écart nomme, palette de base, liste libre, originale et intensités comprises (V12.2, W6.3). */
+export const CHAMPS_DE_PALETTE = ['nom', 'reference', 'intensites', 'base', 'parts', 'derive', 'crans', 'originale'] as const;
 export type ChampDePalette = (typeof CHAMPS_DE_PALETTE)[number];
 
 export interface EcartDImport {
@@ -37,9 +37,10 @@ export interface NatureDeLEcart {
   readonly detection: boolean;
 }
 
-const PARAMETRES_DE_COULEUR: readonly ParametreCommun[] = ['crans', 'courbes', 'profils', 'fonds', 'derives', 'gamut'];
+// `contenuDesPlanches` ne peint aucune nuance : il ne change que les cadres de la planche.
+const PARAMETRES_DE_COULEUR: readonly ParametreCommun[] = ['crans', 'courbes', 'profils', 'intensiteDesFondsSombres', 'fonds', 'derives', 'gamut'];
 // `originale` ne peint rien : la référence porte la couleur, et son champ change avec elle.
-const CHAMPS_DE_COULEUR: readonly ChampDePalette[] = ['reference', 'base', 'parts', 'derive', 'crans'];
+const CHAMPS_DE_COULEUR: readonly ChampDePalette[] = ['reference', 'intensites', 'base', 'parts', 'derive', 'crans'];
 
 export function natureDeLEcart(ecart: EcartDImport): NatureDeLEcart {
   const palettesColorees = Object.values(ecart.champs).some((champs) => champs.some((champ) => CHAMPS_DE_COULEUR.includes(champ)));

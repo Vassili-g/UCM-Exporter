@@ -12,14 +12,14 @@ import type { UiRequest } from '../src/messages';
 import { FauxFigma } from './figmaDeTest';
 
 const VIDE = recetteParDefaut();
-const BLEU = { ...nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9')!, nom: 'Bleu' };
-const AMBRE = { ...nouvellePalette(VIDE, 'p-0000000b', '#F2A900')!, nom: 'Ambre' };
+const BLEU = { ...nouvellePalette(VIDE, 'p-0000000a', '#1E6FD9', 2)!, nom: 'Bleu' };
+const AMBRE = { ...nouvellePalette(VIDE, 'p-0000000b', '#F2A900', 2)!, nom: 'Ambre' };
 const RECETTE: Recette = [BLEU, AMBRE].reduce(ajouter, VIDE);
 
 /** Bleu et Ambre dessinés, puis Ambre supprimée de la recette rangée : son cadre reste dans Figma. */
 async function ambreSupprimee(): Promise<{ figma: FauxFigma; bleu: string; ambre: string }> {
   const figma = new FauxFigma();
-  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU, AMBRE], grille: true });
+  await dessinerLaPlanche(figma.api(), { recette: RECETTE, profil: 'SRGB', palettes: [BLEU, AMBRE] });
   const { cadres } = lirePlanche(figma.root);
   figma.root.setSharedPluginData('ucm_palettes', 'recette', jsonCanonique(supprimer(RECETTE, AMBRE.id)));
   figma.journal.length = 0;

@@ -20,6 +20,7 @@ import {
   type Mode,
   type Palette,
   type Promesse,
+  aUneIntensite,
 } from 'ucm-couleur';
 
 /**
@@ -38,23 +39,22 @@ export type CibleDAction =
 /** Les cibles qui ouvrent les Réglages communs. */
 export const CIBLES_COMMUNES: readonly CibleDAction[] = ['luminosite-commune', 'fonds', 'intensites-communes'];
 
-/** Une association, un mode et un état où au moins un profil manque sa promesse. */
+/** Une association, un mode et un état où au moins une intensité manque sa promesse. */
 export interface GroupeDePromesses {
   readonly association: Association;
   readonly mode: Mode;
   readonly etat: EtatDePaire;
   readonly seuil: number;
-  /** Le résultat de chaque profil, tenu ou manqué : le message les montre tous les deux. */
-  readonly soft: Promesse;
-  readonly vivid: Promesse;
-  /** Le nombre de contrôles manqués du groupe, 1 ou 2 : le compteur compte les contrôles. */
+  /** Le résultat de chaque intensité présente, dans l'ordre du moteur, tenu ou manqué : le message les montre toutes. */
+  readonly resultats: readonly Promesse[];
+  /** Le nombre de contrôles manqués du groupe : le compteur compte les contrôles. */
   readonly manquees: number;
 }
 
 /**
  * Les groupes de promesses manquées, par mode, puis dans l'ordre des
- * associations, puis par état. Deux profils en échec sur la même paire font un
- * groupe et comptent deux contrôles.
+ * associations, puis par état. Deux intensités en échec sur la même paire font
+ * un groupe et comptent deux contrôles.
  */
 export function groupesManques(promesses: readonly Promesse[]): GroupeDePromesses[] {
   const groupes: GroupeDePromesses[] = [];
@@ -64,12 +64,9 @@ export function groupesManques(promesses: readonly Promesse[]): GroupeDePromesse
       const ici = promesses.filter((promesse) => promesse.mode === mode && cleDeLAssociation(associationDe(promesse.paire)) === cle);
       const etats = [...new Set(ici.map((promesse) => etatDeLaPaire(promesse.paire)))].sort((a, b) => a - b);
       for (const etat of etats) {
-        const duProfil = (profil: 'soft' | 'vivid') => ici.find((promesse) => promesse.profil === profil && etatDeLaPaire(promesse.paire) === etat);
-        const soft = duProfil('soft');
-        const vivid = duProfil('vivid');
-        if (!soft || !vivid) throw new Error(`Promesses incomplètes pour ${cle}, ${mode}, état ${etat}.`);
-        const manquees = [soft, vivid].filter((promesse) => promesse.verdict === 'manquee').length;
-        if (manquees > 0) groupes.push({ association, mode, etat, seuil: soft.seuil, soft, vivid, manquees });
+        const resultats = ici.filter((promesse) => etatDeLaPaire(promesse.paire) === etat);
+        const manquees = resultats.filter((promesse) => promesse.verdict === 'manquee').length;
+        if (manquees > 0) groupes.push({ association, mode, etat, seuil: resultats[0].seuil, resultats, manquees });
       }
     }
   }
@@ -105,9 +102,11 @@ export function carteDuMessage(cibles: readonly CibleDAction[]): CarteDuMessage 
  * Les réglages qu'une promesse manquée ouvre : l'intensité et la dérive de la
  * palette, puis la luminosité commune, qui touche toutes les palettes, et
  * enfin l’ajustement de la référence, qui ne touche que sa luminosité (W7.1).
+ * Une palette à une intensité n'a pas de carte Intensités ([ENT-14]).
  */
-export function ciblesDeLaPromesse(): CibleDAction[] {
-  return ['intensites-palette', 'derive', 'luminosite-commune', 'ajuster-reference'];
+export function ciblesDeLaPromesse(palette: Palette): CibleDAction[] {
+  const suite: CibleDAction[] = ['derive', 'luminosite-commune', 'ajuster-reference'];
+  return aUneIntensite(palette) ? suite : ['intensites-palette', ...suite];
 }
 
 /**

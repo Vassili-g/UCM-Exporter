@@ -27,6 +27,7 @@ import {
   type Mode,
   type NiveauxWcag,
   type Palette,
+  type Intensite,
   type Profil,
   type Recette,
   type Refus,
@@ -142,11 +143,45 @@ export const TEXTES_DE_CONFIGURATION = {
   aideSeuilTexte: 'Pour text sur surface, on-solid sur solid et text sur le fond.',
   aideSeuilNonTexte: 'Pour la bordure de champ, l’anneau de focus et le fond plein, état hover.',
   aideProfilsConfondus: 'Mesuré entre les deux profils d’une même nuance.',
-  aidePalettesProches: 'Mesuré sur les nuances 500, 600 et 700 de Vivid, en Thème Light.',
+  aidePalettesProches: 'Mesuré sur les nuances 500, 600 et 700, en Thème Light : Vivid contre Vivid entre deux palettes à deux intensités, sinon la rampe la plus proche.',
+  // Les fonds du thème Dark, dans la carte Intensités ([MOT-28], maquette Y2.5).
+  fondsSombres: 'Fonds du thème Dark',
+  aideFondsSombres: 'Part de l’intensité que gardent les nuances 50 à 300 du thème Dark, à la nuance 50 ; elle remonte jusqu’à 1 à la nuance 400. Le thème Light ne change pas.',
+  // La carte « Contenu des planches » ([PLA-28], maquette Y2.3, C1).
+  contenu: 'Contenu des planches',
   // N061 : les unités des mesures avancées (V9.8).
   uniteDeContraste: ':1',
   uniteDEcart: 'ΔEok',
   uniteDeChroma: 'chroma',
+} as const;
+
+/** Un nombre de calques, les milliers séparés par une espace fine. */
+const milliers = (nombre: number): string => String(nombre).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f');
+
+/** La carte « Contenu des planches » des Réglages communs ([PLA-28], maquette Y2.3, C1). */
+export const TEXTES_DU_CONTENU = {
+  parties: 'Parties d’un cadre',
+  themes: 'Thèmes',
+  lignes: {
+    rampes: { nom: 'En-tête et rampes', aide: 'Nom, référence, et les pastilles que la création des variables lit' },
+    note: { nom: 'Note sous les rampes', aide: '◆ et ≈ expliqués' },
+    usages: { nom: 'Quelle nuance pour quel usage', aide: 'Les spécimens et leurs garanties, par profil' },
+    grilles: { nom: 'Contrastes, nuance par nuance', aide: 'Les grilles de chaque rampe' },
+    light: { nom: 'Thème Light', aide: (fond: string) => `Fond ${fond}` },
+    dark: { nom: 'Thème Dark', aide: (fond: string) => `Fond ${fond}` },
+  },
+  auMoinsUnTheme: ' · au moins un thème',
+  calques: (nombre: number) => `${milliers(nombre)} calques`,
+  toutGenere: 'Tout est généré.',
+  effet: (palette: string, complet: number, choisi: number) => `Les cadres déjà générés passeront « À mettre à jour ». Cadre de ${palette} : ${milliers(complet)} → ${milliers(choisi)} calques.`,
+  resume: {
+    tout: 'Tout est généré',
+    note: 'Sans note',
+    usages: 'Sans usages',
+    grilles: 'Sans grilles',
+    light: 'Thème Dark seul',
+    dark: 'Thème Light seul',
+  },
 } as const;
 
 /** Le choix du préréglage, en tête de « Luminosité des nuances », et ce qu'il changerait (W6.4, N104). */
@@ -265,16 +300,28 @@ export function origineDesParts(origine: 'designer' | 'grise' | undefined, base:
   if (origine === 'grise') return `La couleur de référence est presque grise. Les profils soft et vivid utilisent tous les deux son intensité : ${nombreEcrit(parts.soft)}.`;
   if (base) {
     const autre: Profil = base === 'soft' ? 'vivid' : 'soft';
-    return `Palette de base ${NOM_DU_PROFIL[base]} : ${NOM_DU_PROFIL[base]} utilise l’intensité de la couleur de référence, ${nombreEcrit(parts[base])}. ${NOM_DU_PROFIL[autre]} suit les réglages communs, sans dépasser cette limite.`;
+    return `Référence exacte dans ${NOM_DU_PROFIL[base]} : ${NOM_DU_PROFIL[base]} utilise l’intensité de la couleur de référence, ${nombreEcrit(parts[base])}. ${NOM_DU_PROFIL[autre]} suit les réglages communs, sans dépasser cette limite.`;
   }
   return 'Les intensités de cette palette suivent les réglages communs.';
 }
 
-/** Le choix de la palette de base, dans la carte Couleur de base (N028, N029, [UI-11]). */
+/**
+ * Le choix du profil qui porte la référence exacte d'une palette à deux
+ * intensités, dans la carte « Deux intensités » (N028, N029, [ENT-11], Y2.6).
+ */
 export const TEXTES_DE_LA_BASE = {
-  libelle: 'Palette de base',
+  libelle: 'Référence exacte dans',
   auto: 'Auto',
   choixAutomatique: (profil: Profil) => `Auto a choisi ${NOM_DU_PROFIL[profil]}`,
+  choixAVenir: (profil: Profil) => `Auto choisira ${NOM_DU_PROFIL[profil]}`,
+} as const;
+
+/** Le choix des intensités d'une palette, en deux cartes ([ENT-14], maquettes Y2.1 et Y2.6). */
+export const TEXTES_DES_INTENSITES_DE_PALETTE = {
+  libelle: 'Intensités',
+  une: { titre: 'Une intensité', texte: 'Une seule variante, à l’intensité de la couleur de référence.' },
+  deux: { titre: 'Deux intensités', texte: 'Une variante douce « Soft » et une variante vive « Vivid ».' },
+  partDeLaReference: (part: string) => `Intensité : ${part}`,
 } as const;
 
 /** Le choix du modèle et les numéros d'une palette libre (W6.5, maquette W3.5, N103). */
@@ -335,7 +382,8 @@ export function etiquetteDePoignee(angle: number, teinte: number): string {
 
 /** L'infobulle du pivot ([DER-02]) : la teinte de la référence, et la nuance qui la porte dans chaque thème. */
 export function infobulleDuPivot(teinte: number, ancrage: Ancrage): string {
-  return `Couleur de référence : teinte ${Math.round(teinte) % 360}°. ${NOM_DU_PROFIL[ancrage.profil]} · nuance ${ancrage.crans.light} en Thème Light, ${ancrage.crans.dark} en Thème Dark.`;
+  const nuances = `${ancrage.crans.light} en Thème Light, ${ancrage.crans.dark} en Thème Dark`;
+  return `Couleur de référence : teinte ${Math.round(teinte) % 360}°. ${ancrage.profil === 'unique' ? `Nuance ${nuances}` : `${NOM_DU_PROFIL[ancrage.profil]} · nuance ${nuances}`}.`;
 }
 
 /** Le nom d'une copie de palette. */
@@ -398,9 +446,17 @@ const NOM_DU_MODE: Record<Mode, string> = { light: 'Light', dark: 'Dark' };
 /** Le nom d'affichage d'un profil ; la clé `soft` ou `vivid` reste celle des données. */
 export const NOM_DU_PROFIL: Record<Profil, string> = { soft: 'Soft', vivid: 'Vivid' };
 
-/** Le profil et la nuance qui portent la référence exacte dans un mode ([MOT-17]). */
+/**
+ * Le nom d'une intensité suivi de `suite` : « Vivid · nuance 600 ». La rampe
+ * d'une palette à une intensité n'a pas de nom ([ENT-14]) : `suite` seule.
+ */
+export function avecLeNom(intensite: Intensite, suite: string): string {
+  return intensite === 'unique' ? suite : `${NOM_DU_PROFIL[intensite]} · ${suite}`;
+}
+
+/** L'intensité et la nuance qui portent la référence exacte dans un mode ([MOT-17]). */
 export function ligneDeLaReference(ancrage: Ancrage, mode: Mode): string {
-  return `Référence : ${NOM_DU_PROFIL[ancrage.profil]} · nuance ${ancrage.crans[mode]}`;
+  return `Référence : ${avecLeNom(ancrage.profil, `nuance ${ancrage.crans[mode]}`)}`;
 }
 
 const ORIGINES: Record<DeriveRangee['origine'], string> = { tailwind: 'Tailwind', constante: 'Teinte constante', libre: 'Personnalisée' };
@@ -423,7 +479,7 @@ const ORIGINE_DES_INTENSITES: Record<'communes' | 'designer' | 'grise', string> 
  * propres se nomme par sa base.
  */
 export function resumeDesIntensites(origine: 'designer' | 'grise' | undefined, base: Profil | undefined, parts: { soft: number; vivid: number }, points: number): string {
-  const nom = !origine && base ? `Palette de base ${NOM_DU_PROFIL[base]}` : ORIGINE_DES_INTENSITES[origine ?? 'communes'];
+  const nom = !origine && base ? `Référence dans ${NOM_DU_PROFIL[base]}` : ORIGINE_DES_INTENSITES[origine ?? 'communes'];
   return `${nom} · Soft ${nombreEcrit(parts.soft)} · Vivid ${nombreEcrit(parts.vivid)}${pointsAVerifier(points)}`;
 }
 
@@ -431,6 +487,8 @@ export function resumeDesIntensites(origine: 'designer' | 'grise' | undefined, b
 export function resumeDeLaDerive(palette: Palette, grise: boolean, points: number): string {
   if (grise) return 'Désactivée pour une couleur presque grise';
   const { lien, soft, vivid } = palette.derive;
+  // Une palette à une intensité n'a qu'une dérive : rien à synchroniser ([ENT-14]).
+  if (palette.intensites === 1) return `${ORIGINES[vivid.origine]}${pointsAVerifier(points)}`;
   const reglage = lien ? `${ORIGINES[vivid.origine]} · synchronisée` : `Soft ${ORIGINES[soft.origine]} · Vivid ${ORIGINES[vivid.origine]} · désynchronisée`;
   return `${reglage}${pointsAVerifier(points)}`;
 }
@@ -455,15 +513,21 @@ export const NOM_DE_L_EMPLOI = Object.fromEntries(
 /** L'état d'une paire, sous son spécimen, dans le vocabulaire des composants (N033, N100, W5.7). */
 export const NOM_DE_L_ETAT: Record<EtatDePaire, string> = { 0: 'default', 1: 'hover', 2: 'active' };
 
-/** Le résultat d'un profil (N035) : « Vivid ✓ », « Vivid ✗ 2 ». */
-export function resultatDuProfil(profil: Profil, manquees: number): string {
-  return manquees === 0 ? `${NOM_DU_PROFIL[profil]} ✓` : `${NOM_DU_PROFIL[profil]} ✗ ${manquees}`;
+/**
+ * Le résultat d'une intensité (N035) : « Vivid ✓ », « Vivid ✗ 2 », et pour la
+ * rampe d'une palette à une intensité « Garanties ✓ », « Garanties ✗ 2 ».
+ */
+export function resultatDuProfil(profil: Intensite, manquees: number): string {
+  const nom = profil === 'unique' ? 'Garanties' : NOM_DU_PROFIL[profil];
+  return manquees === 0 ? `${nom} ✓` : `${nom} ✗ ${manquees}`;
 }
 
 /** Le même résultat, pour l'assistance technique ([UI-09]). */
-export function resultatDuProfilEnMots(profil: Profil, manquees: number): string {
-  if (manquees === 0) return `${NOM_DU_PROFIL[profil]} : toutes les garanties sont respectées`;
-  return manquees === 1 ? `${NOM_DU_PROFIL[profil]} : 1 garantie manquée` : `${NOM_DU_PROFIL[profil]} : ${manquees} garanties manquées`;
+export function resultatDuProfilEnMots(profil: Intensite, manquees: number): string {
+  const verdict = manquees === 0
+    ? 'toutes les garanties sont respectées'
+    : manquees === 1 ? '1 garantie manquée' : `${manquees} garanties manquées`;
+  return profil === 'unique' ? `${verdict[0].toUpperCase()}${verdict.slice(1)}` : `${NOM_DU_PROFIL[profil]} : ${verdict}`;
 }
 
 /** Les textes de la carte « Garanties de contraste » ([UI-09], N031 à N038). */
@@ -492,7 +556,7 @@ export const TEXTES_DES_GARANTIES = {
 
 /** Les textes du détail d'une nuance ([UI-10], N039). */
 export const TEXTES_DU_DETAIL = {
-  titre: (profil: Profil, numero: number) => `${NOM_DU_PROFIL[profil]} · ${numero}`,
+  titre: (profil: Intensite, numero: number) => (profil === 'unique' ? `Nuance ${numero}` : `${NOM_DU_PROFIL[profil]} · ${numero}`),
   reference: '◆ Votre couleur de référence exacte',
   sertA: 'Sert à',
   // Une nuance qu'aucun rôle ne vise ; « libre » désigne une palette sortie du modèle (N102).
@@ -548,7 +612,9 @@ export const TEXTES_DU_NUANCIER = {
   reference: 'Référence',
   copier: 'Copier le code',
   copie: 'Code copié',
-  etiquetteDeNuance: (profil: string, numero: number, hexa: string) => `Profil ${profil}, nuance ${numero}, couleur ${hexa}`,
+  etiquetteDeNuance: (profil: Intensite, numero: number, hexa: string) => (profil === 'unique'
+    ? `Nuance ${numero}, couleur ${hexa}`
+    : `Profil ${NOM_DU_PROFIL[profil]}, nuance ${numero}, couleur ${hexa}`),
   memeCouleur: (numero: number) => `Même couleur que la nuance ${numero}.`,
   tresProche: (profil: string) => `Très proche de ${profil}`,
   oklch: (L: number, C: number, H: number) => `L ${ecrireArrondi(L, 3)} · C ${ecrireArrondi(C, 3)} · H ${Math.round(H) % 360}°`,
@@ -614,7 +680,7 @@ export function jugementDuSeuil(seuil: 'texte' | 'nonTexte'): Jugement {
 
 /** Un message qui montre aussi des mesures, une par ligne, ou un détail technique replié. */
 export interface ConstatIllustre extends Constat {
-  /** Une mesure par profil : « Vivid : 4,31:1 · À corriger ». */
+  /** Une mesure par intensité : « Vivid : 4,31:1 · À corriger ». */
   readonly mesures?: readonly string[];
   /** Un texte technique, l'erreur de Figma par exemple, montré replié sous le message. */
   readonly detail?: string;
@@ -622,18 +688,18 @@ export interface ConstatIllustre extends Constat {
 
 /**
  * Un groupe de promesses manquées ([VER-06]) : l'association, le thème et
- * l'état, puis le résultat de chaque profil et le minimum demandé.
+ * l'état, puis le résultat de chaque intensité et le minimum demandé.
  */
 export function constatDeGroupe(groupe: GroupeDePromesses, nom: string): ConstatIllustre {
-  const resultat = (profil: Profil) => {
-    const promesse = groupe[profil];
-    return `${NOM_DU_PROFIL[profil]} : ${contrasteEcrit(promesse.contraste)} · ${promesse.verdict === 'tenue' ? 'Respectée' : 'À corriger'}`;
+  const resultat = (promesse: GroupeDePromesses['resultats'][number]) => {
+    const mesure = `${contrasteEcrit(promesse.contraste)} · ${promesse.verdict === 'tenue' ? 'Respectée' : 'À corriger'}`;
+    return promesse.profil === 'unique' ? mesure : `${NOM_DU_PROFIL[promesse.profil]} : ${mesure}`;
   };
   return {
     ou: `${associationEcrite(groupe.association, groupe.etat)} · ${nom}, thème ${NOM_DU_MODE[groupe.mode]}`,
     quoi: `Cette association n’atteint pas le contraste demandé, pour un minimum de ${seuilEcrit(groupe.seuil)}:1.`,
     geste: 'Ajustez l’intensité ou la dérive de teinte de cette palette, puis vérifiez cette association. Le réglage de luminosité est disponible dans les réglages communs.',
-    mesures: [resultat('soft'), resultat('vivid')],
+    mesures: groupe.resultats.map(resultat),
   };
 }
 
@@ -733,12 +799,21 @@ const CLES_DE_PALETTE: Record<string, string> = {
   derive: 'dérive de teinte',
   parts: 'intensités personnalisées',
   base: 'palette de base',
+  intensites: 'intensités',
   crans: 'nuances de la palette libre',
   originale: 'couleur de référence d’origine',
   clair: 'côté clair',
   sombre: 'côté sombre',
   lien: 'liaison des teintes',
   origine: 'origine du réglage',
+};
+/** Les parties d'un cadre, dans un chemin `contenuDesPlanches.…` ([PLA-28]). */
+const PARTIES_DU_CONTENU: Record<string, string> = {
+  note: 'note sous les rampes',
+  usages: 'usages',
+  grilles: 'grilles de contrastes',
+  light: 'thème Light',
+  dark: 'thème Dark',
 };
 const NOMS_DES_SEUILS: Record<string, string> = {
   texte: 'texte',
@@ -765,6 +840,8 @@ export function nommerChamp(chemin: string): string {
   if (trouve) return FONDS[trouve[1]];
   trouve = /^seuils\.(\w+)$/.exec(chemin);
   if (trouve) return `Minimum ou seuil : ${NOMS_DES_SEUILS[trouve[1]] ?? trouve[1]}`;
+  trouve = /^contenuDesPlanches\.(\w+)$/.exec(chemin);
+  if (trouve) return `Contenu des planches, ${PARTIES_DU_CONTENU[trouve[1]] ?? trouve[1]}`;
   trouve = /^derives\[(\d+)\]$/.exec(chemin);
   if (trouve) return `Préréglage Tailwind, gamme ${Number(trouve[1]) + 1}`;
   trouve = /^palettes\[(\d+)\]\.crans\[(\d+)\]$/.exec(chemin);
@@ -780,6 +857,8 @@ export function nommerChamp(chemin: string): string {
     gamut: 'Espace de couleur',
     formatVersion: 'Version du format de sauvegarde',
     derives: 'Préréglage Tailwind',
+    intensiteDesFondsSombres: 'Fonds du thème Dark',
+    contenuDesPlanches: 'Contenu des planches',
     palettes: 'Palettes',
   };
   return connus[chemin] ?? chemin;
@@ -817,6 +896,11 @@ const REFUS: Record<RegleRecette, (champ: string, valeur: string) => string> = {
   'crans-libres-numeros': (champ, valeur) => `${champ} : « ${valeur} » n’est pas accepté. Utilisez un multiple de 50 entre 50 et 1050, plus grand que le numéro précédent.`,
   'base-libre': (champ) => `${champ} : une palette libre n’a pas de palette de base. Retirez ce champ dans le fichier importé.`,
   'originale-identique': (champ) => `${champ} : elle est identique à la couleur de référence. Retirez ce champ dans le fichier importé.`,
+  // Les quatre règles du format 4 ([ENT-14], [MOT-28], [PLA-28]).
+  'intensites-valeur': (champ, valeur) => `${champ} : « ${valeur} » n’est pas accepté. Indiquez 1 pour une seule intensité, ou retirez ce champ pour Soft et Vivid.`,
+  'intensites-incompatible': (champ) => `${champ} : une palette à une intensité n’a ni palette de base, ni intensités propres, ni nuances libres, et sa dérive reste liée. Retirez ce champ dans le fichier importé.`,
+  'fonds-sombres-bornes': (champ, valeur) => `${champ} : saisissez une intensité entre 0 et 1. Valeur reçue : ${valeur}.`,
+  'contenu-sans-theme': (champ) => `${champ} : gardez au moins un thème, Light ou Dark.`,
 };
 
 /** Le texte d'un refus de [REC-05]. */
@@ -886,6 +970,8 @@ export const NOMS_DES_PARAMETRES = {
   seuils: 'minimums et seuils de détection',
   derives: 'préréglage Tailwind',
   gamut: 'espace de couleur',
+  intensiteDesFondsSombres: 'fonds du thème Dark',
+  contenuDesPlanches: 'contenu des planches',
 } as const;
 
 /** Le nom d'un seuil dans l'écart d'import, plutôt que « minimums et seuils de détection » d'un bloc (V12.2, N072). */
@@ -900,6 +986,7 @@ export const SEUILS_DE_L_IMPORT: Record<keyof Recette['seuils'], string> = {
 const NOMS_DES_CHAMPS: Record<ChampDePalette, string> = {
   nom: 'nom',
   reference: 'couleur de référence',
+  intensites: 'nombre d’intensités',
   base: 'palette de base',
   parts: 'intensités propres',
   derive: 'dérive de teinte',
@@ -965,7 +1052,8 @@ export const TEXTES_DU_DESSIN = {
   annuler: 'Annuler',
   plancheSansPalette: 'Créez une palette dans l’onglet « Palettes » pour pouvoir générer sa présentation ici.',
   versLesPalettes: 'Créer une palette',
-  // N009, N010, puis N043 à N047.
+  // N009, N010, puis N043 à N047 ; un cadre jamais généré a sa pastille (Y2.2).
+  pasEncore: 'Pas encore sur Figma',
   introuvable: 'Cadre introuvable',
   illisible: 'Lecture impossible',
   // Les deux autres gestes d'une fiche, après le premier (Y1.9).
@@ -978,15 +1066,14 @@ export const TEXTES_DU_DESSIN = {
 } as const;
 
 /**
- * L'état d'un cadre de palette, tel que l'onglet Planches l'écrit ([PLA-20],
- * V8.2). Un cadre jamais dessiné n'a pas d'état écrit : le geste
- * « Générer sur Figma » le dit.
+ * L'état d'un cadre de palette, tel que la pastille d'une fiche de l'onglet
+ * Planches l'écrit ([PLA-20], V8.2, maquette Y2.2).
  */
 export function etatDuCadreEcrit(etat: EtatDuCadre): string {
   return {
     'a-jour': TEXTES_DU_DESSIN.aJour,
     perimee: TEXTES_DU_DESSIN.perimee,
-    'jamais-dessinee': '',
+    'jamais-dessinee': TEXTES_DU_DESSIN.pasEncore,
     introuvable: TEXTES_DU_DESSIN.introuvable,
     illisible: TEXTES_DU_DESSIN.illisible,
   }[etat];
@@ -1175,9 +1262,10 @@ export function ecartDePeinture(nom: string, ecarts: readonly { readonly nom: st
 
 /** Les textes que la planche porte dans le document (section 9, récit R1 de W3.6), N093 à N099. */
 export const TEXTES_DE_LA_PLANCHE = {
-  // N093 : les titres des sections d'un thème.
+  // N093 : les titres des sections d'un thème ; une palette à une intensité a « La rampe », et des usages sans profil.
   rampes: 'Les deux rampes',
-  titreDesUsages: (profil: string) => `Quelle nuance pour quel usage · ${profil}`,
+  rampe: 'La rampe',
+  titreDesUsages: (profil: string | null) => (profil ? `Quelle nuance pour quel usage · ${profil}` : 'Quelle nuance pour quel usage'),
   contrastes: 'Contrastes, nuance par nuance',
   // N094 : chaque usage, son nom et ce qu'il habille ; l'anneau porte l'état focus.
   usages: {
@@ -1190,8 +1278,8 @@ export const TEXTES_DE_LA_PLANCHE = {
     'border-decorative': { titre: 'Séparateurs', exemples: 'filet, bordure de carte' },
   },
   etatFocus: 'focus · état focus',
-  // N095 : les libellés des spécimens.
-  specimens: { soft: 'Soft', lien: 'Lien coloré', bouton: 'Bouton', champ: 'Champ', carte: 'Carte' },
+  // N095 : les libellés des spécimens ; celui de `surface` ne se lit plus comme un profil (Y2.7).
+  specimens: { surface: 'Fond léger', lien: 'Lien coloré', bouton: 'Bouton', champ: 'Champ', carte: 'Carte' },
   // N096 : les repères dans une pastille, et la note des profils confondus.
   reperage: '◆',
   confondu: '≈',
@@ -1208,7 +1296,8 @@ export const TEXTES_DE_LA_PLANCHE = {
  */
 export const TEXTES_DE_L_INTERFACE_DE_TEST = {
   titre: 'Interface de test',
-  resume: (mode: Mode, profil: string) => `Thème ${NOM_DU_MODE[mode]} · ${profil}`,
+  resume: (mode: Mode, profil: string | null) => (profil ? `Thème ${NOM_DU_MODE[mode]} · ${profil}` : `Thème ${NOM_DU_MODE[mode]}`),
+  profil: 'Profil peint',
   vue: 'Vue de l’interface de test',
   vues: { ecran: 'Écran', etats: 'États' },
   ecran: 'Écran de l’équipe peint de la palette',
@@ -1286,16 +1375,18 @@ export function annonceDuPas(sens: -1 | 1, changements: readonly { readonly mode
 }
 
 /** Le bilan d'un profil avant et après la proposition : « Vivid ✗ 2 → ✓ », ou « Soft ✓ inchangé ». */
-export function bilanDeLAjustement(profil: Profil, avant: number, apres: number): string {
+export function bilanDeLAjustement(profil: Intensite, avant: number, apres: number): string {
   const resultat = (manquees: number) => (manquees === 0 ? '✓' : `✗ ${manquees}`);
+  const nom = profil === 'unique' ? 'Garanties' : NOM_DU_PROFIL[profil];
   return avant === apres
-    ? `${NOM_DU_PROFIL[profil]} ${resultat(avant)} inchangé`
-    : `${NOM_DU_PROFIL[profil]} ${resultat(avant)} → ${resultat(apres)}`;
+    ? `${nom} ${resultat(avant)} inchangé`
+    : `${nom} ${resultat(avant)} → ${resultat(apres)}`;
 }
 
 /** Une garantie avant et après la proposition : l'association, le thème, le profil, puis les deux contrastes. */
-export function garantieAvantApres(association: string, mode: Mode, profil: Profil, avant: number, apres: number): string {
-  return `${association} · Thème ${NOM_DU_MODE[mode]} · ${NOM_DU_PROFIL[profil]} : ${contrasteEcrit(avant)} → ${contrasteEcrit(apres)}`;
+export function garantieAvantApres(association: string, mode: Mode, profil: Intensite, avant: number, apres: number): string {
+  const ou = profil === 'unique' ? `Thème ${NOM_DU_MODE[mode]}` : `Thème ${NOM_DU_MODE[mode]} · ${NOM_DU_PROFIL[profil]}`;
+  return `${association} · ${ou} : ${contrasteEcrit(avant)} → ${contrasteEcrit(apres)}`;
 }
 
 /** Un code saisi dans la configuration remplace une référence ajustée : l'originale n'est plus gardée (section 3 de la conception). */
@@ -1307,15 +1398,18 @@ export function originaleRetiree(originale: string): Constat {
   };
 }
 
-/** Le profil et la nuance de la référence, une fois si les deux thèmes s'accordent (V10.1). */
+/** La nuance de la référence, une fois si les deux thèmes s'accordent (V10.1). */
 function nuancesDeLaReference(ancrage: Ancrage): string {
   const { light, dark } = ancrage.crans;
   return light === dark ? `nuance ${light}` : `nuance ${light} en Thème Light, ${dark} en Thème Dark`;
 }
 
-/** La ligne de la référence sous le nom de la palette (V10.1, N062). */
+/**
+ * La ligne de la référence sous le nom de la palette (V10.1, N062) : elle
+ * nomme le profil porteur d'une palette à deux intensités seulement ([PLA-18]).
+ */
 export function enTeteDeLaReference(hexa: string, ancrage: Ancrage): string {
-  return `Couleur de référence ${hexa} · ${NOM_DU_PROFIL[ancrage.profil]} · ${nuancesDeLaReference(ancrage)}`;
+  return `Couleur de référence ${hexa} · ${avecLeNom(ancrage.profil, nuancesDeLaReference(ancrage))}`;
 }
 
 /** L'en-tête d'un thème ([PLA-09], N098). */
@@ -1323,7 +1417,7 @@ export function enTeteDuTheme(mode: Mode, fond: string): string {
   return `${TEXTES_DE_LA_PLANCHE.mode[mode]} · fond ${fond}`;
 }
 
-/** Le verdict d'un thème, en tête de sa section : ses garanties manquées, les deux profils comptés (N098). */
+/** Le verdict d'un thème, en tête de sa section : ses garanties manquées, chaque intensité comptée (N098). */
 export function verdictDuTheme(manquees: number): string {
   if (manquees === 0) return '✓ Toutes les garanties tenues';
   return manquees === 1 ? '1 garantie manquée' : `${manquees} garanties manquées`;

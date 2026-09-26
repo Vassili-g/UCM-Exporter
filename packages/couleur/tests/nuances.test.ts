@@ -45,7 +45,7 @@ function hexasParNuance(recette: Recette, palette: Palette): Map<string, string>
   const { crans } = grilleDe(recette, palette);
   const hexas = new Map<string, string>();
   for (const profil of ['soft', 'vivid'] as const) {
-    for (const mode of ['light', 'dark'] as const) rampes[profil][mode].forEach((cran, rang) => hexas.set(`${profil}/${mode}/${crans[rang]}`, cran.hexa));
+    for (const mode of ['light', 'dark'] as const) rampes[profil]![mode].forEach((cran, rang) => hexas.set(`${profil}/${mode}/${crans[rang]}`, cran.hexa));
   }
   return hexas;
 }
@@ -135,7 +135,7 @@ test('W6 : une palette libre suit les courbes communes, garde sa référence exa
   assert.deepEqual(grille.courbes.light, [0.95, 0.905, 0.76, 0.585, 0.42, 0.34]);
   const ancrage = ancrageDe(recette, libre);
   assert.deepEqual(ancrage.crans, { light: 600, dark: 600 });
-  assert.equal(rampesDe(recette, libre)[ancrage.profil].light[ancrage.rangs.light].hexa, '#1E6FD9');
+  assert.equal(rampesDe(recette, libre)[ancrage.profil]!.light[ancrage.rangs.light].hexa, '#1E6FD9');
   assert.deepEqual(verifierPromesses(recette, libre), []);
   assert.ok(!alertesDeRecette(recette).some((alerte) => alerte.code === 'profils-confondus'));
   // À numéro égal et parts égales, hors de la nuance de la référence, la couleur est celle du modèle.

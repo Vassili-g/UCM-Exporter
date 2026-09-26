@@ -10,7 +10,7 @@
  * lit que les intensités communes : régler celles de la palette ne la fait
  * pas changer de profil ([MOT-17]).
  */
-import { PROFILS, partsDe, validerRecette, type Palette, type Profil, type Recette } from 'ucm-couleur';
+import { PROFILS, partsDesProfils, validerRecette, type Palette, type Profil, type Recette } from 'ucm-couleur';
 
 import { lireNombre } from '../configuration';
 import { poserPart, remplacerPalette, reprendreLesParts } from '../edition';
@@ -75,7 +75,7 @@ export function createIntensites(gestes: GestesDesIntensites): IntensitesUi {
   /** La palette où un profil prend `valeur`, bornée pour que soft ne dépasse pas vivid. */
   function avecLaValeur(profil: Profil, valeur: number): Palette | null {
     if (!lue || !courante) return null;
-    const parts = partsDe(lue, courante);
+    const parts = partsDesProfils(lue, courante);
     const bornee = profil === 'soft' ? Math.min(valeur, parts.vivid) : Math.max(valeur, parts.soft);
     return poserPart(lue, courante, profil, Math.max(0, Math.min(1, bornee)));
   }
@@ -175,7 +175,8 @@ export function createIntensites(gestes: GestesDesIntensites): IntensitesUi {
       }
       lue = recette;
       courante = palette;
-      const parts = partsDe(recette, palette);
+      // La carte ne s'affiche que pour une palette à deux intensités : ses parts sont celles des deux profils ([ENT-14]).
+      const parts = partsDesProfils(recette, palette);
       for (const { profil, curseur, champ, repere } of lignes) {
         if (document.activeElement !== curseur) curseur.value = String(parts[profil]);
         if (document.activeElement !== champ) champ.value = nombreEcrit(parts[profil]);
